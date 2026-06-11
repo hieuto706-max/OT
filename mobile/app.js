@@ -644,6 +644,7 @@ function initSettings() {
                 loadProfileStats();
                 syncOfflineData();
             }
+            checkMobileUpdates();
         });
     }
 }
@@ -667,6 +668,7 @@ window.onServerDiscovered = function(serverUrl) {
         loadProfileStats();
         syncOfflineData();
     }
+    checkMobileUpdates();
 };
 
 // Tự động phân giải URL Server từ Rentry Registry (dùng XHR cho Android 5.0)
@@ -700,6 +702,7 @@ function autoResolveRentryUrl() {
                             loadProfileStats();
                             syncOfflineData();
                         }
+                        checkMobileUpdates();
                         resolve(true);
                         return;
                     }
@@ -814,6 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (xhr.status === 200) {
                     updateConnectionStatus(true, API);
                     syncOfflineData();
+                    checkMobileUpdates();
                 } else {
                     updateConnectionStatus(false, '');
                     startAutoDiscovery();
@@ -1078,4 +1082,68 @@ async function handleEditOTSubmit(e) {
     document.getElementById('edit-overlay').classList.remove('active');
     loadHistory();
     loadProfileStats();
+}
+
+// ==================== AUTO UPDATE FOR MOBILE APP ====================
+const MOBILE_VERSION = '1.0.0';
+
+function checkMobileUpdates() {
+    if (!API) return;
+    try {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', API + '/api/version', true);
+        xhr.timeout = 5000;
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                try {
+                    var info = JSON.parse(xhr.responseText);
+                    if (info.version && compareMobileVersions(MOBILE_VERSION, info.version) < 0) {
+                        showMobileUpdateDialog(info.version);
+                    }
+                } catch(e) {}
+            }
+        };
+        xhr.send();
+    } catch(e) {}
+}
+
+function compareMobileVersions(v1, v2) {
+    var parts1 = v1.split('.').map(Number);
+    var parts2 = v2.split('.').map(Number);
+    for (var i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+        var p1 = parts1[i] || 0;
+        var p2 = parts2[i] || 0;
+        if (p1 < p2) return -1;
+        if (p1 > p2) return 1;
+    }
+    return 0;
+}
+
+function showMobileUpdateDialog(newVer) {
+    if (document.getElementById('mobile-update-overlay')) return;
+    
+    var overlay = document.createElement('div');
+    overlay.id = 'mobile-update-overlay';
+    overlay.className = 'confirm-overlay active';
+    overlay.style.zIndex = '9999';
+    overlay.innerHTML = `
+        <div class="confirm-dialog" style="max-width: 90%; width: 320px; text-align: center;">
+            <h3 style="margin-top:0; color: #10b981; font-size:1.2rem;">🚀 Cập nhật ứng dụng</h3>
+            <p style="color: var(--text); font-size:0.9rem; margin-bottom: 16px;">Đã có phiên bản mới: <strong>v\${newVer}</strong> (Bản hiện tại: v\${MOBILE_VERSION}). Vui lòng tải về phiên bản mới để cập nhật.</p>
+            <div class="confirm-actions" style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn btn-ghost" id="mobile-update-later" style="padding: 10px 16px; font-size:0.85rem; border-radius:8px;">Để sau</button>
+                <button class="btn btn-primary" id="mobile-update-now" style="padding: 10px 16px; font-size:0.85rem; border-radius:8px; background: #10b981;">Tải về ngay</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    
+    document.getElementById('mobile-update-later').addEventListener('click', function() {
+        overlay.remove();
+    });
+    
+    document.getElementById('mobile-update-now').addEventListener('click', function() {
+        overlay.remove();
+        window.open(API + '/OT-Manager-AppCon.apk', '_blank');
+    });
 }

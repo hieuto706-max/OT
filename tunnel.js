@@ -93,4 +93,4 @@ function startTunnel() {
     });
 }
 
-module.exports = { startTunnel };
+module.exports = { startTunnel, updateRentry };

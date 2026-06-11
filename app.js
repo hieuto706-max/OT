@@ -7,7 +7,7 @@
  * Sử dụng Server API để đồng bộ dữ liệu với mobile
  */
 
-const API_BASE = window.location.origin;
+let API_BASE = window.location.origin;
 const OT_LUNCH_HOURS = 1;
 const WORK_END = '16:30';
 
@@ -613,8 +613,111 @@ async function refreshEmployeeRecords() {
     } catch (e) {}
 }
 
+// ==================== CLOUD WAKING & SYNC CONFIG ====================
+async function initCloudConfig() {
+    try {
+        const res = await fetch('/api/cloud-url');
+        const data = await res.json();
+        if (data.cloudUrl) {
+            API_BASE = data.cloudUrl;
+            if (API_BASE.endsWith('/')) {
+                API_BASE = API_BASE.slice(0, -1);
+            }
+            console.log("[Desktop App] API Base trỏ tới Cloud:", API_BASE);
+            showCloudWakeupOverlay();
+            await wakeupCloudServer();
+        }
+    } catch (e) {
+        console.error("Lỗi đồng bộ Cloud URL:", e);
+    }
+}
+
+function showCloudWakeupOverlay() {
+    if (document.getElementById('cloud-wakeup-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'cloud-wakeup-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.backgroundColor = 'rgba(15, 15, 26, 0.95)';
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.zIndex = '99999';
+    overlay.style.color = '#ffffff';
+    overlay.style.fontFamily = 'Inter, sans-serif';
+    overlay.style.transition = 'opacity 0.5s ease';
+
+    overlay.innerHTML = `
+        <div style="text-align: center; max-width: 400px; padding: 20px;">
+            <div style="width: 50px; height: 50px; border: 3px solid rgba(16, 185, 129, 0.2); border-top: 3px solid #10b981; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+            <h3 style="margin-top: 0; color: #10b981; font-size: 1.3rem; margin-bottom: 10px;">Đang kết nối Cloud Server</h3>
+            <p style="font-size: 0.9rem; color: #a1a1aa; line-height: 1.5; margin-bottom: 8px;">Hệ thống đang kiểm tra kết nối và đánh thức Cloud Server miễn phí (Render Free Tier).</p>
+            <p style="font-size: 0.8rem; color: #71717a; font-style: italic;">Có thể mất từ 30 đến 50 giây để khởi động lại máy chủ nếu server đang ngủ. Vui lòng đợi trong giây lát...</p>
+        </div>
+        <style>
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        </style>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function hideCloudWakeupOverlay() {
+    const overlay = document.getElementById('cloud-wakeup-overlay');
+    if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.remove(), 500);
+    }
+}
+
+async function wakeupCloudServer() {
+    let attempts = 0;
+    const maxAttempts = 30; // Thử tối đa 30 lần (~60 giây)
+    
+    while (attempts < maxAttempts) {
+        try {
+            console.log(`[Cloud] Thử kết nối đến Cloud Server (Lần ${attempts + 1})...`);
+            const res = await fetch(`${API_BASE}/api/server-info`, { method: 'GET', mode: 'cors' });
+            if (res.ok) {
+                console.log("[Cloud] Kết nối thành công! Server đã hoạt động.");
+                hideCloudWakeupOverlay();
+                initSseConnection();
+                return true;
+            }
+        } catch (e) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        attempts++;
+    }
+    
+    const overlay = document.getElementById('cloud-wakeup-overlay');
+    if (overlay) {
+        overlay.innerHTML = `
+            <div style="text-align: center; max-width: 400px; padding: 20px;">
+                <div style="font-size: 3rem; margin-bottom: 20px;">⚠️</div>
+                <h3 style="margin-top: 0; color: #ef4444; font-size: 1.3rem; margin-bottom: 10px;">Lỗi Kết Nối</h3>
+                <p style="font-size: 0.9rem; color: #a1a1aa; line-height: 1.5; margin-bottom: 20px;">Không thể kết nối đến Cloud Server. Vui lòng kiểm tra lại kết nối mạng hoặc trạng thái dịch vụ của Render.</p>
+                <div style="display:flex; gap: 10px; justify-content: center;">
+                    <button onclick="window.location.reload()" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-right: 10px;">Thử lại</button>
+                    <button onclick="document.getElementById('cloud-wakeup-overlay').remove()" style="background: #27272a; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Dùng Offline</button>
+                </div>
+            </div>
+        `;
+    }
+    return false;
+}
+
 // ==================== EVENT LISTENERS ====================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Cấu hình và đồng bộ hóa Cloud Server trước khi tải trang dashboard
+    await initCloudConfig();
+
     // Auto-login check
     const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
     if (currentUser) {

@@ -5,6 +5,7 @@
  */
 
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -68,8 +69,105 @@ function getDbPath() {
     return DB_FILE;
 }
 
+// ==================== GITHUB GIST BACKUP ====================
+function fetchGist() {
+    return new Promise((resolve, reject) => {
+        const options = {
+            hostname: 'api.github.com',
+            path: `/gists/${process.env.GIST_ID}`,
+            method: 'GET',
+            headers: {
+                'Authorization': `token ${process.env.GITHUB_TOKEN}`,
+                'User-Agent': 'Node.js-Server-App'
+            }
+        };
+
+        const req = https.request(options, (res) => {
+            let body = '';
+            res.on('data', chunk => body += chunk);
+            res.on('end', () => {
+                try {
+                    if (res.statusCode !== 200) {
+                        return reject(new Error(`HTTP status ${res.statusCode}`));
+                    }
+                    const gist = JSON.parse(body);
+                    const file = gist.files['db.json'];
+                    if (!file) {
+                        return reject(new Error('db.json not found in Gist'));
+                    }
+                    const db = JSON.parse(file.content);
+                    resolve(db);
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        });
+
+        req.on('error', reject);
+        req.end();
+    });
+}
+
+function updateGist(data) {
+    return new Promise((resolve, reject) => {
+        const payload = JSON.stringify({
+            files: {
+                'db.json': {
+                    content: JSON.stringify(data, null, 2)
+                }
+            }
+        });
+
+        const options = {
+            hostname: 'api.github.com',
+            path: `/gists/${process.env.GIST_ID}`,
+            method: 'PATCH',
+            headers: {
+                'Authorization': `token ${process.env.GITHUB_TOKEN}`,
+                'User-Agent': 'Node.js-Server-App',
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payload)
+            }
+        };
+
+        const req = https.request(options, (res) => {
+            let body = '';
+            res.on('data', chunk => body += chunk);
+            res.on('end', () => {
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                    resolve(true);
+                } else {
+                    reject(new Error(`HTTP status ${res.statusCode}: ${body}`));
+                }
+            });
+        });
+
+        req.on('error', reject);
+        req.write(payload);
+        req.end();
+    });
+}
+
 // ==================== DATABASE ====================
-function loadDB() {
+async function loadDB() {
+    // Tải dữ liệu từ Gist nếu có cấu hình trên môi trường Cloud
+    if (process.env.GIST_ID && process.env.GITHUB_TOKEN) {
+        try {
+            console.log('[Gist] Đang đồng bộ tải dữ liệu từ GitHub Gist...');
+            const gistData = await fetchGist();
+            if (gistData) {
+                if (!gistData.users) gistData.users = [];
+                if (!gistData.records) gistData.records = [];
+                // Đồng bộ ghi vào file local db.json
+                fs.writeFileSync(getDbPath(), JSON.stringify(gistData, null, 2), 'utf-8');
+                console.log('[Gist] Đồng bộ tải thành công!');
+                return gistData;
+            }
+        } catch (e) {
+            console.error('[Gist] Lỗi đồng bộ tải từ Gist (sử dụng cache local):', e.message);
+        }
+    }
+
     const dbFile = getDbPath();
     try {
         if (fs.existsSync(dbFile)) {
@@ -100,6 +198,13 @@ function loadDB() {
 function saveDB(data) {
     fs.writeFileSync(getDbPath(), JSON.stringify(data, null, 2), 'utf-8');
     notifySseClients({ type: 'update' });
+
+    // Cập nhật bất đồng bộ lên Gist (không làm nghẽn phản hồi API)
+    if (process.env.GIST_ID && process.env.GITHUB_TOKEN) {
+        updateGist(data).catch(e => {
+            console.error('[Gist] Lỗi cập nhật lên Gist:', e.message);
+        });
+    }
 }
 
 function generateId() {
@@ -168,7 +273,7 @@ function getCurrentMonth() {
 
 // ==================== API ROUTES ====================
 async function handleAPI(req, res, urlPath, method) {
-    const db = loadDB();
+    const db = await loadDB();
 
     // Kiểm tra xem tài khoản có bị xóa khỏi hệ thống không
     const url = new URL(req.url, `http://${req.headers.host}`);
@@ -381,10 +486,40 @@ async function handleAPI(req, res, urlPath, method) {
         });
     }
 
+    // --- SERVER VERSION ---
+    if (urlPath === '/api/version' && method === 'GET') {
+        let version = '1.0.0';
+        try {
+            const pkgPath = path.join(__dirname, 'package.json');
+            if (fs.existsSync(pkgPath)) {
+                const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+                version = pkg.version || '1.0.0';
+            }
+        } catch (e) {
+            console.error('[Version API] Lỗi đọc phiên bản:', e.message);
+        }
+        return sendJSON(res, 200, { version });
+    }
+
     // --- SERVER INFO ---
     if (urlPath === '/api/server-info' && method === 'GET') {
         const ip = getLocalIP();
         return sendJSON(res, 200, { ip, port: PORT, url: `http://${ip}:${PORT}` });
+    }
+
+    // --- CLOUD URL FOR DESKTOP CONFIG ---
+    if (urlPath === '/api/cloud-url' && method === 'GET') {
+        let cloudUrl = '';
+        try {
+            const configPath = path.join(__dirname, 'config.json');
+            if (fs.existsSync(configPath)) {
+                const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+                cloudUrl = config.serverUrl || '';
+            }
+        } catch (e) {
+            console.error('[Cloud URL API] Lỗi:', e.message);
+        }
+        return sendJSON(res, 200, { cloudUrl });
     }
 
     return sendError(res, 404, 'API not found');
@@ -488,6 +623,17 @@ function startServer() {
                 }
             } else {
                 console.log(`☁️ Đang chạy trên Cloud - Bỏ qua khởi chạy Tunnel SSH.`);
+                // Tự động cập nhật Rentry với URL của Render
+                const cloudUrl = process.env.RENDER_EXTERNAL_URL || process.env.SERVER_URL;
+                if (cloudUrl) {
+                    try {
+                        const { updateRentry } = require('./tunnel');
+                        updateRentry(cloudUrl);
+                        console.log(`[Cloud] Đã tự động cập nhật URL Cloud lên Rentry: ${cloudUrl}`);
+                    } catch (e) {
+                        console.error('[Cloud] Lỗi tự động cập nhật Rentry:', e.message);
+                    }
+                }
             }
             
             resolve({ ip, port: PORT });

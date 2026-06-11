@@ -5,3 +5,6 @@ mobile-android/
 *.apk
 .vscode/
 config.json
+node-portable/
+android-sdk/
+

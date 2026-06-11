@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Tray } = require('electron');
+const { app, BrowserWindow, Menu, Tray, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { startServer, getLocalIP, PORT } = require('./server');
@@ -11,8 +11,11 @@ let tray = null;
 let isQuitting = false;
 
 async function createWindow() {
+    // Khởi động server local (Luôn chạy để load giao diện nhanh và hỗ trợ API)
+    await startServer();
+
     let serverUrl = `http://localhost:${PORT}`;
-    let useCloud = false;
+    let cloudUrl = '';
 
     // Đọc file config.json nếu có để dùng Cloud Server
     const configPath = path.join(__dirname, 'config.json');
@@ -20,21 +23,15 @@ async function createWindow() {
         try {
             const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
             if (config.serverUrl) {
-                serverUrl = config.serverUrl;
-                if (serverUrl.endsWith('/')) {
-                    serverUrl = serverUrl.slice(0, -1);
+                cloudUrl = config.serverUrl;
+                if (cloudUrl.endsWith('/')) {
+                    cloudUrl = cloudUrl.slice(0, -1);
                 }
-                useCloud = true;
-                console.log(`[Main] Kết nối trực tiếp đến Cloud Server: ${serverUrl}`);
+                console.log(`[Main] App trỏ dữ liệu về Cloud Server: ${cloudUrl}`);
             }
         } catch (e) {
             console.error('[Main] Lỗi đọc file config.json:', e);
         }
-    }
-
-    if (!useCloud) {
-        // Khởi động server local
-        await startServer();
     }
     const ip = getLocalIP();
 
@@ -66,6 +63,9 @@ async function createWindow() {
         console.log(`║                                      ║`);
         console.log(`║   🖥️  App Quản Lý (Desktop):         ║`);
         console.log(`╚══════════════════════════════════════╝\n`);
+        
+        // Kiểm tra cập nhật phần mềm nếu kết nối Cloud
+        checkUpdates(serverUrl);
     });
 
     // Bắt sự kiện tắt cửa sổ: Không thoát mà ẩn xuống khay hệ thống
@@ -78,6 +78,56 @@ async function createWindow() {
 
     // Tạo System Tray
     createTray();
+}
+
+// Kiểm tra cập nhật phiên bản chéo với Cloud Server
+function checkUpdates(serverUrl) {
+    if (!serverUrl || serverUrl.includes('localhost') || serverUrl.includes('127.0.0.1')) return;
+    
+    const localVersion = app.getVersion();
+    const fetchUrl = `${serverUrl}/api/version`;
+    const http = require('http');
+    const https = require('https');
+    const client = serverUrl.startsWith('https') ? https : http;
+
+    client.get(fetchUrl, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+            try {
+                if (res.statusCode === 200) {
+                    const info = JSON.parse(data);
+                    if (info.version && compareVersions(localVersion, info.version) < 0) {
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'info',
+                            title: 'Cập nhật phần mềm',
+                            message: `Đã có phiên bản mới: v${info.version} (Bản hiện tại: v${localVersion})`,
+                            detail: 'Bạn có muốn truy cập để tải về phiên bản mới nhất không?',
+                            buttons: ['Để sau', 'Tải về ngay'],
+                            defaultId: 1
+                        }).then((result) => {
+                            if (result.response === 1) {
+                                // Mở trình duyệt đến Cloud Server URL để tải về
+                                shell.openExternal(serverUrl);
+                            }
+                        });
+                    }
+                }
+            } catch (e) {}
+        });
+    }).on('error', () => {});
+}
+
+function compareVersions(v1, v2) {
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+        const p1 = parts1[i] || 0;
+        const p2 = parts2[i] || 0;
+        if (p1 < p2) return -1;
+        if (p1 > p2) return 1;
+    }
+    return 0;
 }
 
 function createTray() {
