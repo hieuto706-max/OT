@@ -175,6 +175,19 @@ function updateConnectionStatus(connected, serverUrl) {
             badge.style.display = 'inline-block';
         }
     }
+
+    // Cập nhật đường link tải APK động
+    const link = document.getElementById('download-apk-link');
+    if (link) {
+        const url = API ? (API + '/OT-Manager-AppCon.apk') : '/OT-Manager-AppCon.apk';
+        link.href = url;
+        link.onclick = function(e) {
+            if (!API && (window.location.protocol === 'file:' || window.AndroidBridge)) {
+                e.preventDefault();
+                showToast('Chưa kết nối Server! Vui lòng cấu hình IP Server hoặc đợi tự động kết nối.', 'error');
+            }
+        };
+    }
 }
 
 // ==================== SCREENS ====================
