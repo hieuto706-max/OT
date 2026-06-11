@@ -1157,6 +1157,6 @@ function showMobileUpdateDialog(newVer) {
     
     document.getElementById('mobile-update-now').addEventListener('click', function() {
         overlay.remove();
-        window.open(API + '/OT-Manager-AppCon.apk', '_blank');
+        window.location.href = API + '/OT-Manager-AppCon.apk';
     });
 }
