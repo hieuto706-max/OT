@@ -1,0 +1,7 @@
+node_modules/
+dist/
+temp_jdk/
+mobile-android/
+*.apk
+.vscode/
+config.json

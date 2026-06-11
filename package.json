@@ -1,0 +1,35 @@
+{
+  "name": "ot-manager",
+  "version": "1.0.0",
+  "description": "Ứng dụng quản lý tăng ca - OT Manager",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "keywords": [
+    "overtime",
+    "management",
+    "ot"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^42.4.0",
+    "electron-builder": "^24.13.3",
+    "localtunnel": "^2.0.2"
+  },
+  "build": {
+    "appId": "com.example.otmanager",
+    "icon": "icon.png",
+    "compression": "normal",
+    "win": {
+      "target": "nsis",
+      "icon": "icon.png"
+    },
+    "directories": {
+      "output": "dist"
+    }
+  }
+}
