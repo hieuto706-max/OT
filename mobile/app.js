@@ -1098,7 +1098,7 @@ async function handleEditOTSubmit(e) {
 }
 
 // ==================== AUTO UPDATE FOR MOBILE APP ====================
-const MOBILE_VERSION = '1.0.0';
+const MOBILE_VERSION = '1.0.1';
 
 function checkMobileUpdates() {
     if (!API) return;
