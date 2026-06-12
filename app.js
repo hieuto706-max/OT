@@ -177,7 +177,7 @@ function logout() {
 
 async function checkGistStatus() {
     try {
-        const res = await fetch('/api/gist-status');
+        const res = await fetch(`${API_BASE}/api/gist-status`);
         const data = await res.json();
         if (data.status === 'error') {
             showModal(
