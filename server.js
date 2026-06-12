@@ -640,6 +640,13 @@ const server = http.createServer(async (req, res) => {
         }
     }
 
+    // Short download routes (e.g. /dl, /tai, /app)
+    const cleanPath = urlPath.endsWith('/') && urlPath.length > 1 ? urlPath.slice(0, -1) : urlPath;
+    if (cleanPath === '/dl' || cleanPath === '/tai' || cleanPath === '/app') {
+        const mobilePath = path.join(__dirname, 'mobile');
+        return serveStatic(req, res, mobilePath, '/download.html');
+    }
+
     // Desktop admin app (served at /desktop/)
     if (urlPath.startsWith('/desktop')) {
         const desktopPath = urlPath.replace('/desktop', '') || '/';
