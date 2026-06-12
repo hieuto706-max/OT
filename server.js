@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
-const { startTunnel } = require('./tunnel');
+const { startTunnel, stopTunnel } = require('./tunnel');
 
 const PORT = process.env.PORT || 3456;
 let DB_FILE = null;
@@ -649,9 +649,17 @@ function startServer() {
     });
 }
 
+function stopServer() {
+    console.log('[Server] Stopping OT Manager Server...');
+    stopTunnel();
+    if (server) {
+        server.close();
+    }
+}
+
 // If run directly (not imported)
 if (require.main === module) {
     startServer();
 }
 
-module.exports = { startServer, getLocalIP, PORT };
+module.exports = { startServer, stopServer, getLocalIP, PORT };

@@ -1,7 +1,7 @@
 const { app, BrowserWindow, Menu, Tray, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { startServer, getLocalIP, PORT } = require('./server');
+const { startServer, stopServer, getLocalIP, PORT } = require('./server');
 
 // Tắt menu mặc định
 Menu.setApplicationMenu(null);
@@ -168,4 +168,8 @@ app.on('window-all-closed', () => {
             app.quit();
         }
     }
+});
+
+app.on('will-quit', () => {
+    stopServer();
 });

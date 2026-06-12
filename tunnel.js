@@ -51,13 +51,29 @@ function updateRentry(url) {
     req.end();
 }
 
+let sshProcess = null;
+let isStopping = false;
+
+function stopTunnel() {
+    isStopping = true;
+    if (sshProcess) {
+        console.log('[Tunnel] Stopping SSH tunnel...');
+        try {
+            sshProcess.kill('SIGTERM');
+        } catch (e) {}
+        sshProcess = null;
+    }
+}
+
 function startTunnel() {
+    isStopping = false;
     console.log(`[Tunnel] Starting localhost.run tunnel in background for 127.0.0.1:3456...`);
     const ssh = spawn('ssh', [
         '-o', 'StrictHostKeyChecking=no',
         '-R', '80:127.0.0.1:3456',
         'localhost.run'
     ]);
+    sshProcess = ssh;
 
     let resolved = false;
 
@@ -87,10 +103,24 @@ function startTunnel() {
     });
 
     ssh.on('close', (code) => {
+        if (isStopping) return;
         console.log(`[Tunnel] SSH process exited with code ${code}. Restarting in 5s...`);
         resolved = false;
         setTimeout(startTunnel, 5000);
     });
 }
 
-module.exports = { startTunnel, updateRentry };
+// Clean up child process when parent Node process terminates
+process.on('exit', () => {
+    stopTunnel();
+});
+process.on('SIGINT', () => {
+    stopTunnel();
+    process.exit();
+});
+process.on('SIGTERM', () => {
+    stopTunnel();
+    process.exit();
+});
+
+module.exports = { startTunnel, stopTunnel, updateRentry };
