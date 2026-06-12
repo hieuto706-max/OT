@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: ot-manager-server
+    env: node
+    plan: free
+    buildCommand: npm install --production
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 3456
+      - key: GIST_ID
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
