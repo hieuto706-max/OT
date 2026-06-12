@@ -32,6 +32,14 @@ const safeStorage = {
 
 // Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu không thì chờ auto-discovery
 let API = safeStorage.getItem('ot_server_ip') || 'https://otms.onrender.com';
+
+// Tự động dọn dẹp các địa chỉ IP cũ từ các phiên bản trước
+let savedIp = safeStorage.getItem('ot_server_ip');
+if (savedIp && (savedIp.includes('ot-manager-server') || savedIp.includes('otm.app.vn') || savedIp.includes('new-folder-6471') || savedIp.includes('lhr.life'))) {
+    safeStorage.removeItem('ot_server_ip');
+    API = 'https://otms.onrender.com';
+}
+
 const OT_LUNCH_HOURS = 1;
 const WORK_END_MIN = 16 * 60 + 30; // 16:30
 
