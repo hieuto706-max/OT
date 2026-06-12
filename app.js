@@ -167,8 +167,7 @@ async function initAdminDashboard(user) {
         refreshAdminRecords(),
         refreshAdminUsers(),
         refreshReport(),
-        refreshAdminStats(),
-        loadMobileInfo()
+        refreshAdminStats()
     ]);
 }
 
