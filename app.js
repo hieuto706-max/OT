@@ -112,6 +112,15 @@ async function handleLogin(e) {
         errorEl.textContent = '';
         localStorage.setItem('ot_current_user', JSON.stringify(user));
 
+        // Lưu ngày đăng nhập và phiên bản hiện tại
+        const todayStr = new Date().toISOString().split('T')[0];
+        localStorage.setItem('ot_login_date', todayStr);
+        try {
+            const versionRes = await fetch('/api/version');
+            const versionData = await versionRes.json();
+            localStorage.setItem('ot_app_version', versionData.version || '1.0.0');
+        } catch (e) {}
+
         if (user.role === 'admin') {
             initAdminDashboard(user);
             showScreen('screen-admin');
@@ -147,8 +156,21 @@ async function handleRegister(e) {
     }
 }
 
+function checkMidnightLogout() {
+    const currentUser = localStorage.getItem('ot_current_user');
+    if (!currentUser) return;
+
+    const loginDate = localStorage.getItem('ot_login_date');
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (loginDate && loginDate !== todayStr) {
+        logout();
+        showToast('Đã qua ngày mới, vui lòng đăng nhập lại.', 'info');
+    }
+}
+
 function logout() {
     localStorage.removeItem('ot_current_user');
+    localStorage.removeItem('ot_login_date');
     showScreen('screen-login');
     showToast('Đã đăng xuất', 'info');
 }
@@ -820,6 +842,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 1. Cấu hình và đồng bộ hóa Cloud Server trước khi tải trang dashboard
     await initCloudConfig();
+
+    // 2. Kiểm tra phiên bản và trạng thái session để quyết định tự động đăng nhập
+    try {
+        const versionRes = await fetch('/api/version');
+        const versionData = await versionRes.json();
+        const currentVersion = versionData.version || '1.0.0';
+
+        const storedVersion = localStorage.getItem('ot_app_version');
+        const isSessionActive = sessionStorage.getItem('ot_session_active');
+
+        // Nếu là phiên làm việc mới (app bị tắt hoàn toàn và bật lại)
+        if (!isSessionActive) {
+            // Nếu không phải là cập nhật (phiên bản cũ và mới giống nhau)
+            if (storedVersion === currentVersion) {
+                // Tắt app hoàn toàn và bật lại bản cũ -> bắt đăng nhập lại
+                localStorage.removeItem('ot_current_user');
+                localStorage.removeItem('ot_login_date');
+            } else {
+                // Đây là cập nhật phiên bản -> giữ nguyên login, chỉ cập nhật version lưu trữ
+                localStorage.setItem('ot_app_version', currentVersion);
+            }
+            // Đánh dấu session hiện tại là active
+            sessionStorage.setItem('ot_session_active', 'true');
+        }
+    } catch (e) {
+        console.error('Lỗi kiểm tra phiên bản:', e);
+    }
+
+    // 3. Kiểm tra qua 00h (đăng nhập ngày mới)
+    checkMidnightLogout();
+
+    // Thêm lắng nghe sự kiện focus cửa sổ để kiểm tra qua 00h
+    window.addEventListener('focus', checkMidnightLogout);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            checkMidnightLogout();
+        }
+    });
 
     // Auto-login check
     const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
