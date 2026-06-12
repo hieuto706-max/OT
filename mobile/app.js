@@ -187,7 +187,7 @@ function updateConnectionStatus(connected, serverUrl) {
     // Cập nhật đường link tải APK động
     const link = document.getElementById('download-apk-link');
     if (link) {
-        const url = API ? (API + '/OT-Manager-AppCon.apk') : '/OT-Manager-AppCon.apk';
+        const url = API ? (API + '/OT-Manager-mobile.apk') : '/OT-Manager-mobile.apk';
         link.href = url;
         link.onclick = function(e) {
             if (!API && (window.location.protocol === 'file:' || window.AndroidBridge)) {
@@ -1234,6 +1234,6 @@ function showMobileUpdateDialog(newVer) {
     
     document.getElementById('mobile-update-now').addEventListener('click', function() {
         overlay.remove();
-        window.location.href = API + '/OT-Manager-AppCon.apk';
+        window.location.href = API + '/OT-Manager-mobile.apk';
     });
 }
