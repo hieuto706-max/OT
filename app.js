@@ -726,6 +726,93 @@ async function wakeupCloudServer() {
     return false;
 }
 
+function compareVersions(v1, v2) {
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+        const p1 = parts1[i] || 0;
+        const p2 = parts2[i] || 0;
+        if (p1 < p2) return -1;
+        if (p1 > p2) return 1;
+    }
+    return 0;
+}
+
+async function checkUpdateManual() {
+    showToast('Đang kiểm tra bản cập nhật...', 'info');
+    try {
+        // 1. Lấy thông tin Cloud URL từ local server
+        const cloudConfRes = await fetch('/api/cloud-url');
+        const cloudConf = await cloudConfRes.json();
+        const cloudUrl = cloudConf.cloudUrl;
+
+        if (!cloudUrl) {
+            showModal(
+                'Kiểm tra cập nhật',
+                `<p style="color: var(--text-secondary); line-height: 1.6;">
+                    Ứng dụng đang hoạt động ở chế độ Offline (không kết nối Cloud Server).<br><br>
+                    Để sử dụng tính năng kiểm tra cập nhật, vui lòng cấu hình <strong>serverUrl</strong> (đường dẫn Cloud Server Render) trong file <code>config.json</code> ở thư mục gốc của ứng dụng.
+                </p>`,
+                [{ text: 'Đóng', class: 'btn-ghost' }]
+            );
+            return;
+        }
+
+        // 2. Lấy version hiện tại của ứng dụng local
+        const localRes = await fetch('/api/version');
+        const localData = await localRes.json();
+        const localVer = localData.version || '1.0.0';
+
+        // 3. Lấy version mới nhất trên Cloud Server
+        const cloudRes = await fetch(`${cloudUrl}/api/version`);
+        const cloudData = await cloudRes.json();
+        const cloudVer = cloudData.version || '1.0.0';
+
+        // 4. So sánh phiên bản
+        const cmp = compareVersions(localVer, cloudVer);
+        if (cmp < 0) {
+            // Có bản cập nhật mới
+            showModal(
+                'Có phiên bản mới!',
+                `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                    Phát hiện phiên bản mới của ứng dụng trên hệ thống Cloud:<br>
+                    • Phiên bản hiện tại: <strong style="color: var(--accent-orange);">v${localVer}</strong><br>
+                    • Phiên bản mới nhất: <strong style="color: var(--accent-green-light);">v${cloudVer}</strong>
+                </p>
+                <p style="color: var(--text-muted); font-size: 13px;">
+                    Bạn có muốn mở trình duyệt để tải về phiên bản mới nhất không?
+                </p>`,
+                [
+                    { text: 'Để sau', class: 'btn-ghost' },
+                    { 
+                        text: 'Tải về ngay', 
+                        class: 'btn btn-primary btn-sm', 
+                        action: () => {
+                            window.open(cloudUrl, '_blank');
+                        } 
+                    }
+                ]
+            );
+        } else {
+            // Đã là phiên bản mới nhất
+            showModal(
+                'Kiểm tra cập nhật',
+                `<p style="color: var(--accent-green-light); font-weight: 600; font-size: 15px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    ✓ Bạn đang dùng phiên bản mới nhất
+                </p>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    • Phiên bản hiện tại: <strong>v${localVer}</strong><br>
+                    Ứng dụng của bạn hoàn toàn tương thích và đã được cập nhật đầy đủ.
+                </p>`,
+                [{ text: 'Đóng', class: 'btn-ghost' }]
+            );
+        }
+    } catch (err) {
+        showToast('Không thể kết nối đến Cloud Server để check cập nhật', 'error');
+        console.error('Lỗi check cập nhật:', err);
+    }
+}
+
 // ==================== EVENT LISTENERS ====================
 document.addEventListener('DOMContentLoaded', async () => {
     const otDateEl = document.getElementById('ot-date');
@@ -780,6 +867,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Logout
     document.getElementById('btn-logout-admin').addEventListener('click', logout);
     document.getElementById('btn-logout-emp').addEventListener('click', logout);
+
+    // Update Check
+    const btnCheckUpdate = document.getElementById('btn-check-update');
+    if (btnCheckUpdate) {
+        btnCheckUpdate.addEventListener('click', checkUpdateManual);
+    }
 
     // OT Preview
     document.getElementById('ot-lunch').addEventListener('change', updateOTPreview);
