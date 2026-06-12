@@ -24,6 +24,17 @@
     "appId": "com.example.otmanager",
     "icon": "icon.png",
     "compression": "normal",
+    "files": [
+      "**/*",
+      "!android-sdk/**",
+      "!temp_jdk/**",
+      "!node-portable/**",
+      "!dist/**",
+      "!mobile-android/**",
+      "!OT-Manager-AppCon.apk",
+      "!.git/**",
+      "!.vscode/**"
+    ],
     "win": {
       "target": "nsis",
       "icon": "icon.png"
