@@ -30,8 +30,8 @@ const safeStorage = {
     _data: {}
 };
 
-// Khởi tạo API URL: lấy từ localStorage nếu có, nếu không thì chờ auto-discovery
-let API = safeStorage.getItem('ot_server_ip') || '';
+// Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu không thì chờ auto-discovery
+let API = safeStorage.getItem('ot_server_ip') || 'https://new-folder-6471.onrender.com';
 const OT_LUNCH_HOURS = 1;
 const WORK_END_MIN = 16 * 60 + 30; // 16:30
 
@@ -291,7 +291,9 @@ async function handleLogin(e) {
 function enterApp() {
     document.getElementById('greeting').textContent = getGreeting();
     document.getElementById('user-name').textContent = currentUser.fullname;
-    document.getElementById('ot-date').value = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+    document.getElementById('ot-date').value = todayStr;
+    document.getElementById('ot-date').max = todayStr;
     document.getElementById('filter-month').value = getCurrentMonth();
 
     // Profile
@@ -304,6 +306,7 @@ function enterApp() {
     loadHistory();
     loadProfileStats();
     updateConnectionStatus(true, API);
+    updateSyncBanner();
 }
 
 function getGreeting() {
@@ -370,6 +373,7 @@ function saveOfflineRecord(recordData) {
     resetForm();
     loadHistory();
     loadProfileStats();
+    updateSyncBanner();
 }
 
 function resetForm() {
@@ -552,6 +556,7 @@ async function deleteRecord(id) {
     showToast('Đã xóa ngoại tuyến (offline)!', 'warning');
     loadHistory();
     loadProfileStats();
+    updateSyncBanner();
 }
 
 // ==================== PROFILE STATS ====================
@@ -738,6 +743,24 @@ function autoResolveRentryUrl() {
     });
 }
 
+function updateSyncBanner() {
+    const offlineRecords = JSON.parse(safeStorage.getItem('ot_offline_records') || '[]');
+    const offlineDeletes = JSON.parse(safeStorage.getItem('ot_offline_deletes') || '[]');
+    const totalUnsynced = offlineRecords.length + offlineDeletes.length;
+    
+    const banner = document.getElementById('sync-banner');
+    const countEl = document.getElementById('unsynced-count');
+    
+    if (banner && countEl) {
+        if (totalUnsynced > 0) {
+            countEl.textContent = totalUnsynced;
+            banner.style.display = 'flex';
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+}
+
 let isSyncing = false;
 async function syncOfflineData() {
     if (isSyncing || !API) return;
@@ -808,15 +831,37 @@ async function syncOfflineData() {
         console.error('Sync failed:', e);
     } finally {
         isSyncing = false;
+        updateSyncBanner();
     }
 }
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
-    initSettings();
+    const otDateEl = document.getElementById('ot-date');
+    if (otDateEl) otDateEl.max = new Date().toISOString().split('T')[0];
     
     // Hiển thị trạng thái kết nối ban đầu
     updateConnectionStatus(!!API, API);
+    updateSyncBanner();
+
+    const btnManualSync = document.getElementById('btn-manual-sync');
+    if (btnManualSync) {
+        btnManualSync.addEventListener('click', async () => {
+            if (!API) {
+                showToast('Chưa kết nối Server! Vui lòng kiểm tra kết nối mạng hoặc đợi tự động kết nối.', 'error');
+                return;
+            }
+            btnManualSync.disabled = true;
+            const originalText = btnManualSync.textContent;
+            btnManualSync.textContent = 'Đang đồng bộ...';
+            try {
+                await syncOfflineData();
+            } finally {
+                btnManualSync.disabled = false;
+                btnManualSync.textContent = originalText;
+            }
+        });
+    }
     
     // Nếu đã có IP lưu sẵn, kiểm tra kết nối
     if (API) {
@@ -977,9 +1022,31 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Tự động kiểm tra và đồng bộ mỗi 15 giây
-    setInterval(syncOfflineData, 15000);
+    // Tự động kiểm tra và đồng bộ mỗi 10 giây
+    setInterval(checkConnection, 10000);
 });
+
+function checkConnection() {
+    if (!API) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', API + '/api/server-info', true);
+    xhr.timeout = 3000;
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            updateConnectionStatus(true, API);
+            syncOfflineData();
+        } else {
+            updateConnectionStatus(false, '');
+        }
+    };
+    xhr.onerror = function() {
+        updateConnectionStatus(false, '');
+    };
+    xhr.ontimeout = function() {
+        updateConnectionStatus(false, '');
+    };
+    xhr.send();
+}
 
 function startAutoDiscovery() {
     // 1. Thử Rentry trước (kết nối qua Internet)
@@ -1017,6 +1084,7 @@ async function editRecordDialog(id) {
         if (!record) return showToast('Không tìm thấy bản ghi', 'error');
 
         document.getElementById('edit-ot-date').value = record.date;
+        document.getElementById('edit-ot-date').max = new Date().toISOString().split('T')[0];
         document.getElementById('edit-ot-lunch').checked = record.hasLunchOT;
         document.getElementById('edit-ot-start').value = record.otStart || '16:30';
         document.getElementById('edit-ot-end').value = record.otEnd || '18:00';
@@ -1095,6 +1163,7 @@ async function handleEditOTSubmit(e) {
     document.getElementById('edit-overlay').classList.remove('active');
     loadHistory();
     loadProfileStats();
+    updateSyncBanner();
 }
 
 // ==================== AUTO UPDATE FOR MOBILE APP ====================

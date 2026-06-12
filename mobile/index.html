@@ -74,7 +74,6 @@
                 <p>Chưa có tài khoản? Liên hệ quản lý để được cấp.</p>
                 <a id="download-apk-link" href="/OT-Manager-AppCon.apk" download class="btn-link" style="display:block; margin-bottom:12px; color:#10b981; font-weight:600; text-decoration:none;">📥 Tải về App Android (.APK)</a>
                 <a href="#" onclick="alert('Bản cài đặt PC (.EXE) nặng 318MB, vượt giới hạn 100MB của GitHub nên không thể lưu trực tiếp trên Cloud Render. Bạn hãy lấy tệp cài đặt [ot-manager Setup 1.0.1.exe] trong thư mục [dist] trên máy tính quản lý của bạn để chia sẻ/cài đặt nhé!')" class="btn-link" style="display:block; margin-bottom:12px; color:#60a5fa; font-weight:600; text-decoration:none;">💻 Tải về App Quản lý (PC .EXE)</a>
-                <button type="button" id="btn-show-settings" class="btn-link">⚙️ Cấu hình IP Server</button>
                 <div id="connection-status" style="margin-top:8px;font-size:0.8rem;"></div>
             </div>
         </div>
@@ -113,6 +112,15 @@
 
             <!-- ===== TAB: HOME ===== -->
             <div id="tab-home" class="tab-content active">
+                <!-- Sync Banner (Hiển thị khi có dữ liệu offline chưa đồng bộ) -->
+                <div id="sync-banner" style="display: none; align-items: center; justify-content: space-between; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; font-size: 0.85rem; color: #f59e0b;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.1rem; animation: pulse 2s infinite;">⚠️</span>
+                        <span>Có <strong id="unsynced-count">0</strong> dữ liệu chưa đồng bộ.</span>
+                    </div>
+                    <button type="button" id="btn-manual-sync" style="background: #f59e0b; color: #0f0f1a; padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; font-weight: 700; border: none; cursor: pointer;">Đồng bộ ngay</button>
+                </div>
+
                 <!-- Schedule Cards -->
                 <div class="info-cards">
                     <div class="info-card">
@@ -285,9 +293,6 @@
                     </div>
                 </div>
 
-                <button class="btn btn-ghost btn-full" id="btn-show-settings-2" style="margin-bottom:12px;border:1px solid var(--border);color:var(--text);">
-                    ⚙️ Đổi IP Server
-                </button>
                 <button class="btn btn-danger btn-full" id="btn-logout-2">
                     Đăng xuất
                 </button>
@@ -335,20 +340,7 @@
         </div>
     </div>
 
-    <!-- Settings Dialog -->
-    <div id="settings-overlay" class="confirm-overlay">
-        <div class="confirm-dialog">
-            <h3 style="margin-top:0;margin-bottom:12px;color:var(--text)">Cấu hình IP Server</h3>
-            <div class="form-group" style="text-align:left;margin-bottom:16px;">
-                <label style="display:block;margin-bottom:6px;font-size:0.85rem;color:var(--text-muted)">Địa chỉ Server (Ví dụ: http://192.168.1.5:3456)</label>
-                <input type="text" id="settings-server-ip" placeholder="http://IP:PORT" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-input);color:var(--text);font-family:inherit;">
-            </div>
-            <div class="confirm-actions">
-                <button class="btn btn-ghost" id="settings-cancel">Hủy</button>
-                <button class="btn btn-primary" id="settings-save">Lưu</button>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Edit OT Dialog -->
     <div id="edit-overlay" class="confirm-overlay">

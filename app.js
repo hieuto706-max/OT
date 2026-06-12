@@ -246,6 +246,8 @@ async function refreshAdminStats() {
 async function refreshAdminRecords() {
     const month = document.getElementById('admin-filter-month').value;
     const userId = document.getElementById('admin-filter-user').value;
+    const searchUser = document.getElementById('admin-search-user').value.toLowerCase().trim();
+    const searchNote = document.getElementById('admin-search-note').value.toLowerCase().trim();
 
     try {
         let url = '/api/records?';
@@ -257,17 +259,27 @@ async function refreshAdminRecords() {
         const usersData = await api('/api/users');
         const users = usersData.users;
 
+        const filteredRecords = records.filter(r => {
+            const user = users.find(u => u.id === r.userId);
+            const matchesUser = !searchUser || (user && (
+                user.fullname.toLowerCase().includes(searchUser) ||
+                user.username.toLowerCase().includes(searchUser)
+            ));
+            const matchesNote = !searchNote || (r.note && r.note.toLowerCase().includes(searchNote));
+            return matchesUser && matchesNote;
+        });
+
         const tbody = document.getElementById('admin-records-body');
 
-        if (records.length === 0) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="9">Chưa có dữ liệu tăng ca</td></tr>';
+        if (filteredRecords.length === 0) {
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="9">Không tìm thấy dữ liệu tăng ca phù hợp bộ lọc</td></tr>';
             document.getElementById('admin-table-summary').innerHTML = '';
             return;
         }
 
         let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0;
 
-        tbody.innerHTML = records.map(r => {
+        tbody.innerHTML = filteredRecords.map(r => {
             const user = users.find(u => u.id === r.userId);
             const lunchHours = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
             totalLunchOT += lunchHours;
@@ -484,7 +496,9 @@ async function exportExcel() {
 async function initEmployeeDashboard(user) {
     document.getElementById('emp-welcome').textContent = `Xin chào, ${user.fullname}`;
     document.getElementById('emp-date').textContent = formatDateFull(new Date());
-    document.getElementById('ot-date').value = new Date().toISOString().split('T')[0];
+    const todayStr = new Date().toISOString().split('T')[0];
+    document.getElementById('ot-date').value = todayStr;
+    document.getElementById('ot-date').max = todayStr;
     document.getElementById('emp-filter-month').value = getCurrentMonth();
     updateOTPreview();
     await refreshEmployeeRecords();
@@ -715,6 +729,9 @@ async function wakeupCloudServer() {
 
 // ==================== EVENT LISTENERS ====================
 document.addEventListener('DOMContentLoaded', async () => {
+    const otDateEl = document.getElementById('ot-date');
+    if (otDateEl) otDateEl.max = new Date().toISOString().split('T')[0];
+
     // 1. Cấu hình và đồng bộ hóa Cloud Server trước khi tải trang dashboard
     await initCloudConfig();
 
@@ -773,6 +790,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Filters
     document.getElementById('admin-filter-month').addEventListener('change', refreshAdminRecords);
     document.getElementById('admin-filter-user').addEventListener('change', refreshAdminRecords);
+    document.getElementById('admin-search-user').addEventListener('input', refreshAdminRecords);
+    document.getElementById('admin-search-note').addEventListener('input', refreshAdminRecords);
     document.getElementById('emp-filter-month').addEventListener('change', refreshEmployeeRecords);
     document.getElementById('report-filter-month').addEventListener('change', refreshReport);
 
@@ -804,7 +823,7 @@ async function editRecordDialog(recordId, source) {
             <div class="form-group" style="margin-bottom: 15px;">
                 <label style="display:block;margin-bottom:6px;font-weight:600;">Ngày tăng ca</label>
                 <div class="input-wrapper">
-                    <input type="date" id="modal-rec-date" value="${record.date}" style="padding-left:12px;" required>
+                    <input type="date" id="modal-rec-date" value="${record.date}" max="${new Date().toISOString().split('T')[0]}" style="padding-left:12px;" required>
                 </div>
             </div>
             <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
