@@ -651,6 +651,25 @@ const server = http.createServer(async (req, res) => {
     return serveStatic(req, res, mobilePath, urlPath);
 });
 
+function getCloudUrl() {
+    try {
+        const configPath = path.join(__dirname, 'config.json');
+        if (fs.existsSync(configPath)) {
+            const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+            if (config.serverUrl) {
+                let url = config.serverUrl.trim();
+                if (url.endsWith('/')) {
+                    url = url.slice(0, -1);
+                }
+                return url;
+            }
+        }
+    } catch (e) {
+        console.error('[Server] Lỗi đọc config.json:', e.message);
+    }
+    return null;
+}
+
 function startServer() {
     return new Promise((resolve) => {
         server.listen(PORT, '0.0.0.0', () => {
@@ -661,10 +680,22 @@ function startServer() {
             
             // Khởi chạy đường hầm tunnel kết nối từ xa qua internet (chỉ chạy khi không ở môi trường Cloud)
             if (!process.env.PORT) {
-                try {
-                    startTunnel();
-                } catch (e) {
-                    console.error('Lỗi khởi chạy tunnel:', e);
+                const cloudUrl = getCloudUrl();
+                const isLocal = !cloudUrl || cloudUrl.includes('localhost') || cloudUrl.includes('127.0.0.1');
+                if (isLocal) {
+                    try {
+                        startTunnel();
+                    } catch (e) {
+                        console.error('Lỗi khởi chạy tunnel:', e);
+                    }
+                } else {
+                    console.log(`☁️ App đang cấu hình trỏ về Cloud Server: ${cloudUrl}. Cập nhật Rentry và bỏ qua Tunnel local.`);
+                    try {
+                        const { updateRentry } = require('./tunnel');
+                        updateRentry(cloudUrl);
+                    } catch (e) {
+                        console.error('[Server] Lỗi cập nhật Rentry:', e.message);
+                    }
                 }
             } else {
                 console.log(`☁️ Đang chạy trên Cloud - Bỏ qua khởi chạy Tunnel SSH.`);
