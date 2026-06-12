@@ -154,6 +154,7 @@ let dbCache = null;
 async function loadDB() {
     if (dbCache) return dbCache;
 
+    let gistLoaded = false;
     // Tải dữ liệu từ Gist nếu có cấu hình trên môi trường Cloud (chỉ chạy khi server khởi động/chưa có cache)
     if (process.env.GIST_ID && process.env.GITHUB_TOKEN) {
         try {
@@ -170,6 +171,13 @@ async function loadDB() {
             }
         } catch (e) {
             console.error('[Gist] Lỗi đồng bộ tải từ Gist (sử dụng cache local):', e.message);
+            // Nếu là lỗi 404 hoặc không có db.json thì coi như Gist mới/chưa có database
+            if (e.message.includes('404') || e.message.includes('not found')) {
+                gistLoaded = false;
+            } else {
+                // Lỗi mạng hoặc lỗi kết nối, KHÔNG được ghi đè dữ liệu mặc định lên Gist!
+                gistLoaded = 'failed';
+            }
         }
     }
 
@@ -197,7 +205,12 @@ async function loadDB() {
         }],
         records: []
     };
-    saveDB(defaultDB);
+    
+    if (gistLoaded !== 'failed') {
+        saveDB(defaultDB);
+    } else {
+        console.warn('[Gist] Cảnh báo: Gist lỗi kết nối mạng. Khởi tạo DB tạm thời trong RAM và không ghi đè lên Gist.');
+    }
     dbCache = defaultDB;
     return defaultDB;
 }
@@ -492,6 +505,30 @@ async function handleAPI(req, res, urlPath, method) {
             todayOT: todayRecords.reduce((s, r) => s + r.totalHours, 0),
             lunchOTMonth: monthRecords.filter(r => r.hasLunchOT).length
         });
+    }
+
+    // --- GIST STATUS ---
+    if (urlPath === '/api/gist-status' && method === 'GET') {
+        const hasCredentials = !!(process.env.GIST_ID && process.env.GITHUB_TOKEN);
+        if (!hasCredentials) {
+            return sendJSON(res, 200, {
+                status: 'error',
+                message: 'Chưa cấu hình GIST_ID hoặc GITHUB_TOKEN trên Render.'
+            });
+        }
+
+        try {
+            await fetchGist();
+            return sendJSON(res, 200, {
+                status: 'success',
+                message: 'Kết nối GitHub Gist thành công!'
+            });
+        } catch (e) {
+            return sendJSON(res, 200, {
+                status: 'error',
+                message: `Lỗi kết nối Gist: ${e.message}`
+            });
+        }
     }
 
     // --- SERVER VERSION ---

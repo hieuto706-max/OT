@@ -175,6 +175,30 @@ function logout() {
     showToast('Đã đăng xuất', 'info');
 }
 
+async function checkGistStatus() {
+    try {
+        const res = await fetch('/api/gist-status');
+        const data = await res.json();
+        if (data.status === 'error') {
+            showModal(
+                'Cảnh báo đồng bộ đám mây',
+                `<p style="color: var(--accent-red); font-weight: 600; font-size: 15px; margin-bottom: 8px;">
+                    ⚠️ Lỗi đồng bộ đám mây (GitHub Gist)
+                </p>
+                <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                    Chi tiết lỗi: <strong>${data.message}</strong>
+                </p>
+                <p style="color: var(--text-muted); font-size: 13px;">
+                    Dữ liệu của bạn sẽ bị mất mỗi khi server Render khởi động lại hoặc tạm dừng do dịch vụ đám mây chưa được cấu hình đúng. Vui lòng kiểm tra lại cấu hình biến môi trường (Environment Variables) trên Render Dashboard.
+                </p>`,
+                [{ text: 'Đóng', class: 'btn-ghost' }]
+            );
+        }
+    } catch (e) {
+        console.error('Lỗi kiểm tra trạng thái Gist:', e);
+    }
+}
+
 // ==================== ADMIN DASHBOARD ====================
 async function initAdminDashboard(user) {
     document.getElementById('admin-welcome').textContent = `Xin chào, ${user.fullname}`;
@@ -191,6 +215,7 @@ async function initAdminDashboard(user) {
         refreshReport(),
         refreshAdminStats()
     ]);
+    checkGistStatus();
 }
 
 // Khởi tạo kênh nhận sự kiện thời gian thực (SSE)
