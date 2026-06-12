@@ -149,8 +149,12 @@ function updateGist(data) {
 }
 
 // ==================== DATABASE ====================
+let dbCache = null;
+
 async function loadDB() {
-    // Tải dữ liệu từ Gist nếu có cấu hình trên môi trường Cloud
+    if (dbCache) return dbCache;
+
+    // Tải dữ liệu từ Gist nếu có cấu hình trên môi trường Cloud (chỉ chạy khi server khởi động/chưa có cache)
     if (process.env.GIST_ID && process.env.GITHUB_TOKEN) {
         try {
             console.log('[Gist] Đang đồng bộ tải dữ liệu từ GitHub Gist...');
@@ -161,6 +165,7 @@ async function loadDB() {
                 // Đồng bộ ghi vào file local db.json
                 fs.writeFileSync(getDbPath(), JSON.stringify(gistData, null, 2), 'utf-8');
                 console.log('[Gist] Đồng bộ tải thành công!');
+                dbCache = gistData;
                 return gistData;
             }
         } catch (e) {
@@ -174,6 +179,7 @@ async function loadDB() {
             const db = JSON.parse(fs.readFileSync(dbFile, 'utf-8'));
             if (!db.users) db.users = [];
             if (!db.records) db.records = [];
+            dbCache = db;
             return db;
         }
     } catch (e) {
@@ -192,10 +198,12 @@ async function loadDB() {
         records: []
     };
     saveDB(defaultDB);
+    dbCache = defaultDB;
     return defaultDB;
 }
 
 function saveDB(data) {
+    dbCache = data;
     fs.writeFileSync(getDbPath(), JSON.stringify(data, null, 2), 'utf-8');
     notifySseClients({ type: 'update' });
 
