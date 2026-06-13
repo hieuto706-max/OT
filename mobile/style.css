@@ -1013,3 +1013,15 @@ body {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+.profile-ver-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-muted);
+    border-radius: 20px;
+    margin-top: 8px;
+}

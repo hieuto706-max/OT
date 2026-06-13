@@ -31,13 +31,13 @@ const safeStorage = {
 };
 
 // Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu không thì chờ auto-discovery
-let API = safeStorage.getItem('ot_server_ip') || 'https://ot-manager-server.onrender.com';
+let API = safeStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com';
 
 // Tự động dọn dẹp các địa chỉ IP cũ từ các phiên bản trước
 let savedIp = safeStorage.getItem('ot_server_ip');
-if (savedIp && (savedIp.includes('otms.onrender.com') || savedIp.includes('otm.app.vn') || savedIp.includes('new-folder-6471') || savedIp.includes('lhr.life'))) {
+if (savedIp && (savedIp.includes('otms.onrender.com') || savedIp.includes('ot-manager-server.onrender.com') || savedIp.includes('otm.app.vn') || savedIp.includes('new-folder-6471') || savedIp.includes('lhr.life'))) {
     safeStorage.removeItem('ot_server_ip');
-    API = 'https://ot-manager-server.onrender.com';
+    API = 'https://ot-manager-server-jbxd.onrender.com';
 }
 
 const OT_LUNCH_HOURS = 1;
@@ -1032,6 +1032,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Tự động kiểm tra và đồng bộ mỗi 10 giây
     setInterval(checkConnection, 10000);
+
+    // Cập nhật phiên bản hiển thị
+    updateVersionDisplay();
+
+    // Sự kiện click nút kiểm tra cập nhật thủ công
+    const btnCheckUpdateMobile = document.getElementById('btn-check-update-mobile');
+    if (btnCheckUpdateMobile) {
+        btnCheckUpdateMobile.addEventListener('click', () => {
+            checkMobileUpdates(true);
+        });
+    }
+
+    // Bắt đầu kiểm tra cập nhật định kỳ mỗi 30 phút
+    startUpdateCheckInterval();
 });
 
 function checkConnection() {
@@ -1176,25 +1190,50 @@ async function handleEditOTSubmit(e) {
 
 // ==================== AUTO UPDATE FOR MOBILE APP ====================
 const MOBILE_VERSION = '1.0.1';
+let updateCheckInterval = null;
 
-function checkMobileUpdates() {
-    if (!API) return;
+function checkMobileUpdates(isManual) {
+    if (!API) {
+        if (isManual) showToast('Chưa kết nối Server!', 'error');
+        return;
+    }
+    if (isManual) {
+        showToast('Đang kiểm tra cập nhật...', 'info');
+    }
     try {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', API + '/api/version', true);
+        xhr.open('GET', API + '/api/version?t=' + Date.now(), true);
         xhr.timeout = 5000;
-        xhr.onload = function() {
+        xhr.onload = function () {
             if (xhr.status === 200) {
                 try {
                     var info = JSON.parse(xhr.responseText);
                     if (info.version && compareMobileVersions(MOBILE_VERSION, info.version) < 0) {
-                        showMobileUpdateDialog(info.version);
+                        showMobileUpdateDialog(info.version, info.forceUpdate || false, info.changelog || '');
+                    } else {
+                        // Phiên bản hiện tại đã là mới nhất
+                        updateVersionDisplay();
+                        if (isManual) {
+                            showToast('Bạn đang sử dụng phiên bản mới nhất: v' + MOBILE_VERSION, 'success');
+                        }
                     }
-                } catch(e) {}
+                } catch (e) {
+                    if (isManual) showToast('Lỗi kiểm tra cập nhật!', 'error');
+                }
+            } else {
+                if (isManual) showToast('Lỗi kết nối Server!', 'error');
             }
         };
+        xhr.onerror = function () {
+            if (isManual) showToast('Lỗi kết nối Server!', 'error');
+        };
+        xhr.ontimeout = function () {
+            if (isManual) showToast('Lỗi kiểm tra cập nhật (timeout)!', 'error');
+        };
         xhr.send();
-    } catch(e) {}
+    } catch (e) {
+        if (isManual) showToast('Lỗi kiểm tra cập nhật!', 'error');
+    }
 }
 
 function compareMobileVersions(v1, v2) {
@@ -1209,31 +1248,78 @@ function compareMobileVersions(v1, v2) {
     return 0;
 }
 
-function showMobileUpdateDialog(newVer) {
+function updateVersionDisplay() {
+    var el = document.getElementById('app-version-display');
+    if (el) {
+        el.textContent = 'v' + MOBILE_VERSION;
+        el.style.color = '#10b981';
+    }
+}
+
+function showMobileUpdateDialog(newVer, forceUpdate, changelog) {
     if (document.getElementById('mobile-update-overlay')) return;
-    
+
+    var changelogHtml = '';
+    if (changelog) {
+        changelogHtml = '<div style="text-align:left; background:rgba(255,255,255,0.05); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:0.8rem; color:var(--text-muted); max-height:120px; overflow-y:auto; line-height:1.6;">' +
+            '<div style="font-weight:600; color:var(--text); margin-bottom:4px;">📋 Có gì mới:</div>' +
+            changelog.replace(/\n/g, '<br>') +
+            '</div>';
+    }
+
     var overlay = document.createElement('div');
     overlay.id = 'mobile-update-overlay';
     overlay.className = 'confirm-overlay active';
     overlay.style.zIndex = '9999';
-    overlay.innerHTML = `
-        <div class="confirm-dialog" style="max-width: 90%; width: 320px; text-align: center;">
-            <h3 style="margin-top:0; color: #10b981; font-size:1.2rem;">🚀 Cập nhật ứng dụng</h3>
-            <p style="color: var(--text); font-size:0.9rem; margin-bottom: 16px;">Đã có phiên bản mới: <strong>v\${newVer}</strong> (Bản hiện tại: v\${MOBILE_VERSION}). Vui lòng tải về phiên bản mới để cập nhật.</p>
-            <div class="confirm-actions" style="display:flex; gap:10px; justify-content:center;">
-                <button class="btn btn-ghost" id="mobile-update-later" style="padding: 10px 16px; font-size:0.85rem; border-radius:8px;">Để sau</button>
-                <button class="btn btn-primary" id="mobile-update-now" style="padding: 10px 16px; font-size:0.85rem; border-radius:8px; background: #10b981;">Tải về ngay</button>
-            </div>
-        </div>
-    `;
+    overlay.innerHTML =
+        '<div class="confirm-dialog" style="max-width: 90%; width: 340px; text-align: center;">' +
+        '<div style="font-size: 2.5rem; margin-bottom: 8px;">🚀</div>' +
+        '<h3 style="margin-top:0; color: #10b981; font-size:1.15rem;">Cập nhật ứng dụng</h3>' +
+        '<div style="display:flex; justify-content:center; gap:8px; margin-bottom:12px;">' +
+        '<span style="background:rgba(239,68,68,0.15); color:#ef4444; padding:3px 10px; border-radius:20px; font-size:0.75rem; border:1px solid rgba(239,68,68,0.3);">v' + MOBILE_VERSION + '</span>' +
+        '<span style="color:var(--text-muted); font-size:0.85rem;">→</span>' +
+        '<span style="background:rgba(16,185,129,0.15); color:#10b981; padding:3px 10px; border-radius:20px; font-size:0.75rem; border:1px solid rgba(16,185,129,0.3);">v' + newVer + '</span>' +
+        '</div>' +
+        changelogHtml +
+        '<p style="color: var(--text-muted); font-size:0.82rem; margin-bottom: 16px; line-height: 1.5;">' +
+        (forceUpdate
+            ? 'Bản cập nhật này là <strong style="color:#ef4444;">bắt buộc</strong>. Vui lòng cập nhật để tiếp tục sử dụng.'
+            : 'Vui lòng cập nhật để có trải nghiệm tốt nhất.') +
+        '</p>' +
+        '<div class="confirm-actions" style="display:flex; gap:10px; justify-content:center;">' +
+        (forceUpdate
+            ? ''
+            : '<button class="btn btn-ghost" id="mobile-update-later" style="padding: 10px 16px; font-size:0.85rem; border-radius:8px;">Để sau</button>') +
+        '<button class="btn btn-primary" id="mobile-update-now" style="padding: 10px 20px; font-size:0.85rem; border-radius:8px; background: #10b981; flex:1;">' +
+        '⬇️ Tải về ngay' +
+        '</button>' +
+        '</div>' +
+        '</div>';
     document.body.appendChild(overlay);
-    
-    document.getElementById('mobile-update-later').addEventListener('click', function() {
-        overlay.remove();
-    });
-    
-    document.getElementById('mobile-update-now').addEventListener('click', function() {
+
+    var laterBtn = document.getElementById('mobile-update-later');
+    if (laterBtn) {
+        laterBtn.addEventListener('click', function () {
+            overlay.remove();
+            // Ghi nhớ đã bỏ qua, sẽ nhắc lại sau 30 phút
+            safeStorage.setItem('ot_update_skipped_at', Date.now().toString());
+        });
+    }
+
+    document.getElementById('mobile-update-now').addEventListener('click', function () {
         overlay.remove();
         window.location.href = API + '/OT-Manager-mobile.apk';
     });
+}
+
+// Kiểm tra cập nhật định kỳ mỗi 30 phút
+function startUpdateCheckInterval() {
+    if (updateCheckInterval) clearInterval(updateCheckInterval);
+    updateCheckInterval = setInterval(function () {
+        // Chỉ kiểm tra nếu đã qua 30 phút kể từ lần bỏ qua
+        var skippedAt = parseInt(safeStorage.getItem('ot_update_skipped_at') || '0');
+        if (Date.now() - skippedAt > 30 * 60 * 1000) {
+            checkMobileUpdates();
+        }
+    }, 30 * 60 * 1000); // 30 phút
 }
