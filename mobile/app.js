@@ -30,6 +30,14 @@ const safeStorage = {
     _data: {}
 };
 
+function isSessionExpired(loginTimeMs) {
+    if (!loginTimeMs) return true;
+    const loginDate = new Date(parseInt(loginTimeMs, 10));
+    // Tạo mốc 5:00 AM ngày tiếp theo
+    const cutoff = new Date(loginDate.getFullYear(), loginDate.getMonth(), loginDate.getDate() + 1, 5, 0, 0, 0);
+    return Date.now() >= cutoff.getTime();
+}
+
 // Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu không thì chờ auto-discovery
 let API = safeStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com';
 
@@ -57,6 +65,18 @@ let currentUser = null;
 function api(endpoint, method, body, skipAuthRedirect) {
     method = method || 'GET';
     body = body || null;
+
+    // Kiểm tra hết hạn phiên đăng nhập (sau 5h sáng hôm sau)
+    const loginTime = safeStorage.getItem('ot_login_time');
+    if (currentUser && loginTime && isSessionExpired(loginTime) && !skipAuthRedirect) {
+        currentUser = null;
+        safeStorage.removeItem('ot_mobile_user');
+        safeStorage.removeItem('ot_login_time');
+        showScreen('screen-login');
+        showToast('Phiên đăng nhập đã hết hạn (sau 5h sáng), vui lòng đăng nhập lại!', 'error');
+        return Promise.reject(new Error('Phiên đăng nhập đã hết hạn!'));
+    }
+
     if (!API) {
         return Promise.reject(new Error('Chưa kết nối Server! Nhấn ⚙️ Cấu hình IP Server để thiết lập.'));
     }
@@ -64,6 +84,12 @@ function api(endpoint, method, body, skipAuthRedirect) {
         var xhr = new XMLHttpRequest();
         xhr.open(method, API + endpoint, true);
         xhr.setRequestHeader('Content-Type', 'application/json');
+        if (typeof deviceId !== 'undefined' && deviceId) {
+            xhr.setRequestHeader('x-device-id', deviceId);
+        }
+        if (currentUser && currentUser.id) {
+            xhr.setRequestHeader('x-user-id', currentUser.id);
+        }
         xhr.timeout = (API.indexOf('onrender.com') !== -1) ? 60000 : 10000;
         xhr.onload = function() {
             try {
@@ -71,17 +97,18 @@ function api(endpoint, method, body, skipAuthRedirect) {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     resolve(data);
                 } else {
-                    if (xhr.status === 401) {
+                    if (xhr.status === 401 || xhr.status === 403) {
                         if (skipAuthRedirect) {
-                            reject(new Error(data.error || 'Tài khoản đã bị xóa!'));
+                            reject(new Error(data.error || 'Lỗi xác thực!'));
                             return;
                         }
-                        // Văng khỏi ứng dụng nếu tài khoản bị xóa
+                        // Văng khỏi ứng dụng nếu tài khoản bị xóa hoặc bị hủy liên kết thiết bị
                         currentUser = null;
                         safeStorage.removeItem('ot_mobile_user');
+                        safeStorage.removeItem('ot_login_time');
                         showScreen('screen-login');
-                        showToast(data.error || 'Tài khoản của bạn đã bị xóa khỏi hệ thống!', 'error');
-                        reject(new Error(data.error || 'Tài khoản đã bị xóa!'));
+                        showToast(data.error || 'Tài khoản hoặc liên kết thiết bị của bạn đã bị hủy!', 'error');
+                        reject(new Error(data.error || 'Lỗi xác thực!'));
                         return;
                     }
                     reject(new Error(data.error || 'Lỗi server (HTTP ' + xhr.status + ')'));
@@ -169,12 +196,14 @@ function showConfirm(msg) {
 function updateConnectionStatus(connected, serverUrl, isConnecting) {
     const statusEl = document.getElementById('connection-status');
     if (statusEl) {
-        statusEl.style.display = 'block';
         if (isConnecting) {
+            statusEl.style.display = 'block';
             statusEl.innerHTML = `<span style="color:#f59e0b; animation: pulse 1.5s infinite; display: inline-block;">● Đang kết nối Cloud...</span> <small style="color:var(--text-muted);font-size:0.7rem;">(Đang đánh thức server, vui lòng đợi 30-50s)</small>`;
         } else if (connected && serverUrl) {
-            statusEl.innerHTML = `<span style="color:#10b981;">● Đã kết nối</span> <small style="color:var(--text-muted);font-size:0.7rem;">${serverUrl}</small>`;
+            // Ẩn đi khi đã kết nối thành công theo yêu cầu của user
+            statusEl.style.display = 'none';
         } else {
+            statusEl.style.display = 'block';
             statusEl.innerHTML = `<span style="color:#ef4444;">● Ngoại tuyến (Offline)</span>`;
         }
     }
@@ -250,6 +279,7 @@ async function handleLogin(e) {
             }
             currentUser = { id: user.id, username: user.username, fullname: user.fullname, role: 'employee' };
             safeStorage.setItem('ot_mobile_user', JSON.stringify(currentUser));
+            safeStorage.setItem('ot_login_time', Date.now().toString());
             enterApp();
             showToast('Đăng nhập ngoại tuyến (offline)!', 'warning');
             return;
@@ -284,6 +314,7 @@ async function handleLogin(e) {
 
         currentUser = data.user;
         safeStorage.setItem('ot_mobile_user', JSON.stringify(currentUser));
+        safeStorage.setItem('ot_login_time', Date.now().toString());
         cacheUsernames();
         enterApp();
     } catch (err) {
@@ -299,6 +330,7 @@ async function handleLogin(e) {
                 }
                 currentUser = { id: user.id, username: user.username, fullname: user.fullname, role: 'employee' };
                 safeStorage.setItem('ot_mobile_user', JSON.stringify(currentUser));
+                safeStorage.setItem('ot_login_time', Date.now().toString());
                 enterApp();
                 showToast('Đăng nhập ngoại tuyến (offline)!', 'warning');
                 return;
@@ -339,6 +371,7 @@ function getGreeting() {
 function logout() {
     currentUser = null;
     safeStorage.removeItem('ot_mobile_user');
+    safeStorage.removeItem('ot_login_time');
     showScreen('screen-login');
     document.getElementById('form-login').reset();
     showToast('Đã đăng xuất', 'info');
@@ -930,12 +963,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Auto login from saved session
         const saved = safeStorage.getItem('ot_mobile_user');
-        if (saved) {
+        const loginTime = safeStorage.getItem('ot_login_time');
+        if (saved && loginTime && !isSessionExpired(loginTime)) {
             try {
                 currentUser = JSON.parse(saved);
                 enterApp();
                 return;
             } catch (e) {}
+        } else {
+            // Hết hạn hoặc chưa đăng nhập, dọn dẹp session
+            safeStorage.removeItem('ot_mobile_user');
+            safeStorage.removeItem('ot_login_time');
         }
         showScreen('screen-login');
     }, 1200);
@@ -1066,6 +1104,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function checkConnection() {
+    // Kiểm tra hết hạn phiên đăng nhập (sau 5h sáng hôm sau)
+    const loginTime = safeStorage.getItem('ot_login_time');
+    if (currentUser && loginTime && isSessionExpired(loginTime)) {
+        currentUser = null;
+        safeStorage.removeItem('ot_mobile_user');
+        safeStorage.removeItem('ot_login_time');
+        showScreen('screen-login');
+        showToast('Phiên đăng nhập đã hết hạn (sau 5h sáng), vui lòng đăng nhập lại!', 'error');
+        return;
+    }
+
     if (!API) return;
     var xhr = new XMLHttpRequest();
     xhr.open('GET', API + '/api/server-info', true);

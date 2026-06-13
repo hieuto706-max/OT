@@ -296,7 +296,22 @@ function getCurrentMonth() {
 async function handleAPI(req, res, urlPath, method) {
     const db = await loadDB();
 
-    // Kiểm tra xem tài khoản có bị xóa khỏi hệ thống không
+    // Kiểm tra xem tài khoản có bị xóa khỏi hệ thống hoặc bị hủy liên kết thiết bị không
+    const reqUserId = req.headers['x-user-id'];
+    const reqDeviceId = req.headers['x-device-id'];
+    if (reqUserId && !urlPath.startsWith('/api/auth/')) {
+        const user = db.users.find(u => u.id === reqUserId);
+        if (!user) {
+            return sendError(res, 401, 'Tài khoản của bạn đã bị xóa khỏi hệ thống!');
+        }
+        if (user.role === 'employee') {
+            if (!user.deviceId || user.deviceId !== reqDeviceId) {
+                return sendError(res, 403, 'Thiết bị này đã bị hủy liên kết khỏi tài khoản!');
+            }
+        }
+    }
+
+    // Kiểm tra xem tài khoản có bị xóa khỏi hệ thống không (fallback qua query parameter)
     const url = new URL(req.url, `http://${req.headers.host}`);
     const queryUserId = url.searchParams.get('userId');
     if (queryUserId && !urlPath.startsWith('/api/auth/')) {
