@@ -64,7 +64,7 @@ function api(endpoint, method, body, skipAuthRedirect) {
         var xhr = new XMLHttpRequest();
         xhr.open(method, API + endpoint, true);
         xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.timeout = 10000;
+        xhr.timeout = (API.indexOf('onrender.com') !== -1) ? 60000 : 10000;
         xhr.onload = function() {
             try {
                 var data = JSON.parse(xhr.responseText);
@@ -166,10 +166,13 @@ function showConfirm(msg) {
 }
 
 // ==================== CONNECTION STATUS ====================
-function updateConnectionStatus(connected, serverUrl) {
+function updateConnectionStatus(connected, serverUrl, isConnecting) {
     const statusEl = document.getElementById('connection-status');
     if (statusEl) {
-        if (connected && serverUrl) {
+        statusEl.style.display = 'block';
+        if (isConnecting) {
+            statusEl.innerHTML = `<span style="color:#f59e0b; animation: pulse 1.5s infinite; display: inline-block;">● Đang kết nối Cloud...</span> <small style="color:var(--text-muted);font-size:0.7rem;">(Đang đánh thức server, vui lòng đợi 30-50s)</small>`;
+        } else if (connected && serverUrl) {
             statusEl.innerHTML = `<span style="color:#10b981;">● Đã kết nối</span> <small style="color:var(--text-muted);font-size:0.7rem;">${serverUrl}</small>`;
         } else {
             statusEl.innerHTML = `<span style="color:#ef4444;">● Ngoại tuyến (Offline)</span>`;
@@ -181,6 +184,15 @@ function updateConnectionStatus(connected, serverUrl) {
             badge.style.display = 'none';
         } else {
             badge.style.display = 'inline-block';
+            if (isConnecting) {
+                badge.style.background = 'rgba(245, 158, 11, 0.15)';
+                badge.style.color = '#f59e0b';
+                badge.textContent = 'Connecting...';
+            } else {
+                badge.style.background = 'rgba(239, 68, 68, 0.15)';
+                badge.style.color = '#ef4444';
+                badge.textContent = 'Offline';
+            }
         }
     }
 
@@ -849,7 +861,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (otDateEl) otDateEl.max = new Date().toISOString().split('T')[0];
     
     // Hiển thị trạng thái kết nối ban đầu
-    updateConnectionStatus(!!API, API);
+    if (API && API.indexOf('onrender.com') !== -1) {
+        updateConnectionStatus(false, API, true);
+    } else {
+        updateConnectionStatus(!!API, API);
+    }
     updateSyncBanner();
 
     const btnManualSync = document.getElementById('btn-manual-sync');
@@ -878,7 +894,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             var xhr = new XMLHttpRequest();
             xhr.open('GET', API + '/api/server-info', true);
-            xhr.timeout = 3000;
+            // Nếu là Render URL, đặt timeout lớn hơn để cho phép server thức dậy từ trạng thái ngủ
+            xhr.timeout = (API.indexOf('onrender.com') !== -1) ? 60000 : 3000;
             xhr.onload = function() {
                 if (xhr.status === 200) {
                     updateConnectionStatus(true, API);
