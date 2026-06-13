@@ -544,7 +544,11 @@ async function handleAPI(req, res, urlPath, method) {
             const configPath = path.join(__dirname, '..', 'config.json');
             if (fs.existsSync(configPath)) {
                 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-                desktopDownloadUrl = config.desktopDownloadUrl || `https://github.com/hieuto706-max/OT/releases/download/v${version}/ot-manager%20Setup%20${version}.exe`;
+                desktopDownloadUrl = config.desktopDownloadUrl;
+            }
+            // Fallback nếu không cấu hình hoặc chạy trên Render không có file config.json
+            if (!desktopDownloadUrl) {
+                desktopDownloadUrl = `https://github.com/hieuto706-max/OT/releases/download/v${version}/ot-manager%20Setup%20${version}.exe`;
             }
         } catch (e) {
             console.error('[Version API] Lỗi đọc phiên bản:', e.message);
