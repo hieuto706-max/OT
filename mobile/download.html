@@ -346,7 +346,7 @@
                             <line x1="12" y1="17" x2="12" y2="21" />
                         </svg>
                     </div>
-                    <h2 class="card-title">Bản cho Quản lý</h2>
+                    <h2 class="card-title">Bản cho Quản lý<span id="desktop-ver" style="font-size: 0.95rem; color: #a78bfa; font-weight: 500; margin-left: 6px;"></span></h2>
                     <p class="card-desc">Ứng dụng quản trị trên máy tính Windows. Xem báo cáo, thống kê và duyệt tăng ca.</p>
                 </div>
                 <a id="desktop-download-btn" href="https://drive.google.com/drive/folders/1K9tSroxmgsElAD0NUZ19-UZp6GBi_ybj?usp=sharing" target="_blank" class="btn btn-purple">
@@ -368,7 +368,7 @@
                             <line x1="12" y1="18" x2="12.01" y2="18" />
                         </svg>
                     </div>
-                    <h2 class="card-title">Bản cho Nhân viên</h2>
+                    <h2 class="card-title">Bản cho Nhân viên<span id="mobile-ver" style="font-size: 0.95rem; color: #34d399; font-weight: 500; margin-left: 6px;"></span></h2>
                     <p class="card-desc">Ứng dụng báo cáo giờ tăng ca hàng ngày dành cho điện thoại di động Android.</p>
                 </div>
                 
@@ -409,6 +409,17 @@
         // Tạo mã QR QR Code kết nối tới link tải APK trực tiếp
         const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0b0b14&data=${encodeURIComponent(apkUrl)}`;
         document.getElementById('apk-qr-code').src = qrApiUrl;
+
+        // Tải thông tin phiên bản từ Server
+        fetch(host + '/api/version')
+            .then(res => res.json())
+            .then(data => {
+                if (data.version) {
+                    document.getElementById('desktop-ver').textContent = `v${data.version}`;
+                    document.getElementById('mobile-ver').textContent = `v${data.version}`;
+                }
+            })
+            .catch(err => console.error('Lỗi lấy version:', err));
     </script>
 </body>
 </html>
