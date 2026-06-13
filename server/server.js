@@ -534,16 +534,22 @@ async function handleAPI(req, res, urlPath, method) {
     // --- SERVER VERSION ---
     if (urlPath === '/api/version' && method === 'GET') {
         let version = '1.0.0';
+        let desktopDownloadUrl = '';
         try {
             const pkgPath = path.join(__dirname, '..', 'package.json');
             if (fs.existsSync(pkgPath)) {
                 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
                 version = pkg.version || '1.0.0';
             }
+            const configPath = path.join(__dirname, '..', 'config.json');
+            if (fs.existsSync(configPath)) {
+                const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+                desktopDownloadUrl = config.desktopDownloadUrl || `https://github.com/hieuto706-max/OT/releases/download/v${version}/ot-manager%20Setup%20${version}.exe`;
+            }
         } catch (e) {
             console.error('[Version API] Lỗi đọc phiên bản:', e.message);
         }
-        return sendJSON(res, 200, { version });
+        return sendJSON(res, 200, { version, desktopDownloadUrl });
     }
 
     // --- SERVER INFO ---
