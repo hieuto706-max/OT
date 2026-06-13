@@ -35,7 +35,7 @@ function getDbPath() {
         return DB_FILE;
     }
 
-    const defaultPath = path.join(__dirname, 'db.json');
+    const defaultPath = path.join(__dirname, '..', 'db.json');
     try {
         const { app } = require('electron');
         if (app) {
@@ -535,7 +535,7 @@ async function handleAPI(req, res, urlPath, method) {
     if (urlPath === '/api/version' && method === 'GET') {
         let version = '1.0.0';
         try {
-            const pkgPath = path.join(__dirname, 'package.json');
+            const pkgPath = path.join(__dirname, '..', 'package.json');
             if (fs.existsSync(pkgPath)) {
                 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
                 version = pkg.version || '1.0.0';
@@ -556,7 +556,7 @@ async function handleAPI(req, res, urlPath, method) {
     if (urlPath === '/api/cloud-url' && method === 'GET') {
         let cloudUrl = '';
         try {
-            const configPath = path.join(__dirname, 'config.json');
+            const configPath = path.join(__dirname, '..', 'config.json');
             if (fs.existsSync(configPath)) {
                 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
                 cloudUrl = config.serverUrl || '';
@@ -643,24 +643,24 @@ const server = http.createServer(async (req, res) => {
     // Short download routes (e.g. /dl, /tai, /app)
     const cleanPath = urlPath.endsWith('/') && urlPath.length > 1 ? urlPath.slice(0, -1) : urlPath;
     if (cleanPath === '/dl' || cleanPath === '/tai' || cleanPath === '/app') {
-        const mobilePath = path.join(__dirname, 'mobile');
+        const mobilePath = path.join(__dirname, '..', 'mobile');
         return serveStatic(req, res, mobilePath, '/download.html');
     }
 
     // Desktop admin app (served at /desktop/)
     if (urlPath.startsWith('/desktop')) {
         const desktopPath = urlPath.replace('/desktop', '') || '/';
-        return serveStatic(req, res, path.join(__dirname, 'desktop'), desktopPath);
+        return serveStatic(req, res, path.join(__dirname, '..', 'desktop'), desktopPath);
     }
 
     // Mobile app (served at root /)
-    const mobilePath = path.join(__dirname, 'mobile');
+    const mobilePath = path.join(__dirname, '..', 'mobile');
     return serveStatic(req, res, mobilePath, urlPath);
 });
 
 function getCloudUrl() {
     try {
-        const configPath = path.join(__dirname, 'config.json');
+        const configPath = path.join(__dirname, '..', 'config.json');
         if (fs.existsSync(configPath)) {
             const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
             if (config.serverUrl) {

@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     buildCommand: npm install --production
-    startCommand: node server.js
+    startCommand: node server/server.js
     envVars:
       - key: PORT
         value: 3456

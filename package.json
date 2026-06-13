@@ -22,7 +22,7 @@
   },
   "build": {
     "appId": "com.example.otmanager",
-    "icon": "icon.png",
+    "icon": "resources/icon.png",
     "compression": "normal",
     "files": [
       "**/*",
@@ -37,7 +37,7 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "icon.png"
+      "icon": "resources/icon.png"
     },
     "directories": {
       "output": "dist"

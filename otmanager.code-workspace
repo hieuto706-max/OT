@@ -1,8 +1,16 @@
 {
 	"folders": [
 		{
-			"name": "Root",
+			"name": "Root (Server)",
 			"path": "."
+		},
+		{
+			"name": "Desktop Admin",
+			"path": "desktop"
+		},
+		{
+			"name": "Mobile Web",
+			"path": "mobile"
 		},
 		{
 			"name": "Mobile Android",

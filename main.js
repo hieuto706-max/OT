@@ -1,7 +1,7 @@
 const { app, BrowserWindow, Menu, Tray, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { startServer, stopServer, getLocalIP, PORT } = require('./server');
+const { startServer, stopServer, getLocalIP, PORT } = require('./server/server');
 
 // Tắt menu mặc định
 Menu.setApplicationMenu(null);
@@ -132,7 +132,7 @@ function compareVersions(v1, v2) {
 
 function createTray() {
     try {
-        const iconPath = path.join(__dirname, 'icon.png');
+        const iconPath = path.join(__dirname, 'resources', 'icon.png');
         tray = new Tray(iconPath);
         const contextMenu = Menu.buildFromTemplate([
             { label: 'Mở cửa sổ quản lý', click: () => { mainWindow.show(); } },
