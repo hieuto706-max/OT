@@ -861,6 +861,51 @@ async function checkUpdateManual() {
     }
 }
 
+async function checkUpdateSilent() {
+    try {
+        const cloudConfRes = await fetch('/api/cloud-url');
+        const cloudConf = await cloudConfRes.json();
+        const cloudUrl = cloudConf.cloudUrl;
+        if (!cloudUrl) return;
+
+        const localRes = await fetch('/api/version');
+        const localData = await localRes.json();
+        const localVer = localData.version || '1.0.0';
+
+        const cloudRes = await fetch(`${cloudUrl}/api/version`);
+        const cloudData = await cloudRes.json();
+        const cloudVer = cloudData.version || '1.0.0';
+
+        const cmp = compareVersions(localVer, cloudVer);
+        if (cmp < 0) {
+            showModal(
+                'Có phiên bản mới!',
+                `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                    Phát hiện phiên bản mới của ứng dụng trên hệ thống Cloud:<br>
+                    • Phiên bản hiện tại: <strong style="color: var(--accent-orange);">v${localVer}</strong><br>
+                    • Phiên bản mới nhất: <strong style="color: var(--accent-green-light);">v${cloudVer}</strong>
+                </p>
+                <p style="color: var(--text-muted); font-size: 13px;">
+                    Bạn có muốn mở trình duyệt để tải về phiên bản mới nhất không?
+                </p>`,
+                [
+                    { text: 'Để sau', class: 'btn-ghost' },
+                    { 
+                        text: 'Tải về ngay', 
+                        class: 'btn btn-primary btn-sm', 
+                        action: () => {
+                            const downloadUrl = cloudData.desktopDownloadUrl || `https://github.com/hieuto706-max/OT/releases/download/v${cloudVer}/ot-manager%20Setup%20${cloudVer}.exe`;
+                            window.open(downloadUrl, '_blank');
+                        } 
+                    }
+                ]
+            );
+        }
+    } catch (err) {
+        console.error('Lỗi check cập nhật ngầm:', err);
+    }
+}
+
 // ==================== EVENT LISTENERS ====================
 document.addEventListener('DOMContentLoaded', async () => {
     const otDateEl = document.getElementById('ot-date');
@@ -868,6 +913,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 1. Cấu hình và đồng bộ hóa Cloud Server trước khi tải trang dashboard
     await initCloudConfig();
+    
+    // Tự động kiểm tra cập nhật ngầm khi khởi động
+    checkUpdateSilent();
+    // Định kỳ mỗi 30 phút kiểm tra cập nhật một lần
+    setInterval(checkUpdateSilent, 30 * 60 * 1000);
 
     // 2. Kiểm tra phiên bản và trạng thái session để quyết định tự động đăng nhập
     try {
