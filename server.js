@@ -650,7 +650,7 @@ const server = http.createServer(async (req, res) => {
     // Desktop admin app (served at /desktop/)
     if (urlPath.startsWith('/desktop')) {
         const desktopPath = urlPath.replace('/desktop', '') || '/';
-        return serveStatic(req, res, __dirname, desktopPath);
+        return serveStatic(req, res, path.join(__dirname, 'desktop'), desktopPath);
     }
 
     // Mobile app (served at root /)
