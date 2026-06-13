@@ -835,7 +835,8 @@ async function checkUpdateManual() {
                         text: 'Tải về ngay', 
                         class: 'btn btn-primary btn-sm', 
                         action: () => {
-                            window.open(cloudUrl, '_blank');
+                            const downloadUrl = cloudData.desktopDownloadUrl || `https://github.com/hieuto706-max/OT/releases/download/v${cloudVer}/ot-manager%20Setup%20${cloudVer}.exe`;
+                            window.open(downloadUrl, '_blank');
                         } 
                     }
                 ]

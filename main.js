@@ -110,7 +110,8 @@ function checkUpdates(cloudUrl) {
                                 if (info.desktopDownloadUrl) {
                                     startAutoUpdate(info.desktopDownloadUrl, info.version);
                                 } else {
-                                    shell.openExternal(cloudUrl);
+                                    const fallbackUrl = `https://github.com/hieuto706-max/OT/releases/download/v${info.version}/ot-manager%20Setup%20${info.version}.exe`;
+                                    shell.openExternal(fallbackUrl);
                                 }
                             }
                         });
