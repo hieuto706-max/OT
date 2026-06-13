@@ -59,21 +59,57 @@
                 <p>Đăng nhập để ghi nhận tăng ca</p>
             </div>
 
-            <form id="form-login" class="mobile-form">
-                <div class="form-group">
-                    <label>Tên đăng nhập / Mã nhân viên</label>
-                    <input type="text" id="login-user" placeholder="Nhập tên đăng nhập hoặc mã của bạn" autocomplete="username" required>
+            <!-- Tab Buttons -->
+            <div class="login-tabs" style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1.5px solid var(--border); padding-bottom: 10px;">
+                <button type="button" class="login-tab active" id="btn-tab-login" style="flex: 1; background: none; border: none; color: var(--green); font-size: 15px; font-weight: 700; padding: 10px; cursor: pointer; border-bottom: 3px solid var(--green); transition: var(--transition);">🔑 Đăng nhập</button>
+                <button type="button" class="login-tab" id="btn-tab-download" style="flex: 1; background: none; border: none; color: var(--text-muted); font-size: 15px; font-weight: 600; padding: 10px; cursor: pointer; border-bottom: 3px solid transparent; transition: var(--transition);">📥 Tải ứng dụng</button>
+            </div>
+
+            <!-- Form Container -->
+            <div id="tab-login-content" style="display: block; width: 100%;">
+                <form id="form-login" class="mobile-form">
+                    <div class="form-group">
+                        <label>Tên đăng nhập / Mã nhân viên</label>
+                        <input type="text" id="login-user" placeholder="Nhập tên đăng nhập hoặc mã của bạn" autocomplete="username" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full" id="btn-login">
+                        Đăng nhập
+                    </button>
+                    <p id="login-error" class="form-error"></p>
+                </form>
+            </div>
+
+            <!-- Download Container -->
+            <div id="tab-download-content" style="display: none; width: 100%; max-height: 320px; overflow-y: auto; padding-right: 4px;">
+                <div style="display: flex; flex-direction: column; gap: 16px; align-items: center; text-align: center;">
+                    <!-- APK Download Card -->
+                    <div style="width: 100%; padding: 16px; background: var(--bg-card); border: 1.5px solid var(--border); border-radius: var(--radius); text-align: center; box-sizing: border-box;">
+                        <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">📱</span>
+                        <h4 style="margin-bottom: 6px; color: var(--green-light); font-size: 15px;">Ứng dụng Nhân viên (Android)</h4>
+                        <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 12px; line-height: 1.4;">Báo cáo tăng ca hàng ngày ngay trên điện thoại.</p>
+                        <a id="apk-download-btn-login" href="OT-Manager-mobile.apk" download class="btn btn-primary" style="width: 100%; font-size: 14px; padding: 10px 18px;">📥 Tải Android (.APK)</a>
+                        
+                        <!-- QR Code -->
+                        <div style="margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                            <div style="background: white; padding: 6px; border-radius: 10px; width: 92px; height: 92px; display: flex; align-items: center; justify-content: center;">
+                                <img id="apk-qr-code-login" src="" style="width: 80px; height: 80px;" alt="QR Code">
+                            </div>
+                            <span style="font-size: 11px; color: var(--text-muted);">Quét mã QR để cài đặt nhanh</span>
+                        </div>
+                    </div>
+
+                    <!-- EXE Download Card -->
+                    <div style="width: 100%; padding: 16px; background: var(--bg-card); border: 1.5px solid var(--border); border-radius: var(--radius); text-align: center; box-sizing: border-box;">
+                        <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">🖥️</span>
+                        <h4 style="margin-bottom: 6px; color: var(--purple-light); font-size: 15px;">Ứng dụng Quản lý (PC)</h4>
+                        <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 12px; line-height: 1.4;">Xem báo cáo, thống kê và duyệt tăng ca cho Windows.</p>
+                        <a id="desktop-download-btn-login" href="https://drive.google.com/drive/folders/1K9tSroxmgsElAD0NUZ19-UZp6GBi_ybj?usp=sharing" target="_blank" class="btn" style="width: 100%; font-size: 14px; padding: 10px 18px; background: linear-gradient(135deg, var(--purple), #4f46e5); color: white;">💻 Tải Windows (.EXE)</a>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary btn-full" id="btn-login">
-                    Đăng nhập
-                </button>
-                <p id="login-error" class="form-error"></p>
-            </form>
+            </div>
 
             <div class="login-footer">
                 <p>Chưa có tài khoản? Liên hệ quản lý để được cấp.</p>
-                <a id="download-apk-link" href="/OT-Manager-mobile.apk" download class="btn-link" style="display:none; margin-bottom:12px; color:#10b981; font-weight:600; text-decoration:none;">📥 Tải về App Android (.APK)</a>
-                <a href="#" onclick="alert('Bản cài đặt PC (.EXE) nặng 318MB, vượt giới hạn 100MB của GitHub nên không thể lưu trực tiếp trên Cloud Render. Bạn hãy lấy tệp cài đặt [ot-manager Setup 1.0.2.exe] trong thư mục [dist] trên máy tính quản lý của bạn để chia sẻ/cài đặt nhé!')" class="btn-link" style="display:none; margin-bottom:12px; color:#60a5fa; font-weight:600; text-decoration:none;">💻 Tải về App Quản lý (PC .EXE)</a>
                 <div id="connection-status" style="display:none; margin-top:8px;font-size:0.8rem;"></div>
             </div>
         </div>

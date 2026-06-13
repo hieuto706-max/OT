@@ -1101,6 +1101,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Bắt đầu kiểm tra cập nhật định kỳ mỗi 30 phút
     startUpdateCheckInterval();
+
+    // Cấu hình Tabs Đăng nhập / Tải ứng dụng trên màn hình Login
+    const tabLoginBtn = document.getElementById('btn-tab-login');
+    const tabDownloadBtn = document.getElementById('btn-tab-download');
+    const tabLoginContent = document.getElementById('tab-login-content');
+    const tabDownloadContent = document.getElementById('tab-download-content');
+
+    if (tabLoginBtn && tabDownloadBtn && tabLoginContent && tabDownloadContent) {
+        tabLoginBtn.addEventListener('click', () => {
+            tabLoginBtn.classList.add('active');
+            tabLoginBtn.style.color = 'var(--green)';
+            tabLoginBtn.style.borderBottom = '3px solid var(--green)';
+            tabDownloadBtn.classList.remove('active');
+            tabDownloadBtn.style.color = 'var(--text-muted)';
+            tabDownloadBtn.style.borderBottom = '3px solid transparent';
+            tabLoginContent.style.display = 'block';
+            tabDownloadContent.style.display = 'none';
+        });
+
+        tabDownloadBtn.addEventListener('click', () => {
+            tabDownloadBtn.classList.add('active');
+            tabDownloadBtn.style.color = 'var(--green)';
+            tabDownloadBtn.style.borderBottom = '3px solid var(--green)';
+            tabLoginBtn.classList.remove('active');
+            tabLoginBtn.style.color = 'var(--text-muted)';
+            tabLoginBtn.style.borderBottom = '3px solid transparent';
+            tabDownloadContent.style.display = 'block';
+            tabLoginContent.style.display = 'none';
+        });
+
+        // Thiết lập link tải động cho mục Tải ứng dụng
+        const host = window.location.origin;
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        const defaultApk = isGitHubPages ? 'mobile/OT-Manager-mobile.apk' : 'OT-Manager-mobile.apk';
+        const apkUrl = API ? (API + '/OT-Manager-mobile.apk') : defaultApk;
+
+        const apkBtnLogin = document.getElementById('apk-download-btn-login');
+        if (apkBtnLogin) apkBtnLogin.href = apkUrl;
+
+        const apkQrLogin = document.getElementById('apk-qr-code-login');
+        if (apkQrLogin) {
+            const downloadPath = isGitHubPages ? ('/OT/' + defaultApk) : ('/' + defaultApk);
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=${encodeURIComponent(host + downloadPath)}`;
+            apkQrLogin.src = qrApiUrl;
+        }
+    }
 });
 
 function checkConnection() {
