@@ -395,6 +395,16 @@ function enterApp() {
     document.getElementById('profile-name').textContent = currentUser.fullname;
     document.getElementById('profile-username').textContent = `@${currentUser.username}`;
 
+    const isBrowser = window.location.protocol !== 'file:';
+    const btnCheckUpdate = document.getElementById('btn-check-update-mobile');
+    if (btnCheckUpdate) {
+        if (isBrowser) {
+            btnCheckUpdate.style.display = 'none';
+        } else {
+            btnCheckUpdate.style.display = 'block';
+        }
+    }
+
     showScreen('screen-app');
     updatePreview();
     loadHistory();
@@ -962,6 +972,10 @@ async function syncOfflineData() {
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
+    const isBrowser = window.location.protocol !== 'file:';
+    if (isBrowser) {
+        document.body.classList.add('is-web-browser');
+    }
     const otDateEl = document.getElementById('ot-date');
     if (otDateEl) otDateEl.max = new Date().toISOString().split('T')[0];
     
@@ -1449,11 +1463,11 @@ async function handleEditOTSubmit(e) {
 }
 
 // ==================== AUTO UPDATE FOR MOBILE APP ====================
-const MOBILE_VERSION = '1.1.5';
+const MOBILE_VERSION = '1.1.6';
 let updateCheckInterval = null;
 
 function checkMobileUpdates(isManual) {
-    if (window.location.protocol !== 'file:' && !isManual) {
+    if (window.location.protocol !== 'file:') {
         return;
     }
     if (!API) {

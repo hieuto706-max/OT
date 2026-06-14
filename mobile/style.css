@@ -2446,3 +2446,8 @@ body {
 .terms-card li {
     margin-bottom: 8px;
 }
+
+/* Hide update button on web browser platform */
+body.is-web-browser #btn-check-update-mobile {
+    display: none !important;
+}

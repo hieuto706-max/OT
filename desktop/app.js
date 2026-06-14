@@ -10,6 +10,7 @@
 let API_BASE = window.location.origin;
 const OT_LUNCH_HOURS = 1;
 const WORK_END = '16:30';
+const isElectron = navigator.userAgent.toLowerCase().includes('electron');
 
 // Add blink-red style rules dynamically
 const style = document.createElement('style');
@@ -824,8 +825,12 @@ async function initCloudConfig() {
                 API_BASE = API_BASE.slice(0, -1);
             }
             console.log("[Desktop App] API Base trỏ tới Cloud:", API_BASE);
-            showCloudWakeupOverlay();
-            await wakeupCloudServer();
+            if (isElectron) {
+                showCloudWakeupOverlay();
+                await wakeupCloudServer();
+            } else {
+                initSseConnection();
+            }
         }
     } catch (e) {
         console.error("Lỗi đồng bộ Cloud URL:", e);
@@ -926,6 +931,7 @@ function compareVersions(v1, v2) {
 }
 
 async function checkUpdateManual() {
+    if (!isElectron) return;
     showToast('Đang kiểm tra bản cập nhật...', 'info');
     try {
         // 1. Lấy thông tin Cloud URL từ local server
@@ -1002,6 +1008,7 @@ async function checkUpdateManual() {
 }
 
 async function checkUpdateSilent() {
+    if (!isElectron) return;
     try {
         const cloudConfRes = await fetch('/api/cloud-url');
         const cloudConf = await cloudConfRes.json();
@@ -1048,16 +1055,31 @@ async function checkUpdateSilent() {
 
 // ==================== EVENT LISTENERS ====================
 document.addEventListener('DOMContentLoaded', async () => {
+    if (!isElectron) {
+        document.body.classList.add('is-web-browser');
+    }
     const otDateEl = document.getElementById('ot-date');
     if (otDateEl) otDateEl.max = new Date().toISOString().split('T')[0];
 
     // 1. Cấu hình và đồng bộ hóa Cloud Server trước khi tải trang dashboard
     await initCloudConfig();
     
-    // Tự động kiểm tra cập nhật ngầm khi khởi động
-    checkUpdateSilent();
-    // Định kỳ mỗi 30 phút kiểm tra cập nhật một lần
-    setInterval(checkUpdateSilent, 30 * 60 * 1000);
+    // Hide check update button on Web (non-Electron)
+    const btnCheckUpdate = document.getElementById('btn-check-update');
+    if (btnCheckUpdate) {
+        if (!isElectron) {
+            btnCheckUpdate.style.display = 'none';
+        } else {
+            btnCheckUpdate.style.display = 'flex';
+        }
+    }
+
+    if (isElectron) {
+        // Tự động kiểm tra cập nhật ngầm khi khởi động
+        checkUpdateSilent();
+        // Định kỳ mỗi 30 phút kiểm tra cập nhật một lần
+        setInterval(checkUpdateSilent, 30 * 60 * 1000);
+    }
 
     // 2. Kiểm tra phiên bản và trạng thái session để quyết định tự động đăng nhập
     try {
@@ -1074,7 +1096,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isSessionActive = sessionStorage.getItem('ot_session_active');
 
         // Nếu là phiên làm việc mới (app bị tắt hoàn toàn và bật lại)
-        if (!isSessionActive) {
+        if (isElectron && !isSessionActive) {
             // Nếu không phải là cập nhật (phiên bản cũ và mới giống nhau)
             if (storedVersion === currentVersion) {
                 // Tắt app hoàn toàn và bật lại bản cũ -> bắt đăng nhập lại
@@ -1086,6 +1108,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             // Đánh dấu session hiện tại là active
             sessionStorage.setItem('ot_session_active', 'true');
+        } else if (!isElectron) {
+            // Trên web, chỉ cần cập nhật version lưu trữ, không log out
+            localStorage.setItem('ot_app_version', currentVersion);
         }
     } catch (e) {
         console.error('Lỗi kiểm tra phiên bản:', e);
@@ -1206,7 +1231,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btn-logout-emp').addEventListener('click', logout);
 
     // Update Check
-    const btnCheckUpdate = document.getElementById('btn-check-update');
     if (btnCheckUpdate) {
         btnCheckUpdate.addEventListener('click', checkUpdateManual);
     }

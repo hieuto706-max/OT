@@ -1352,3 +1352,8 @@ body {
 .sub-tab-content.active {
     display: block;
 }
+
+/* Hide update button on web browser platform */
+body.is-web-browser #btn-check-update {
+    display: none !important;
+}
