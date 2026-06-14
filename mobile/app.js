@@ -291,8 +291,23 @@ async function handleLogin(e) {
     try {
         const oldUser = JSON.parse(safeStorage.getItem('ot_mobile_user') || 'null');
         const data = await api('/api/auth/login', 'POST', { username, deviceId });
+        if (data.user.role === 'admin') {
+            // Lưu thông tin đăng nhập quản lý
+            safeStorage.setItem('ot_mobile_user', JSON.stringify(data.user));
+            safeStorage.setItem('ot_login_time', Date.now().toString());
+            
+            // Chuyển hướng tới trang quản lý desktop
+            const isGitHubPages = window.location.hostname.includes('github.io');
+            const redirectUrl = isGitHubPages ? '/OT/desktop/index.html' : '/desktop/index.html';
+            showToast('Đăng nhập Quản lý thành công, đang chuyển hướng...', 'success');
+            setTimeout(() => {
+                window.location.href = redirectUrl;
+            }, 1000);
+            return;
+        }
+
         if (data.user.role !== 'employee') {
-            errEl.textContent = 'Tài khoản này không phải nhân viên!';
+            errEl.textContent = 'Tài khoản này không hợp lệ!';
             return;
         }
 

@@ -56,174 +56,94 @@
                 <span class="logo-text">OT Manager</span>
             </div>
             <div class="landing-nav">
+                <a href="#login-section" class="nav-link">Đăng nhập</a>
                 <a href="#features-section" class="nav-link">Tính năng</a>
-                <a href="#rules-section" class="nav-link">Quy định</a>
                 <a href="#download-section" class="nav-link">Tải ứng dụng</a>
-                <button type="button" class="btn btn-primary btn-sm" onclick="scrollToLogin()">🔑 Đăng nhập</button>
             </div>
         </header>
 
         <div class="landing-container">
-            <!-- Left Side: Hero and details -->
-            <div class="landing-hero-section">
-                <div class="hero-content">
-                    <span class="hero-badge">✨ Phiên bản v1.0.5</span>
-                    <h1 class="hero-title">Quản Lý Tăng Ca <br><span class="gradient-text">Chuyên Nghiệp & Tiện Lợi</span></h1>
-                    <p class="hero-subtitle">Ghi nhận giờ làm tăng ca (OT) trưa và chiều nhanh chóng, lưu trữ offline an toàn, tự động tính toán tổng giờ làm và đồng bộ đám mây.</p>
-                    <div class="hero-ctas">
-                        <button type="button" class="btn btn-primary" onclick="scrollToLogin()">Truy cập Web App</button>
-                        <a href="#download-section" class="btn btn-ghost">Tải ứng dụng</a>
+            <!-- Left Side: Login & Features -->
+            <div class="landing-left-side" id="login-section">
+                <!-- Login widget card -->
+                <div class="login-page-card">
+                    <div class="login-header">
+                        <h1>Đăng nhập hệ thống</h1>
+                        <p>Dành cho cả Nhân viên và Quản lý</p>
+                    </div>
+
+                    <form id="form-login" class="mobile-form">
+                        <div class="form-group">
+                            <label>Tên đăng nhập / Mã nhân viên</label>
+                            <input type="text" id="login-user" placeholder="Nhập tên đăng nhập hoặc mã của bạn" autocomplete="username" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full" id="btn-login">
+                            Đăng nhập
+                        </button>
+                        <p id="login-error" class="form-error"></p>
+                    </form>
+
+                    <div class="login-footer">
+                        <div id="connection-status" style="display:none; margin-top:8px;font-size:0.8rem;"></div>
                     </div>
                 </div>
 
                 <!-- Features Section -->
-                <section id="features-section" class="landing-section">
+                <section id="features-section" class="landing-section" style="margin-top: 40px;">
                     <h2 class="section-title">✨ Tính năng nổi bật</h2>
                     <div class="features-grid">
                         <div class="feat-card">
                             <span class="feat-icon">⚡</span>
                             <h3>Ghi nhận nhanh</h3>
-                            <p>Chọn ngày, tích chọn tăng ca trưa hoặc cài đặt giờ về để tự động tính tổng giờ OT.</p>
+                            <p>Chọn ngày, tích chọn tăng ca trưa hoặc tối để lưu giờ OT tức thì.</p>
                         </div>
                         <div class="feat-card">
                             <span class="feat-icon">📶</span>
                             <h3>Lưu trữ Offline</h3>
-                            <p>Không lo mất mạng. Dữ liệu được lưu trữ ngoại tuyến và tự động đồng bộ khi có kết nối trở lại.</p>
+                            <p>Tự động lưu ngoại tuyến và đồng bộ lại khi thiết bị kết nối mạng.</p>
                         </div>
                         <div class="feat-card">
                             <span class="feat-icon">📊</span>
-                            <h3>Thống kê tổng quan</h3>
-                            <p>Xem tổng số giờ OT trong tháng, số ngày tăng ca trưa và chiều trực quan.</p>
+                            <h3>Thống kê trực quan</h3>
+                            <p>Theo dõi tổng số giờ OT làm việc trong tháng rõ ràng.</p>
                         </div>
                         <div class="feat-card">
                             <span class="feat-icon">☁️</span>
-                            <h3>Đám mây an toàn</h3>
-                            <p>Tự động sao lưu và khôi phục dữ liệu từ đám mây bảo mật cao.</p>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Rules Section -->
-                <section id="rules-section" class="landing-section">
-                    <h2 class="section-title">📋 Quy định giờ làm</h2>
-                    <div class="rules-grid">
-                        <div class="rule-card">
-                            <div class="rule-card-header">
-                                <span class="rule-card-icon">🕖</span>
-                                <h4>Giờ chính thức</h4>
-                            </div>
-                            <p><strong>07:00 - 16:30</strong></p>
-                            <span>Thời gian làm việc hành chính chuẩn.</span>
-                        </div>
-                        <div class="rule-card">
-                            <div class="rule-card-header">
-                                <span class="rule-card-icon">🍽️</span>
-                                <h4>Nghỉ trưa</h4>
-                            </div>
-                            <p><strong>11:50 - 13:20</strong></p>
-                            <span>Thời gian ăn trưa và nghỉ ngơi giữa ca.</span>
-                        </div>
-                        <div class="rule-card">
-                            <div class="rule-card-header">
-                                <span class="rule-card-icon">⏰</span>
-                                <h4>Tăng ca trưa</h4>
-                            </div>
-                            <p><strong>12:20 - 13:20</strong></p>
-                            <span>Tính tương đương 1.0 giờ tăng ca.</span>
-                        </div>
-                        <div class="rule-card">
-                            <div class="rule-card-header">
-                                <span class="rule-card-icon">🌙</span>
-                                <h4>Tăng ca chiều</h4>
-                            </div>
-                            <p><strong>Sau 16:30</strong></p>
-                            <span>Bắt đầu tính sau khi tan ca làm chính thức.</span>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Download Section -->
-                <section id="download-section" class="landing-section">
-                    <h2 class="section-title">📥 Tải ứng dụng</h2>
-                    <div class="download-grid">
-                        <div class="download-card apk-card">
-                            <span class="card-emoji">📱</span>
-                            <h3>Ứng dụng Nhân viên</h3>
-                            <span class="platform-badge">Android (.APK)</span>
-                            <p>Báo cáo tăng ca hàng ngày ngay trên điện thoại di động.</p>
-                            <a id="apk-download-btn-landing" href="mobile/OT-Manager-mobile.apk" download class="btn btn-primary">Tải APK Android</a>
-                            <div class="qr-box">
-                                <div class="qr-bg">
-                                    <img id="apk-qr-code-landing" src="" alt="QR Code">
-                                </div>
-                                <span class="qr-hint">Quét mã QR để cài đặt nhanh</span>
-                            </div>
-                        </div>
-                        <div class="download-card exe-card">
-                            <span class="card-emoji">🖥️</span>
-                            <h3>Ứng dụng Quản lý</h3>
-                            <span class="platform-badge">Windows (.EXE)</span>
-                            <p>Xem báo cáo, xuất Excel, quản lý nhân viên và duyệt giờ tăng ca trên PC.</p>
-                            <a id="desktop-download-btn-landing" href="https://drive.google.com/drive/folders/1K9tSroxmgsElAD0NUZ19-UZp6GBi_ybj?usp=sharing" target="_blank" class="btn btn-purple">Tải Windows EXE</a>
+                            <h3>Đồng bộ đám mây</h3>
+                            <p>Dữ liệu được lưu trữ đám mây, đồng bộ thời gian thực giữa các thiết bị.</p>
                         </div>
                     </div>
                 </section>
             </div>
 
-            <!-- Right Side: Login Widget Card -->
-            <div class="landing-login-widget" id="login-widget-card">
-                <div class="login-page-card">
-                    <div class="login-header">
-                        <h1>OT Manager</h1>
-                        <p>Đăng nhập để ghi nhận tăng ca</p>
-                    </div>
-
-                    <!-- Tab Buttons -->
-                    <div class="login-tabs">
-                        <button type="button" class="login-tab active" id="btn-tab-login">🔑 Đăng nhập</button>
-                        <button type="button" class="login-tab" id="btn-tab-download">📥 Tải App nhanh</button>
-                    </div>
-
-                    <!-- Form Container -->
-                    <div id="tab-login-content">
-                        <form id="form-login" class="mobile-form">
-                            <div class="form-group">
-                                <label>Tên đăng nhập / Mã nhân viên</label>
-                                <input type="text" id="login-user" placeholder="Nhập tên đăng nhập hoặc mã của bạn" autocomplete="username" required>
+            <!-- Right Side: Download Area -->
+            <div class="landing-right-side" id="download-section">
+                <section class="landing-section">
+                    <h2 class="section-title">📥 Tải ứng dụng</h2>
+                    
+                    <div class="download-card apk-card">
+                        <span class="card-emoji">📱</span>
+                        <h3>Ứng dụng Nhân viên</h3>
+                        <span class="platform-badge">Android (.APK)</span>
+                        <p>Báo cáo tăng ca hàng ngày ngay trên điện thoại của bạn.</p>
+                        <a id="apk-download-btn-landing" href="mobile/OT-Manager-mobile.apk" download class="btn btn-primary" style="width:100%">Tải APK Android</a>
+                        
+                        <div class="qr-box">
+                            <div class="qr-bg">
+                                <img id="apk-qr-code-landing" src="" alt="QR Code">
                             </div>
-                            <button type="submit" class="btn btn-primary btn-full" id="btn-login">
-                                Đăng nhập
-                            </button>
-                            <p id="login-error" class="form-error"></p>
-                        </form>
-                    </div>
-
-                    <!-- Download Container -->
-                    <div id="tab-download-content" style="display: none;">
-                        <div class="quick-download-box">
-                            <div class="quick-dl-item">
-                                <strong>Ứng dụng Nhân viên (Android)</strong>
-                                <a id="apk-download-btn-login" href="mobile/OT-Manager-mobile.apk" download class="btn btn-primary btn-sm" style="width:100%; margin-top:4px;">📥 Tải Android (.APK)</a>
-                                <div style="margin-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                                    <div style="background: white; padding: 4px; border-radius: 8px; width: 84px; height: 84px; display: flex; align-items: center; justify-content: center;">
-                                        <img id="apk-qr-code-login" src="" style="width: 76px; height: 76px;" alt="QR Code">
-                                    </div>
-                                    <span style="font-size: 10px; color: var(--text-muted);">Quét mã QR để cài đặt nhanh</span>
-                                </div>
-                            </div>
-                            <hr class="divider">
-                            <div class="quick-dl-item">
-                                <strong>Ứng dụng Quản lý (PC)</strong>
-                                <a id="desktop-download-btn-login" href="https://drive.google.com/drive/folders/1K9tSroxmgsElAD0NUZ19-UZp6GBi_ybj?usp=sharing" target="_blank" class="btn btn-purple btn-sm" style="width:100%; margin-top:4px;">💻 Tải Windows (.EXE)</a>
-                            </div>
+                            <span class="qr-hint">Quét mã QR để cài đặt nhanh</span>
                         </div>
                     </div>
 
-                    <div class="login-footer">
-                        <p>Chưa có tài khoản? Liên hệ quản lý để được cấp.</p>
-                        <div id="connection-status" style="display:none; margin-top:8px;font-size:0.8rem;"></div>
+                    <div class="download-card exe-card" style="margin-top: 20px;">
+                        <span class="card-emoji">🖥️</span>
+                        <h3>Ứng dụng Quản lý</h3>
+                        <span class="platform-badge">Windows (.EXE)</span>
+                        <p>Xem báo cáo, xuất Excel, quản lý nhân viên và duyệt giờ tăng ca.</p>
+                        <a id="desktop-download-btn-landing" href="https://drive.google.com/drive/folders/1K9tSroxmgsElAD0NUZ19-UZp6GBi_ybj?usp=sharing" target="_blank" class="btn btn-purple" style="width:100%">Tải Windows EXE</a>
                     </div>
-                </div>
+                </section>
             </div>
         </div>
     </div>
@@ -542,7 +462,7 @@
     <!-- Script triggers -->
     <script>
         window.scrollToLogin = function() {
-            const el = document.getElementById('login-widget-card');
+            const el = document.getElementById('login-section');
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 const input = document.getElementById('login-user');
