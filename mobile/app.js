@@ -1356,7 +1356,7 @@ async function handleEditOTSubmit(e) {
 }
 
 // ==================== AUTO UPDATE FOR MOBILE APP ====================
-const MOBILE_VERSION = '1.0.6';
+const MOBILE_VERSION = '1.0.7';
 let updateCheckInterval = null;
 
 function checkMobileUpdates(isManual) {
