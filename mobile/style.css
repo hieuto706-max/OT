@@ -76,7 +76,9 @@ html {
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg-primary);
+    /* Premium dark gradient background fallback so the page always has depth */
+    background: radial-gradient(circle at top left, #04120e 0%, #020205 50%), radial-gradient(circle at bottom right, #070718 0%, #020205 60%);
+    background-attachment: fixed;
     color: var(--text);
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
@@ -87,7 +89,7 @@ body {
     position: relative;
 }
 
-/* ==================== AMBIENT GLOW ORBS — Tri-Color Dynamic ==================== */
+/* ==================== AMBIENT GLOW ORBS — High-Compatibility Version ==================== */
 .bg-glow-orbs {
     position: fixed;
     inset: 0;
@@ -99,36 +101,38 @@ body {
 .orb {
     position: absolute;
     border-radius: 50%;
-    filter: blur(110px);
-    opacity: 0.6;
-    mix-blend-mode: screen;
+    opacity: 0.85; /* Increased opacity to compensate for lack of blend-mode */
     will-change: transform;
+    pointer-events: none;
+    /* Soft fallback blur that is light on GPU */
+    filter: blur(50px);
+    -webkit-filter: blur(50px);
 }
 
 .orb-1 {
-    top: -12%;
-    left: -12%;
-    width: 68vw;
-    height: 68vw;
-    background: radial-gradient(circle, rgba(13, 217, 139, 0.2) 0%, rgba(5, 150, 105, 0.06) 45%, transparent 68%);
+    top: -15%;
+    left: -15%;
+    width: 70vw;
+    height: 70vw;
+    background: radial-gradient(circle, rgba(13, 217, 139, 0.15) 0%, rgba(13, 217, 139, 0.08) 25%, rgba(5, 150, 105, 0.02) 55%, transparent 75%);
     animation: orbDrift1 22s ease-in-out infinite alternate;
 }
 
 .orb-2 {
-    bottom: -18%;
-    right: -12%;
-    width: 72vw;
-    height: 72vw;
-    background: radial-gradient(circle, rgba(124, 127, 255, 0.18) 0%, rgba(91, 94, 235, 0.04) 45%, transparent 68%);
+    bottom: -20%;
+    right: -15%;
+    width: 75vw;
+    height: 75vw;
+    background: radial-gradient(circle, rgba(124, 127, 255, 0.12) 0%, rgba(124, 127, 255, 0.06) 30%, rgba(91, 94, 235, 0.02) 60%, transparent 80%);
     animation: orbDrift2 28s ease-in-out infinite alternate;
 }
 
 .orb-3 {
-    top: 30%;
-    left: 40%;
-    width: 55vw;
-    height: 55vw;
-    background: radial-gradient(circle, rgba(6, 214, 214, 0.15) 0%, rgba(8, 145, 178, 0.03) 45%, transparent 68%);
+    top: 25%;
+    left: 35%;
+    width: 60vw;
+    height: 60vw;
+    background: radial-gradient(circle, rgba(6, 214, 214, 0.1) 0%, rgba(6, 214, 214, 0.04) 30%, rgba(8, 145, 178, 0.01) 60%, transparent 75%);
     animation: orbDrift3 25s ease-in-out infinite alternate;
 }
 
@@ -390,17 +394,17 @@ body {
 
 /* ==================== LOGIN CARD — Double-Border Glass ==================== */
 .login-page-card {
-    background: linear-gradient(145deg, rgba(22, 24, 48, 0.62) 0%, rgba(10, 11, 22, 0.52) 100%);
-    backdrop-filter: blur(36px) saturate(220%);
-    -webkit-backdrop-filter: blur(36px) saturate(220%);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: linear-gradient(145deg, rgba(16, 17, 34, 0.85) 0%, rgba(7, 8, 16, 0.8) 100%);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-lg);
-    padding: 44px 30px;
+    padding: 40px 24px;
     position: relative;
     overflow: hidden;
     box-shadow: 
-        0 28px 60px rgba(0, 0, 0, 0.6),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
+        0 24px 50px rgba(0, 0, 0, 0.65),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
         inset 0 -1px 0 0 rgba(255, 255, 255, 0.04),
         var(--shadow-glow-green);
     width: 100%;
@@ -408,14 +412,14 @@ body {
     animation: cardEntrance 0.6s var(--bounce);
 }
 
-/* Inner glow border highlight */
+/* Inner glow border highlight - Beautiful Multicolor Neon */
 .login-page-card::before {
     content: '';
     position: absolute;
     inset: 0;
     border-radius: var(--radius-lg);
     padding: 1px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 40%, rgba(13, 217, 139, 0.08) 80%, transparent 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0%, rgba(6, 214, 214, 0.2) 30%, rgba(13, 217, 139, 0.35) 70%, rgba(124, 127, 255, 0.2) 100%);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
@@ -500,7 +504,7 @@ body {
 
 .input-wrapper:focus-within .input-icon {
     color: var(--green-light);
-    transform: translateY(-50%) scale(1.15);
+    transform: translateY(-50%) scale(1.1);
     filter: drop-shadow(0 0 6px rgba(58, 234, 166, 0.4));
 }
 
@@ -515,14 +519,14 @@ body {
 #form-edit-ot textarea {
     width: 100%;
     padding: 15px 18px;
-    background: var(--bg-input);
-    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
     border-radius: var(--radius-sm);
     color: var(--text);
     font-family: inherit;
     font-size: 15px;
     outline: none;
-    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mobile-form input:focus,
@@ -534,10 +538,9 @@ body {
 #form-edit-ot textarea:focus {
     border-color: var(--green-light);
     box-shadow: 
-        0 0 0 5px rgba(13, 217, 139, 0.1),
-        0 8px 22px rgba(13, 217, 139, 0.08);
-    background: rgba(255, 255, 255, 0.06);
-    transform: translateY(-2px) scale(1.008);
+        0 0 0 4px rgba(13, 217, 139, 0.12),
+        0 4px 18px rgba(13, 217, 139, 0.08);
+    background: rgba(255, 255, 255, 0.07);
 }
 
 .mobile-form input::placeholder,
@@ -581,9 +584,9 @@ body {
 }
 
 .btn-primary {
-    background: var(--gradient-green);
+    background: linear-gradient(135deg, #0dd98b 0%, #06b9b9 100%);
     color: var(--text-white);
-    box-shadow: 0 6px 24px rgba(13, 217, 139, 0.35);
+    box-shadow: 0 6px 24px rgba(13, 217, 139, 0.32);
     overflow: hidden;
     z-index: 1;
     animation: btnGlowPulse 3.5s infinite ease-in-out;
@@ -624,12 +627,12 @@ body {
 }
 
 .btn-primary:hover {
-    transform: translateY(-3px) scale(1.01);
-    box-shadow: 0 10px 35px rgba(13, 217, 139, 0.55), 0 0 20px rgba(58, 234, 166, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(13, 217, 139, 0.45), 0 0 15px rgba(58, 234, 166, 0.2);
 }
 
 .btn-primary:active {
-    transform: translateY(0) scale(0.96);
+    transform: scale(0.96);
     box-shadow: 0 4px 16px rgba(13, 217, 139, 0.3);
 }
 
@@ -806,10 +809,10 @@ body {
 }
 
 .info-card {
-    background: linear-gradient(145deg, rgba(22, 24, 48, 0.58) 0%, rgba(10, 11, 22, 0.42) 100%);
-    backdrop-filter: blur(28px) saturate(210%);
-    -webkit-backdrop-filter: blur(28px) saturate(210%);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: linear-gradient(145deg, rgba(22, 24, 48, 0.75) 0%, rgba(10, 11, 22, 0.7) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius);
     padding: 18px 16px;
     display: flex;
@@ -818,7 +821,7 @@ body {
     position: relative;
     overflow: hidden;
     box-shadow: 
-        0 12px 28px rgba(0, 0, 0, 0.35),
+        0 10px 24px rgba(0, 0, 0, 0.45),
         inset 0 1px 0 rgba(255, 255, 255, 0.12);
     transition: all 0.35s var(--bounce);
     animation: cardEntrance 0.5s var(--bounce) backwards;
@@ -835,7 +838,7 @@ body {
     inset: 0;
     border-radius: var(--radius);
     padding: 1px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, transparent 50%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, transparent 50%);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
@@ -844,9 +847,9 @@ body {
 
 .info-card:hover {
     transform: translateY(-3px) scale(1.015);
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.15);
     box-shadow: 
-        0 16px 35px rgba(0, 0, 0, 0.45),
+        0 14px 30px rgba(0, 0, 0, 0.5),
         inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
@@ -893,17 +896,17 @@ body {
 
 /* ==================== PREMIUM CARD PANELS — Double-Border Glass ==================== */
 .card {
-    background: linear-gradient(145deg, rgba(22, 24, 48, 0.58) 0%, rgba(10, 11, 22, 0.48) 100%);
-    backdrop-filter: blur(32px) saturate(220%);
-    -webkit-backdrop-filter: blur(32px) saturate(220%);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: linear-gradient(145deg, rgba(22, 24, 48, 0.75) 0%, rgba(10, 11, 22, 0.7) 100%);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius);
     padding: 26px;
     margin-bottom: 22px;
     position: relative;
     overflow: hidden;
     box-shadow: 
-        0 22px 50px rgba(0, 0, 0, 0.5),
+        0 18px 45px rgba(0, 0, 0, 0.55),
         inset 0 1px 0 0 rgba(255, 255, 255, 0.18),
         inset 0 -1px 0 0 rgba(255, 255, 255, 0.04);
     transition: var(--transition);
@@ -917,7 +920,7 @@ body {
     inset: 0;
     border-radius: var(--radius);
     padding: 1px;
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.02) 35%, transparent 60%);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 35%, transparent 60%);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
@@ -927,7 +930,7 @@ body {
 .form-card {
     border-color: rgba(13, 217, 139, 0.12);
     box-shadow: 
-        0 22px 50px rgba(0, 0, 0, 0.5),
+        0 18px 45px rgba(0, 0, 0, 0.55),
         0 0 40px rgba(13, 217, 139, 0.03),
         inset 0 1px 0 0 rgba(255, 255, 255, 0.18);
 }
@@ -1462,16 +1465,16 @@ body {
     right: 16px;
     height: 66px;
     border-radius: 22px;
-    background: rgba(7, 8, 16, 0.78);
-    backdrop-filter: blur(28px) saturate(210%);
-    -webkit-backdrop-filter: blur(28px) saturate(210%);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(7, 8, 16, 0.75);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     z-index: 100;
     box-shadow: 
-        0 18px 42px rgba(0, 0, 0, 0.65),
+        0 16px 40px rgba(0, 0, 0, 0.6),
         0 -4px 20px rgba(0, 0, 0, 0.15),
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
     transition: var(--transition);
     overflow: hidden;
 }
@@ -1529,9 +1532,9 @@ body {
     content: '';
     position: absolute;
     inset: 7px 10px;
-    background: radial-gradient(ellipse at center, rgba(13, 217, 139, 0.1) 0%, rgba(13, 217, 139, 0.02) 70%);
+    background: radial-gradient(ellipse at center, rgba(13, 217, 139, 0.16) 0%, rgba(13, 217, 139, 0.03) 70%);
     border-radius: 16px;
-    border: 1px solid rgba(13, 217, 139, 0.12);
+    border: 1px solid rgba(13, 217, 139, 0.16);
     z-index: -1;
     animation: activePillIn 0.35s var(--bounce);
     box-shadow: 
