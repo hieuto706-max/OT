@@ -327,8 +327,10 @@ async function handleAPI(req, res, urlPath, method) {
             return sendError(res, 401, 'Tài khoản của bạn đã bị xóa khỏi hệ thống!');
         }
         if (user.role === 'employee') {
-            if (!user.deviceId || user.deviceId !== reqDeviceId) {
-                return sendError(res, 403, 'Thiết bị này đã bị hủy liên kết khỏi tài khoản!');
+            const matchesNative = user.deviceId && user.deviceId === reqDeviceId;
+            const matchesBrowser = user.browserDeviceId && user.browserDeviceId === reqDeviceId;
+            if (!matchesNative && !matchesBrowser) {
+                return sendError(res, 403, 'Thiết bị hoặc trình duyệt này đã bị hủy liên kết khỏi tài khoản!');
             }
         }
     }
@@ -345,7 +347,7 @@ async function handleAPI(req, res, urlPath, method) {
 
     // --- AUTH ---
     if (urlPath === '/api/auth/login' && method === 'POST') {
-        const { username, password, deviceId } = await parseBody(req);
+        const { username, password, deviceId, isBrowser } = await parseBody(req);
         
         // Tìm user không phân biệt chữ hoa chữ thường
         const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
@@ -354,12 +356,32 @@ async function handleAPI(req, res, urlPath, method) {
         // Nếu là nhân viên, cho phép đăng nhập không cần mật khẩu và liên kết thiết bị
         if (user.role === 'employee') {
             if (deviceId) {
-                if (!user.deviceId) {
-                    // Liên kết thiết bị lần đầu
-                    user.deviceId = deviceId;
-                    saveDB(db);
-                } else if (user.deviceId !== deviceId) {
-                    return sendError(res, 403, 'Tài khoản này đã được liên kết với một thiết bị khác!');
+                if (isBrowser) {
+                    // Đăng nhập từ trình duyệt web
+                    if (!user.browserDeviceId) {
+                        // Kiểm tra xem trình duyệt này đã liên kết với tài khoản khác chưa
+                        const otherOwner = db.users.find(u => u.role === 'employee' && u.id !== user.id && u.browserDeviceId === deviceId);
+                        if (otherOwner) {
+                            return sendError(res, 403, 'Trình duyệt này đã được liên kết với một tài khoản khác!');
+                        }
+                        user.browserDeviceId = deviceId;
+                        saveDB(db);
+                    } else if (user.browserDeviceId !== deviceId) {
+                        return sendError(res, 403, 'Tài khoản này đã được đăng nhập trên một trình duyệt khác!');
+                    }
+                } else {
+                    // Đăng nhập từ ứng dụng điện thoại (native app)
+                    if (!user.deviceId) {
+                        // Kiểm tra xem thiết bị này đã liên kết với tài khoản khác chưa
+                        const otherOwner = db.users.find(u => u.role === 'employee' && u.id !== user.id && u.deviceId === deviceId);
+                        if (otherOwner) {
+                            return sendError(res, 403, 'Thiết bị này đã được liên kết với một tài khoản khác!');
+                        }
+                        user.deviceId = deviceId;
+                        saveDB(db);
+                    } else if (user.deviceId !== deviceId) {
+                        return sendError(res, 403, 'Tài khoản này đã được đăng nhập trên một thiết bị khác!');
+                    }
                 }
             }
             const { password: _, ...safeUser } = user;
@@ -409,6 +431,14 @@ async function handleAPI(req, res, urlPath, method) {
         return sendJSON(res, 200, { users: safeUsers });
     }
 
+    if (urlPath.startsWith('/api/users/') && method === 'GET') {
+        const userId = urlPath.split('/api/users/')[1];
+        const user = db.users.find(u => u.id === userId);
+        if (!user) return sendError(res, 404, 'Không tìm thấy người dùng!');
+        const { password: _, ...safeUser } = user;
+        return sendJSON(res, 200, { user: safeUser });
+    }
+
     if (urlPath.startsWith('/api/users/') && method === 'DELETE') {
         const userId = urlPath.split('/api/users/')[1];
         const user = db.users.find(u => u.id === userId);
@@ -423,13 +453,15 @@ async function handleAPI(req, res, urlPath, method) {
     if (urlPath.startsWith('/api/users/') && method === 'PUT') {
         const userId = urlPath.split('/api/users/')[1];
         const body = await parseBody(req);
-        const { fullname, password, role, deviceId } = body;
+        const { fullname, password, role, deviceId, browserDeviceId, pendingUnlink } = body;
         const userIdx = db.users.findIndex(u => u.id === userId);
         if (userIdx < 0) return sendError(res, 404, 'Không tìm thấy người dùng!');
 
         if (fullname) db.users[userIdx].fullname = fullname;
         if (password) db.users[userIdx].password = password;
         if (deviceId !== undefined) db.users[userIdx].deviceId = deviceId;
+        if (browserDeviceId !== undefined) db.users[userIdx].browserDeviceId = browserDeviceId;
+        if (pendingUnlink !== undefined) db.users[userIdx].pendingUnlink = !!pendingUnlink;
         if (role) {
             if (db.users[userIdx].username === 'admin' && role !== 'admin') {
                 return sendError(res, 403, 'Không thể thay đổi vai trò của admin mặc định!');

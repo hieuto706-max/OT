@@ -11,6 +11,16 @@ let API_BASE = window.location.origin;
 const OT_LUNCH_HOURS = 1;
 const WORK_END = '16:30';
 
+// Add blink-red style rules dynamically
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes blink-red {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+`;
+document.head.appendChild(style);
+
 // ==================== API CLIENT ====================
 async function api(endpoint, method = 'GET', body = null) {
     const opts = {
@@ -397,22 +407,47 @@ async function refreshAdminUsers() {
             const totalOT = userRecords.reduce((sum, r) => sum + r.totalHours, 0);
 
             // Nút reset liên kết thiết bị
-            const resetBtn = u.deviceId ? `
-                <button class="btn-icon-only" onclick="resetUserDevice('${u.id}', '${u.fullname}')" title="Reset liên kết thiết bị" style="margin-right: 4px; color: #f59e0b; border-color: rgba(245, 158, 11, 0.3);">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><polyline points="12 2 12 12"></polyline>
-                    </svg>
-                </button>
+            let deviceUnlinkBtn = '';
+            if (u.deviceId) {
+                deviceUnlinkBtn = `
+                    <button class="btn-icon-only" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'mobile')" title="Xóa liên kết App điện thoại" style="margin-right: 4px; color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); padding: 4px 6px;">
+                        📱 Reset Mobile
+                    </button>
+                `;
+            }
+            let browserUnlinkBtn = '';
+            if (u.browserDeviceId) {
+                browserUnlinkBtn = `
+                    <button class="btn-icon-only" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'browser')" title="Xóa liên kết Trình duyệt web" style="margin-right: 4px; color: #6366f1; border-color: rgba(99, 102, 241, 0.3); padding: 4px 6px;">
+                        🌐 Reset Web
+                    </button>
+                `;
+            }
+            let approveBtn = '';
+            if (u.pendingUnlink) {
+                approveBtn = `
+                    <button class="btn-icon-only" onclick="approveUnlinkDevice('${u.id}', '${u.fullname}')" title="Duyệt yêu cầu huỷ liên kết" style="margin-right: 4px; color: #10b981; border-color: rgba(16, 185, 129, 0.3); font-weight: bold; padding: 4px 6px;">
+                        ✓ Duyệt Huỷ
+                    </button>
+                `;
+            }
+
+            const unlinkBadge = u.pendingUnlink ? `
+                <span class="unlink-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approveUnlinkDevice('${u.id}', '${u.fullname}')" title="Bấm vào đây để phê duyệt huỷ liên kết thiết bị">
+                    ⚠️ Xin huỷ liên kết
+                </span>
             ` : '';
 
             return `<tr>
                 <td>${i + 1}</td>
-                <td><strong>${u.fullname}</strong></td>
+                <td><strong>${u.fullname}</strong>${unlinkBadge}</td>
                 <td>${u.username}</td>
                 <td><span class="tag tag-employee">Nhân viên</span></td>
                 <td><span class="text-purple text-bold">${totalOT.toFixed(1)}h</span></td>
                 <td><div class="action-buttons">
-                    ${resetBtn}
+                    ${approveBtn}
+                    ${deviceUnlinkBtn}
+                    ${browserUnlinkBtn}
                     <button class="btn-icon-only edit" onclick="editUserDialog('${u.id}')" title="Sửa" style="margin-right: 4px;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -656,7 +691,7 @@ async function handleOTSubmit(e) {
 
         document.getElementById('ot-lunch').checked = false;
         document.getElementById('ot-start').value = '16:30';
-        document.getElementById('ot-end').value = '18:00';
+        document.getElementById('ot-end').value = '16:30';
         document.getElementById('ot-note').value = '';
         updateOTPreview();
         await refreshEmployeeRecords();
@@ -1116,6 +1151,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('ot-lunch').addEventListener('change', updateOTPreview);
     document.getElementById('ot-start').addEventListener('change', updateOTPreview);
     document.getElementById('ot-end').addEventListener('change', updateOTPreview);
+    document.getElementById('ot-start').addEventListener('change', () => {
+        const startVal = document.getElementById('ot-start').value;
+        const endVal = document.getElementById('ot-end').value;
+        if (startVal && endVal) {
+            const s = timeToMinutes(startVal);
+            const e = timeToMinutes(endVal);
+            if (e <= s) {
+                document.getElementById('ot-end').value = startVal;
+                updateOTPreview();
+            }
+        }
+    });
 
     // Filters
     document.getElementById('admin-filter-month').addEventListener('change', refreshAdminRecords);
@@ -1167,7 +1214,7 @@ async function editRecordDialog(recordId, source) {
                 </div>
                 <div>
                     <label style="display:block;margin-bottom:6px;font-weight:600;">Kết thúc OT chiều</label>
-                    <input type="time" id="modal-rec-end" value="${record.otEnd || '18:00'}" class="input-sm" style="width:100%; box-sizing:border-box;">
+                    <input type="time" id="modal-rec-end" value="${record.otEnd || '16:30'}" class="input-sm" style="width:100%; box-sizing:border-box;">
                 </div>
             </div>
             <div class="form-group" style="margin-bottom: 0;">
@@ -1214,6 +1261,18 @@ async function editRecordDialog(recordId, source) {
                 }
             }}
         ]);
+
+        const modalStart = document.getElementById('modal-rec-start');
+        const modalEnd = document.getElementById('modal-rec-end');
+        if (modalStart && modalEnd) {
+            modalStart.addEventListener('change', () => {
+                const s = timeToMinutes(modalStart.value);
+                const e = timeToMinutes(modalEnd.value);
+                if (e <= s) {
+                    modalEnd.value = modalStart.value;
+                }
+            });
+        }
     } catch (e) {
         showToast('Lỗi tải dữ liệu bản ghi', 'error');
     }
@@ -1324,14 +1383,31 @@ async function editUserDialog(userId) {
     }
 }
 
-async function resetUserDevice(userId, fullname) {
-    showModal('Reset liên kết thiết bị', `Bạn có chắc muốn xóa liên kết thiết bị của nhân viên <strong>${fullname}</strong>?<br>Sau khi xóa, nhân viên này có thể đăng nhập trên một điện thoại khác.`, [
+async function resetUserDevice(userId, fullname, type = 'mobile') {
+    const label = type === 'mobile' ? 'App điện thoại' : 'Trình duyệt web';
+    const payload = type === 'mobile' ? { deviceId: null } : { browserDeviceId: null };
+    showModal('Xóa liên kết thiết bị', `Bạn có chắc muốn xóa liên kết <strong>${label}</strong> của nhân viên <strong>${fullname}</strong>?<br>Sau khi xóa, nhân viên này có thể đăng nhập trên thiết bị/trình duyệt mới.`, [
         { text: 'Hủy', class: 'btn-ghost' },
         { text: 'Xóa liên kết', class: 'btn btn-danger btn-sm', action: async () => {
             try {
-                await api(`/api/users/${userId}`, 'PUT', { deviceId: null });
+                await api(`/api/users/${userId}`, 'PUT', payload);
                 await refreshAdminUsers();
-                showToast('Đã xóa liên kết thiết bị!');
+                showToast(`Đã xóa liên kết ${label}!`);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+async function approveUnlinkDevice(userId, fullname) {
+    showModal('Duyệt huỷ liên kết thiết bị', `Bạn có chắc muốn phê duyệt yêu cầu huỷ liên kết thiết bị của nhân viên <strong>${fullname}</strong>?<br>Thao tác này sẽ reset liên kết cả App điện thoại và Trình duyệt, nhân viên sẽ tự động đăng xuất.`, [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Duyệt', class: 'btn btn-primary btn-sm', action: async () => {
+            try {
+                await api(`/api/users/${userId}`, 'PUT', { deviceId: null, browserDeviceId: null, pendingUnlink: false });
+                await refreshAdminUsers();
+                showToast('Đã duyệt yêu cầu huỷ liên kết thiết bị!');
             } catch (e) {
                 showToast(e.message, 'error');
             }

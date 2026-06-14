@@ -268,13 +268,17 @@ async function handleEmployeeLogin(e) {
     const username = document.getElementById('login-user').value.trim();
     const errEl = document.getElementById('login-error-emp');
     errEl.textContent = '';
+    const isBrowser = window.location.protocol !== 'file:';
 
     if (!API) {
         const cachedUsernames = JSON.parse(safeStorage.getItem('ot_cached_usernames') || '[]');
         const user = cachedUsernames.find(u => u.username.toLowerCase() === username.toLowerCase());
         if (user) {
-            if (user.deviceId && user.deviceId !== deviceId) {
-                errEl.textContent = 'Tài khoản này đã được đăng nhập trên một thiết bị khác!';
+            const keyToCheck = isBrowser ? user.browserDeviceId : user.deviceId;
+            if (keyToCheck && keyToCheck !== deviceId) {
+                errEl.textContent = isBrowser
+                    ? 'Tài khoản này đã được đăng nhập trên một trình duyệt khác!'
+                    : 'Tài khoản này đã được đăng nhập trên một thiết bị khác!';
                 return;
             }
             currentUser = { id: user.id, username: user.username, fullname: user.fullname, role: 'employee' };
@@ -290,7 +294,7 @@ async function handleEmployeeLogin(e) {
 
     try {
         const oldUser = JSON.parse(safeStorage.getItem('ot_mobile_user') || 'null');
-        const data = await api('/api/auth/login', 'POST', { username, deviceId });
+        const data = await api('/api/auth/login', 'POST', { username, deviceId, isBrowser });
 
         if (data.user.role !== 'employee') {
             errEl.textContent = 'Tài khoản này không phải là nhân viên!';
@@ -323,8 +327,11 @@ async function handleEmployeeLogin(e) {
             const cachedUsernames = JSON.parse(safeStorage.getItem('ot_cached_usernames') || '[]');
             const user = cachedUsernames.find(u => u.username.toLowerCase() === username.toLowerCase());
             if (user) {
-                if (user.deviceId && user.deviceId !== deviceId) {
-                    errEl.textContent = 'Tài khoản này đã được đăng nhập trên một thiết bị khác!';
+                const keyToCheck = isBrowser ? user.browserDeviceId : user.deviceId;
+                if (keyToCheck && keyToCheck !== deviceId) {
+                    errEl.textContent = isBrowser
+                        ? 'Tài khoản này đã được đăng nhập trên một trình duyệt khác!'
+                        : 'Tài khoản này đã được đăng nhập trên một thiết bị khác!';
                     return;
                 }
                 currentUser = { id: user.id, username: user.username, fullname: user.fullname, role: 'employee' };
@@ -394,6 +401,7 @@ function enterApp() {
     loadProfileStats();
     updateConnectionStatus(true, API);
     updateSyncBanner();
+    refreshCurrentUserInfo();
 }
 
 function getGreeting() {
@@ -411,6 +419,34 @@ function logout() {
     const loginForm = document.getElementById('form-login-employee');
     if (loginForm) loginForm.reset();
     showToast('Đã đăng xuất', 'info');
+}
+
+async function refreshCurrentUserInfo() {
+    if (!currentUser || !currentUser.id) return;
+    if (!API) return;
+    try {
+        const data = await api('/api/users/' + currentUser.id, 'GET', null, true);
+        if (data && data.user) {
+            currentUser = Object.assign({}, currentUser, data.user);
+            safeStorage.setItem('ot_mobile_user', JSON.stringify(currentUser));
+            
+            // Cập nhật giao diện nút hủy liên kết
+            const btn = document.getElementById('btn-unlink-device');
+            if (btn) {
+                if (currentUser.pendingUnlink) {
+                    btn.disabled = true;
+                    btn.textContent = '⏳ Đang chờ duyệt huỷ liên kết...';
+                    btn.style.opacity = '0.7';
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = '🔓 Xin huỷ liên kết thiết bị';
+                    btn.style.opacity = '1';
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Error refreshing user info:', err);
+    }
 }
 
 // ==================== OT FORM ====================
@@ -468,7 +504,7 @@ function saveOfflineRecord(recordData) {
 function resetForm() {
     document.getElementById('ot-lunch').checked = false;
     document.getElementById('ot-start').value = '16:30';
-    document.getElementById('ot-end').value = '18:00';
+    document.getElementById('ot-end').value = '16:30';
     document.getElementById('ot-note').value = '';
     updatePreview();
 }
@@ -1029,6 +1065,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('ot-lunch').addEventListener('change', updatePreview);
     document.getElementById('ot-start').addEventListener('change', updatePreview);
     document.getElementById('ot-end').addEventListener('change', updatePreview);
+    document.getElementById('ot-start').addEventListener('change', () => {
+        const startVal = document.getElementById('ot-start').value;
+        const endVal = document.getElementById('ot-end').value;
+        if (startVal && endVal) {
+            const s = timeToMinutes(startVal);
+            const e = timeToMinutes(endVal);
+            if (e <= s) {
+                document.getElementById('ot-end').value = startVal;
+                updatePreview();
+            }
+        }
+    });
 
     // Edit OT form
     const formEditOT = document.getElementById('form-edit-ot');
@@ -1060,7 +1108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnUnlinkDevice = document.getElementById('btn-unlink-device');
     if (btnUnlinkDevice) {
         btnUnlinkDevice.addEventListener('click', async () => {
-            const ok = await showConfirm('Bạn có chắc chắn muốn xin huỷ liên kết thiết bị này khỏi tài khoản không? Thao tác này sẽ tự động đăng xuất.');
+            const ok = await showConfirm('Bạn có chắc chắn muốn xin huỷ liên kết thiết bị này khỏi tài khoản không? Yêu cầu cần được Quản trị viên duyệt.');
             if (!ok) return;
             
             if (!currentUser || !currentUser.id) {
@@ -1070,11 +1118,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             showToast('Đang gửi yêu cầu huỷ liên kết...', 'info');
             try {
-                await api('/api/users/' + currentUser.id, 'PUT', { deviceId: null });
-                showToast('Huỷ liên kết thiết bị thành công!', 'success');
-                logout();
+                await api('/api/users/' + currentUser.id, 'PUT', { pendingUnlink: true });
+                showToast('Gửi yêu cầu huỷ liên kết thành công, vui lòng chờ Quản lý duyệt!', 'success');
+                refreshCurrentUserInfo();
             } catch (err) {
-                showToast(err.message || 'Lỗi huỷ liên kết thiết bị!', 'error');
+                showToast(err.message || 'Lỗi gửi yêu cầu huỷ liên kết!', 'error');
             }
         });
     }
@@ -1251,6 +1299,7 @@ function checkConnection() {
         if (xhr.status === 200) {
             updateConnectionStatus(true, API);
             syncOfflineData();
+            refreshCurrentUserInfo();
         } else {
             updateConnectionStatus(false, '');
         }
@@ -1303,8 +1352,25 @@ async function editRecordDialog(id) {
         document.getElementById('edit-ot-date').max = new Date().toISOString().split('T')[0];
         document.getElementById('edit-ot-lunch').checked = record.hasLunchOT;
         document.getElementById('edit-ot-start').value = record.otStart || '16:30';
-        document.getElementById('edit-ot-end').value = record.otEnd || '18:00';
+        document.getElementById('edit-ot-end').value = record.otEnd || '16:30';
         document.getElementById('edit-ot-note').value = record.note || '';
+
+        // Auto sync edit ot end when edit ot start changes
+        const editStartEl = document.getElementById('edit-ot-start');
+        if (editStartEl && !editStartEl.dataset.listenerBound) {
+            editStartEl.dataset.listenerBound = 'true';
+            editStartEl.addEventListener('change', () => {
+                const startVal = editStartEl.value;
+                const endVal = document.getElementById('edit-ot-end').value;
+                if (startVal && endVal) {
+                    const s = timeToMinutes(startVal);
+                    const e = timeToMinutes(endVal);
+                    if (e <= s) {
+                        document.getElementById('edit-ot-end').value = startVal;
+                    }
+                }
+            });
+        }
 
         document.getElementById('edit-overlay').classList.add('active');
     } catch (err) {
