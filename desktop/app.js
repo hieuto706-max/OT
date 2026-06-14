@@ -559,6 +559,9 @@ async function exportExcel() {
     try {
         const usersData = await api('/api/users');
         const users = usersData.users.filter(u => u.role === 'employee');
+        // Sort employees alphabetically by fullname
+        users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
+
         const recData = await api(`/api/records?month=${month}`);
         const records = recData.records;
 
@@ -567,20 +570,26 @@ async function exportExcel() {
         <meta charset="utf-8">
         <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Báo cáo tăng ca</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
         <style>
-            table { border-collapse: collapse; }
-            th { background-color: #6366f1; color: white; font-weight: bold; border: 1.5px solid #ccc; padding: 10px; }
-            td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+            table { border-collapse: collapse; margin-bottom: 25px; }
+            th { background-color: #4f46e5; color: white; font-weight: bold; border: 1px solid #999; padding: 10px; font-size: 13px; }
+            td { border: 1px solid #999; padding: 8px; text-align: center; font-size: 12px; }
+            .title { font-size: 18px; font-weight: bold; color: #1e1b4b; text-align: left; margin-bottom: 10px; }
+            .section-header { font-size: 14px; font-weight: bold; color: #312e81; text-align: left; margin-top: 20px; margin-bottom: 10px; }
             .name { text-align: left; font-weight: bold; }
-            .total { font-weight: bold; color: #8b5cf6; }
+            .text-left { text-align: left; }
+            .total { font-weight: bold; color: #4f46e5; }
         </style>
         </head>
         <body>
-        <h2>Báo cáo tổng hợp tăng ca - Tháng ${month}</h2>
+        <div class="title">BÁO CÁO TĂNG CA - THÁNG ${month}</div>
+        
+        <div class="section-header">I. BẢNG TỔNG HỢP GIỜ TĂNG CA</div>
         <table>
             <thead>
                 <tr>
                     <th>STT</th>
                     <th>Họ và tên</th>
+                    <th>Mã nhân viên</th>
                     <th>Số ngày OT</th>
                     <th>OT Trưa (giờ)</th>
                     <th>OT Chiều (giờ)</th>
@@ -588,6 +597,7 @@ async function exportExcel() {
                 </tr>
             </thead>
             <tbody>`;
+        
         users.forEach((u, i) => {
             const ur = records.filter(r => r.userId === u.id);
             const days = ur.length;
@@ -596,22 +606,76 @@ async function exportExcel() {
             html += `<tr>
                 <td>${i + 1}</td>
                 <td class="name">${u.fullname}</td>
+                <td>${u.username}</td>
                 <td>${days}</td>
                 <td>${lh.toFixed(1)}</td>
                 <td>${eh.toFixed(1)}</td>
                 <td class="total">${(lh + eh).toFixed(1)}</td>
             </tr>`;
         });
-        html += `</tbody></table></body></html>`;
+        
+        html += `</tbody></table>
+        
+        <div class="section-header">II. BẢNG CHI TIẾT TĂNG CA TỪNG NGÀY</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Họ và tên</th>
+                    <th>Mã nhân viên</th>
+                    <th>Ngày</th>
+                    <th>OT Trưa</th>
+                    <th>OT Chiều</th>
+                    <th>Giờ bắt đầu</th>
+                    <th>Giờ kết thúc</th>
+                    <th>Tổng OT (giờ)</th>
+                    <th>Ghi chú</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        let detailedIdx = 1;
+        users.forEach(u => {
+            const userRecords = records.filter(r => r.userId === u.id);
+            // Sort user records chronologically by date
+            userRecords.sort((a, b) => a.date.localeCompare(b.date));
+            
+            userRecords.forEach(r => {
+                const lunchVal = r.hasLunchOT ? '1.0h' : '—';
+                const eveningVal = r.eveningOTHours > 0 ? `${r.eveningOTHours.toFixed(1)}h` : '—';
+                html += `<tr>
+                    <td>${detailedIdx++}</td>
+                    <td class="name">${u.fullname}</td>
+                    <td>${u.username}</td>
+                    <td>${formatDate(r.date)}</td>
+                    <td>${lunchVal}</td>
+                    <td>${eveningVal}</td>
+                    <td>${r.otStart || '—'}</td>
+                    <td>${r.otEnd || '—'}</td>
+                    <td class="total">${r.totalHours.toFixed(1)}</td>
+                    <td class="text-left">${r.note || '—'}</td>
+                </tr>`;
+            });
+        });
+
+        if (detailedIdx === 1) {
+            html += `<tr><td colspan="10">Chưa có dữ liệu chi tiết tăng ca cho tháng này.</td></tr>`;
+        }
+
+        html += `</tbody></table>
+        </body>
+        </html>`;
 
         const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `bao-cao-tang-ca-${month}.xls`;
+        link.download = `bao-cao-tang-ca-chi-tiet-${month}.xls`;
         link.click();
         URL.revokeObjectURL(link.href);
-        showToast('Đã xuất file Excel!');
-    } catch (e) { showToast('Lỗi xuất Excel', 'error'); }
+        showToast('Đã xuất file Excel chi tiết!');
+    } catch (e) { 
+        showToast('Lỗi xuất Excel: ' + e.message, 'error'); 
+    }
 }
 
 // ==================== EMPLOYEE DASHBOARD ====================
