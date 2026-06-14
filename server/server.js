@@ -620,6 +620,13 @@ async function handleAPI(req, res, urlPath, method) {
         } catch (e) {
             console.error('[Cloud URL API] Lỗi:', e.message);
         }
+        // Fallback: Trên Render, dùng RENDER_EXTERNAL_URL nếu config.json không có serverUrl
+        if (!cloudUrl && process.env.RENDER_EXTERNAL_URL) {
+            cloudUrl = process.env.RENDER_EXTERNAL_URL;
+        }
+        if (cloudUrl && cloudUrl.endsWith('/')) {
+            cloudUrl = cloudUrl.slice(0, -1);
+        }
         return sendJSON(res, 200, { cloudUrl });
     }
 
