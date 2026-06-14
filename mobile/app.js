@@ -1493,3 +1493,17 @@ function startUpdateCheckInterval() {
         }
     }, 30 * 60 * 1000); // 30 phút
 }
+
+// Temporary debug auto-mock login for verification
+if (window.location.search.includes('mock=true')) {
+    safeStorage.setItem('ot_cached_usernames', JSON.stringify([{id: 'emp_test', username: 'testemp', fullname: 'Nguyễn Văn Test'}]));
+    setTimeout(() => {
+        const input = document.getElementById('login-user');
+        if (input) {
+            input.value = 'testemp';
+            // Trigger login
+            const btn = document.getElementById('btn-login-emp');
+            if (btn) btn.click();
+        }
+    }, 1500);
+}
