@@ -1672,7 +1672,7 @@ body {
     }
 }
 
-@media (min-width: 992px) {
+@media (min-width: 480px) {
     /* Limit the PWA UI size on desktop browser to look like an app */
     #screen-app {
         max-width: 450px;
