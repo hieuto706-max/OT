@@ -672,6 +672,11 @@ const server = http.createServer(async (req, res) => {
         return serveStatic(req, res, mobilePath, '/download.html');
     }
 
+    // Direct download route for the Android APK
+    if (urlPath === '/OT-Manager-mobile.apk') {
+        return serveStatic(req, res, path.join(__dirname, '..', 'mobile'), '/OT-Manager-mobile.apk');
+    }
+
     // Desktop admin app (served at /desktop/)
     if (urlPath.startsWith('/desktop')) {
         const desktopPath = urlPath.replace('/desktop', '') || '/';

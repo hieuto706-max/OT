@@ -1146,8 +1146,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Cấu hình Tabs Đăng nhập (Nhân viên / Quản trị) trên màn hình Login
     const tabEmployeeBtn = document.getElementById('btn-tab-employee');
     const tabAdminBtn = document.getElementById('btn-tab-admin');
-    const formLoginEmployee = document.getElementById('form-login-employee');
-    const formLoginAdmin = document.getElementById('form-login-admin');
 
     if (tabEmployeeBtn && tabAdminBtn && formLoginEmployee && formLoginAdmin) {
         tabEmployeeBtn.addEventListener('click', () => {
@@ -1176,7 +1174,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Thiết lập link tải động và mã QR cho mục Tải ứng dụng
     const host = window.location.origin;
     const isGitHubPages = window.location.hostname.includes('github.io');
-    const defaultApk = isGitHubPages ? 'mobile/OT-Manager-mobile.apk' : 'OT-Manager-mobile.apk';
+    const isMobileFolder = window.location.pathname.includes('/mobile');
+    const defaultApk = isMobileFolder ? 'OT-Manager-mobile.apk' : 'mobile/OT-Manager-mobile.apk';
     const apkUrl = API ? (API + '/OT-Manager-mobile.apk') : defaultApk;
 
     const apkBtnLanding = document.getElementById('apk-download-btn-landing');
@@ -1184,7 +1183,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const apkQrLanding = document.getElementById('apk-qr-code-landing');
     if (apkQrLanding) {
-        const downloadPath = isGitHubPages ? ('/OT/' + defaultApk) : ('/' + defaultApk);
+        const downloadPath = isGitHubPages ? '/OT/mobile/OT-Manager-mobile.apk' : '/mobile/OT-Manager-mobile.apk';
         const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=${encodeURIComponent(host + downloadPath)}`;
         apkQrLanding.src = qrApiUrl;
     }
@@ -1342,7 +1341,7 @@ async function handleEditOTSubmit(e) {
 }
 
 // ==================== AUTO UPDATE FOR MOBILE APP ====================
-const MOBILE_VERSION = '1.0.5';
+const MOBILE_VERSION = '1.0.6';
 let updateCheckInterval = null;
 
 function checkMobileUpdates(isManual) {
