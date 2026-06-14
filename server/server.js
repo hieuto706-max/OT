@@ -563,7 +563,7 @@ async function handleAPI(req, res, urlPath, method) {
             }
             // Fallback nếu không cấu hình hoặc chạy trên Render không có file config.json
             if (!desktopDownloadUrl) {
-                desktopDownloadUrl = `https://github.com/hieuto706-max/OT/releases/download/v${version}/ot-manager%20Setup%20${version}.exe`;
+                desktopDownloadUrl = `https://github.com/hieuto706-max/OT/releases/download/v${version}/ot-manager-Setup-${version}.exe`;
             }
         } catch (e) {
             console.error('[Version API] Lỗi đọc phiên bản:', e.message);

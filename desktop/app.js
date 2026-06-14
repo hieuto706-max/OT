@@ -846,7 +846,7 @@ async function checkUpdateManual() {
                         text: 'Tải về ngay', 
                         class: 'btn btn-primary btn-sm', 
                         action: () => {
-                            const downloadUrl = cloudData.desktopDownloadUrl || `https://github.com/hieuto706-max/OT/releases/download/v${cloudVer}/ot-manager%20Setup%20${cloudVer}.exe`;
+                            const downloadUrl = cloudData.desktopDownloadUrl || `https://github.com/hieuto706-max/OT/releases/download/v${cloudVer}/ot-manager-Setup-${cloudVer}.exe`;
                             window.open(downloadUrl, '_blank');
                         } 
                     }
@@ -905,7 +905,7 @@ async function checkUpdateSilent() {
                         text: 'Tải về ngay', 
                         class: 'btn btn-primary btn-sm', 
                         action: () => {
-                            const downloadUrl = cloudData.desktopDownloadUrl || `https://github.com/hieuto706-max/OT/releases/download/v${cloudVer}/ot-manager%20Setup%20${cloudVer}.exe`;
+                            const downloadUrl = cloudData.desktopDownloadUrl || `https://github.com/hieuto706-max/OT/releases/download/v${cloudVer}/ot-manager-Setup-${cloudVer}.exe`;
                             window.open(downloadUrl, '_blank');
                         } 
                     }
