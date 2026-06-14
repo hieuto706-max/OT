@@ -612,26 +612,19 @@ async function handleAPI(req, res, urlPath, method) {
     // --- SERVER VERSION ---
     if (urlPath === '/api/version' && method === 'GET') {
         let version = '1.0.0';
-        let desktopDownloadUrl = '';
         try {
             const pkgPath = path.join(__dirname, '..', 'package.json');
             if (fs.existsSync(pkgPath)) {
                 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
                 version = pkg.version || '1.0.0';
             }
-            const configPath = getConfigPath();
-            if (fs.existsSync(configPath)) {
-                const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-                desktopDownloadUrl = config.desktopDownloadUrl;
-            }
-            // Fallback nếu không cấu hình hoặc chạy trên Render không có file config.json
-            if (!desktopDownloadUrl) {
-                desktopDownloadUrl = `https://github.com/hieuto706-max/OT/releases/download/v${version}/ot-manager-Setup-${version}.exe`;
-            }
         } catch (e) {
             console.error('[Version API] Lỗi đọc phiên bản:', e.message);
         }
-        return sendJSON(res, 200, { version, desktopDownloadUrl });
+        // Luôn tự sinh URL tải từ phiên bản hiện tại (không đọc từ config.json để tránh lỗi hardcode phiên bản cũ)
+        const desktopDownloadUrl = `https://github.com/hieuto706-max/OT/releases/download/v${version}/ot-manager-Setup-${version}.exe`;
+        const mobileDownloadUrl = `https://github.com/hieuto706-max/OT/releases/download/v${version}/OT-Manager-mobile.apk`;
+        return sendJSON(res, 200, { version, desktopDownloadUrl, mobileDownloadUrl });
     }
 
     // --- SERVER INFO ---

@@ -421,13 +421,13 @@
                 if (data.version) {
                     document.getElementById('desktop-ver').textContent = `v${data.version}`;
                     document.getElementById('mobile-ver').textContent = `v${data.version}`;
-                    // Cập nhật link APK theo phiên bản mới nhất từ server
-                    if (!isGitHubPages) return;
-                    const latestApk = 'https://github.com/hieuto706-max/OT/releases/download/v' + data.version + '/OT-Manager-mobile.apk';
-                    document.getElementById('apk-download-btn').href = latestApk;
                 }
                 if (data.desktopDownloadUrl) {
                     document.getElementById('desktop-download-btn').href = data.desktopDownloadUrl;
+                }
+                if (data.mobileDownloadUrl) {
+                    document.getElementById('apk-download-btn').href = data.mobileDownloadUrl;
+                    document.getElementById('apk-qr-code').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0b0b14&data=${encodeURIComponent(data.mobileDownloadUrl)}`;
                 }
             })
             .catch(err => console.error('Lỗi lấy version:', err));

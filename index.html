@@ -684,6 +684,16 @@
                         if (desktopBtn && data.desktopDownloadUrl) {
                             desktopBtn.href = data.desktopDownloadUrl;
                         }
+
+                        // Update mobile APK download url & QR code
+                        const apkBtn = document.getElementById('apk-download-btn-landing');
+                        if (apkBtn && data.mobileDownloadUrl) {
+                            apkBtn.href = data.mobileDownloadUrl;
+                        }
+                        const apkQr = document.getElementById('apk-qr-code-landing');
+                        if (apkQr && data.mobileDownloadUrl) {
+                            apkQr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=' + encodeURIComponent(data.mobileDownloadUrl);
+                        }
                     }
                 })
                 .catch(err => console.warn('Lỗi lấy phiên bản động từ server:', err));
