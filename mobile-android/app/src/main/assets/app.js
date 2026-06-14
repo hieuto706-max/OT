@@ -1176,18 +1176,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const host = window.location.origin;
     const isGitHubPages = window.location.hostname.includes('github.io');
     const isMobileFolder = window.location.pathname.includes('/mobile');
+
+    // Link APK: trên GitHub Pages trỏ thẳng tới GitHub Releases, còn lại qua server redirect
+    const GITHUB_RELEASES_APK = 'https://github.com/hieuto706-max/OT/releases/download/v' + MOBILE_VERSION + '/OT-Manager-mobile.apk';
     const defaultApk = isMobileFolder ? 'OT-Manager-mobile.apk' : 'mobile/OT-Manager-mobile.apk';
-    const apkUrl = API ? (API + '/OT-Manager-mobile.apk') : defaultApk;
+    const apkUrl = isGitHubPages ? GITHUB_RELEASES_APK : (API ? (API + '/OT-Manager-mobile.apk') : defaultApk);
 
     const apkBtnLanding = document.getElementById('apk-download-btn-landing');
     if (apkBtnLanding) apkBtnLanding.href = apkUrl;
 
     const apkQrLanding = document.getElementById('apk-qr-code-landing');
     if (apkQrLanding) {
-        const downloadPath = isGitHubPages ? '/OT/mobile/OT-Manager-mobile.apk' : '/mobile/OT-Manager-mobile.apk';
-        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=${encodeURIComponent(host + downloadPath)}`;
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=${encodeURIComponent(apkUrl)}`;
         apkQrLanding.src = qrApiUrl;
     }
+
 
     const desktopBtnLanding = document.getElementById('desktop-download-btn-landing');
     if (desktopBtnLanding) {

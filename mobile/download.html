@@ -401,9 +401,12 @@
     <script>
         // Thiết lập link tải động dựa vào host hiện tại
         const host = window.location.origin;
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        const MOBILE_VERSION = '1.1.1';
         
-        // Link tải APK
-        const apkUrl = host + '/OT-Manager-mobile.apk';
+        // Link tải APK: trên GitHub Pages trỏ thẳng tới GitHub Releases
+        const GITHUB_RELEASES_APK = 'https://github.com/hieuto706-max/OT/releases/download/v' + MOBILE_VERSION + '/OT-Manager-mobile.apk';
+        const apkUrl = isGitHubPages ? GITHUB_RELEASES_APK : (host + '/OT-Manager-mobile.apk');
         document.getElementById('apk-download-btn').href = apkUrl;
         
         // Tạo mã QR QR Code kết nối tới link tải APK trực tiếp
@@ -411,12 +414,17 @@
         document.getElementById('apk-qr-code').src = qrApiUrl;
 
         // Tải thông tin phiên bản từ Server
-        fetch(host + '/api/version')
+        const API_SERVER = isGitHubPages ? 'https://ot-manager-server-jbxd.onrender.com' : host;
+        fetch(API_SERVER + '/api/version')
             .then(res => res.json())
             .then(data => {
                 if (data.version) {
                     document.getElementById('desktop-ver').textContent = `v${data.version}`;
                     document.getElementById('mobile-ver').textContent = `v${data.version}`;
+                    // Cập nhật link APK theo phiên bản mới nhất từ server
+                    if (!isGitHubPages) return;
+                    const latestApk = 'https://github.com/hieuto706-max/OT/releases/download/v' + data.version + '/OT-Manager-mobile.apk';
+                    document.getElementById('apk-download-btn').href = latestApk;
                 }
                 if (data.desktopDownloadUrl) {
                     document.getElementById('desktop-download-btn').href = data.desktopDownloadUrl;
