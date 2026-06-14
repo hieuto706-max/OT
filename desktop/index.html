@@ -53,6 +53,12 @@
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                             </svg>
                             <input type="password" id="login-password" placeholder="Nhập mật khẩu..." required>
+                            <button type="button" class="btn-toggle-password" id="btn-toggle-password" title="Hiện/Ẩn mật khẩu" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; z-index: 10; transition: var(--transition-fast);">
+                                <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
                         </div>
                     </div>
                     <button type="submit" class="btn btn-purple btn-full">
@@ -63,6 +69,7 @@
                     </button>
                     <p id="login-error-admin" class="form-error"></p>
                 </form>
+                <div class="login-version" id="login-version">Phiên bản v1.1.3</div>
             </div>
         </div>
     </div>
@@ -248,7 +255,7 @@
             <div id="admin-tab-users" class="admin-tab-content">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:4px;"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Danh sách nhân viên</h3>
+                        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:4px;"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Quản lý tài khoản</h3>
                         <button class="btn btn-primary btn-sm" id="btn-add-user">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                                 <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -256,25 +263,55 @@
                                 <line x1="20" y1="8" x2="20" y2="14"/>
                                 <line x1="23" y1="11" x2="17" y2="11"/>
                             </svg>
-                            Thêm nhân viên
+                            Thêm tài khoản
                         </button>
                     </div>
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Họ và tên</th>
-                                    <th>Tên đăng nhập</th>
-                                    <th>Vai trò</th>
-                                    <th>Tổng OT tháng này</th>
-                                    <th>Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-users-body">
-                            </tbody>
-                        </table>
+
+                    <!-- Sub-tabs within User Management -->
+                    <div class="sub-tabs">
+                        <button class="sub-tab active" data-subtab="employees">Nhân viên</button>
+                        <button class="sub-tab" data-subtab="admins">Quản trị viên</button>
                     </div>
+
+                    <!-- Employees Table Container -->
+                    <div id="subtab-content-employees" class="sub-tab-content active">
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Họ và tên</th>
+                                        <th>Tên đăng nhập</th>
+                                        <th>Vai trò</th>
+                                        <th>Tổng OT tháng này</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-users-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Admins Table Container -->
+                    <div id="subtab-content-admins" class="sub-tab-content">
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Họ và tên</th>
+                                        <th>Tên đăng nhập</th>
+                                        <th>Vai trò</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-managers-body">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 

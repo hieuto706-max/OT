@@ -1288,3 +1288,67 @@ body {
     background: rgba(99, 102, 241, 0.35);
     color: var(--text-white);
 }
+
+/* Version Display outside Login */
+.login-version {
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-top: 24px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* Toggle Password eye-icon button */
+.btn-toggle-password {
+    background: none;
+    border: none;
+    outline: none;
+}
+.btn-toggle-password:hover {
+    color: var(--accent-purple-light) !important;
+}
+
+.input-wrapper input[type="password"] {
+    padding-right: 44px;
+}
+
+/* Sub-tabs in Account Management */
+.sub-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+.sub-tab {
+    padding: 8px 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-family);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    border-bottom: 2px solid transparent;
+}
+
+.sub-tab:hover {
+    color: var(--text-primary);
+}
+
+.sub-tab.active {
+    color: var(--accent-purple-light);
+    border-bottom-color: var(--accent-purple);
+}
+
+.sub-tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.sub-tab-content.active {
+    display: block;
+}

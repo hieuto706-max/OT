@@ -366,14 +366,21 @@ function showDownloadProgress(downloadUrl, targetVersion) {
         () => {
             setTimeout(() => {
                 if (!progressWindow.isDestroyed()) progressWindow.close();
-                // Khởi chạy bộ cài đặt mới
-                const { exec } = require('child_process');
-                exec(`"${tempPath}"`, (err) => {
-                    if (err) {
-                        console.error('Lỗi chạy bộ cài đặt:', err);
-                    }
-                });
-                app.quit();
+                // Khởi chạy bộ cài đặt mới hoàn toàn tách biệt
+                const { spawn } = require('child_process');
+                try {
+                    const child = spawn(tempPath, [], {
+                        detached: true,
+                        stdio: 'ignore'
+                    });
+                    child.unref();
+                    app.exit(0);
+                } catch (spawnErr) {
+                    // Cơ chế dự phòng
+                    const { exec } = require('child_process');
+                    exec(`"${tempPath}"`);
+                    app.quit();
+                }
             }, 1000);
         },
         (err) => {
