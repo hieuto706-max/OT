@@ -55,11 +55,6 @@
                 </svg>
                 <span class="logo-text">OT Manager</span>
             </div>
-            <div class="landing-nav">
-                <a href="#login-section" class="nav-link">Đăng nhập</a>
-                <a href="#features-section" class="nav-link">Tính năng</a>
-                <a href="#download-section" class="nav-link">Tải ứng dụng</a>
-            </div>
         </header>
 
         <div class="landing-container">
@@ -70,11 +65,6 @@
                     <div class="login-header">
                         <h1>Hệ thống OT Manager</h1>
                         <p>Vui lòng đăng nhập để tiếp tục</p>
-                    </div>
-
-                    <div class="login-tabs">
-                        <button type="button" class="login-tab active" data-tab="employee" id="btn-tab-employee">Nhân viên</button>
-                        <button type="button" class="login-tab" data-tab="admin" id="btn-tab-admin">Quản trị viên</button>
                     </div>
 
                     <!-- Form Đăng nhập Nhân viên -->
@@ -95,95 +85,11 @@
                         <p id="login-error-emp" class="form-error"></p>
                     </form>
 
-                    <!-- Form Đăng nhập Quản lý -->
-                    <form id="form-login-admin" class="mobile-form login-form" style="display: none;">
-                        <div class="form-group">
-                            <label for="login-admin-user">Tên đăng nhập Quản lý</label>
-                            <div class="input-wrapper">
-                                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                    <circle cx="12" cy="7" r="4"/>
-                                </svg>
-                                <input type="text" id="login-admin-user" placeholder="Nhập tên đăng nhập quản trị..." autocomplete="username">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="login-password">Mật khẩu</label>
-                            <div class="input-wrapper">
-                                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                                </svg>
-                                <input type="password" id="login-password" placeholder="Nhập mật khẩu..." autocomplete="current-password">
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-purple btn-full" id="btn-login-admin">
-                            Đăng nhập Quản trị
-                        </button>
-                        <p id="login-error-admin" class="form-error"></p>
-                    </form>
-
                     <div class="login-footer">
                         <div id="connection-status" style="display:none; margin-top:8px;font-size:0.8rem;"></div>
                     </div>
                 </div>
 
-                <!-- Features Section -->
-                <section id="features-section" class="landing-section" style="margin-top: 40px;">
-                    <h2 class="section-title">✨ Tính năng nổi bật</h2>
-                    <div class="features-grid">
-                        <div class="feat-card">
-                            <span class="feat-icon">⚡</span>
-                            <h3>Ghi nhận nhanh</h3>
-                            <p>Chọn ngày, tích chọn tăng ca trưa hoặc tối để lưu giờ OT tức thì.</p>
-                        </div>
-                        <div class="feat-card">
-                            <span class="feat-icon">📶</span>
-                            <h3>Lưu trữ Offline</h3>
-                            <p>Tự động lưu ngoại tuyến và đồng bộ lại khi thiết bị kết nối mạng.</p>
-                        </div>
-                        <div class="feat-card">
-                            <span class="feat-icon">📊</span>
-                            <h3>Thống kê trực quan</h3>
-                            <p>Theo dõi tổng số giờ OT làm việc trong tháng rõ ràng.</p>
-                        </div>
-                        <div class="feat-card">
-                            <span class="feat-icon">☁️</span>
-                            <h3>Đồng bộ đám mây</h3>
-                            <p>Dữ liệu được lưu trữ đám mây, đồng bộ thời gian thực giữa các thiết bị.</p>
-                        </div>
-                    </div>
-                </section>
-            </div>
-
-            <!-- Right Side: Download Area -->
-            <div class="landing-right-side" id="download-section">
-                <section class="landing-section">
-                    <h2 class="section-title">📥 Tải ứng dụng</h2>
-                    
-                    <div class="download-card apk-card">
-                        <span class="card-emoji">📱</span>
-                        <h3>Ứng dụng Nhân viên</h3>
-                        <span class="platform-badge">Android (.APK)</span>
-                        <p>Báo cáo tăng ca hàng ngày ngay trên điện thoại của bạn.</p>
-                        <a id="apk-download-btn-landing" href="OT-Manager-mobile.apk" download class="btn btn-primary" style="width:100%">Tải APK Android</a>
-                        
-                        <div class="qr-box">
-                            <div class="qr-bg">
-                                <img id="apk-qr-code-landing" src="" alt="QR Code">
-                            </div>
-                            <span class="qr-hint">Quét mã QR để cài đặt nhanh</span>
-                        </div>
-                    </div>
-
-                    <div class="download-card exe-card" style="margin-top: 20px;">
-                        <span class="card-emoji">🖥️</span>
-                        <h3>Ứng dụng Quản lý</h3>
-                        <span class="platform-badge">Windows (.EXE)</span>
-                        <p>Xem báo cáo, xuất Excel, quản lý nhân viên và duyệt giờ tăng ca.</p>
-                        <a id="desktop-download-btn-landing" href="https://github.com/hieuto706-max/OT/releases/download/v1.0.6/ot-manager%20Setup%201.0.6.exe" target="_blank" class="btn btn-purple" style="width:100%">Tải Windows EXE</a>
-                    </div>
-                </section>
             </div>
         </div>
     </div>
