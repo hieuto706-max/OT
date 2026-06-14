@@ -262,19 +262,16 @@ async function cacheUsernames() {
     }
 }
 
-async function handleLogin(e) {
+async function handleEmployeeLogin(e) {
     e.preventDefault();
     const username = document.getElementById('login-user').value.trim();
-    const passwordEl = document.getElementById('login-password');
-    const password = passwordEl ? passwordEl.value : '';
-    const errEl = document.getElementById('login-error');
+    const errEl = document.getElementById('login-error-emp');
     errEl.textContent = '';
 
     if (!API) {
         const cachedUsernames = JSON.parse(safeStorage.getItem('ot_cached_usernames') || '[]');
         const user = cachedUsernames.find(u => u.username.toLowerCase() === username.toLowerCase());
         if (user) {
-            // Kiểm tra mã thiết bị khi offline
             if (user.deviceId && user.deviceId !== deviceId) {
                 errEl.textContent = 'Tài khoản này đã được đăng nhập trên một thiết bị khác!';
                 return;
@@ -292,28 +289,14 @@ async function handleLogin(e) {
 
     try {
         const oldUser = JSON.parse(safeStorage.getItem('ot_mobile_user') || 'null');
-        const data = await api('/api/auth/login', 'POST', { username, password, deviceId });
-        if (data.user.role === 'admin') {
-            // Lưu thông tin đăng nhập quản lý
-            safeStorage.setItem('ot_mobile_user', JSON.stringify(data.user));
-            safeStorage.setItem('ot_login_time', Date.now().toString());
-            
-            // Chuyển hướng tới trang quản lý desktop
-            const isGitHubPages = window.location.hostname.includes('github.io');
-            const redirectUrl = isGitHubPages ? '/OT/desktop/index.html' : '/desktop/index.html';
-            showToast('Đăng nhập Quản lý thành công, đang chuyển hướng...', 'success');
-            setTimeout(() => {
-                window.location.href = redirectUrl;
-            }, 1000);
-            return;
-        }
+        const data = await api('/api/auth/login', 'POST', { username, deviceId });
 
         if (data.user.role !== 'employee') {
-            errEl.textContent = 'Tài khoản này không hợp lệ!';
+            errEl.textContent = 'Tài khoản này không phải là nhân viên!';
             return;
         }
 
-        // Cập nhật ID cho các bản ghi offline nếu đây là cùng một tài khoản (username) nhưng ID khác (do xóa và tạo lại)
+        // Cập nhật ID cho các bản ghi offline
         if (oldUser && oldUser.username && oldUser.username.toLowerCase() === username.toLowerCase() && oldUser.id !== data.user.id) {
             let offlineRecords = JSON.parse(safeStorage.getItem('ot_offline_records') || '[]');
             let updated = false;
@@ -325,7 +308,6 @@ async function handleLogin(e) {
             });
             if (updated) {
                 safeStorage.setItem('ot_offline_records', JSON.stringify(offlineRecords));
-                console.log(`[Login] Updated offline records userId from ${oldUser.id} to ${data.user.id}`);
             }
         }
 
@@ -340,7 +322,6 @@ async function handleLogin(e) {
             const cachedUsernames = JSON.parse(safeStorage.getItem('ot_cached_usernames') || '[]');
             const user = cachedUsernames.find(u => u.username.toLowerCase() === username.toLowerCase());
             if (user) {
-                // Kiểm tra mã thiết bị khi offline do lỗi mạng
                 if (user.deviceId && user.deviceId !== deviceId) {
                     errEl.textContent = 'Tài khoản này đã được đăng nhập trên một thiết bị khác!';
                     return;
@@ -357,35 +338,39 @@ async function handleLogin(e) {
     }
 }
 
-async function handleRegister(e) {
+async function handleAdminLogin(e) {
     e.preventDefault();
-    const fullname = document.getElementById('reg-fullname').value.trim();
-    const username = document.getElementById('reg-username').value.trim();
-    const password = document.getElementById('reg-password').value;
-    const role = document.getElementById('reg-role').value;
-    const errorEl = document.getElementById('register-error');
-    const successEl = document.getElementById('register-success');
-    errorEl.textContent = '';
-    successEl.textContent = '';
+    const username = document.getElementById('login-admin-user').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error-admin');
+    errEl.textContent = '';
 
     if (!API) {
-        errorEl.textContent = 'Không thể đăng ký tài khoản khi ngoại tuyến (Offline)!';
+        errEl.textContent = 'Không thể đăng nhập quản trị khi ngoại tuyến (Offline)!';
         return;
     }
 
     try {
-        await api('/api/auth/register', 'POST', { fullname, username, password, role });
-        successEl.textContent = 'Đăng ký thành công! Bạn có thể đăng nhập.';
-        e.target.reset();
-        showToast('Đăng ký thành công!', 'success');
+        const data = await api('/api/auth/login', 'POST', { username, password, deviceId });
         
-        // Auto select Login tab after registration
+        if (data.user.role !== 'admin') {
+            errEl.textContent = 'Tài khoản nhân viên không được phép đăng nhập bên phần quản trị!';
+            return;
+        }
+
+        // Lưu thông tin đăng nhập quản lý
+        safeStorage.setItem('ot_mobile_user', JSON.stringify(data.user));
+        safeStorage.setItem('ot_login_time', Date.now().toString());
+        
+        // Chuyển hướng tới trang quản lý desktop
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        const redirectUrl = isGitHubPages ? '/OT/desktop/index.html' : '/desktop/index.html';
+        showToast('Đăng nhập Quản lý thành công, đang chuyển hướng...', 'success');
         setTimeout(() => {
-            const loginTabBtn = document.getElementById('btn-tab-login');
-            if (loginTabBtn) loginTabBtn.click();
-        }, 1500);
+            window.location.href = redirectUrl;
+        }, 1000);
     } catch (err) {
-        errorEl.textContent = err.message;
+        errEl.textContent = err.message;
     }
 }
 
@@ -1027,8 +1012,15 @@ document.addEventListener('DOMContentLoaded', () => {
         showScreen('screen-login');
     }, 1200);
 
-    // Login form
-    document.getElementById('form-login').addEventListener('submit', handleLogin);
+    // Login forms
+    const formLoginEmployee = document.getElementById('form-login-employee');
+    if (formLoginEmployee) {
+        formLoginEmployee.addEventListener('submit', handleEmployeeLogin);
+    }
+    const formLoginAdmin = document.getElementById('form-login-admin');
+    if (formLoginAdmin) {
+        formLoginAdmin.addEventListener('submit', handleAdminLogin);
+    }
 
     // OT form
     document.getElementById('form-ot').addEventListener('submit', handleOTSubmit);
@@ -1151,35 +1143,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Bắt đầu kiểm tra cập nhật định kỳ mỗi 30 phút
     startUpdateCheckInterval();
 
-    // Đăng ký Form Đăng ký
-    const formRegister = document.getElementById('form-register');
-    if (formRegister) {
-        formRegister.addEventListener('submit', handleRegister);
-    }
+    // Cấu hình Tabs Đăng nhập (Nhân viên / Quản trị) trên màn hình Login
+    const tabEmployeeBtn = document.getElementById('btn-tab-employee');
+    const tabAdminBtn = document.getElementById('btn-tab-admin');
+    const formLoginEmployee = document.getElementById('form-login-employee');
+    const formLoginAdmin = document.getElementById('form-login-admin');
 
-    // Cấu hình Tabs Đăng nhập / Đăng ký trên màn hình Login
-    const loginTabBtn = document.getElementById('btn-tab-login');
-    const registerTabBtn = document.getElementById('btn-tab-register');
-    const loginForm = document.getElementById('form-login');
-    const registerForm = document.getElementById('form-register');
-
-    if (loginTabBtn && registerTabBtn && loginForm && registerForm) {
-        loginTabBtn.addEventListener('click', () => {
-            loginTabBtn.classList.add('active');
-            registerTabBtn.classList.remove('active');
-            loginForm.classList.add('active');
-            registerForm.classList.remove('active');
-            loginForm.style.display = 'block';
-            registerForm.style.display = 'none';
+    if (tabEmployeeBtn && tabAdminBtn && formLoginEmployee && formLoginAdmin) {
+        tabEmployeeBtn.addEventListener('click', () => {
+            tabEmployeeBtn.classList.add('active');
+            tabAdminBtn.classList.remove('active');
+            formLoginEmployee.classList.add('active');
+            formLoginAdmin.classList.remove('active');
+            formLoginEmployee.style.display = 'block';
+            formLoginAdmin.style.display = 'none';
+            const errEl = document.getElementById('login-error-emp');
+            if (errEl) errEl.textContent = '';
         });
 
-        registerTabBtn.addEventListener('click', () => {
-            registerTabBtn.classList.add('active');
-            loginTabBtn.classList.remove('active');
-            registerForm.classList.add('active');
-            loginForm.classList.remove('active');
-            registerForm.style.display = 'block';
-            loginForm.style.display = 'none';
+        tabAdminBtn.addEventListener('click', () => {
+            tabAdminBtn.classList.add('active');
+            tabEmployeeBtn.classList.remove('active');
+            formLoginAdmin.classList.add('active');
+            formLoginEmployee.classList.remove('active');
+            formLoginAdmin.style.display = 'block';
+            formLoginEmployee.style.display = 'none';
+            const errEl = document.getElementById('login-error-admin');
+            if (errEl) errEl.textContent = '';
         });
     }
 

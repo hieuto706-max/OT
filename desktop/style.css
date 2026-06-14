@@ -339,6 +339,36 @@ body {
     transform: translateY(0);
 }
 
+.btn-green {
+    background: var(--gradient-green);
+    color: var(--text-white);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.btn-green:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+}
+
+.btn-green:active {
+    transform: translateY(0);
+}
+
+.btn-purple {
+    background: var(--gradient-purple);
+    color: var(--text-white);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+.btn-purple:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
+}
+
+.btn-purple:active {
+    transform: translateY(0);
+}
+
 .btn-danger {
     background: var(--gradient-red);
     color: var(--text-white);

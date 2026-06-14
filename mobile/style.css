@@ -617,6 +617,35 @@ body {
     letter-spacing: 0.2px;
 }
 
+.input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    color: var(--text-muted);
+    pointer-events: none;
+    transition: var(--transition-fast);
+}
+
+.input-wrapper input {
+    padding-left: 42px !important;
+}
+
+.input-wrapper input:focus + .input-icon {
+    color: var(--green-light);
+}
+
+#form-login-admin .input-wrapper input:focus + .input-icon {
+    color: var(--purple-light);
+}
+
 .mobile-form input,
 .mobile-form select,
 .mobile-form textarea,

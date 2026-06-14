@@ -35,20 +35,41 @@
                 </div>
 
                 <div class="login-tabs">
-                    <button class="login-tab active" data-tab="login">Đăng nhập</button>
-                    <button class="login-tab" data-tab="register">Đăng ký</button>
+                    <button class="login-tab active" data-tab="employee" id="btn-tab-employee">Nhân viên</button>
+                    <button class="login-tab" data-tab="admin" id="btn-tab-admin">Quản trị viên</button>
                 </div>
 
-                <!-- Login Form -->
-                <form id="form-login" class="login-form active">
+                <!-- Form Đăng nhập Nhân viên -->
+                <form id="form-login-employee" class="login-form active">
                     <div class="form-group">
-                        <label for="login-username">Tên đăng nhập</label>
+                        <label for="login-username">Tên đăng nhập Nhân viên</label>
                         <div class="input-wrapper">
                             <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                                 <circle cx="12" cy="7" r="4"/>
                             </svg>
                             <input type="text" id="login-username" placeholder="Nhập tên đăng nhập của bạn" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-green btn-full">
+                        <span>Đăng nhập Nhân viên</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <p id="login-error-emp" class="form-error"></p>
+                </form>
+
+                <!-- Form Đăng nhập Quản trị -->
+                <form id="form-login-admin" class="login-form" style="display: none;">
+                    <div class="form-group">
+                        <label for="login-admin-username">Tên đăng nhập Quản lý</label>
+                        <div class="input-wrapper">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            <input type="text" id="login-admin-username" placeholder="Nhập tên đăng nhập quản trị...">
                         </div>
                     </div>
                     <div class="form-group">
@@ -58,75 +79,16 @@
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                             </svg>
-                            <input type="password" id="login-password" placeholder="Nhập mật khẩu..." required>
+                            <input type="password" id="login-password" placeholder="Nhập mật khẩu...">
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-full">
-                        <span>Đăng nhập</span>
+                    <button type="submit" class="btn btn-purple btn-full">
+                        <span>Đăng nhập Quản trị</span>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                             <path d="M5 12h14M12 5l7 7-7 7"/>
                         </svg>
                     </button>
-                    <p id="login-error" class="form-error"></p>
-                </form>
-
-                <!-- Register Form -->
-                <form id="form-register" class="login-form">
-                    <div class="form-group">
-                        <label for="reg-fullname">Họ và tên</label>
-                        <div class="input-wrapper">
-                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                <circle cx="12" cy="7" r="4"/>
-                            </svg>
-                            <input type="text" id="reg-fullname" placeholder="Nguyễn Văn A" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="reg-username">Tên đăng nhập</label>
-                        <div class="input-wrapper">
-                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <circle cx="12" cy="12" r="3"/>
-                                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-                            </svg>
-                            <input type="text" id="reg-username" placeholder="Chọn tên đăng nhập viết liền không dấu" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="reg-password">Mật khẩu</label>
-                        <div class="input-wrapper">
-                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                            </svg>
-                            <input type="password" id="reg-password" placeholder="Bỏ trống đối với tài khoản nhân viên">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="reg-role">Loại tài khoản</label>
-                        <div class="input-wrapper">
-                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                                <path d="M2 17l10 5 10-5"/>
-                                <path d="M2 12l10 5 10-5"/>
-                            </svg>
-                            <select id="reg-role">
-                                <option value="employee">Nhân viên (Điện thoại)</option>
-                                <option value="admin">Quản lý (Desktop / Máy tính)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-full">
-                        <span>Đăng ký tài khoản</span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                            <circle cx="8.5" cy="7" r="4"/>
-                            <line x1="20" y1="8" x2="20" y2="14"/>
-                            <line x1="23" y1="11" x2="17" y2="11"/>
-                        </svg>
-                    </button>
-                    <p id="register-error" class="form-error"></p>
-                    <p id="register-success" class="form-success"></p>
+                    <p id="login-error-admin" class="form-error"></p>
                 </form>
             </div>
         </div>

@@ -100,19 +100,22 @@ function showScreen(screenId) {
 }
 
 // ==================== AUTH ====================
-async function handleLogin(e) {
+async function handleEmployeeLogin(e) {
     e.preventDefault();
     const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value;
-    const errorEl = document.getElementById('login-error');
+    const errorEl = document.getElementById('login-error-emp');
+    errorEl.textContent = '';
 
     try {
-        const data = await api('/api/auth/login', 'POST', { username, password });
+        const data = await api('/api/auth/login', 'POST', { username });
         const user = data.user;
-        errorEl.textContent = '';
-        localStorage.setItem('ot_current_user', JSON.stringify(user));
 
-        // Lưu ngày đăng nhập và phiên bản hiện tại
+        if (user.role !== 'employee') {
+            errorEl.textContent = 'Tài khoản này không phải là nhân viên!';
+            return;
+        }
+
+        localStorage.setItem('ot_current_user', JSON.stringify(user));
         const todayStr = new Date().toISOString().split('T')[0];
         localStorage.setItem('ot_login_date', todayStr);
         try {
@@ -121,13 +124,8 @@ async function handleLogin(e) {
             localStorage.setItem('ot_app_version', versionData.version || '1.0.0');
         } catch (e) {}
 
-        if (user.role === 'admin') {
-            initAdminDashboard(user);
-            showScreen('screen-admin');
-        } else {
-            initEmployeeDashboard(user);
-            showScreen('screen-employee');
-        }
+        initEmployeeDashboard(user);
+        showScreen('screen-employee');
         showToast(`Xin chào, ${user.fullname}!`, 'info');
         e.target.reset();
     } catch (err) {
@@ -135,22 +133,35 @@ async function handleLogin(e) {
     }
 }
 
-async function handleRegister(e) {
+async function handleAdminLogin(e) {
     e.preventDefault();
-    const fullname = document.getElementById('reg-fullname').value.trim();
-    const username = document.getElementById('reg-username').value.trim();
-    const password = document.getElementById('reg-password').value;
-    const role = document.getElementById('reg-role').value;
-    const errorEl = document.getElementById('register-error');
-    const successEl = document.getElementById('register-success');
+    const username = document.getElementById('login-admin-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errorEl = document.getElementById('login-error-admin');
     errorEl.textContent = '';
-    successEl.textContent = '';
 
     try {
-        await api('/api/auth/register', 'POST', { fullname, username, password, role });
-        successEl.textContent = 'Đăng ký thành công! Bạn có thể đăng nhập.';
+        const data = await api('/api/auth/login', 'POST', { username, password });
+        const user = data.user;
+
+        if (user.role !== 'admin') {
+            errorEl.textContent = 'Tài khoản nhân viên không được phép đăng nhập bên phần quản trị!';
+            return;
+        }
+
+        localStorage.setItem('ot_current_user', JSON.stringify(user));
+        const todayStr = new Date().toISOString().split('T')[0];
+        localStorage.setItem('ot_login_date', todayStr);
+        try {
+            const versionRes = await fetch('/api/version');
+            const versionData = await versionRes.json();
+            localStorage.setItem('ot_app_version', versionData.version || '1.0.0');
+        } catch (e) {}
+
+        initAdminDashboard(user);
+        showScreen('screen-admin');
+        showToast(`Xin chào, ${user.fullname}!`, 'info');
         e.target.reset();
-        showToast('Đăng ký thành công!', 'success');
     } catch (err) {
         errorEl.textContent = err.message;
     }
@@ -972,18 +983,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Kết nối SSE để nhận sự kiện thời gian thực
     initSseConnection();
 
-    // Login tabs
-    document.querySelectorAll('.login-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.login-form').forEach(f => f.classList.remove('active'));
-            tab.classList.add('active');
-            document.getElementById(`form-${tab.dataset.tab}`).classList.add('active');
-            document.getElementById('login-error').textContent = '';
-            document.getElementById('register-error').textContent = '';
-            document.getElementById('register-success').textContent = '';
+    // Login tabs (Nhân viên / Quản lý)
+    const tabEmployeeBtn = document.getElementById('btn-tab-employee');
+    const tabAdminBtn = document.getElementById('btn-tab-admin');
+    const formLoginEmployee = document.getElementById('form-login-employee');
+    const formLoginAdmin = document.getElementById('form-login-admin');
+
+    if (tabEmployeeBtn && tabAdminBtn && formLoginEmployee && formLoginAdmin) {
+        tabEmployeeBtn.addEventListener('click', () => {
+            tabEmployeeBtn.classList.add('active');
+            tabAdminBtn.classList.remove('active');
+            formLoginEmployee.classList.add('active');
+            formLoginAdmin.classList.remove('active');
+            formLoginEmployee.style.display = 'block';
+            formLoginAdmin.style.display = 'none';
+            const errorEl = document.getElementById('login-error-emp');
+            if (errorEl) errorEl.textContent = '';
         });
-    });
+
+        tabAdminBtn.addEventListener('click', () => {
+            tabAdminBtn.classList.add('active');
+            tabEmployeeBtn.classList.remove('active');
+            formLoginAdmin.classList.add('active');
+            formLoginEmployee.classList.remove('active');
+            formLoginAdmin.style.display = 'block';
+            formLoginEmployee.style.display = 'none';
+            const errorEl = document.getElementById('login-error-admin');
+            if (errorEl) errorEl.textContent = '';
+        });
+    }
 
     // Admin tabs
     document.querySelectorAll('.admin-tab').forEach(tab => {
@@ -996,8 +1024,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Forms
-    document.getElementById('form-login').addEventListener('submit', handleLogin);
-    document.getElementById('form-register').addEventListener('submit', handleRegister);
+    const formEmp = document.getElementById('form-login-employee');
+    if (formEmp) formEmp.addEventListener('submit', handleEmployeeLogin);
+
+    const formAdm = document.getElementById('form-login-admin');
+    if (formAdm) formAdm.addEventListener('submit', handleAdminLogin);
     document.getElementById('form-ot').addEventListener('submit', handleOTSubmit);
 
     // Logout

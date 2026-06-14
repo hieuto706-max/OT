@@ -678,9 +678,15 @@ const server = http.createServer(async (req, res) => {
         return serveStatic(req, res, path.join(__dirname, '..', 'desktop'), desktopPath);
     }
 
-    // Mobile app (served at root /)
-    const mobilePath = path.join(__dirname, '..', 'mobile');
-    return serveStatic(req, res, mobilePath, urlPath);
+    // Mobile PWA / self-contained app (served at /mobile/)
+    if (urlPath.startsWith('/mobile')) {
+        const mobileSubPath = urlPath.replace('/mobile', '') || '/';
+        return serveStatic(req, res, path.join(__dirname, '..', 'mobile'), mobileSubPath);
+    }
+
+    // Root landing page / web app (served at root /)
+    const rootPath = path.join(__dirname, '..');
+    return serveStatic(req, res, rootPath, urlPath);
 });
 
 function getCloudUrl() {
