@@ -24,6 +24,13 @@
     "appId": "com.example.otmanager",
     "icon": "resources/icon.png",
     "compression": "normal",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "hieuto706-max",
+        "repo": "OT"
+      }
+    ],
     "files": [
       "**/*",
       "!android-sdk/**",
