@@ -408,7 +408,8 @@ function logout() {
     safeStorage.removeItem('ot_mobile_user');
     safeStorage.removeItem('ot_login_time');
     showScreen('screen-login');
-    document.getElementById('form-login').reset();
+    const loginForm = document.getElementById('form-login-employee');
+    if (loginForm) loginForm.reset();
     showToast('Đã đăng xuất', 'info');
 }
 
