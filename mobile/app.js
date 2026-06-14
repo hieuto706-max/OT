@@ -1178,8 +1178,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const isGitHubPages = window.location.hostname.includes('github.io');
     const isMobileFolder = window.location.pathname.includes('/mobile');
 
-    // Link APK: trên GitHub Pages trỏ thẳng tới GitHub Releases, còn lại qua server redirect
-    const GITHUB_RELEASES_APK = 'https://github.com/hieuto706-max/OT/releases/download/v' + MOBILE_VERSION + '/OT-Manager-mobile.apk';
+    // Link APK: trên GitHub Pages trỏ thẳng tới GitHub raw file của branch main, còn lại qua server redirect
+    const GITHUB_RELEASES_APK = 'https://github.com/hieuto706-max/OT/raw/main/mobile/OT-Manager-mobile.apk';
     const defaultApk = isMobileFolder ? 'OT-Manager-mobile.apk' : 'mobile/OT-Manager-mobile.apk';
     const apkUrl = isGitHubPages ? GITHUB_RELEASES_APK : (API ? (API + '/OT-Manager-mobile.apk') : defaultApk);
 

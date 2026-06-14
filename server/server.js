@@ -710,18 +710,10 @@ const server = http.createServer(async (req, res) => {
         return serveStatic(req, res, mobilePath, '/download.html');
     }
 
-    // Direct download route for the Android APK (redirect to GitHub Release for the latest version)
+    // Direct download route for the Android APK (redirect to GitHub raw file for the latest version)
     if (urlPath === '/OT-Manager-mobile.apk') {
-        let version = '1.1.1';
-        try {
-            const pkgPath = path.join(__dirname, '..', 'package.json');
-            if (fs.existsSync(pkgPath)) {
-                const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-                version = pkg.version || '1.1.1';
-            }
-        } catch (e) {}
         res.writeHead(302, {
-            'Location': `https://github.com/hieuto706-max/OT/releases/download/v${version}/OT-Manager-mobile.apk`
+            'Location': 'https://github.com/hieuto706-max/OT/raw/main/mobile/OT-Manager-mobile.apk'
         });
         return res.end();
     }

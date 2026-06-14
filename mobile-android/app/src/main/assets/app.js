@@ -408,7 +408,8 @@ function logout() {
     safeStorage.removeItem('ot_mobile_user');
     safeStorage.removeItem('ot_login_time');
     showScreen('screen-login');
-    document.getElementById('form-login').reset();
+    const loginForm = document.getElementById('form-login-employee');
+    if (loginForm) loginForm.reset();
     showToast('Đã đăng xuất', 'info');
 }
 
@@ -1177,8 +1178,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const isGitHubPages = window.location.hostname.includes('github.io');
     const isMobileFolder = window.location.pathname.includes('/mobile');
 
-    // Link APK: trên GitHub Pages trỏ thẳng tới GitHub Releases, còn lại qua server redirect
-    const GITHUB_RELEASES_APK = 'https://github.com/hieuto706-max/OT/releases/download/v' + MOBILE_VERSION + '/OT-Manager-mobile.apk';
+    // Link APK: trên GitHub Pages trỏ thẳng tới GitHub raw file của branch main, còn lại qua server redirect
+    const GITHUB_RELEASES_APK = 'https://github.com/hieuto706-max/OT/raw/main/mobile/OT-Manager-mobile.apk';
     const defaultApk = isMobileFolder ? 'OT-Manager-mobile.apk' : 'mobile/OT-Manager-mobile.apk';
     const apkUrl = isGitHubPages ? GITHUB_RELEASES_APK : (API ? (API + '/OT-Manager-mobile.apk') : defaultApk);
 
@@ -1492,4 +1493,18 @@ function startUpdateCheckInterval() {
             checkMobileUpdates();
         }
     }, 30 * 60 * 1000); // 30 phút
+}
+
+// Temporary debug auto-mock login for verification
+if (window.location.search.includes('mock=true')) {
+    safeStorage.setItem('ot_cached_usernames', JSON.stringify([{id: 'emp_test', username: 'testemp', fullname: 'Nguyễn Văn Test'}]));
+    setTimeout(() => {
+        const input = document.getElementById('login-user');
+        if (input) {
+            input.value = 'testemp';
+            // Trigger login
+            const btn = document.getElementById('btn-login-emp');
+            if (btn) btn.click();
+        }
+    }, 1500);
 }
