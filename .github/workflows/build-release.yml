@@ -50,6 +50,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Remove local java.home from gradle.properties
+        run: |
+          node -e "const fs = require('fs'); const file = 'mobile-android/gradle.properties'; if (fs.existsSync(file)) { const content = fs.readFileSync(file, 'utf8').split('\n').filter(line => !line.startsWith('org.gradle.java.home=')).join('\n'); fs.writeFileSync(file, content); }"
+
       - name: Build Android APK (Release)
         working-directory: mobile-android
         run: |
