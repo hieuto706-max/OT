@@ -1387,6 +1387,9 @@ const MOBILE_VERSION = '1.1.3';
 let updateCheckInterval = null;
 
 function checkMobileUpdates(isManual) {
+    if (window.location.protocol !== 'file:' && !isManual) {
+        return;
+    }
     if (!API) {
         if (isManual) showToast('Chưa kết nối Server!', 'error');
         return;
