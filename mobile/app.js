@@ -38,12 +38,13 @@ function isSessionExpired(loginTimeMs) {
     return Date.now() >= cutoff.getTime();
 }
 
-// Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu không thì chờ auto-discovery
-let API = safeStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com';
+// Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu chạy web local thì tự động dùng origin
+const isLocalWeb = window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io');
+let API = isLocalWeb ? window.location.origin : (safeStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com');
 
 // Tự động dọn dẹp các địa chỉ IP cũ từ các phiên bản trước
 let savedIp = safeStorage.getItem('ot_server_ip');
-if (savedIp && (savedIp.includes('otms.onrender.com') || savedIp.includes('ot-manager-server.onrender.com') || savedIp.includes('otm.app.vn') || savedIp.includes('new-folder-6471') || savedIp.includes('lhr.life'))) {
+if (!isLocalWeb && savedIp && (savedIp.includes('otms.onrender.com') || savedIp.includes('ot-manager-server.onrender.com') || savedIp.includes('otm.app.vn') || savedIp.includes('new-folder-6471') || savedIp.includes('lhr.life'))) {
     safeStorage.removeItem('ot_server_ip');
     API = 'https://ot-manager-server-jbxd.onrender.com';
 }
@@ -1218,7 +1219,7 @@ function checkConnection() {
     if (!API) return;
     var xhr = new XMLHttpRequest();
     xhr.open('GET', API + '/api/server-info', true);
-    xhr.timeout = 3000;
+    xhr.timeout = (API.indexOf('onrender.com') !== -1) ? 60000 : 3000;
     xhr.onload = function() {
         if (xhr.status === 200) {
             updateConnectionStatus(true, API);
