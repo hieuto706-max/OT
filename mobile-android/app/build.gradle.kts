@@ -10,8 +10,8 @@ android {
         applicationId = "com.example.otmanager"
         minSdk = 21
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.0.9"
+        versionCode = 8
+        versionName = "1.1.0"
     }
 
     buildTypes {

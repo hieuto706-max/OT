@@ -524,7 +524,16 @@ async function handleAPI(req, res, urlPath, method) {
 
     // --- GIST STATUS ---
     if (urlPath === '/api/gist-status' && method === 'GET') {
+        const isRender = !!process.env.RENDER;
         const hasCredentials = !!(process.env.GIST_ID && process.env.GITHUB_TOKEN);
+
+        if (!isRender) {
+            return sendJSON(res, 200, {
+                status: 'success',
+                message: 'Chạy chế độ local (dữ liệu lưu cục bộ an toàn).'
+            });
+        }
+
         if (!hasCredentials) {
             return sendJSON(res, 200, {
                 status: 'error',
