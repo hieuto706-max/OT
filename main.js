@@ -125,18 +125,32 @@ function downloadFile(fileUrl, destPath, onProgress, onComplete, onError) {
     const http = require('http');
     const { URL } = require('url');
     
+    let finished = false;
+    const safeComplete = () => {
+        if (finished) return;
+        finished = true;
+        onComplete();
+    };
+    const safeError = (err) => {
+        if (finished) return;
+        finished = true;
+        onError(err);
+    };
+    
     function startDownload(currentUrl) {
+        let redirected = false;
         let parsedUrl;
         try {
             parsedUrl = new URL(currentUrl);
         } catch (e) {
-            return onError(new Error('URL không hợp lệ: ' + currentUrl));
+            return safeError(new Error('URL không hợp lệ: ' + currentUrl));
         }
         const protocol = parsedUrl.protocol === 'https:' ? https : http;
         
         const req = protocol.get(currentUrl, (res) => {
             // Xử lý chuyển hướng (HTTP 301, 302, 307, 308)
             if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
+                redirected = true;
                 let redirectUrl = res.headers.location;
                 if (!redirectUrl.startsWith('http')) {
                     redirectUrl = new URL(redirectUrl, currentUrl).href;
@@ -145,7 +159,7 @@ function downloadFile(fileUrl, destPath, onProgress, onComplete, onError) {
             }
             
             if (res.statusCode !== 200) {
-                return onError(new Error(`Server trả về mã lỗi HTTP ${res.statusCode}`));
+                return safeError(new Error(`Server trả về mã lỗi HTTP ${res.statusCode}`));
             }
             
             const totalBytes = parseInt(res.headers['content-length'], 10) || 0;
@@ -175,7 +189,9 @@ function downloadFile(fileUrl, destPath, onProgress, onComplete, onError) {
                         speedText = `${(speedBytes / 1024).toFixed(0)} KB/s`;
                     }
                     
-                    onProgress(percent, speedText, loadedMB, totalMB);
+                    if (!finished) {
+                        onProgress(percent, speedText, loadedMB, totalMB);
+                    }
                     
                     lastProgressTime = now;
                     lastDownloadedBytes = downloadedBytes;
@@ -184,18 +200,19 @@ function downloadFile(fileUrl, destPath, onProgress, onComplete, onError) {
             
             res.on('end', () => {
                 fileStream.end();
-                onComplete();
+                safeComplete();
             });
             
             fileStream.on('error', (err) => {
                 fileStream.close();
                 fs.unlink(destPath, () => {});
-                onError(err);
+                safeError(err);
             });
         });
         
         req.on('error', (err) => {
-            onError(err);
+            if (redirected) return;
+            safeError(err);
         });
     }
     
@@ -212,10 +229,18 @@ function startAutoUpdate(downloadUrl, targetVersion) {
     // Kiểm tra file tồn tại trước khi tải (HEAD request với theo dõi redirect)
     function checkUrlExists(urlToCheck, callback, maxRedirects) {
         if (maxRedirects === undefined) maxRedirects = 5;
-        if (maxRedirects <= 0) return callback(false);
+        
+        let called = false;
+        const done = (result) => {
+            if (called) return;
+            called = true;
+            callback(result);
+        };
+
+        if (maxRedirects <= 0) return done(false);
         
         let parsedUrl;
-        try { parsedUrl = new URL(urlToCheck); } catch (e) { return callback(false); }
+        try { parsedUrl = new URL(urlToCheck); } catch (e) { return done(false); }
         const client = parsedUrl.protocol === 'https:' ? https : http;
 
         const req = client.request(urlToCheck, { method: 'HEAD', timeout: 10000 }, (res) => {
@@ -224,12 +249,13 @@ function startAutoUpdate(downloadUrl, targetVersion) {
                 if (!redirectUrl.startsWith('http')) {
                     redirectUrl = new URL(redirectUrl, urlToCheck).href;
                 }
+                called = true; // Đánh dấu đã xử lý để tránh các lỗi mạng sau đó kích hoạt callback
                 return checkUrlExists(redirectUrl, callback, maxRedirects - 1);
             }
-            callback(res.statusCode === 200);
+            done(res.statusCode === 200);
         });
-        req.on('error', () => callback(false));
-        req.on('timeout', () => { req.destroy(); callback(false); });
+        req.on('error', () => done(false));
+        req.on('timeout', () => { req.destroy(); done(false); });
         req.end();
     }
 
