@@ -618,6 +618,7 @@ body {
 }
 
 .mobile-form input,
+.mobile-form select,
 .mobile-form textarea,
 #form-ot input[type="date"],
 #form-ot input[type="time"],
@@ -635,6 +636,7 @@ body {
 }
 
 .mobile-form input:focus,
+.mobile-form select:focus,
 .mobile-form textarea:focus,
 #form-ot input:focus,
 #form-ot textarea:focus {
@@ -643,9 +645,23 @@ body {
     background: rgba(255, 255, 255, 0.07);
 }
 
+.mobile-form select option {
+    background: var(--bg-secondary);
+    color: var(--text);
+}
+
 .mobile-form input::placeholder,
 #form-ot textarea::placeholder {
     color: var(--text-muted);
+}
+
+/* Login/Register Form toggle helpers */
+.login-form {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+.login-form.active {
+    display: block;
 }
 
 #form-ot textarea {

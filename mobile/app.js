@@ -265,6 +265,8 @@ async function cacheUsernames() {
 async function handleLogin(e) {
     e.preventDefault();
     const username = document.getElementById('login-user').value.trim();
+    const passwordEl = document.getElementById('login-password');
+    const password = passwordEl ? passwordEl.value : '';
     const errEl = document.getElementById('login-error');
     errEl.textContent = '';
 
@@ -290,7 +292,7 @@ async function handleLogin(e) {
 
     try {
         const oldUser = JSON.parse(safeStorage.getItem('ot_mobile_user') || 'null');
-        const data = await api('/api/auth/login', 'POST', { username, deviceId });
+        const data = await api('/api/auth/login', 'POST', { username, password, deviceId });
         if (data.user.role === 'admin') {
             // Lưu thông tin đăng nhập quản lý
             safeStorage.setItem('ot_mobile_user', JSON.stringify(data.user));
@@ -352,6 +354,38 @@ async function handleLogin(e) {
             }
         }
         errEl.textContent = err.message;
+    }
+}
+
+async function handleRegister(e) {
+    e.preventDefault();
+    const fullname = document.getElementById('reg-fullname').value.trim();
+    const username = document.getElementById('reg-username').value.trim();
+    const password = document.getElementById('reg-password').value;
+    const role = document.getElementById('reg-role').value;
+    const errorEl = document.getElementById('register-error');
+    const successEl = document.getElementById('register-success');
+    errorEl.textContent = '';
+    successEl.textContent = '';
+
+    if (!API) {
+        errorEl.textContent = 'Không thể đăng ký tài khoản khi ngoại tuyến (Offline)!';
+        return;
+    }
+
+    try {
+        await api('/api/auth/register', 'POST', { fullname, username, password, role });
+        successEl.textContent = 'Đăng ký thành công! Bạn có thể đăng nhập.';
+        e.target.reset();
+        showToast('Đăng ký thành công!', 'success');
+        
+        // Auto select Login tab after registration
+        setTimeout(() => {
+            const loginTabBtn = document.getElementById('btn-tab-login');
+            if (loginTabBtn) loginTabBtn.click();
+        }, 1500);
+    } catch (err) {
+        errorEl.textContent = err.message;
     }
 }
 
@@ -1117,60 +1151,52 @@ document.addEventListener('DOMContentLoaded', () => {
     // Bắt đầu kiểm tra cập nhật định kỳ mỗi 30 phút
     startUpdateCheckInterval();
 
-    // Cấu hình Tabs Đăng nhập / Tải ứng dụng trên màn hình Login
-    const tabLoginBtn = document.getElementById('btn-tab-login');
-    const tabDownloadBtn = document.getElementById('btn-tab-download');
-    const tabLoginContent = document.getElementById('tab-login-content');
-    const tabDownloadContent = document.getElementById('tab-download-content');
+    // Đăng ký Form Đăng ký
+    const formRegister = document.getElementById('form-register');
+    if (formRegister) {
+        formRegister.addEventListener('submit', handleRegister);
+    }
 
-    if (tabLoginBtn && tabDownloadBtn && tabLoginContent && tabDownloadContent) {
-        tabLoginBtn.addEventListener('click', () => {
-            tabLoginBtn.classList.add('active');
-            tabLoginBtn.style.color = 'var(--green)';
-            tabLoginBtn.style.borderBottom = '3px solid var(--green)';
-            tabDownloadBtn.classList.remove('active');
-            tabDownloadBtn.style.color = 'var(--text-muted)';
-            tabDownloadBtn.style.borderBottom = '3px solid transparent';
-            tabLoginContent.style.display = 'block';
-            tabDownloadContent.style.display = 'none';
+    // Cấu hình Tabs Đăng nhập / Đăng ký trên màn hình Login
+    const loginTabBtn = document.getElementById('btn-tab-login');
+    const registerTabBtn = document.getElementById('btn-tab-register');
+    const loginForm = document.getElementById('form-login');
+    const registerForm = document.getElementById('form-register');
+
+    if (loginTabBtn && registerTabBtn && loginForm && registerForm) {
+        loginTabBtn.addEventListener('click', () => {
+            loginTabBtn.classList.add('active');
+            registerTabBtn.classList.remove('active');
+            loginForm.classList.add('active');
+            registerForm.classList.remove('active');
+            loginForm.style.display = 'block';
+            registerForm.style.display = 'none';
         });
 
-        tabDownloadBtn.addEventListener('click', () => {
-            tabDownloadBtn.classList.add('active');
-            tabDownloadBtn.style.color = 'var(--green)';
-            tabDownloadBtn.style.borderBottom = '3px solid var(--green)';
-            tabLoginBtn.classList.remove('active');
-            tabLoginBtn.style.color = 'var(--text-muted)';
-            tabLoginBtn.style.borderBottom = '3px solid transparent';
-            tabDownloadContent.style.display = 'block';
-            tabLoginContent.style.display = 'none';
+        registerTabBtn.addEventListener('click', () => {
+            registerTabBtn.classList.add('active');
+            loginTabBtn.classList.remove('active');
+            registerForm.classList.add('active');
+            loginForm.classList.remove('active');
+            registerForm.style.display = 'block';
+            loginForm.style.display = 'none';
         });
+    }
 
-        // Thiết lập link tải động cho mục Tải ứng dụng
-        const host = window.location.origin;
-        const isGitHubPages = window.location.hostname.includes('github.io');
-        const defaultApk = isGitHubPages ? 'mobile/OT-Manager-mobile.apk' : 'OT-Manager-mobile.apk';
-        const apkUrl = API ? (API + '/OT-Manager-mobile.apk') : defaultApk;
+    // Thiết lập link tải động và mã QR cho mục Tải ứng dụng
+    const host = window.location.origin;
+    const isGitHubPages = window.location.hostname.includes('github.io');
+    const defaultApk = isGitHubPages ? 'mobile/OT-Manager-mobile.apk' : 'OT-Manager-mobile.apk';
+    const apkUrl = API ? (API + '/OT-Manager-mobile.apk') : defaultApk;
 
-        const apkBtnLogin = document.getElementById('apk-download-btn-login');
-        if (apkBtnLogin) apkBtnLogin.href = apkUrl;
+    const apkBtnLanding = document.getElementById('apk-download-btn-landing');
+    if (apkBtnLanding) apkBtnLanding.href = apkUrl;
 
-        const apkBtnLanding = document.getElementById('apk-download-btn-landing');
-        if (apkBtnLanding) apkBtnLanding.href = apkUrl;
-
-        const apkQrLogin = document.getElementById('apk-qr-code-login');
-        if (apkQrLogin) {
-            const downloadPath = isGitHubPages ? ('/OT/' + defaultApk) : ('/' + defaultApk);
-            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=${encodeURIComponent(host + downloadPath)}`;
-            apkQrLogin.src = qrApiUrl;
-        }
-
-        const apkQrLanding = document.getElementById('apk-qr-code-landing');
-        if (apkQrLanding) {
-            const downloadPath = isGitHubPages ? ('/OT/' + defaultApk) : ('/' + defaultApk);
-            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=${encodeURIComponent(host + downloadPath)}`;
-            apkQrLanding.src = qrApiUrl;
-        }
+    const apkQrLanding = document.getElementById('apk-qr-code-landing');
+    if (apkQrLanding) {
+        const downloadPath = isGitHubPages ? ('/OT/' + defaultApk) : ('/' + defaultApk);
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=${encodeURIComponent(host + downloadPath)}`;
+        apkQrLanding.src = qrApiUrl;
     }
 });
 
