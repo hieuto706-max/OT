@@ -57,7 +57,7 @@ jobs:
       - name: Build Android APK (Release)
         working-directory: mobile-android
         run: |
-          ./gradlew.bat assembleRelease
+          ./gradlew.bat assembleRelease --no-daemon
 
       - name: Rename APK
         shell: bash
