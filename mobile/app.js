@@ -1140,11 +1140,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const apkBtnLogin = document.getElementById('apk-download-btn-login');
         if (apkBtnLogin) apkBtnLogin.href = apkUrl;
 
+        const apkBtnLanding = document.getElementById('apk-download-btn-landing');
+        if (apkBtnLanding) apkBtnLanding.href = apkUrl;
+
         const apkQrLogin = document.getElementById('apk-qr-code-login');
         if (apkQrLogin) {
             const downloadPath = isGitHubPages ? ('/OT/' + defaultApk) : ('/' + defaultApk);
             const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=${encodeURIComponent(host + downloadPath)}`;
             apkQrLogin.src = qrApiUrl;
+        }
+
+        const apkQrLanding = document.getElementById('apk-qr-code-landing');
+        if (apkQrLanding) {
+            const downloadPath = isGitHubPages ? ('/OT/' + defaultApk) : ('/' + defaultApk);
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=${encodeURIComponent(host + downloadPath)}`;
+            apkQrLanding.src = qrApiUrl;
         }
     }
 });

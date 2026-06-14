@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>OT Manager - Nhân viên</title>
+    <title>OT Manager - Hệ thống quản lý tăng ca</title>
     <meta name="description" content="Ghi nhận tăng ca - OT Manager">
-    <meta name="theme-color" content="#0f0f1a">
+    <meta name="theme-color" content="#07070c">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="OT Manager">
@@ -32,85 +32,198 @@
                 </svg>
             </div>
             <h1>OT Manager</h1>
-            <p>OT Manager - Nhân viên</p>
+            <p>Đang tải ứng dụng...</p>
             <div class="splash-loader">
                 <div class="loader-bar"></div>
             </div>
         </div>
     </div>
 
-    <!-- ==================== LOGIN SCREEN ==================== -->
+    <!-- ==================== LOGIN SCREEN & LANDING PAGE ==================== -->
     <div id="screen-login" class="screen">
-        <div class="login-page">
-            <div class="login-header">
-                <div class="login-icon">
-                    <svg viewBox="0 0 48 48" fill="none">
-                        <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#gm2)"/>
-                        <path d="M24 14v10l7 4" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-                        <defs>
-                            <linearGradient id="gm2" x1="4" y1="4" x2="44" y2="44">
-                                <stop stop-color="#10b981"/>
-                                <stop offset="1" stop-color="#059669"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                </div>
-                <h1>OT Manager</h1>
-                <p>Đăng nhập để ghi nhận tăng ca</p>
+        <header class="landing-header">
+            <div class="landing-logo">
+                <svg viewBox="0 0 48 48" fill="none" class="logo-svg">
+                    <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#gm2)"/>
+                    <path d="M24 14v10l7 4" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+                    <defs>
+                        <linearGradient id="gm2" x1="4" y1="4" x2="44" y2="44">
+                            <stop stop-color="#10b981"/>
+                            <stop offset="1" stop-color="#059669"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span class="logo-text">OT Manager</span>
             </div>
-
-            <!-- Tab Buttons -->
-            <div class="login-tabs" style="display: flex; gap: 10px; margin-bottom: 24px; border-bottom: 1.5px solid var(--border); padding-bottom: 10px;">
-                <button type="button" class="login-tab active" id="btn-tab-login" style="flex: 1; background: none; border: none; color: var(--green); font-size: 15px; font-weight: 700; padding: 10px; cursor: pointer; border-bottom: 3px solid var(--green); transition: var(--transition);">🔑 Đăng nhập</button>
-                <button type="button" class="login-tab" id="btn-tab-download" style="flex: 1; background: none; border: none; color: var(--text-muted); font-size: 15px; font-weight: 600; padding: 10px; cursor: pointer; border-bottom: 3px solid transparent; transition: var(--transition);">📥 Tải ứng dụng</button>
+            <div class="landing-nav">
+                <a href="#features-section" class="nav-link">Tính năng</a>
+                <a href="#rules-section" class="nav-link">Quy định</a>
+                <a href="#download-section" class="nav-link">Tải ứng dụng</a>
+                <button type="button" class="btn btn-primary btn-sm" onclick="scrollToLogin()">🔑 Đăng nhập</button>
             </div>
+        </header>
 
-            <!-- Form Container -->
-            <div id="tab-login-content" style="display: block; width: 100%;">
-                <form id="form-login" class="mobile-form">
-                    <div class="form-group">
-                        <label>Tên đăng nhập / Mã nhân viên</label>
-                        <input type="text" id="login-user" placeholder="Nhập tên đăng nhập hoặc mã của bạn" autocomplete="username" required>
+        <div class="landing-container">
+            <!-- Left Side: Hero and details -->
+            <div class="landing-hero-section">
+                <div class="hero-content">
+                    <span class="hero-badge">✨ Phiên bản v1.0.5</span>
+                    <h1 class="hero-title">Quản Lý Tăng Ca <br><span class="gradient-text">Chuyên Nghiệp & Tiện Lợi</span></h1>
+                    <p class="hero-subtitle">Ghi nhận giờ làm tăng ca (OT) trưa và chiều nhanh chóng, lưu trữ offline an toàn, tự động tính toán tổng giờ làm và đồng bộ đám mây.</p>
+                    <div class="hero-ctas">
+                        <button type="button" class="btn btn-primary" onclick="scrollToLogin()">Truy cập Web App</button>
+                        <a href="#download-section" class="btn btn-ghost">Tải ứng dụng</a>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-full" id="btn-login">
-                        Đăng nhập
-                    </button>
-                    <p id="login-error" class="form-error"></p>
-                </form>
+                </div>
+
+                <!-- Features Section -->
+                <section id="features-section" class="landing-section">
+                    <h2 class="section-title">✨ Tính năng nổi bật</h2>
+                    <div class="features-grid">
+                        <div class="feat-card">
+                            <span class="feat-icon">⚡</span>
+                            <h3>Ghi nhận nhanh</h3>
+                            <p>Chọn ngày, tích chọn tăng ca trưa hoặc cài đặt giờ về để tự động tính tổng giờ OT.</p>
+                        </div>
+                        <div class="feat-card">
+                            <span class="feat-icon">📶</span>
+                            <h3>Lưu trữ Offline</h3>
+                            <p>Không lo mất mạng. Dữ liệu được lưu trữ ngoại tuyến và tự động đồng bộ khi có kết nối trở lại.</p>
+                        </div>
+                        <div class="feat-card">
+                            <span class="feat-icon">📊</span>
+                            <h3>Thống kê tổng quan</h3>
+                            <p>Xem tổng số giờ OT trong tháng, số ngày tăng ca trưa và chiều trực quan.</p>
+                        </div>
+                        <div class="feat-card">
+                            <span class="feat-icon">☁️</span>
+                            <h3>Đám mây an toàn</h3>
+                            <p>Tự động sao lưu và khôi phục dữ liệu từ đám mây bảo mật cao.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Rules Section -->
+                <section id="rules-section" class="landing-section">
+                    <h2 class="section-title">📋 Quy định giờ làm</h2>
+                    <div class="rules-grid">
+                        <div class="rule-card">
+                            <div class="rule-card-header">
+                                <span class="rule-card-icon">🕖</span>
+                                <h4>Giờ chính thức</h4>
+                            </div>
+                            <p><strong>07:00 - 16:30</strong></p>
+                            <span>Thời gian làm việc hành chính chuẩn.</span>
+                        </div>
+                        <div class="rule-card">
+                            <div class="rule-card-header">
+                                <span class="rule-card-icon">🍽️</span>
+                                <h4>Nghỉ trưa</h4>
+                            </div>
+                            <p><strong>11:50 - 13:20</strong></p>
+                            <span>Thời gian ăn trưa và nghỉ ngơi giữa ca.</span>
+                        </div>
+                        <div class="rule-card">
+                            <div class="rule-card-header">
+                                <span class="rule-card-icon">⏰</span>
+                                <h4>Tăng ca trưa</h4>
+                            </div>
+                            <p><strong>12:20 - 13:20</strong></p>
+                            <span>Tính tương đương 1.0 giờ tăng ca.</span>
+                        </div>
+                        <div class="rule-card">
+                            <div class="rule-card-header">
+                                <span class="rule-card-icon">🌙</span>
+                                <h4>Tăng ca chiều</h4>
+                            </div>
+                            <p><strong>Sau 16:30</strong></p>
+                            <span>Bắt đầu tính sau khi tan ca làm chính thức.</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Download Section -->
+                <section id="download-section" class="landing-section">
+                    <h2 class="section-title">📥 Tải ứng dụng</h2>
+                    <div class="download-grid">
+                        <div class="download-card apk-card">
+                            <span class="card-emoji">📱</span>
+                            <h3>Ứng dụng Nhân viên</h3>
+                            <span class="platform-badge">Android (.APK)</span>
+                            <p>Báo cáo tăng ca hàng ngày ngay trên điện thoại di động.</p>
+                            <a id="apk-download-btn-landing" href="mobile/OT-Manager-mobile.apk" download class="btn btn-primary">Tải APK Android</a>
+                            <div class="qr-box">
+                                <div class="qr-bg">
+                                    <img id="apk-qr-code-landing" src="" alt="QR Code">
+                                </div>
+                                <span class="qr-hint">Quét mã QR để cài đặt nhanh</span>
+                            </div>
+                        </div>
+                        <div class="download-card exe-card">
+                            <span class="card-emoji">🖥️</span>
+                            <h3>Ứng dụng Quản lý</h3>
+                            <span class="platform-badge">Windows (.EXE)</span>
+                            <p>Xem báo cáo, xuất Excel, quản lý nhân viên và duyệt giờ tăng ca trên PC.</p>
+                            <a id="desktop-download-btn-landing" href="https://drive.google.com/drive/folders/1K9tSroxmgsElAD0NUZ19-UZp6GBi_ybj?usp=sharing" target="_blank" class="btn btn-purple">Tải Windows EXE</a>
+                        </div>
+                    </div>
+                </section>
             </div>
 
-            <!-- Download Container -->
-            <div id="tab-download-content" style="display: none; width: 100%; max-height: 320px; overflow-y: auto; padding-right: 4px;">
-                <div style="display: flex; flex-direction: column; gap: 16px; align-items: center; text-align: center;">
-                    <!-- APK Download Card -->
-                    <div style="width: 100%; padding: 16px; background: var(--bg-card); border: 1.5px solid var(--border); border-radius: var(--radius); text-align: center; box-sizing: border-box;">
-                        <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">📱</span>
-                        <h4 style="margin-bottom: 6px; color: var(--green-light); font-size: 15px;">Ứng dụng Nhân viên (Android)</h4>
-                        <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 12px; line-height: 1.4;">Báo cáo tăng ca hàng ngày ngay trên điện thoại.</p>
-                        <a id="apk-download-btn-login" href="OT-Manager-mobile.apk" download class="btn btn-primary" style="width: 100%; font-size: 14px; padding: 10px 18px;">📥 Tải Android (.APK)</a>
-                        
-                        <!-- QR Code -->
-                        <div style="margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
-                            <div style="background: white; padding: 6px; border-radius: 10px; width: 92px; height: 92px; display: flex; align-items: center; justify-content: center;">
-                                <img id="apk-qr-code-login" src="" style="width: 80px; height: 80px;" alt="QR Code">
+            <!-- Right Side: Login Widget Card -->
+            <div class="landing-login-widget" id="login-widget-card">
+                <div class="login-page-card">
+                    <div class="login-header">
+                        <h1>OT Manager</h1>
+                        <p>Đăng nhập để ghi nhận tăng ca</p>
+                    </div>
+
+                    <!-- Tab Buttons -->
+                    <div class="login-tabs">
+                        <button type="button" class="login-tab active" id="btn-tab-login">🔑 Đăng nhập</button>
+                        <button type="button" class="login-tab" id="btn-tab-download">📥 Tải App nhanh</button>
+                    </div>
+
+                    <!-- Form Container -->
+                    <div id="tab-login-content">
+                        <form id="form-login" class="mobile-form">
+                            <div class="form-group">
+                                <label>Tên đăng nhập / Mã nhân viên</label>
+                                <input type="text" id="login-user" placeholder="Nhập tên đăng nhập hoặc mã của bạn" autocomplete="username" required>
                             </div>
-                            <span style="font-size: 11px; color: var(--text-muted);">Quét mã QR để cài đặt nhanh</span>
+                            <button type="submit" class="btn btn-primary btn-full" id="btn-login">
+                                Đăng nhập
+                            </button>
+                            <p id="login-error" class="form-error"></p>
+                        </form>
+                    </div>
+
+                    <!-- Download Container -->
+                    <div id="tab-download-content" style="display: none;">
+                        <div class="quick-download-box">
+                            <div class="quick-dl-item">
+                                <strong>Ứng dụng Nhân viên (Android)</strong>
+                                <a id="apk-download-btn-login" href="mobile/OT-Manager-mobile.apk" download class="btn btn-primary btn-sm" style="width:100%; margin-top:4px;">📥 Tải Android (.APK)</a>
+                                <div style="margin-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                                    <div style="background: white; padding: 4px; border-radius: 8px; width: 84px; height: 84px; display: flex; align-items: center; justify-content: center;">
+                                        <img id="apk-qr-code-login" src="" style="width: 76px; height: 76px;" alt="QR Code">
+                                    </div>
+                                    <span style="font-size: 10px; color: var(--text-muted);">Quét mã QR để cài đặt nhanh</span>
+                                </div>
+                            </div>
+                            <hr class="divider">
+                            <div class="quick-dl-item">
+                                <strong>Ứng dụng Quản lý (PC)</strong>
+                                <a id="desktop-download-btn-login" href="https://drive.google.com/drive/folders/1K9tSroxmgsElAD0NUZ19-UZp6GBi_ybj?usp=sharing" target="_blank" class="btn btn-purple btn-sm" style="width:100%; margin-top:4px;">💻 Tải Windows (.EXE)</a>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- EXE Download Card -->
-                    <div style="width: 100%; padding: 16px; background: var(--bg-card); border: 1.5px solid var(--border); border-radius: var(--radius); text-align: center; box-sizing: border-box;">
-                        <span style="font-size: 1.8rem; display: block; margin-bottom: 6px;">🖥️</span>
-                        <h4 style="margin-bottom: 6px; color: var(--purple-light); font-size: 15px;">Ứng dụng Quản lý (PC)</h4>
-                        <p style="font-size: 12px; color: var(--text-sub); margin-bottom: 12px; line-height: 1.4;">Xem báo cáo, thống kê và duyệt tăng ca cho Windows.</p>
-                        <a id="desktop-download-btn-login" href="https://drive.google.com/drive/folders/1K9tSroxmgsElAD0NUZ19-UZp6GBi_ybj?usp=sharing" target="_blank" class="btn" style="width: 100%; font-size: 14px; padding: 10px 18px; background: linear-gradient(135deg, var(--purple), #4f46e5); color: white;">💻 Tải Windows (.EXE)</a>
+                    <div class="login-footer">
+                        <p>Chưa có tài khoản? Liên hệ quản lý để được cấp.</p>
+                        <div id="connection-status" style="display:none; margin-top:8px;font-size:0.8rem;"></div>
                     </div>
                 </div>
-            </div>
-
-            <div class="login-footer">
-                <p>Chưa có tài khoản? Liên hệ quản lý để được cấp.</p>
-                <div id="connection-status" style="display:none; margin-top:8px;font-size:0.8rem;"></div>
             </div>
         </div>
     </div>
@@ -127,7 +240,7 @@
                 </div>
             </div>
             <button class="header-btn" id="btn-logout" title="Đăng xuất">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                     <polyline points="16 17 21 12 16 7"/>
                     <line x1="21" y1="12" x2="9" y2="12"/>
@@ -148,8 +261,8 @@
 
             <!-- ===== TAB: HOME ===== -->
             <div id="tab-home" class="tab-content active">
-                <!-- Sync Banner (Hiển thị khi có dữ liệu offline chưa đồng bộ) -->
-                <div id="sync-banner" style="display: none; align-items: center; justify-content: space-between; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; font-size: 0.85rem; color: #f59e0b;">
+                <!-- Sync Banner -->
+                <div id="sync-banner" style="display: none;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="font-size: 1.1rem; animation: pulse 2s infinite;">⚠️</span>
                         <span>Có <strong id="unsynced-count">0</strong> dữ liệu chưa đồng bộ.</span>
@@ -178,7 +291,7 @@
                 <!-- OT Entry Form -->
                 <div class="card form-card">
                     <div class="card-title">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
                             <circle cx="12" cy="12" r="10"/>
                             <line x1="12" y1="8" x2="12" y2="16"/>
                             <line x1="8" y1="12" x2="16" y2="12"/>
@@ -218,19 +331,20 @@
 
                         <div class="form-group">
                             <label>Ghi chú</label>
-                            <textarea id="ot-note" rows="2" placeholder="Lý do tăng ca..."></textarea>
+                            <textarea id="ot-note" placeholder="Lý do tăng ca, chi tiết công việc..."></textarea>
                         </div>
 
                         <!-- Preview -->
                         <div class="ot-preview">
                             <div class="preview-rows" id="preview-rows"></div>
                             <div class="preview-total">
-                                Tổng: <strong id="preview-total">0</strong> giờ
+                                <span>Tổng cộng tính toán:</span>
+                                <strong><span id="preview-total">0</span> giờ</strong>
                             </div>
                         </div>
 
                         <button type="submit" class="btn btn-primary btn-full">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
                                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                                 <polyline points="17 21 17 13 7 13 7 21"/>
                                 <polyline points="7 3 7 8 15 8"/>
@@ -380,8 +494,6 @@
         </div>
     </div>
 
-
-
     <!-- Edit OT Dialog -->
     <div id="edit-overlay" class="confirm-overlay">
         <div class="confirm-dialog" style="max-width: 90%; width: 340px; text-align: left;">
@@ -391,10 +503,10 @@
             <form id="form-edit-ot">
                 <div class="form-group" style="margin-bottom:14px;">
                     <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Ngày tăng ca</label>
-                    <input type="date" id="edit-ot-date" required style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-input);color:var(--text);font-family:inherit;">
+                    <input type="date" id="edit-ot-date" required>
                 </div>
                 <div class="toggle-row" style="margin-bottom:14px;">
-                    <label class="toggle-label" for="edit-ot-lunch" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:0!important;">
+                    <label class="toggle-label" for="edit-ot-lunch">
                         <span class="toggle-text" style="display:flex;flex-direction:column;text-align:left;">
                             <strong style="font-size:0.85rem;color:var(--text);">Tăng ca trưa</strong>
                             <small style="font-size:0.7rem;color:var(--text-muted);">12:20 - 13:20 (1 tiếng)</small>
@@ -405,19 +517,19 @@
                         </div>
                     </label>
                 </div>
-                <div class="form-row-2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+                <div class="form-row-2" style="margin-bottom:14px;">
                     <div class="form-group" style="margin-bottom:0;">
                         <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Giờ BĐ OT chiều</label>
-                        <input type="time" id="edit-ot-start" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-input);color:var(--text);font-family:inherit;">
+                        <input type="time" id="edit-ot-start">
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Giờ KT OT chiều</label>
-                        <input type="time" id="edit-ot-end" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-input);color:var(--text);font-family:inherit;">
+                        <input type="time" id="edit-ot-end">
                     </div>
                 </div>
                 <div class="form-group" style="margin-bottom:16px;">
                     <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Ghi chú</label>
-                    <textarea id="edit-ot-note" rows="2" placeholder="Lý do..." style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-input);color:var(--text);font-family:inherit;resize:none;font-size:0.85rem;"></textarea>
+                    <textarea id="edit-ot-note" rows="2" placeholder="Lý do..."></textarea>
                 </div>
                 <div class="confirm-actions" style="display:flex;gap:10px;justify-content:flex-end;">
                     <button type="button" class="btn btn-ghost" id="edit-ot-cancel" style="padding:10px 16px;font-size:0.85rem;border-radius:8px;">Hủy</button>
@@ -427,6 +539,17 @@
         </div>
     </div>
 
+    <!-- Script triggers -->
+    <script>
+        window.scrollToLogin = function() {
+            const el = document.getElementById('login-widget-card');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const input = document.getElementById('login-user');
+                if (input) setTimeout(() => input.focus(), 600);
+            }
+        };
+    </script>
     <script src="mobile/app.js"></script>
 </body>
 </html>
