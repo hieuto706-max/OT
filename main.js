@@ -98,23 +98,13 @@ function checkUpdates(cloudUrl) {
                 if (res.statusCode === 200) {
                     const info = JSON.parse(data);
                     if (info.version && compareVersions(localVersion, info.version) < 0) {
-                        dialog.showMessageBox(mainWindow, {
-                            type: 'info',
-                            title: 'Cập nhật phần mềm',
-                            message: `Đã có phiên bản mới: v${info.version} (Bản hiện tại: v${localVersion})`,
-                            detail: 'Bạn có muốn tự động tải và cài đặt phiên bản mới nhất ngay không?',
-                            buttons: ['Để sau', 'Cập nhật ngay'],
-                            defaultId: 1
-                        }).then((result) => {
-                            if (result.response === 1) {
-                                if (info.desktopDownloadUrl) {
-                                    startAutoUpdate(info.desktopDownloadUrl, info.version);
-                                } else {
-                                    const fallbackUrl = `https://github.com/hieuto706-max/OT/releases/download/v${info.version}/ot-manager%20Setup%20${info.version}.exe`;
-                                    shell.openExternal(fallbackUrl);
-                                }
-                            }
-                        });
+                        // Tự động tải và cập nhật ngay khi phát hiện phiên bản mới
+                        if (info.desktopDownloadUrl) {
+                            startAutoUpdate(info.desktopDownloadUrl, info.version);
+                        } else {
+                            const fallbackUrl = `https://github.com/hieuto706-max/OT/releases/download/v${info.version}/ot-manager%20Setup%20${info.version}.exe`;
+                            shell.openExternal(fallbackUrl);
+                        }
                     }
                 }
             } catch (e) {}
