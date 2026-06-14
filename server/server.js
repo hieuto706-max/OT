@@ -69,6 +69,28 @@ function getDbPath() {
     return DB_FILE;
 }
 
+function getConfigPath() {
+    let configPath = path.join(__dirname, '..', 'config.json');
+    try {
+        const { app } = require('electron');
+        if (app) {
+            const exeDir = path.dirname(process.execPath);
+            const exeConfig = path.join(exeDir, 'config.json');
+            if (fs.existsSync(exeConfig)) {
+                configPath = exeConfig;
+            } else if (app.isPackaged) {
+                const asarConfig = path.join(__dirname, '..', 'config.json');
+                if (fs.existsSync(asarConfig)) {
+                    configPath = asarConfig;
+                }
+            }
+        }
+    } catch (e) {
+        // Chạy độc lập ngoài Electron (ví dụ trên Render)
+    }
+    return configPath;
+}
+
 // ==================== GITHUB GIST BACKUP ====================
 function fetchGist() {
     return new Promise((resolve, reject) => {
@@ -565,7 +587,7 @@ async function handleAPI(req, res, urlPath, method) {
                 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
                 version = pkg.version || '1.0.0';
             }
-            const configPath = path.join(__dirname, '..', 'config.json');
+            const configPath = getConfigPath();
             if (fs.existsSync(configPath)) {
                 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
                 desktopDownloadUrl = config.desktopDownloadUrl;
@@ -590,7 +612,7 @@ async function handleAPI(req, res, urlPath, method) {
     if (urlPath === '/api/cloud-url' && method === 'GET') {
         let cloudUrl = '';
         try {
-            const configPath = path.join(__dirname, '..', 'config.json');
+            const configPath = getConfigPath();
             if (fs.existsSync(configPath)) {
                 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
                 cloudUrl = config.serverUrl || '';
@@ -681,9 +703,20 @@ const server = http.createServer(async (req, res) => {
         return serveStatic(req, res, mobilePath, '/download.html');
     }
 
-    // Direct download route for the Android APK
+    // Direct download route for the Android APK (redirect to GitHub Release for the latest version)
     if (urlPath === '/OT-Manager-mobile.apk') {
-        return serveStatic(req, res, path.join(__dirname, '..', 'mobile'), '/OT-Manager-mobile.apk');
+        let version = '1.1.1';
+        try {
+            const pkgPath = path.join(__dirname, '..', 'package.json');
+            if (fs.existsSync(pkgPath)) {
+                const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+                version = pkg.version || '1.1.1';
+            }
+        } catch (e) {}
+        res.writeHead(302, {
+            'Location': `https://github.com/hieuto706-max/OT/releases/download/v${version}/OT-Manager-mobile.apk`
+        });
+        return res.end();
     }
 
     // Desktop admin app (served at /desktop/)

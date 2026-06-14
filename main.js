@@ -17,8 +17,15 @@ async function createWindow() {
     let serverUrl = `http://localhost:${PORT}`;
     let cloudUrl = '';
 
-    // Đọc file config.json nếu có để dùng Cloud Server
-    const configPath = path.join(__dirname, 'config.json');
+    // Đọc file config.json: Ưu tiên kế bên file exe khi đóng gói, sau đó mới đến file trong asar/dev
+    let configPath = path.join(__dirname, 'config.json');
+    if (app.isPackaged) {
+        const exeConfig = path.join(path.dirname(process.execPath), 'config.json');
+        if (fs.existsSync(exeConfig)) {
+            configPath = exeConfig;
+        }
+    }
+
     if (fs.existsSync(configPath)) {
         try {
             const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
