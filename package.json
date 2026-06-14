@@ -1,6 +1,6 @@
 {
   "name": "ot-manager",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "Ứng dụng quản lý tăng ca - OT Manager",
   "main": "main.js",
   "scripts": {
@@ -47,6 +47,9 @@
       "target": "nsis",
       "icon": "resources/icon.png",
       "artifactName": "${name}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "include": "build/installer.nsh"
     },
     "directories": {
       "output": "dist"
