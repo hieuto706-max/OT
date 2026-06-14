@@ -1056,6 +1056,29 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-logout').addEventListener('click', logout);
     document.getElementById('btn-logout-2').addEventListener('click', logout);
 
+    // Unlink device
+    const btnUnlinkDevice = document.getElementById('btn-unlink-device');
+    if (btnUnlinkDevice) {
+        btnUnlinkDevice.addEventListener('click', async () => {
+            const ok = await showConfirm('Bạn có chắc chắn muốn xin huỷ liên kết thiết bị này khỏi tài khoản không? Thao tác này sẽ tự động đăng xuất.');
+            if (!ok) return;
+            
+            if (!currentUser || !currentUser.id) {
+                showToast('Không tìm thấy thông tin nhân viên!', 'error');
+                return;
+            }
+            
+            showToast('Đang gửi yêu cầu huỷ liên kết...', 'info');
+            try {
+                await api('/api/users/' + currentUser.id, 'PUT', { deviceId: null });
+                showToast('Huỷ liên kết thiết bị thành công!', 'success');
+                logout();
+            } catch (err) {
+                showToast(err.message || 'Lỗi huỷ liên kết thiết bị!', 'error');
+            }
+        });
+    }
+
     // Kéo để làm mới (Pull to refresh)
     let touchStart = 0;
     let isPulling = false;
@@ -1360,7 +1383,7 @@ async function handleEditOTSubmit(e) {
 }
 
 // ==================== AUTO UPDATE FOR MOBILE APP ====================
-const MOBILE_VERSION = '1.1.1';
+const MOBILE_VERSION = '1.1.2';
 let updateCheckInterval = null;
 
 function checkMobileUpdates(isManual) {
@@ -1424,6 +1447,10 @@ function updateVersionDisplay() {
     if (el) {
         el.textContent = 'v' + MOBILE_VERSION;
         el.style.color = '#10b981';
+    }
+    var elLogin = document.querySelector('.login-ver-val');
+    if (elLogin) {
+        elLogin.textContent = 'v' + MOBILE_VERSION;
     }
 }
 

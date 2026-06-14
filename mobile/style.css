@@ -377,19 +377,21 @@ body {
 
 .landing-container {
     width: 100%;
-    max-width: 480px;
+    max-width: 450px;
     margin: 0 auto;
-    padding: 40px 20px 80px;
+    padding: 24px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 32px;
+    min-height: calc(100dvh - var(--header-height));
+    box-sizing: border-box;
 }
 
 .landing-left-side {
     width: 100%;
     display: flex;
     flex-direction: column;
+    margin: auto 0;
 }
 
 /* ==================== LOGIN CARD — Double-Border Glass ==================== */
@@ -399,7 +401,7 @@ body {
     -webkit-backdrop-filter: blur(24px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-lg);
-    padding: 40px 24px;
+    padding: 32px 20px;
     position: relative;
     overflow: hidden;
     box-shadow: 
@@ -452,6 +454,27 @@ body {
 .login-footer {
     text-align: center;
     margin-top: 20px;
+}
+
+.login-register-hint {
+    font-size: 13px;
+    color: var(--text-sub);
+    margin-bottom: 16px;
+    font-weight: 500;
+    opacity: 0.85;
+}
+
+.login-version-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 16px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 20px;
+    margin-top: 8px;
+    letter-spacing: 0.5px;
 }
 
 /* ==================== FORMS & INPUTS — Interactive Physics ==================== */
@@ -648,6 +671,21 @@ body {
 }
 
 .btn-danger:active {
+    transform: translateY(0) scale(0.96);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, var(--orange) 0%, #d97706 100%);
+    color: var(--text-white);
+    box-shadow: 0 6px 22px rgba(245, 166, 35, 0.3);
+}
+
+.btn-warning:hover {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 10px 30px rgba(245, 166, 35, 0.45);
+}
+
+.btn-warning:active {
     transform: translateY(0) scale(0.96);
 }
 
