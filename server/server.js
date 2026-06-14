@@ -300,7 +300,7 @@ function sendJSON(res, statusCode, data) {
         'Content-Type': 'application/json; charset=utf-8',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, x-device-id, x-user-id',
     });
     res.end(JSON.stringify(data));
 }
@@ -672,7 +672,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(204, {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Allow-Headers': 'Content-Type, x-device-id, x-user-id',
         });
         return res.end();
     }
