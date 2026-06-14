@@ -1187,6 +1187,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=${encodeURIComponent(host + downloadPath)}`;
         apkQrLanding.src = qrApiUrl;
     }
+
+    const desktopBtnLanding = document.getElementById('desktop-download-btn-landing');
+    if (desktopBtnLanding) {
+        fetch((API || host) + '/api/version')
+            .then(res => res.json())
+            .then(data => {
+                if (data.desktopDownloadUrl) {
+                    desktopBtnLanding.href = data.desktopDownloadUrl;
+                }
+            })
+            .catch(err => {
+                console.error('Không thể lấy link EXE từ server:', err);
+            });
+    }
 });
 
 function checkConnection() {
