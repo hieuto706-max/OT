@@ -1,5 +1,7 @@
 import UIKit
 import WebKit
+import Network
+import Darwin
 
 class ViewController: UIViewController {
 
@@ -218,45 +220,35 @@ class ViewController: UIViewController {
     }
 
     private func isPortOpen(host: String, port: UInt16, timeout: TimeInterval) -> Bool {
-        var addr = sockaddr_in()
-        addr.sin_family = sa_family_t(AF_INET)
-        addr.sin_port = port.bigEndian
-        addr.sin_len = __uint8_t(MemoryLayout<sockaddr_in>.size)
-
-        guard inet_pton(AF_INET, host, &addr.sin_addr) == 1 else { return false }
-
-        let sock = socket(AF_INET, SOCK_STREAM, 0)
-        guard sock >= 0 else { return false }
-
-        // Đặt socket non-blocking
-        let flags = fcntl(sock, F_GETFL, 0)
-        fcntl(sock, F_SETFL, flags | O_NONBLOCK)
-
-        var result = withUnsafePointer(to: &addr) {
-            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                connect(sock, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
+        let semaphore = DispatchSemaphore(value: 0)
+        var success = false
+        
+        let hostName = NWEndpoint.Host(host)
+        guard let portNumber = NWEndpoint.Port(rawValue: port) else { return false }
+        let connection = NWConnection(host: hostName, port: portNumber, using: .tcp)
+        
+        connection.stateUpdateHandler = { state in
+            switch state {
+            case .ready:
+                success = true
+                connection.cancel()
+                semaphore.signal()
+            case .failed:
+                connection.cancel()
+                semaphore.signal()
+            case .waiting:
+                break
+            default:
+                break
             }
         }
-
-        if result != 0 && errno == EINPROGRESS {
-            var writeSet = fd_set()
-            __darwin_fd_zero(&writeSet)
-            __darwin_fd_set(sock, &writeSet)
-
-            var tv = timeval(tv_sec: Int(timeout), tv_usec: 0)
-            result = select(sock + 1, nil, &writeSet, nil, &tv)
-
-            if result > 0 {
-                var error: Int32 = 0
-                var len = socklen_t(MemoryLayout<Int32>.size)
-                getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &len)
-                close(sock)
-                return error == 0
-            }
-        }
-
-        close(sock)
-        return result == 0
+        
+        connection.start(queue: DispatchQueue.global(qos: .userInitiated))
+        
+        _ = semaphore.wait(timeout: .now() + timeout)
+        connection.cancel()
+        
+        return success
     }
 
     // MARK: - Helpers
@@ -417,23 +409,5 @@ extension ViewController: WKUIDelegate {
             completionHandler(alert.textFields?.first?.text)
         })
         present(alert, animated: true)
-    }
-}
-
-// MARK: - fd_set helpers for select()
-
-private func __darwin_fd_zero(_ set: inout fd_set) {
-    set.__fds_bits = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-}
-
-private func __darwin_fd_set(_ fd: Int32, _ set: inout fd_set) {
-    let intOffset = Int(fd / 32)
-    let bitOffset = Int(fd % 32)
-    let mask = Int32(1 << bitOffset)
-    withUnsafeMutablePointer(to: &set.__fds_bits) { ptr in
-        let raw = UnsafeMutableRawPointer(ptr)
-        let intArray = raw.assumingMemoryBound(to: Int32.self)
-        intArray[intOffset] |= mask
     }
 }
