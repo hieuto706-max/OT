@@ -2508,54 +2508,69 @@ body.is-web-browser #btn-check-update-mobile {
 }
 
 /* ==================== CUSTOM TIME PICKER & PRESETS ==================== */
-.time-select-group {
+.time-stepper-group {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: var(--radius-sm);
-    padding: 0 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 6px 12px;
     width: 100%;
-    position: relative;
     height: 52px;
+    gap: 8px;
+    box-sizing: border-box;
 }
 
-.time-select-group select {
-    flex: 1;
-    background: transparent !important;
-    border: none !important;
-    padding: 10px 0 !important;
-    color: var(--text) !important;
-    font-size: 17px !important;
-    font-weight: 700;
-    text-align: center;
-    outline: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    cursor: pointer;
-    text-align-last: center;
-}
-
-.time-select-group select option {
-    background: #0f0f1a;
+.stepper-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.05);
     color: var(--text);
-    font-size: 16px;
-    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
 }
 
-.time-select-separator {
+.stepper-btn:hover {
+    background: rgba(13, 217, 139, 0.15);
     color: var(--green-light);
-    font-weight: 900;
+}
+
+.stepper-btn:active {
+    transform: scale(0.9);
+}
+
+.stepper-value {
     font-size: 18px;
-    padding: 0 8px;
-    animation: blink-red 2s infinite;
+    font-weight: 800;
+    width: 32px;
+    text-align: center;
+    color: var(--text-white);
+    letter-spacing: -0.5px;
+}
+
+.stepper-separator {
+    color: var(--green-light);
+    font-weight: 950;
+    font-size: 20px;
+    padding: 0 6px;
+    animation: blink-green 2s infinite;
+}
+
+@keyframes blink-green {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
 }
 
 .time-presets {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
     margin-top: 10px;
     width: 100%;
@@ -2563,16 +2578,16 @@ body.is-web-browser #btn-check-update-mobile {
 
 .preset-btn {
     flex: 1;
-    min-width: 60px;
+    min-width: 50px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--border);
     color: var(--text-sub);
-    padding: 8px 10px;
+    padding: 8px 6px;
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: all 0.2s ease;
     text-align: center;
 }
 

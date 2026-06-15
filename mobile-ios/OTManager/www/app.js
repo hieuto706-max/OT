@@ -1318,42 +1318,102 @@ function setupCustomTimePicker(inputId, showPresets = false) {
     
     // Create container
     const container = document.createElement('div');
-    container.className = 'time-select-group';
+    container.className = 'time-stepper-group';
     
-    // Create Hour select
-    const hourSelect = document.createElement('select');
-    hourSelect.id = `${inputId}-hour`;
-    for (let h = 0; h < 24; h++) {
-        const hStr = String(h).padStart(2, '0');
-        hourSelect.options.add(new Option(hStr, hStr));
-    }
+    // Hour layout
+    const btnHourMinus = document.createElement('button');
+    btnHourMinus.type = 'button';
+    btnHourMinus.className = 'stepper-btn btn-minus';
+    btnHourMinus.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+    `;
     
-    // Create separator
-    const separator = document.createElement('div');
-    separator.className = 'time-select-separator';
+    const hourVal = document.createElement('span');
+    hourVal.className = 'stepper-value';
+    hourVal.textContent = '16';
+    
+    const btnHourPlus = document.createElement('button');
+    btnHourPlus.type = 'button';
+    btnHourPlus.className = 'stepper-btn btn-plus';
+    btnHourPlus.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+    `;
+    
+    // Separator
+    const separator = document.createElement('span');
+    separator.className = 'stepper-separator';
     separator.textContent = ':';
     
-    // Create Minute select
-    const minuteSelect = document.createElement('select');
-    minuteSelect.id = `${inputId}-minute`;
-    for (let m = 0; m < 60; m++) {
-        const mStr = String(m).padStart(2, '0');
-        minuteSelect.options.add(new Option(mStr, mStr));
-    }
+    // Minute layout
+    const btnMinMinus = document.createElement('button');
+    btnMinMinus.type = 'button';
+    btnMinMinus.className = 'stepper-btn btn-minus';
+    btnMinMinus.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+    `;
     
-    container.appendChild(hourSelect);
+    const minVal = document.createElement('span');
+    minVal.className = 'stepper-value';
+    minVal.textContent = '30';
+    
+    const btnMinPlus = document.createElement('button');
+    btnMinPlus.type = 'button';
+    btnMinPlus.className = 'stepper-btn btn-plus';
+    btnMinPlus.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+    `;
+    
+    container.appendChild(btnHourMinus);
+    container.appendChild(hourVal);
+    container.appendChild(btnHourPlus);
     container.appendChild(separator);
-    container.appendChild(minuteSelect);
+    container.appendChild(btnMinMinus);
+    container.appendChild(minVal);
+    container.appendChild(btnMinPlus);
     
     originalInput.parentNode.insertBefore(container, originalInput.nextSibling);
     
+    let currentHour = 16;
+    let currentMin = 30;
+    
     function updateOriginal() {
-        originalInput.value = `${hourSelect.value}:${minuteSelect.value}`;
+        const hStr = String(currentHour).padStart(2, '0');
+        const mStr = String(currentMin).padStart(2, '0');
+        hourVal.textContent = hStr;
+        minVal.textContent = mStr;
+        originalInput.value = `${hStr}:${mStr}`;
         originalInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
     
-    hourSelect.addEventListener('change', updateOriginal);
-    minuteSelect.addEventListener('change', updateOriginal);
+    // Event listeners for Hour
+    btnHourMinus.addEventListener('click', () => {
+        currentHour = (currentHour - 1 + 24) % 24;
+        updateOriginal();
+    });
+    btnHourPlus.addEventListener('click', () => {
+        currentHour = (currentHour + 1) % 24;
+        updateOriginal();
+    });
+    
+    // Event listeners for Minute (steps of 15 minutes)
+    btnMinMinus.addEventListener('click', () => {
+        currentMin = (currentMin - 15 + 60) % 60;
+        updateOriginal();
+    });
+    btnMinPlus.addEventListener('click', () => {
+        currentMin = (currentMin + 15) % 60;
+        updateOriginal();
+    });
     
     // Intercept programmatic value assignments on instance directly
     const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
@@ -1364,9 +1424,11 @@ function setupCustomTimePicker(inputId, showPresets = false) {
         set(val) {
             descriptor.set.call(this, val);
             if (val && val.includes(':')) {
-                const [h, m] = val.split(':');
-                hourSelect.value = h.padStart(2, '0');
-                minuteSelect.value = m.padStart(2, '0');
+                const [h, m] = val.split(':').map(Number);
+                currentHour = h;
+                currentMin = m;
+                hourVal.textContent = String(h).padStart(2, '0');
+                minVal.textContent = String(m).padStart(2, '0');
             }
         },
         configurable: true
@@ -1374,9 +1436,11 @@ function setupCustomTimePicker(inputId, showPresets = false) {
     
     // Initial sync
     if (originalInput.value && originalInput.value.includes(':')) {
-        const [h, m] = originalInput.value.split(':');
-        hourSelect.value = h.padStart(2, '0');
-        minuteSelect.value = m.padStart(2, '0');
+        const [h, m] = originalInput.value.split(':').map(Number);
+        currentHour = h;
+        currentMin = m;
+        hourVal.textContent = String(h).padStart(2, '0');
+        minVal.textContent = String(m).padStart(2, '0');
     }
     
     // Presets quick-select buttons
@@ -1390,9 +1454,9 @@ function setupCustomTimePicker(inputId, showPresets = false) {
             btn.className = 'preset-btn';
             btn.textContent = time;
             btn.addEventListener('click', () => {
-                const [h, m] = time.split(':');
-                hourSelect.value = h;
-                minuteSelect.value = m;
+                const [h, m] = time.split(':').map(Number);
+                currentHour = h;
+                currentMin = m;
                 updateOriginal();
             });
             presetsContainer.appendChild(btn);
