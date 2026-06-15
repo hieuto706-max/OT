@@ -250,6 +250,101 @@ function saveDB(data) {
     }
 }
 
+async function performCleanup(month) {
+    const db = await loadDB();
+    const cleanMonthStr = month.replace('-', '_'); // e.g. "2026_05"
+    const backupFileName = `db_backup_${cleanMonthStr}.json`;
+    const backupFilePath = path.join(path.dirname(getDbPath()), backupFileName);
+    
+    // 1. Sao lưu cục bộ
+    try {
+        fs.writeFileSync(backupFilePath, JSON.stringify(db, null, 2), 'utf-8');
+        console.log(`[Cleanup] Đã lưu tệp sao lưu cục bộ tại: ${backupFilePath}`);
+    } catch (err) {
+        console.error('[Cleanup] Lỗi sao lưu cục bộ:', err.message);
+    }
+    
+    // 2. Sao lưu lên GitHub Gist
+    if (process.env.GIST_ID && process.env.GITHUB_TOKEN) {
+        try {
+            console.log(`[Cleanup] Đang đồng bộ tệp sao lưu ${backupFileName} lên GitHub Gist...`);
+            await backupGistFile(backupFileName, db);
+            console.log('[Cleanup] Đồng bộ Gist thành công!');
+        } catch (err) {
+            console.error('[Cleanup] Lỗi đồng bộ Gist:', err.message);
+        }
+    }
+    
+    // 3. Xoá dữ liệu tháng cũ khỏi DB chính
+    db.records = db.records.filter(r => !r.date.startsWith(month) && r.date > month);
+    saveDB(db);
+    console.log(`[Cleanup] Đã dọn dẹp dữ liệu của tháng ${month} và các tháng cũ hơn.`);
+}
+
+function backupGistFile(fileName, data) {
+    return new Promise((resolve, reject) => {
+        const payload = JSON.stringify({
+            files: {
+                [fileName]: {
+                    content: JSON.stringify(data, null, 2)
+                }
+            }
+        });
+
+        const options = {
+            hostname: 'api.github.com',
+            path: `/gists/${process.env.GIST_ID}`,
+            method: 'PATCH',
+            headers: {
+                'Authorization': `token ${process.env.GITHUB_TOKEN}`,
+                'User-Agent': 'Node.js-Server-App',
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payload)
+            }
+        };
+
+        const req = https.request(options, (res) => {
+            let body = '';
+            res.on('data', chunk => body += chunk);
+            res.on('end', () => {
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                    resolve(true);
+                } else {
+                    reject(new Error(`HTTP status ${res.statusCode}: ${body}`));
+                }
+            });
+        });
+
+        req.on('error', reject);
+        req.write(payload);
+        req.end();
+    });
+}
+
+async function autoCleanupOn15th(db) {
+    const today = new Date();
+    const currentDay = today.getDate();
+    if (currentDay >= 15) {
+        // Tính tháng trước
+        const prevMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const yyyy = prevMonthDate.getFullYear();
+        const mm = String(prevMonthDate.getMonth() + 1).padStart(2, '0');
+        const targetMonth = `${yyyy}-${mm}`; // e.g. "2026-05"
+        
+        // Kiểm tra xem còn bản ghi cũ nào không
+        const hasOldRecords = db.records.some(r => r.date.startsWith(targetMonth) || r.date < targetMonth);
+        if (hasOldRecords) {
+            console.log(`[Auto Cleanup] Phát hiện hôm nay là ngày ${currentDay} (>= 15) và có dữ liệu của tháng ${targetMonth} (hoặc cũ hơn). Bắt đầu tự động dọn dẹp...`);
+            try {
+                await performCleanup(targetMonth);
+                console.log(`[Auto Cleanup] Tự động dọn dẹp thành công dữ liệu tháng ${targetMonth}!`);
+            } catch (err) {
+                console.error('[Auto Cleanup] Lỗi tự động dọn dẹp:', err.message);
+            }
+        }
+    }
+}
+
 function generateId() {
     return Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
 }
@@ -657,6 +752,21 @@ async function handleAPI(req, res, urlPath, method) {
         return sendJSON(res, 200, { cloudUrl });
     }
 
+    // --- MANUAL CLEANUP & BACKUP ---
+    if (urlPath === '/api/records/cleanup' && method === 'POST') {
+        const body = await parseBody(req);
+        const { month } = body;
+        if (!month || !month.match(/^\d{4}-\d{2}$/)) {
+            return sendError(res, 400, 'Tháng không hợp lệ (định dạng đúng: YYYY-MM)!');
+        }
+        try {
+            await performCleanup(month);
+            return sendJSON(res, 200, { success: true, message: `Đã chốt công và dọn dẹp dữ liệu tháng ${month} thành công!` });
+        } catch (err) {
+            return sendError(res, 500, `Lỗi dọn dẹp: ${err.message}`);
+        }
+    }
+
     return sendError(res, 404, 'API not found');
 }
 
@@ -954,6 +1064,23 @@ function startServer() {
                 }
             }
             
+            // 1. Tự động kiểm tra dọn dẹp dữ liệu vào ngày >= 15 khi khởi động
+            loadDB().then(db => {
+                autoCleanupOn15th(db);
+            }).catch(err => {
+                console.error('[Startup] Lỗi nạp DB để tự động dọn dẹp:', err.message);
+            });
+
+            // 2. Chạy dọn dẹp tự động định kỳ mỗi 24 tiếng
+            setInterval(async () => {
+                try {
+                    const db = await loadDB();
+                    await autoCleanupOn15th(db);
+                } catch (err) {
+                    console.error('[Interval] Lỗi kiểm tra tự động dọn dẹp:', err.message);
+                }
+            }, 24 * 60 * 60 * 1000);
+
             resolve({ ip, port: PORT });
         });
     });

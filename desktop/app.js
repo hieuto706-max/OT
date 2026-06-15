@@ -673,6 +673,72 @@ async function exportExcel() {
     }
 }
 
+async function handleCloseMonth() {
+    const month = document.getElementById('report-filter-month').value;
+    if (!month) {
+        showToast('Vui lòng chọn tháng cần chốt công!', 'error');
+        return;
+    }
+
+    // Bước 1: Yêu cầu tải báo cáo Excel trước
+    showModal(
+        'Xác nhận Chốt công & Dọn dẹp',
+        `<p style="font-size: 14px; line-height: 1.6; color: var(--text-primary);">
+            Hệ thống yêu cầu bạn đã xuất báo cáo Excel lưu trữ về máy tính trước khi thực hiện.<br><br>
+            <strong>Bạn đã tải báo cáo Excel tháng ${month} về chưa?</strong>
+         </p>`,
+        [
+            {
+                text: 'Chưa tải (Tải ngay)',
+                class: 'btn-ghost',
+                action: async () => {
+                    await exportExcel();
+                }
+            },
+            {
+                text: 'Đã tải (Tiếp tục dọn dẹp)',
+                class: 'btn-primary',
+                action: () => {
+                    // Bước 2: Cảnh báo xóa dữ liệu vĩnh viễn trên Server
+                    showModal(
+                        'CẢNH BÁO QUAN TRỌNG',
+                        `<p style="font-size: 14px; line-height: 1.6; color: var(--accent-red); font-weight: 600;">
+                            CẢNH BÁO: Tất cả dữ liệu tăng ca của tháng ${month} và các tháng cũ hơn sẽ bị xóa sạch khỏi Server.<br><br>
+                            Hệ thống sẽ tự động tạo file sao lưu trên Server và GitHub Gist, tuy nhiên dữ liệu hiển thị hiện tại sẽ bị xóa vĩnh viễn.<br><br>
+                            Thao tác này KHÔNG THỂ HOÀN TÁC! Bạn vẫn muốn tiếp tục?
+                         </p>`,
+                        [
+                            {
+                                text: 'Hủy bỏ',
+                                class: 'btn-ghost',
+                                action: null
+                            },
+                            {
+                                text: 'Xác nhận xóa dữ liệu',
+                                class: 'btn-danger',
+                                action: async () => {
+                                    try {
+                                        showToast('Đang thực hiện dọn dẹp...');
+                                        const res = await api('/api/records/cleanup', 'POST', { month });
+                                        showToast('Dọn dẹp dữ liệu thành công!');
+                                        await Promise.all([
+                                            refreshAdminRecords(),
+                                            refreshAdminStats(),
+                                            refreshReport()
+                                        ]);
+                                    } catch (err) {
+                                        showToast(err.message, 'error');
+                                    }
+                                }
+                            }
+                        ]
+                    );
+                }
+            }
+        ]
+    );
+}
+
 // ==================== EMPLOYEE DASHBOARD ====================
 async function initEmployeeDashboard(user) {
     document.getElementById('emp-welcome').textContent = `Xin chào, ${user.fullname}`;
@@ -1254,8 +1320,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('emp-filter-month').addEventListener('change', refreshEmployeeRecords);
     document.getElementById('report-filter-month').addEventListener('change', refreshReport);
 
-    // Export
+    // Export & Cleanup
     document.getElementById('btn-export').addEventListener('click', exportExcel);
+    document.getElementById('btn-close-month').addEventListener('click', handleCloseMonth);
 
     // Modal
     document.getElementById('modal-close').addEventListener('click', closeModal);

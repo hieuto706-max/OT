@@ -384,6 +384,21 @@ body {
     transform: translateY(0);
 }
 
+.btn-warning {
+    background: var(--gradient-orange);
+    color: var(--text-white);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+}
+
+.btn-warning:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(245, 158, 11, 0.35);
+}
+
+.btn-warning:active {
+    transform: translateY(0);
+}
+
 .btn-ghost {
     background: var(--bg-glass);
     color: var(--text-secondary);
