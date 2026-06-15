@@ -386,24 +386,20 @@
             <div class="sheet-header">
                 <div class="sheet-drag-handle"></div>
                 <h3 id="sheet-title">Chọn thời gian</h3>
+                <span class="sheet-time-preview-badge" id="sheet-preview-text">16:30</span>
                 <button type="button" class="sheet-close-btn" id="sheet-close-x">&times;</button>
             </div>
             <div class="sheet-body">
-                <!-- Large Digital Preview -->
-                <div class="sheet-time-display">
-                    <span id="sheet-hour-val" class="time-digit active">16</span>
-                    <span class="time-colon">:</span>
-                    <span id="sheet-min-val" class="time-digit">30</span>
+                <!-- Hour Swipe Strip -->
+                <div class="picker-row">
+                    <span class="picker-row-label">Giờ</span>
+                    <div class="scroll-strip hour-strip" id="sheet-hour-strip"></div>
                 </div>
                 
-                <!-- Hours Grid Panel (00-23) -->
-                <div id="sheet-hour-panel" class="picker-panel active">
-                    <div class="panel-grid hour-grid"></div>
-                </div>
-                
-                <!-- Minutes Grid Panel (00-55) -->
-                <div id="sheet-min-panel" class="picker-panel">
-                    <div class="panel-grid min-grid"></div>
+                <!-- Minute Swipe Strip -->
+                <div class="picker-row">
+                    <span class="picker-row-label">Phút</span>
+                    <div class="scroll-strip min-strip" id="sheet-min-strip"></div>
                 </div>
                 
                 <!-- Quick Presets -->

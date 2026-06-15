@@ -1176,7 +1176,7 @@ body {
 .history-main-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     width: 100%;
 }
 
@@ -1190,6 +1190,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    flex-shrink: 0;
 }
 
 .history-date {
@@ -1203,6 +1204,7 @@ body {
     font-weight: 900;
     color: var(--green-light);
     text-shadow: 0 0 10px rgba(58, 234, 166, 0.2);
+    line-height: 1.2;
 }
 
 .history-tags {
@@ -1234,59 +1236,52 @@ body {
 }
 
 .history-note {
-    font-size: 12.5px;
+    font-size: 12px;
     color: var(--text-sub);
     line-height: 1.5;
-    background: rgba(255, 255, 255, 0.01);
-    padding: 8px 12px;
-    border-radius: 6px;
-    border-left: 2.5px solid rgba(13, 217, 139, 0.4);
-    margin-top: 2px;
-    margin-bottom: 0;
+    background: rgba(255, 255, 255, 0.015);
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px dashed rgba(255, 255, 255, 0.04);
+    margin-top: 4px;
+    font-style: italic;
 }
 
-.history-bottom-row {
+.history-item-actions {
     display: flex;
-    justify-content: flex-end;
     align-items: center;
-    margin-top: 2px;
+    gap: 6px;
+    margin-top: 4px;
 }
 
-.history-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.btn-action-sm {
-    background: none;
+.action-link {
     font-size: 11px;
-    font-weight: 750;
-    padding: 5px 12px;
-    border-radius: 6px;
+    font-weight: 700;
     cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s ease;
+    transition: all 0.2s;
+    user-select: none;
 }
 
-.btn-edit-sm {
-    border: 1px solid rgba(13, 217, 139, 0.25);
+.edit-link {
     color: var(--green-light);
 }
-
-.btn-edit-sm:hover {
-    background: rgba(13, 217, 139, 0.08);
+.edit-link:hover {
+    color: var(--green);
+    text-decoration: underline;
 }
 
-.btn-delete-sm {
-    border: 1px solid rgba(240, 72, 72, 0.25);
+.delete-link {
     color: var(--red);
-    font-size: 11px;
-    font-weight: 750;
-    padding: 5px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s ease;
+}
+.delete-link:hover {
+    color: #ff6b6b;
+    text-decoration: underline;
+}
+
+.action-sep {
+    color: var(--text-muted);
+    font-size: 10px;
+    opacity: 0.5;
 }
 .btn-delete-sm:hover {
     background: rgba(240, 72, 72, 0.08);
@@ -2586,7 +2581,7 @@ body.is-web-browser #btn-check-update-mobile {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
 }
 
 .sheet-header h3 {
@@ -2595,6 +2590,20 @@ body.is-web-browser #btn-check-update-mobile {
     color: var(--text-white);
     margin: 0;
     letter-spacing: -0.3px;
+}
+
+.sheet-time-preview-badge {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--green-light);
+    text-shadow: 0 0 10px var(--green-glow);
+    background: rgba(13, 217, 139, 0.12);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(13, 217, 139, 0.25);
+    font-family: monospace;
+    margin-left: auto;
+    margin-right: 12px;
 }
 
 .sheet-close-btn {
@@ -2612,103 +2621,77 @@ body.is-web-browser #btn-check-update-mobile {
     color: var(--text);
 }
 
-/* Digital Time Preview */
-.sheet-time-display {
+/* Picker Row and Swipe Strip */
+.picker-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
-    font-size: 46px;
-    font-weight: 800;
-    color: var(--text-muted);
-    margin-bottom: 24px;
-    font-family: 'Inter', sans-serif;
-    letter-spacing: -1px;
+    gap: 12px;
+    margin-bottom: 14px;
+    width: 100%;
 }
 
-.sheet-time-display .time-digit {
-    cursor: pointer;
-    transition: all 0.2s ease;
-    padding: 4px 16px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.sheet-time-display .time-digit.active {
-    color: var(--green-light);
-    text-shadow: 0 0 15px var(--green-glow);
-    background: rgba(13, 217, 139, 0.1);
-    border-color: rgba(13, 217, 139, 0.2);
-}
-
-.sheet-time-display .time-colon {
-    color: var(--text-muted);
-    opacity: 0.6;
-}
-
-/* Panel Grids */
-.picker-panel {
-    display: none;
-    min-height: 200px;
-    animation: fadeIn 0.25s ease;
-}
-
-.picker-panel.active {
-    display: block;
-}
-
-.panel-grid {
-    display: grid;
-    gap: 10px;
-    margin-bottom: 8px;
-    justify-content: center;
-}
-
-.panel-grid.hour-grid {
-    grid-template-columns: repeat(6, 1fr);
-}
-
-.panel-grid.min-grid {
-    grid-template-columns: repeat(4, 1fr);
-}
-
-.grid-btn {
+.picker-row-label {
     width: 44px;
-    height: 44px;
-    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    text-align: left;
+    flex-shrink: 0;
+}
+
+.scroll-strip {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-grow: 1;
+    padding: 4px 0;
+}
+
+.scroll-strip::-webkit-scrollbar {
+    display: none;
+}
+
+.strip-btn {
+    min-width: 42px;
+    height: 42px;
+    border-radius: 12px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.06);
     color: var(--text-sub);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
     outline: none;
     user-select: none;
 }
 
-.grid-btn:hover {
+.strip-btn:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.15);
     color: var(--text-white);
 }
 
-.grid-btn.selected {
+.strip-btn.selected {
     background: var(--gradient-green);
     color: var(--text-white);
     border: none;
     box-shadow: 0 4px 12px var(--green-glow);
-    font-size: 16px;
-    font-weight: 800;
+    font-size: 15px;
+    font-weight: 850;
 }
 
 /* Presets inside Sheet */
 .sheet-presets-section {
-    margin-top: 18px;
+    margin-top: 14px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
     padding-top: 14px;
 }
@@ -2753,7 +2736,7 @@ body.is-web-browser #btn-check-update-mobile {
 .sheet-footer {
     display: flex;
     gap: 10px;
-    margin-top: 20px;
+    margin-top: 18px;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
     padding-top: 14px;
 }

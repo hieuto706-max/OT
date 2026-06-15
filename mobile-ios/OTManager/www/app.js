@@ -644,15 +644,14 @@ async function loadHistory() {
                         </div>
                         <div class="history-right">
                             <span class="history-total">${r.totalHours.toFixed(1)}h</span>
+                            <div class="history-item-actions">
+                                <span class="action-link edit-link" onclick="editRecordDialog('${r.id}')">Sửa</span>
+                                <span class="action-sep">•</span>
+                                <span class="action-link delete-link" onclick="deleteRecord('${r.id}')">Xóa</span>
+                            </div>
                         </div>
                     </div>
                     ${r.note ? `<div class="history-note">📝 ${r.note}</div>` : ''}
-                    <div class="history-bottom-row">
-                        <div class="history-actions">
-                            <button class="btn-action-sm btn-edit-sm" onclick="editRecordDialog('${r.id}')">Sửa</button>
-                            <button class="btn-action-sm btn-delete-sm" onclick="deleteRecord('${r.id}')">Xóa</button>
-                        </div>
-                    </div>
                 </div>`;
         }).join('');
 
@@ -1321,38 +1320,34 @@ function initGlobalTimePicker() {
 
     const sheet = document.getElementById('time-picker-sheet');
     if (!sheet) return;
-    const hourGrid = sheet.querySelector('.hour-grid');
-    const minGrid = sheet.querySelector('.min-grid');
+    const hourStrip = document.getElementById('sheet-hour-strip');
+    const minStrip = document.getElementById('sheet-min-strip');
     
-    // Populate hour buttons (00 to 23)
-    hourGrid.innerHTML = '';
+    // Populate hour horizontal strip (00 to 23)
+    hourStrip.innerHTML = '';
     for (let h = 0; h < 24; h++) {
         const hStr = String(h).padStart(2, '0');
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'grid-btn';
+        btn.className = 'strip-btn';
         btn.textContent = hStr;
         btn.setAttribute('data-val', hStr);
-        btn.addEventListener('click', () => selectPickerHourVal(hStr));
-        hourGrid.appendChild(btn);
+        btn.addEventListener('click', () => selectPickerHourVal(hStr, true));
+        hourStrip.appendChild(btn);
     }
 
-    // Populate minute buttons (00 to 55 in 5m steps)
-    minGrid.innerHTML = '';
+    // Populate minute horizontal strip (00 to 55 in 5m steps)
+    minStrip.innerHTML = '';
     for (let m = 0; m < 60; m += 5) {
         const mStr = String(m).padStart(2, '0');
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'grid-btn';
+        btn.className = 'strip-btn';
         btn.textContent = mStr;
         btn.setAttribute('data-val', mStr);
-        btn.addEventListener('click', () => selectPickerMinVal(mStr));
-        minGrid.appendChild(btn);
+        btn.addEventListener('click', () => selectPickerMinVal(mStr, true));
+        minStrip.appendChild(btn);
     }
-
-    // Tab toggles via display digits click
-    document.getElementById('sheet-hour-val').addEventListener('click', () => switchPickerPanel('hour'));
-    document.getElementById('sheet-min-val').addEventListener('click', () => switchPickerPanel('minute'));
 
     // Confirm button
     document.getElementById('sheet-btn-confirm').addEventListener('click', confirmPickerSelection);
@@ -1368,57 +1363,65 @@ function initGlobalTimePicker() {
     });
 }
 
-function switchPickerPanel(panelName) {
-    const hourVal = document.getElementById('sheet-hour-val');
-    const minVal = document.getElementById('sheet-min-val');
-    const hourPanel = document.getElementById('sheet-hour-panel');
-    const minPanel = document.getElementById('sheet-min-panel');
-    if (!hourVal || !minVal || !hourPanel || !minPanel) return;
+function centerSelectedPill(stripEl, selectedBtn, smooth = true) {
+    if (!stripEl || !selectedBtn) return;
+    setTimeout(() => {
+        const parentWidth = stripEl.clientWidth;
+        const btnLeft = selectedBtn.offsetLeft;
+        const btnWidth = selectedBtn.clientWidth;
+        const targetScroll = btnLeft - (parentWidth / 2) + (btnWidth / 2);
+        stripEl.scrollTo({
+            left: targetScroll,
+            behavior: smooth ? 'smooth' : 'auto'
+        });
+    }, 50);
+}
 
-    if (panelName === 'hour') {
-        hourVal.classList.add('active');
-        minVal.classList.remove('active');
-        hourPanel.classList.add('active');
-        minPanel.classList.remove('active');
-    } else {
-        hourVal.classList.remove('active');
-        minVal.classList.add('active');
-        hourPanel.classList.remove('active');
-        minPanel.classList.add('active');
+function updatePickerPreviewBadge() {
+    const badge = document.getElementById('sheet-preview-text');
+    if (badge) {
+        badge.textContent = `${selectedPickerHour}:${selectedPickerMin}`;
     }
 }
 
-function selectPickerHourVal(hStr) {
+function selectPickerHourVal(hStr, smoothScroll = true) {
     selectedPickerHour = hStr;
-    document.getElementById('sheet-hour-val').textContent = hStr;
+    updatePickerPreviewBadge();
     
-    // Highlight button in grid
-    document.querySelectorAll('#sheet-hour-panel .grid-btn').forEach(btn => {
+    const hourStrip = document.getElementById('sheet-hour-strip');
+    let targetBtn = null;
+    hourStrip.querySelectorAll('.strip-btn').forEach(btn => {
         if (btn.getAttribute('data-val') === hStr) {
             btn.classList.add('selected');
+            targetBtn = btn;
         } else {
             btn.classList.remove('selected');
         }
     });
 
-    // Auto-switch tab to minute panel for faster UX
-    setTimeout(() => {
-        switchPickerPanel('minute');
-    }, 180);
+    if (targetBtn) {
+        centerSelectedPill(hourStrip, targetBtn, smoothScroll);
+    }
 }
 
-function selectPickerMinVal(mStr) {
+function selectPickerMinVal(mStr, smoothScroll = true) {
     selectedPickerMin = mStr;
-    document.getElementById('sheet-min-val').textContent = mStr;
+    updatePickerPreviewBadge();
 
-    // Highlight button in grid
-    document.querySelectorAll('#sheet-min-panel .grid-btn').forEach(btn => {
+    const minStrip = document.getElementById('sheet-min-strip');
+    let targetBtn = null;
+    minStrip.querySelectorAll('.strip-btn').forEach(btn => {
         if (btn.getAttribute('data-val') === mStr) {
             btn.classList.add('selected');
+            targetBtn = btn;
         } else {
             btn.classList.remove('selected');
         }
     });
+
+    if (targetBtn) {
+        centerSelectedPill(minStrip, targetBtn, smoothScroll);
+    }
 }
 
 function openPickerSheet(inputId, showPresets) {
@@ -1445,24 +1448,10 @@ function openPickerSheet(inputId, showPresets) {
     if (mNum >= 60) mNum = 55;
     selectedPickerMin = String(mNum).padStart(2, '0');
 
-    document.getElementById('sheet-hour-val').textContent = selectedPickerHour;
-    document.getElementById('sheet-min-val').textContent = selectedPickerMin;
+    updatePickerPreviewBadge();
 
-    document.querySelectorAll('#sheet-hour-panel .grid-btn').forEach(btn => {
-        if (btn.getAttribute('data-val') === selectedPickerHour) {
-            btn.classList.add('selected');
-        } else {
-            btn.classList.remove('selected');
-        }
-    });
-    
-    document.querySelectorAll('#sheet-min-panel .grid-btn').forEach(btn => {
-        if (btn.getAttribute('data-val') === selectedPickerMin) {
-            btn.classList.add('selected');
-        } else {
-            btn.classList.remove('selected');
-        }
-    });
+    selectPickerHourVal(selectedPickerHour, false);
+    selectPickerMinVal(selectedPickerMin, false);
 
     const presetsContainer = document.getElementById('sheet-presets-container');
     const presetsSection = document.querySelector('.sheet-presets-section');
@@ -1487,13 +1476,15 @@ function openPickerSheet(inputId, showPresets) {
         presetsSection.style.display = 'none';
     }
 
-    switchPickerPanel('hour');
-
     const sheet = document.getElementById('time-picker-sheet');
     if (sheet) {
         sheet.style.display = 'flex';
         setTimeout(() => {
             sheet.classList.add('active');
+            setTimeout(() => {
+                selectPickerHourVal(selectedPickerHour, false);
+                selectPickerMinVal(selectedPickerMin, false);
+            }, 120);
         }, 20);
     }
 }
