@@ -370,6 +370,11 @@ async function handleAdminLogin(e) {
         safeStorage.setItem('ot_mobile_user', JSON.stringify(data.user));
         safeStorage.setItem('ot_login_time', Date.now().toString());
         
+        // Đồng bộ session quản lý cho desktop/app.js tự động nhận diện
+        safeStorage.setItem('ot_current_user', JSON.stringify(data.user));
+        const todayStr = new Date().toISOString().split('T')[0];
+        safeStorage.setItem('ot_login_date', todayStr);
+        
         // Chuyển hướng tới trang quản lý desktop
         const isGitHubPages = window.location.hostname.includes('github.io');
         const redirectUrl = isGitHubPages ? '/OT/desktop/index.html' : '/desktop/index.html';
@@ -632,15 +637,21 @@ async function loadHistory() {
 
             return `
                 <div class="history-item" style="animation-delay:${i * 0.04}s">
-                    <div class="history-top">
-                        <span class="history-date">${fmtDate(r.date)}</span>
-                        <span class="history-total">${r.totalHours.toFixed(1)}h</span>
+                    <div class="history-main-row">
+                        <div class="history-left">
+                            <span class="history-date">${fmtDate(r.date)}</span>
+                            <div class="history-tags">${tags}</div>
+                        </div>
+                        <div class="history-right">
+                            <span class="history-total">${r.totalHours.toFixed(1)}h</span>
+                        </div>
                     </div>
-                    <div class="history-tags">${tags}</div>
                     ${r.note ? `<div class="history-note">📝 ${r.note}</div>` : ''}
-                    <div class="history-actions" style="display:flex; gap:8px; margin-top:8px;">
-                        <button class="btn-delete-sm" style="border-color:rgba(16,185,129,0.3); color:var(--green-light);" onclick="editRecordDialog('${r.id}')">Sửa</button>
-                        <button class="btn-delete-sm" onclick="deleteRecord('${r.id}')">Xóa</button>
+                    <div class="history-bottom-row">
+                        <div class="history-actions">
+                            <button class="btn-action-sm btn-edit-sm" onclick="editRecordDialog('${r.id}')">Sửa</button>
+                            <button class="btn-action-sm btn-delete-sm" onclick="deleteRecord('${r.id}')">Xóa</button>
+                        </div>
                     </div>
                 </div>`;
         }).join('');
@@ -1263,10 +1274,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const isGitHubPages = window.location.hostname.includes('github.io');
     const isMobileFolder = window.location.pathname.includes('/mobile');
 
-    // Link APK: trên GitHub Pages trỏ thẳng tới GitHub raw file của branch main, còn lại qua server redirect
-    const GITHUB_RELEASES_APK = 'https://github.com/hieuto706-max/OT/raw/main/mobile/OT-Manager-mobile.apk';
+    // Link APK: Trỏ thẳng tới server Render để tải trực tiếp từ đĩa cục bộ, tránh lỗi 404 trên repo GitHub private
     const defaultApk = isMobileFolder ? 'OT-Manager-mobile.apk' : 'mobile/OT-Manager-mobile.apk';
-    const apkUrl = isGitHubPages ? GITHUB_RELEASES_APK : (API ? (API + '/OT-Manager-mobile.apk') : defaultApk);
+    const apkUrl = API ? (API + '/OT-Manager-mobile.apk') : defaultApk;
 
     const apkBtnLanding = document.getElementById('apk-download-btn-landing');
     if (apkBtnLanding) apkBtnLanding.href = apkUrl;
@@ -1291,7 +1301,105 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Không thể lấy link EXE từ server:', err);
             });
     }
+    
+    // Thiết lập custom 24h time pickers
+    setupCustomTimePicker('ot-start');
+    setupCustomTimePicker('ot-end', true);
+    setupCustomTimePicker('edit-ot-start');
+    setupCustomTimePicker('edit-ot-end', true);
 });
+
+function setupCustomTimePicker(inputId, showPresets = false) {
+    const originalInput = document.getElementById(inputId);
+    if (!originalInput) return;
+    
+    // Hide original input
+    originalInput.style.display = 'none';
+    
+    // Create container
+    const container = document.createElement('div');
+    container.className = 'time-select-group';
+    
+    // Create Hour select
+    const hourSelect = document.createElement('select');
+    hourSelect.id = `${inputId}-hour`;
+    for (let h = 0; h < 24; h++) {
+        const hStr = String(h).padStart(2, '0');
+        hourSelect.options.add(new Option(hStr, hStr));
+    }
+    
+    // Create separator
+    const separator = document.createElement('div');
+    separator.className = 'time-select-separator';
+    separator.textContent = ':';
+    
+    // Create Minute select
+    const minuteSelect = document.createElement('select');
+    minuteSelect.id = `${inputId}-minute`;
+    for (let m = 0; m < 60; m++) {
+        const mStr = String(m).padStart(2, '0');
+        minuteSelect.options.add(new Option(mStr, mStr));
+    }
+    
+    container.appendChild(hourSelect);
+    container.appendChild(separator);
+    container.appendChild(minuteSelect);
+    
+    originalInput.parentNode.insertBefore(container, originalInput.nextSibling);
+    
+    function updateOriginal() {
+        originalInput.value = `${hourSelect.value}:${minuteSelect.value}`;
+        originalInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
+    hourSelect.addEventListener('change', updateOriginal);
+    minuteSelect.addEventListener('change', updateOriginal);
+    
+    // Intercept programmatic value assignments on instance directly
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    Object.defineProperty(originalInput, 'value', {
+        get() {
+            return descriptor.get.call(this);
+        },
+        set(val) {
+            descriptor.set.call(this, val);
+            if (val && val.includes(':')) {
+                const [h, m] = val.split(':');
+                hourSelect.value = h.padStart(2, '0');
+                minuteSelect.value = m.padStart(2, '0');
+            }
+        },
+        configurable: true
+    });
+    
+    // Initial sync
+    if (originalInput.value && originalInput.value.includes(':')) {
+        const [h, m] = originalInput.value.split(':');
+        hourSelect.value = h.padStart(2, '0');
+        minuteSelect.value = m.padStart(2, '0');
+    }
+    
+    // Presets quick-select buttons
+    if (showPresets) {
+        const presetsContainer = document.createElement('div');
+        presetsContainer.className = 'time-presets';
+        const presets = ['17:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
+        presets.forEach(time => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'preset-btn';
+            btn.textContent = time;
+            btn.addEventListener('click', () => {
+                const [h, m] = time.split(':');
+                hourSelect.value = h;
+                minuteSelect.value = m;
+                updateOriginal();
+            });
+            presetsContainer.appendChild(btn);
+        });
+        container.parentNode.insertBefore(presetsContainer, container.nextSibling);
+    }
+}
 
 function checkConnection() {
     // Kiểm tra hết hạn phiên đăng nhập (sau 5h sáng hôm sau)
@@ -1463,7 +1571,7 @@ async function handleEditOTSubmit(e) {
 }
 
 // ==================== AUTO UPDATE FOR MOBILE APP ====================
-const MOBILE_VERSION = '1.1.8';
+const MOBILE_VERSION = '1.1.9';
 let updateCheckInterval = null;
 
 function checkMobileUpdates(isManual) {

@@ -1156,27 +1156,44 @@ body {
     max-height: 60vh;
     overflow-y: auto;
     padding-right: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
 }
 
 .history-item {
-    padding: 20px 0;
-    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     animation: fadeInUp 0.45s var(--bounce) backwards;
 }
 
-.history-item:last-child {
-    border-bottom: none;
+.history-main-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
 }
 
-.history-top {
+.history-left {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.history-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
 }
 
 .history-date {
-    font-size: 15.5px;
+    font-size: 15px;
     font-weight: 800;
     color: var(--text-white);
 }
@@ -1190,17 +1207,17 @@ body {
 
 .history-tags {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     flex-wrap: wrap;
-    margin-bottom: 12px;
+    margin-bottom: 0;
 }
 
 .htag {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
-    padding: 3.5px 11px;
-    border-radius: 20px;
-    letter-spacing: 0.4px;
+    padding: 2.5px 8px;
+    border-radius: 12px;
+    letter-spacing: 0.2px;
     text-transform: uppercase;
 }
 
@@ -1217,35 +1234,59 @@ body {
 }
 
 .history-note {
-    font-size: 13.5px;
+    font-size: 12.5px;
     color: var(--text-sub);
-    line-height: 1.6;
-    background: rgba(255, 255, 255, 0.02);
-    padding: 10px 14px;
-    border-radius: 8px;
-    border-left: 3px solid rgba(13, 217, 139, 0.4);
-    margin-bottom: 8px;
+    line-height: 1.5;
+    background: rgba(255, 255, 255, 0.01);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 2.5px solid rgba(13, 217, 139, 0.4);
+    margin-top: 2px;
+    margin-bottom: 0;
+}
+
+.history-bottom-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 2px;
 }
 
 .history-actions {
-    margin-top: 14px;
     display: flex;
-    justify-content: flex-end;
+    gap: 8px;
+}
+
+.btn-action-sm {
+    background: none;
+    font-size: 11px;
+    font-weight: 750;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.btn-edit-sm {
+    border: 1px solid rgba(13, 217, 139, 0.25);
+    color: var(--green-light);
+}
+
+.btn-edit-sm:hover {
+    background: rgba(13, 217, 139, 0.08);
 }
 
 .btn-delete-sm {
-    background: none;
-    border: 1px solid rgba(240, 72, 72, 0.22);
+    border: 1px solid rgba(240, 72, 72, 0.25);
     color: var(--red);
-    font-size: 11.5px;
-    font-weight: 700;
-    padding: 6px 14px;
-    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 750;
+    padding: 5px 12px;
+    border-radius: 6px;
     cursor: pointer;
     font-family: inherit;
-    transition: all 0.25s var(--bounce);
-}
-
+    transition: all 0.2s ease;
 .btn-delete-sm:hover {
     background: rgba(240, 72, 72, 0.08);
     border-color: var(--red);
@@ -2123,12 +2164,25 @@ body {
 
 /* Desktop: Landing page two-column layout */
 @media (min-width: 768px) {
+    .landing-header {
+        padding: 18px 48px;
+    }
+    .landing-logo {
+        margin: 0;
+    }
     .landing-container {
-        max-width: 900px;
+        max-width: 1200px;
         flex-direction: column;
         align-items: center;
         gap: 32px;
-        padding: 40px 20px 80px;
+        padding: 40px 24px 80px;
+    }
+    #ltab-login.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - var(--header-height) - 180px);
+        width: 100%;
     }
 
     .landing-left-side {
@@ -2450,4 +2504,83 @@ body {
 /* Hide update button on web browser platform */
 body.is-web-browser #btn-check-update-mobile {
     display: none !important;
+}
+
+/* ==================== CUSTOM TIME PICKER & PRESETS ==================== */
+.time-select-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: var(--radius-sm);
+    padding: 0 16px;
+    width: 100%;
+    position: relative;
+    height: 52px;
+}
+
+.time-select-group select {
+    flex: 1;
+    background: transparent !important;
+    border: none !important;
+    padding: 10px 0 !important;
+    color: var(--text) !important;
+    font-size: 17px !important;
+    font-weight: 700;
+    text-align: center;
+    outline: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    text-align-last: center;
+}
+
+.time-select-group select option {
+    background: #0f0f1a;
+    color: var(--text);
+    font-size: 16px;
+    padding: 10px;
+}
+
+.time-select-separator {
+    color: var(--green-light);
+    font-weight: 900;
+    font-size: 18px;
+    padding: 0 8px;
+    animation: blink-red 2s infinite;
+}
+
+.time-presets {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.preset-btn {
+    flex: 1;
+    min-width: 60px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    color: var(--text-sub);
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-align: center;
+}
+
+.preset-btn:hover {
+    background: rgba(13, 217, 139, 0.08);
+    color: var(--green-light);
+    border-color: rgba(13, 217, 139, 0.3);
+}
+
+.preset-btn:active {
+    transform: scale(0.95);
 }

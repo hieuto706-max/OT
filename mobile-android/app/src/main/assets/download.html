@@ -349,7 +349,7 @@
                     <h2 class="card-title">Bản cho Quản lý<span id="desktop-ver" style="font-size: 0.95rem; color: #a78bfa; font-weight: 500; margin-left: 6px;"></span></h2>
                     <p class="card-desc">Ứng dụng quản trị trên máy tính Windows. Xem báo cáo, thống kê và duyệt tăng ca.</p>
                 </div>
-                <a id="desktop-download-btn" href="https://github.com/hieuto706-max/OT/releases/download/v1.1.8/ot-manager-Setup-1.1.8.exe" target="_blank" class="btn btn-purple">
+                <a id="desktop-download-btn" href="https://github.com/hieuto706-max/OT/releases/download/v1.1.9/ot-manager-Setup-1.1.9.exe" target="_blank" class="btn btn-purple">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                         <polyline points="7 10 12 15 17 10" />
@@ -402,19 +402,22 @@
         // Thiết lập link tải động dựa vào host hiện tại
         const host = window.location.origin;
         const isGitHubPages = window.location.hostname.includes('github.io');
-        const MOBILE_VERSION = '1.1.8';
+        const MOBILE_VERSION = '1.1.9';
         
-        // Link tải APK: trên GitHub Pages trỏ thẳng tới GitHub raw file của branch main
-        const GITHUB_RELEASES_APK = 'https://github.com/hieuto706-max/OT/raw/main/mobile/OT-Manager-mobile.apk';
-        const apkUrl = isGitHubPages ? GITHUB_RELEASES_APK : (host + '/OT-Manager-mobile.apk');
+        // Tải thông tin phiên bản từ Server
+        const API_SERVER = isGitHubPages ? 'https://ot-manager-server-jbxd.onrender.com' : host;
+        
+        // Link tải APK: trỏ thẳng tới server Render để tải trực tiếp từ đĩa cục bộ, tránh lỗi 404 trên repo GitHub private
+        const apkUrl = API_SERVER + '/OT-Manager-mobile.apk';
         document.getElementById('apk-download-btn').href = apkUrl;
+
+        // Link tải Desktop EXE: trỏ thẳng tới server Render để proxy tải từ private GitHub Releases dùng GITHUB_TOKEN
+        document.getElementById('desktop-download-btn').href = API_SERVER + '/download/desktop';
         
         // Tạo mã QR QR Code kết nối tới link tải APK trực tiếp
         const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0b0b14&data=${encodeURIComponent(apkUrl)}`;
         document.getElementById('apk-qr-code').src = qrApiUrl;
 
-        // Tải thông tin phiên bản từ Server
-        const API_SERVER = isGitHubPages ? 'https://ot-manager-server-jbxd.onrender.com' : host;
         fetch(API_SERVER + '/api/version')
             .then(res => res.json())
             .then(data => {

@@ -622,8 +622,10 @@ async function handleAPI(req, res, urlPath, method) {
             console.error('[Version API] Lỗi đọc phiên bản:', e.message);
         }
         // Luôn tự sinh URL tải từ phiên bản hiện tại (không đọc từ config.json để tránh lỗi hardcode phiên bản cũ)
-        const desktopDownloadUrl = `https://github.com/hieuto706-max/OT/releases/download/v${version}/ot-manager-Setup-${version}.exe`;
-        const mobileDownloadUrl = `https://github.com/hieuto706-max/OT/releases/download/v${version}/OT-Manager-mobile.apk`;
+        const proto = req.headers['x-forwarded-proto'] || 'http';
+        const baseUrl = `${proto}://${req.headers.host}`;
+        const desktopDownloadUrl = `${baseUrl}/download/desktop`;
+        const mobileDownloadUrl = `${baseUrl}/OT-Manager-mobile.apk`;
         return sendJSON(res, 200, { version, desktopDownloadUrl, mobileDownloadUrl });
     }
 
@@ -735,13 +737,144 @@ const server = http.createServer(async (req, res) => {
         return serveStatic(req, res, mobilePath, '/download.html');
     }
 
-    // Direct download route for the Android APK (redirect to GitHub raw file for the latest version)
+    // Direct download route for the Android APK (serve the local file directly to support private repositories)
     if (urlPath === '/OT-Manager-mobile.apk') {
-        res.writeHead(302, {
-            'Location': 'https://github.com/hieuto706-max/OT/raw/main/mobile/OT-Manager-mobile.apk'
+        const apkPath = path.join(__dirname, '..', 'mobile', 'OT-Manager-mobile.apk');
+        fs.readFile(apkPath, (err, data) => {
+            if (err) {
+                res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                return res.end('Không tìm thấy file APK trên server.');
+            }
+            res.writeHead(200, {
+                'Content-Type': 'application/vnd.android.package-archive',
+                'Content-Disposition': 'attachment; filename="OT-Manager-mobile.apk"',
+                'Access-Control-Allow-Origin': '*',
+            });
+            res.end(data);
         });
-        return res.end();
+        return;
     }
+
+    // Direct proxy download route for the desktop EXE installer using GITHUB_TOKEN (for private repos)
+    if (urlPath === '/download/desktop') {
+        const token = process.env.GITHUB_TOKEN;
+        if (!token) {
+            res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+            return res.end('Server chưa cấu hình GITHUB_TOKEN trên Render để tải bản Desktop.');
+        }
+
+        let version = '1.1.9';
+        try {
+            const pkgPath = path.join(__dirname, '..', 'package.json');
+            if (fs.existsSync(pkgPath)) {
+                const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+                version = pkg.version || '1.1.9';
+            }
+        } catch (e) {}
+
+        const owner = 'hieuto706-max';
+        const repo = 'OT';
+        const tag = `v${version}`;
+        const assetName = `ot-manager-Setup-${version}.exe`;
+
+        // 1. Get release info from GitHub API
+        const options = {
+            hostname: 'api.github.com',
+            path: `/repos/${owner}/${repo}/releases/tags/${tag}`,
+            method: 'GET',
+            headers: {
+                'Authorization': `token ${token}`,
+                'User-Agent': 'Node.js-Server-App',
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        };
+
+        const reqGit = https.request(options, (resGit) => {
+            let body = '';
+            resGit.on('data', chunk => body += chunk);
+            resGit.on('end', () => {
+                if (resGit.statusCode !== 200) {
+                    res.writeHead(resGit.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
+                    return res.end(`Lỗi GitHub API khi lấy thông tin Release: ${resGit.statusCode}. Chi tiết: ${body}`);
+                }
+
+                try {
+                    const releaseInfo = JSON.parse(body);
+                    const asset = releaseInfo.assets.find(a => a.name === assetName);
+                    if (!asset) {
+                        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                        return res.end(`Không tìm thấy file build ${assetName} trong Release ${tag} trên GitHub.`);
+                    }
+
+                    // 2. Fetch asset binary using octet-stream header
+                    const downloadOptions = {
+                        hostname: 'api.github.com',
+                        path: `/repos/${owner}/${repo}/releases/assets/${asset.id}`,
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'User-Agent': 'Node.js-Server-App',
+                            'Accept': 'application/octet-stream'
+                        }
+                    };
+
+                    const handleDownloadRedirect = (dlUrl) => {
+                        const parsedUrl = new URL(dlUrl);
+                        const redirectClient = parsedUrl.protocol === 'https:' ? https : http;
+
+                        redirectClient.get(dlUrl, (resDl) => {
+                            if ([301, 302, 307, 308].includes(resDl.statusCode) && resDl.headers.location) {
+                                return handleDownloadRedirect(resDl.headers.location);
+                            }
+
+                            if (resDl.statusCode !== 200) {
+                                res.writeHead(resDl.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
+                                return res.end(`Lỗi khi tải file từ S3: ${resDl.statusCode}`);
+                            }
+
+                            res.writeHead(200, {
+                                'Content-Type': 'application/octet-stream',
+                                'Content-Disposition': `attachment; filename="${assetName}"`,
+                                'Content-Length': resDl.headers['content-length']
+                            });
+
+                            resDl.pipe(res);
+                        }).on('error', (err) => {
+                            res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+                            res.end(`Lỗi kết nối tải file: ${err.message}`);
+                        });
+                    };
+
+                    const reqAsset = https.request(downloadOptions, (resAsset) => {
+                        if ([301, 302, 307, 308].includes(resAsset.statusCode) && resAsset.headers.location) {
+                            handleDownloadRedirect(resAsset.headers.location);
+                        } else {
+                            res.writeHead(resAsset.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
+                            res.end(`Lỗi khi yêu cầu tải file từ GitHub: Mã trạng thái ${resAsset.statusCode}`);
+                        }
+                    });
+
+                    reqAsset.on('error', (err) => {
+                        res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+                        res.end(`Lỗi tải file build: ${err.message}`);
+                    });
+                    reqAsset.end();
+
+                } catch (e) {
+                    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+                    res.end(`Lỗi xử lý thông tin Release: ${e.message}`);
+                }
+            });
+        });
+
+        reqGit.on('error', (err) => {
+            res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+            res.end(`Lỗi kết nối GitHub API: ${err.message}`);
+        });
+        reqGit.end();
+        return;
+    }
+
 
     // Desktop admin app (served at /desktop/)
     if (urlPath.startsWith('/desktop')) {

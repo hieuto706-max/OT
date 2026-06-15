@@ -7,10 +7,14 @@
  * Sử dụng Server API để đồng bộ dữ liệu với mobile
  */
 
-let API_BASE = window.location.origin;
+const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+const isGitHubPages = window.location.hostname.includes('github.io');
+const localServerUrl = isGitHubPages 
+    ? (localStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com') 
+    : window.location.origin;
+let API_BASE = localServerUrl;
 const OT_LUNCH_HOURS = 1;
 const WORK_END = '16:30';
-const isElectron = navigator.userAgent.toLowerCase().includes('electron');
 
 // Add blink-red style rules dynamically
 const style = document.createElement('style');
@@ -130,7 +134,7 @@ async function handleEmployeeLogin(e) {
         const todayStr = new Date().toISOString().split('T')[0];
         localStorage.setItem('ot_login_date', todayStr);
         try {
-            const versionRes = await fetch('/api/version');
+            const versionRes = await fetch(`${localServerUrl}/api/version`);
             const versionData = await versionRes.json();
             localStorage.setItem('ot_app_version', versionData.version || '1.0.0');
         } catch (e) {}
@@ -164,7 +168,7 @@ async function handleAdminLogin(e) {
         const todayStr = new Date().toISOString().split('T')[0];
         localStorage.setItem('ot_login_date', todayStr);
         try {
-            const versionRes = await fetch('/api/version');
+            const versionRes = await fetch(`${localServerUrl}/api/version`);
             const versionData = await versionRes.json();
             localStorage.setItem('ot_app_version', versionData.version || '1.0.0');
         } catch (e) {}
@@ -566,116 +570,106 @@ async function exportExcel() {
         const recData = await api(`/api/records?month=${month}`);
         const records = recData.records;
 
-        let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-        <meta charset="utf-8">
-        <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Báo cáo tăng ca</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
-        <style>
-            table { border-collapse: collapse; margin-bottom: 25px; }
-            th { background-color: #4f46e5; color: white; font-weight: bold; border: 1px solid #999; padding: 10px; font-size: 13px; }
-            td { border: 1px solid #999; padding: 8px; text-align: center; font-size: 12px; }
-            .title { font-size: 18px; font-weight: bold; color: #1e1b4b; text-align: left; margin-bottom: 10px; }
-            .section-header { font-size: 14px; font-weight: bold; color: #312e81; text-align: left; margin-top: 20px; margin-bottom: 10px; }
-            .name { text-align: left; font-weight: bold; }
-            .text-left { text-align: left; }
-            .total { font-weight: bold; color: #4f46e5; }
-        </style>
-        </head>
-        <body>
-        <div class="title">BÁO CÁO TĂNG CA - THÁNG ${month}</div>
-        
-        <div class="section-header">I. BẢNG TỔNG HỢP GIỜ TĂNG CA</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>STT</th>
-                    <th>Họ và tên</th>
-                    <th>Mã nhân viên</th>
-                    <th>Số ngày OT</th>
-                    <th>OT Trưa (giờ)</th>
-                    <th>OT Chiều (giờ)</th>
-                    <th>Tổng OT (giờ)</th>
-                </tr>
-            </thead>
-            <tbody>`;
-        
+        // Khởi tạo workbook mới của SheetJS
+        const wb = XLSX.utils.book_new();
+
+        // 1. Tạo dữ liệu cho Sheet "Tổng Hợp" (Bảng I)
+        const summaryData = [];
+        // Tiêu đề báo cáo
+        summaryData.push([`BÁO CÁO TĂNG CA - THÁNG ${month}`]);
+        summaryData.push([]); // Dòng trống
+        summaryData.push(["I. BẢNG TỔNG HỢP GIỜ TĂNG CA"]);
+        summaryData.push(["STT", "Họ và tên", "Mã nhân viên", "Số ngày OT", "OT Trưa (giờ)", "OT Chiều (giờ)", "Tổng OT (giờ)"]);
+
         users.forEach((u, i) => {
             const ur = records.filter(r => r.userId === u.id);
             const days = ur.length;
             const lh = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
             const eh = ur.reduce((s, r) => s + r.eveningOTHours, 0);
-            html += `<tr>
-                <td>${i + 1}</td>
-                <td class="name">${u.fullname}</td>
-                <td>${u.username}</td>
-                <td>${days}</td>
-                <td>${lh.toFixed(1)}</td>
-                <td>${eh.toFixed(1)}</td>
-                <td class="total">${(lh + eh).toFixed(1)}</td>
-            </tr>`;
+            summaryData.push([
+                i + 1,
+                u.fullname,
+                u.username,
+                days,
+                lh,
+                eh,
+                lh + eh
+            ]);
         });
+
+        const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
         
-        html += `</tbody></table>
-        
-        <div class="section-header">II. BẢNG CHI TIẾT TĂNG CA TỪNG NGÀY</div>
-        <table>
-            <thead>
-                <tr>
-                    <th>STT</th>
-                    <th>Họ và tên</th>
-                    <th>Mã nhân viên</th>
-                    <th>Ngày</th>
-                    <th>OT Trưa</th>
-                    <th>OT Chiều</th>
-                    <th>Giờ bắt đầu</th>
-                    <th>Giờ kết thúc</th>
-                    <th>Tổng OT (giờ)</th>
-                    <th>Ghi chú</th>
-                </tr>
-            </thead>
-            <tbody>`;
+        // Định dạng độ rộng cột
+        wsSummary['!cols'] = [
+            { wch: 6 },   // STT
+            { wch: 25 },  // Họ và tên
+            { wch: 15 },  // Mã nhân viên
+            { wch: 12 },  // Số ngày OT
+            { wch: 15 },  // OT Trưa (giờ)
+            { wch: 15 },  // OT Chiều (giờ)
+            { wch: 15 }   // Tổng OT (giờ)
+        ];
+
+        // 2. Tạo dữ liệu cho Sheet "Chi Tiết" (Bảng II)
+        const detailData = [];
+        detailData.push([`CHI TIẾT TĂNG CA - THÁNG ${month}`]);
+        detailData.push([]); // Dòng trống
+        detailData.push(["II. BẢNG CHI TIẾT TĂNG CA TỪNG NGÀY"]);
+        detailData.push(["STT", "Ngày", "Họ và tên", "Mã nhân viên", "OT Trưa", "OT Chiều", "Giờ bắt đầu", "Giờ kết thúc", "Tổng OT (giờ)", "Ghi chú"]);
 
         let detailedIdx = 1;
         users.forEach(u => {
             const userRecords = records.filter(r => r.userId === u.id);
-            // Sort user records chronologically by date
             userRecords.sort((a, b) => a.date.localeCompare(b.date));
             
             userRecords.forEach(r => {
-                const lunchVal = r.hasLunchOT ? '1.0h' : '—';
-                const eveningVal = r.eveningOTHours > 0 ? `${r.eveningOTHours.toFixed(1)}h` : '—';
-                html += `<tr>
-                    <td>${detailedIdx++}</td>
-                    <td class="name">${u.fullname}</td>
-                    <td>${u.username}</td>
-                    <td>${formatDate(r.date)}</td>
-                    <td>${lunchVal}</td>
-                    <td>${eveningVal}</td>
-                    <td>${r.otStart || '—'}</td>
-                    <td>${r.otEnd || '—'}</td>
-                    <td class="total">${r.totalHours.toFixed(1)}</td>
-                    <td class="text-left">${r.note || '—'}</td>
-                </tr>`;
+                const lunchVal = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
+                const eveningVal = r.eveningOTHours > 0 ? r.eveningOTHours : 0;
+                detailData.push([
+                    detailedIdx++,
+                    formatDate(r.date),
+                    u.fullname,
+                    u.username,
+                    lunchVal,
+                    eveningVal,
+                    r.otStart || '—',
+                    r.otEnd || '—',
+                    r.totalHours,
+                    r.note || '—'
+                ]);
             });
         });
 
         if (detailedIdx === 1) {
-            html += `<tr><td colspan="10">Chưa có dữ liệu chi tiết tăng ca cho tháng này.</td></tr>`;
+            detailData.push(["Chưa có dữ liệu chi tiết tăng ca cho tháng này."]);
         }
 
-        html += `</tbody></table>
-        </body>
-        </html>`;
+        const wsDetail = XLSX.utils.aoa_to_sheet(detailData);
+        
+        // Định dạng độ rộng cột
+        wsDetail['!cols'] = [
+            { wch: 6 },   // STT
+            { wch: 12 },  // Ngày
+            { wch: 25 },  // Họ và tên
+            { wch: 15 },  // Mã nhân viên
+            { wch: 12 },  // OT Trưa
+            { wch: 12 },  // OT Chiều
+            { wch: 12 },  // Giờ bắt đầu
+            { wch: 12 },  // Giờ kết thúc
+            { wch: 15 },  // Tổng OT (giờ)
+            { wch: 30 }   // Ghi chú
+        ];
 
-        const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `bao-cao-tang-ca-chi-tiet-${month}.xls`;
-        link.click();
-        URL.revokeObjectURL(link.href);
+        // Thêm các Sheet vào Workbook
+        XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng Hợp");
+        XLSX.utils.book_append_sheet(wb, wsDetail, "Chi Tiết");
+
+        // Xuất file XLSX thực tế
+        XLSX.writeFile(wb, `bao-cao-tang-ca-chi-tiet-${month}.xlsx`);
         showToast('Đã xuất file Excel chi tiết!');
     } catch (e) { 
         showToast('Lỗi xuất Excel: ' + e.message, 'error'); 
+        console.error(e);
     }
 }
 
@@ -817,7 +811,7 @@ async function refreshEmployeeRecords() {
 // ==================== CLOUD WAKING & SYNC CONFIG ====================
 async function initCloudConfig() {
     try {
-        const res = await fetch('/api/cloud-url');
+        const res = await fetch(`${localServerUrl}/api/cloud-url`);
         const data = await res.json();
         if (data.cloudUrl) {
             API_BASE = data.cloudUrl;
@@ -935,7 +929,7 @@ async function checkUpdateManual() {
     showToast('Đang kiểm tra bản cập nhật...', 'info');
     try {
         // 1. Lấy thông tin Cloud URL từ local server
-        const cloudConfRes = await fetch('/api/cloud-url');
+        const cloudConfRes = await fetch(`${localServerUrl}/api/cloud-url`);
         const cloudConf = await cloudConfRes.json();
         const cloudUrl = cloudConf.cloudUrl;
 
@@ -952,7 +946,7 @@ async function checkUpdateManual() {
         }
 
         // 2. Lấy version hiện tại của ứng dụng local
-        const localRes = await fetch('/api/version');
+        const localRes = await fetch(`${localServerUrl}/api/version`);
         const localData = await localRes.json();
         const localVer = localData.version || '1.0.0';
 
@@ -1010,12 +1004,12 @@ async function checkUpdateManual() {
 async function checkUpdateSilent() {
     if (!isElectron) return;
     try {
-        const cloudConfRes = await fetch('/api/cloud-url');
+        const cloudConfRes = await fetch(`${localServerUrl}/api/cloud-url`);
         const cloudConf = await cloudConfRes.json();
         const cloudUrl = cloudConf.cloudUrl;
         if (!cloudUrl) return;
 
-        const localRes = await fetch('/api/version');
+        const localRes = await fetch(`${localServerUrl}/api/version`);
         const localData = await localRes.json();
         const localVer = localData.version || '1.0.0';
 
@@ -1083,7 +1077,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 2. Kiểm tra phiên bản và trạng thái session để quyết định tự động đăng nhập
     try {
-        const versionRes = await fetch('/api/version');
+        const versionRes = await fetch(`${localServerUrl}/api/version`);
         const versionData = await versionRes.json();
         const currentVersion = versionData.version || '1.0.0';
 
