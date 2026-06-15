@@ -380,6 +380,44 @@
             </form>
         </div>
     </div>
+    <!-- Global Bottom Sheet Time Picker -->
+    <div id="time-picker-sheet" class="sheet-overlay">
+        <div class="sheet-container">
+            <div class="sheet-header">
+                <div class="sheet-drag-handle"></div>
+                <h3 id="sheet-title">Chọn thời gian</h3>
+                <button type="button" class="sheet-close-btn" id="sheet-close-x">&times;</button>
+            </div>
+            <div class="sheet-body">
+                <!-- Large Digital Preview -->
+                <div class="sheet-time-display">
+                    <span id="sheet-hour-val" class="time-digit active">16</span>
+                    <span class="time-colon">:</span>
+                    <span id="sheet-min-val" class="time-digit">30</span>
+                </div>
+                
+                <!-- Hours Grid Panel (00-23) -->
+                <div id="sheet-hour-panel" class="picker-panel active">
+                    <div class="panel-grid hour-grid"></div>
+                </div>
+                
+                <!-- Minutes Grid Panel (00-55) -->
+                <div id="sheet-min-panel" class="picker-panel">
+                    <div class="panel-grid min-grid"></div>
+                </div>
+                
+                <!-- Quick Presets -->
+                <div class="sheet-presets-section">
+                    <div class="presets-title">Chọn nhanh</div>
+                    <div class="presets-row" id="sheet-presets-container"></div>
+                </div>
+            </div>
+            <div class="sheet-footer">
+                <button type="button" class="btn btn-ghost" id="sheet-btn-cancel">Hủy</button>
+                <button type="button" class="btn btn-primary" id="sheet-btn-confirm">Xác nhận</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Script triggers -->
     <script>

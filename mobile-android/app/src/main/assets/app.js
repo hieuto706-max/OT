@@ -1309,172 +1309,255 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCustomTimePicker('edit-ot-end', true);
 });
 
+let currentPickerInputId = null;
+let currentPickerShowPresets = false;
+let selectedPickerHour = "16";
+let selectedPickerMin = "30";
+let globalPickerInitialized = false;
+
+function initGlobalTimePicker() {
+    if (globalPickerInitialized) return;
+    globalPickerInitialized = true;
+
+    const sheet = document.getElementById('time-picker-sheet');
+    if (!sheet) return;
+    const hourGrid = sheet.querySelector('.hour-grid');
+    const minGrid = sheet.querySelector('.min-grid');
+    
+    // Populate hour buttons (00 to 23)
+    hourGrid.innerHTML = '';
+    for (let h = 0; h < 24; h++) {
+        const hStr = String(h).padStart(2, '0');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'grid-btn';
+        btn.textContent = hStr;
+        btn.setAttribute('data-val', hStr);
+        btn.addEventListener('click', () => selectPickerHourVal(hStr));
+        hourGrid.appendChild(btn);
+    }
+
+    // Populate minute buttons (00 to 55 in 5m steps)
+    minGrid.innerHTML = '';
+    for (let m = 0; m < 60; m += 5) {
+        const mStr = String(m).padStart(2, '0');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'grid-btn';
+        btn.textContent = mStr;
+        btn.setAttribute('data-val', mStr);
+        btn.addEventListener('click', () => selectPickerMinVal(mStr));
+        minGrid.appendChild(btn);
+    }
+
+    // Tab toggles via display digits click
+    document.getElementById('sheet-hour-val').addEventListener('click', () => switchPickerPanel('hour'));
+    document.getElementById('sheet-min-val').addEventListener('click', () => switchPickerPanel('minute'));
+
+    // Confirm button
+    document.getElementById('sheet-btn-confirm').addEventListener('click', confirmPickerSelection);
+    // Cancel and Close
+    document.getElementById('sheet-btn-cancel').addEventListener('click', closePickerSheet);
+    document.getElementById('sheet-close-x').addEventListener('click', closePickerSheet);
+    
+    // Close on click outside sheet container
+    sheet.addEventListener('click', (e) => {
+        if (e.target === sheet) {
+            closePickerSheet();
+        }
+    });
+}
+
+function switchPickerPanel(panelName) {
+    const hourVal = document.getElementById('sheet-hour-val');
+    const minVal = document.getElementById('sheet-min-val');
+    const hourPanel = document.getElementById('sheet-hour-panel');
+    const minPanel = document.getElementById('sheet-min-panel');
+    if (!hourVal || !minVal || !hourPanel || !minPanel) return;
+
+    if (panelName === 'hour') {
+        hourVal.classList.add('active');
+        minVal.classList.remove('active');
+        hourPanel.classList.add('active');
+        minPanel.classList.remove('active');
+    } else {
+        hourVal.classList.remove('active');
+        minVal.classList.add('active');
+        hourPanel.classList.remove('active');
+        minPanel.classList.add('active');
+    }
+}
+
+function selectPickerHourVal(hStr) {
+    selectedPickerHour = hStr;
+    document.getElementById('sheet-hour-val').textContent = hStr;
+    
+    // Highlight button in grid
+    document.querySelectorAll('#sheet-hour-panel .grid-btn').forEach(btn => {
+        if (btn.getAttribute('data-val') === hStr) {
+            btn.classList.add('selected');
+        } else {
+            btn.classList.remove('selected');
+        }
+    });
+
+    // Auto-switch tab to minute panel for faster UX
+    setTimeout(() => {
+        switchPickerPanel('minute');
+    }, 180);
+}
+
+function selectPickerMinVal(mStr) {
+    selectedPickerMin = mStr;
+    document.getElementById('sheet-min-val').textContent = mStr;
+
+    // Highlight button in grid
+    document.querySelectorAll('#sheet-min-panel .grid-btn').forEach(btn => {
+        if (btn.getAttribute('data-val') === mStr) {
+            btn.classList.add('selected');
+        } else {
+            btn.classList.remove('selected');
+        }
+    });
+}
+
+function openPickerSheet(inputId, showPresets) {
+    currentPickerInputId = inputId;
+    currentPickerShowPresets = showPresets;
+    
+    initGlobalTimePicker();
+
+    const originalInput = document.getElementById(inputId);
+    if (!originalInput) return;
+    
+    const label = originalInput.parentNode.querySelector('label');
+    const sheetTitle = document.getElementById('sheet-title');
+    if (sheetTitle) {
+        sheetTitle.textContent = label ? label.textContent : 'Chọn thời gian';
+    }
+
+    let val = originalInput.value || '16:30';
+    if (!val.includes(':')) val = '16:30';
+    const [h, m] = val.split(':');
+    
+    selectedPickerHour = String(h).padStart(2, '0');
+    let mNum = Math.round(parseInt(m, 10) / 5) * 5;
+    if (mNum >= 60) mNum = 55;
+    selectedPickerMin = String(mNum).padStart(2, '0');
+
+    document.getElementById('sheet-hour-val').textContent = selectedPickerHour;
+    document.getElementById('sheet-min-val').textContent = selectedPickerMin;
+
+    document.querySelectorAll('#sheet-hour-panel .grid-btn').forEach(btn => {
+        if (btn.getAttribute('data-val') === selectedPickerHour) {
+            btn.classList.add('selected');
+        } else {
+            btn.classList.remove('selected');
+        }
+    });
+    
+    document.querySelectorAll('#sheet-min-panel .grid-btn').forEach(btn => {
+        if (btn.getAttribute('data-val') === selectedPickerMin) {
+            btn.classList.add('selected');
+        } else {
+            btn.classList.remove('selected');
+        }
+    });
+
+    const presetsContainer = document.getElementById('sheet-presets-container');
+    const presetsSection = document.querySelector('.sheet-presets-section');
+    if (showPresets && presetsContainer && presetsSection) {
+        presetsSection.style.display = 'block';
+        presetsContainer.innerHTML = '';
+        const presets = ['17:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
+        presets.forEach(time => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'preset-btn';
+            btn.textContent = time;
+            btn.addEventListener('click', () => {
+                const [ph, pm] = time.split(':');
+                selectedPickerHour = ph;
+                selectedPickerMin = pm;
+                confirmPickerSelection();
+            });
+            presetsContainer.appendChild(btn);
+        });
+    } else if (presetsSection) {
+        presetsSection.style.display = 'none';
+    }
+
+    switchPickerPanel('hour');
+
+    const sheet = document.getElementById('time-picker-sheet');
+    if (sheet) {
+        sheet.style.display = 'flex';
+        setTimeout(() => {
+            sheet.classList.add('active');
+        }, 20);
+    }
+}
+
+function closePickerSheet() {
+    const sheet = document.getElementById('time-picker-sheet');
+    if (!sheet) return;
+    sheet.classList.remove('active');
+    setTimeout(() => {
+        sheet.style.display = 'none';
+    }, 280);
+}
+
+function confirmPickerSelection() {
+    if (!currentPickerInputId) return;
+    const originalInput = document.getElementById(currentPickerInputId);
+    if (originalInput) {
+        const timeVal = `${selectedPickerHour}:${selectedPickerMin}`;
+        
+        const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+        if (descriptor && descriptor.set) {
+            descriptor.set.call(originalInput, timeVal);
+        } else {
+            originalInput.value = timeVal;
+        }
+
+        originalInput.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        const customInputDisplay = originalInput.parentNode.querySelector('.custom-time-input .time-val');
+        if (customInputDisplay) {
+            customInputDisplay.textContent = timeVal;
+        }
+    }
+    closePickerSheet();
+}
+
 function setupCustomTimePicker(inputId, showPresets = false) {
     const originalInput = document.getElementById(inputId);
     if (!originalInput) return;
     
-    // Hide original input
     originalInput.style.display = 'none';
     
-    // Create wrapper container to manage relative positioning
-    const wrapper = document.createElement('div');
-    wrapper.style.position = 'relative';
-    wrapper.style.width = '100%';
-    originalInput.parentNode.insertBefore(wrapper, originalInput.nextSibling);
-    
-    // Create custom display box
-    const displayBox = document.createElement('div');
-    displayBox.className = 'custom-time-input';
-    displayBox.innerHTML = `
-        <span class="time-val">16:30</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18" style="color: var(--text-muted);">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 6 12 12 16 14"/>
-        </svg>
-    `;
-    wrapper.appendChild(displayBox);
-    
-    // Create dropdown menu
-    const dropdown = document.createElement('div');
-    dropdown.className = 'time-picker-dropdown';
-    dropdown.style.display = 'none';
-    
-    const columnsContainer = document.createElement('div');
-    columnsContainer.className = 'picker-columns';
-    
-    // Hour column
-    const hourCol = document.createElement('div');
-    hourCol.className = 'picker-column hour-column';
-    for (let h = 0; h < 24; h++) {
-        const hStr = String(h).padStart(2, '0');
-        const opt = document.createElement('div');
-        opt.className = 'picker-option';
-        opt.textContent = hStr;
-        opt.setAttribute('data-val', hStr);
-        hourCol.appendChild(opt);
+    let displayBox = originalInput.parentNode.querySelector('.custom-time-input');
+    if (!displayBox) {
+        displayBox = document.createElement('div');
+        displayBox.className = 'custom-time-input';
+        displayBox.innerHTML = `
+            <span class="time-val">16:30</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18" style="color: var(--text-muted);">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+        `;
+        originalInput.parentNode.insertBefore(displayBox, originalInput.nextSibling);
     }
     
-    const separator = document.createElement('div');
-    separator.className = 'picker-separator';
-    separator.textContent = ':';
+    const val = originalInput.value || '16:30';
+    displayBox.querySelector('.time-val').textContent = val;
     
-    // Minute column
-    const minCol = document.createElement('div');
-    minCol.className = 'picker-column minute-column';
-    for (let m = 0; m < 60; m += 5) { // 5-minute intervals
-        const mStr = String(m).padStart(2, '0');
-        const opt = document.createElement('div');
-        opt.className = 'picker-option';
-        opt.textContent = mStr;
-        opt.setAttribute('data-val', mStr);
-        minCol.appendChild(opt);
-    }
-    
-    columnsContainer.appendChild(hourCol);
-    columnsContainer.appendChild(separator);
-    columnsContainer.appendChild(minCol);
-    dropdown.appendChild(columnsContainer);
-    
-    // Confirm actions
-    const actions = document.createElement('div');
-    actions.className = 'picker-actions';
-    const confirmBtn = document.createElement('button');
-    confirmBtn.type = 'button';
-    confirmBtn.className = 'btn-picker-confirm';
-    confirmBtn.textContent = 'OK';
-    actions.appendChild(confirmBtn);
-    dropdown.appendChild(actions);
-    
-    wrapper.appendChild(dropdown);
-    
-    let activeHour = '16';
-    let activeMin = '30';
-    
-    function setUIValue(h, m) {
-        activeHour = String(h).padStart(2, '0');
-        activeMin = String(m).padStart(2, '0');
-        
-        displayBox.querySelector('.time-val').textContent = `${activeHour}:${activeMin}`;
-        
-        // Update selected class in dropdown
-        hourCol.querySelectorAll('.picker-option').forEach(opt => {
-            if (opt.getAttribute('data-val') === activeHour) {
-                opt.classList.add('selected');
-                // Scroll to center option
-                setTimeout(() => {
-                    hourCol.scrollTop = opt.offsetTop - hourCol.offsetHeight / 2 + opt.offsetHeight / 2;
-                }, 50);
-            } else {
-                opt.classList.remove('selected');
-            }
-        });
-        
-        minCol.querySelectorAll('.picker-option').forEach(opt => {
-            if (opt.getAttribute('data-val') === activeMin) {
-                opt.classList.add('selected');
-                // Scroll to center option
-                setTimeout(() => {
-                    minCol.scrollTop = opt.offsetTop - minCol.offsetHeight / 2 + opt.offsetHeight / 2;
-                }, 50);
-            } else {
-                opt.classList.remove('selected');
-            }
-        });
-    }
-    
-    function updateOriginal() {
-        originalInput.value = `${activeHour}:${activeMin}`;
-        originalInput.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    
-    // Toggle dropdown
     displayBox.addEventListener('click', (e) => {
         e.stopPropagation();
-        const isClosed = dropdown.style.display === 'none';
-        
-        // Close other dropdowns
-        document.querySelectorAll('.time-picker-dropdown').forEach(d => d.style.display = 'none');
-        
-        if (isClosed) {
-            dropdown.style.display = 'block';
-            setUIValue(activeHour, activeMin);
-        } else {
-            dropdown.style.display = 'none';
-        }
+        openPickerSheet(inputId, showPresets);
     });
     
-    // Hour click handlers
-    hourCol.addEventListener('click', (e) => {
-        const opt = e.target.closest('.picker-option');
-        if (!opt) return;
-        activeHour = opt.getAttribute('data-val');
-        setUIValue(activeHour, activeMin);
-        updateOriginal();
-    });
-    
-    // Minute click handlers
-    minCol.addEventListener('click', (e) => {
-        const opt = e.target.closest('.picker-option');
-        if (!opt) return;
-        activeMin = opt.getAttribute('data-val');
-        setUIValue(activeHour, activeMin);
-        updateOriginal();
-    });
-    
-    // Confirm click
-    confirmBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropdown.style.display = 'none';
-    });
-    
-    // Close on click outside
-    document.addEventListener('click', (e) => {
-        if (!wrapper.contains(e.target)) {
-            dropdown.style.display = 'none';
-        }
-    });
-    
-    // Intercept programmatic value assignments on instance directly
     const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
     Object.defineProperty(originalInput, 'value', {
         get() {
@@ -1483,38 +1566,11 @@ function setupCustomTimePicker(inputId, showPresets = false) {
         set(val) {
             descriptor.set.call(this, val);
             if (val && val.includes(':')) {
-                const [h, m] = val.split(':');
-                setUIValue(h, m);
+                displayBox.querySelector('.time-val').textContent = val;
             }
         },
         configurable: true
     });
-    
-    // Initial sync
-    if (originalInput.value && originalInput.value.includes(':')) {
-        const [h, m] = originalInput.value.split(':');
-        setUIValue(h, m);
-    }
-    
-    // Presets quick-select buttons
-    if (showPresets) {
-        const presetsContainer = document.createElement('div');
-        presetsContainer.className = 'time-presets';
-        const presets = ['17:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
-        presets.forEach(time => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'preset-btn';
-            btn.textContent = time;
-            btn.addEventListener('click', () => {
-                const [h, m] = time.split(':');
-                setUIValue(h, m);
-                updateOriginal();
-            });
-            presetsContainer.appendChild(btn);
-        });
-        wrapper.parentNode.insertBefore(presetsContainer, wrapper.nextSibling);
-    }
 }
 
 function checkConnection() {
