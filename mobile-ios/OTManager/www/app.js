@@ -1316,103 +1316,162 @@ function setupCustomTimePicker(inputId, showPresets = false) {
     // Hide original input
     originalInput.style.display = 'none';
     
-    // Create container
-    const container = document.createElement('div');
-    container.className = 'time-stepper-group';
+    // Create wrapper container to manage relative positioning
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'relative';
+    wrapper.style.width = '100%';
+    originalInput.parentNode.insertBefore(wrapper, originalInput.nextSibling);
     
-    // Hour layout
-    const btnHourMinus = document.createElement('button');
-    btnHourMinus.type = 'button';
-    btnHourMinus.className = 'stepper-btn btn-minus';
-    btnHourMinus.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14">
-            <line x1="5" y1="12" x2="19" y2="12"/>
+    // Create custom display box
+    const displayBox = document.createElement('div');
+    displayBox.className = 'custom-time-input';
+    displayBox.innerHTML = `
+        <span class="time-val">16:30</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18" style="color: var(--text-muted);">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
         </svg>
     `;
+    wrapper.appendChild(displayBox);
     
-    const hourVal = document.createElement('span');
-    hourVal.className = 'stepper-value';
-    hourVal.textContent = '16';
+    // Create dropdown menu
+    const dropdown = document.createElement('div');
+    dropdown.className = 'time-picker-dropdown';
+    dropdown.style.display = 'none';
     
-    const btnHourPlus = document.createElement('button');
-    btnHourPlus.type = 'button';
-    btnHourPlus.className = 'stepper-btn btn-plus';
-    btnHourPlus.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-    `;
+    const columnsContainer = document.createElement('div');
+    columnsContainer.className = 'picker-columns';
     
-    // Separator
-    const separator = document.createElement('span');
-    separator.className = 'stepper-separator';
+    // Hour column
+    const hourCol = document.createElement('div');
+    hourCol.className = 'picker-column hour-column';
+    for (let h = 0; h < 24; h++) {
+        const hStr = String(h).padStart(2, '0');
+        const opt = document.createElement('div');
+        opt.className = 'picker-option';
+        opt.textContent = hStr;
+        opt.setAttribute('data-val', hStr);
+        hourCol.appendChild(opt);
+    }
+    
+    const separator = document.createElement('div');
+    separator.className = 'picker-separator';
     separator.textContent = ':';
     
-    // Minute layout
-    const btnMinMinus = document.createElement('button');
-    btnMinMinus.type = 'button';
-    btnMinMinus.className = 'stepper-btn btn-minus';
-    btnMinMinus.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14">
-            <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-    `;
+    // Minute column
+    const minCol = document.createElement('div');
+    minCol.className = 'picker-column minute-column';
+    for (let m = 0; m < 60; m += 5) { // 5-minute intervals
+        const mStr = String(m).padStart(2, '0');
+        const opt = document.createElement('div');
+        opt.className = 'picker-option';
+        opt.textContent = mStr;
+        opt.setAttribute('data-val', mStr);
+        minCol.appendChild(opt);
+    }
     
-    const minVal = document.createElement('span');
-    minVal.className = 'stepper-value';
-    minVal.textContent = '30';
+    columnsContainer.appendChild(hourCol);
+    columnsContainer.appendChild(separator);
+    columnsContainer.appendChild(minCol);
+    dropdown.appendChild(columnsContainer);
     
-    const btnMinPlus = document.createElement('button');
-    btnMinPlus.type = 'button';
-    btnMinPlus.className = 'stepper-btn btn-plus';
-    btnMinPlus.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-    `;
+    // Confirm actions
+    const actions = document.createElement('div');
+    actions.className = 'picker-actions';
+    const confirmBtn = document.createElement('button');
+    confirmBtn.type = 'button';
+    confirmBtn.className = 'btn-picker-confirm';
+    confirmBtn.textContent = 'OK';
+    actions.appendChild(confirmBtn);
+    dropdown.appendChild(actions);
     
-    container.appendChild(btnHourMinus);
-    container.appendChild(hourVal);
-    container.appendChild(btnHourPlus);
-    container.appendChild(separator);
-    container.appendChild(btnMinMinus);
-    container.appendChild(minVal);
-    container.appendChild(btnMinPlus);
+    wrapper.appendChild(dropdown);
     
-    originalInput.parentNode.insertBefore(container, originalInput.nextSibling);
+    let activeHour = '16';
+    let activeMin = '30';
     
-    let currentHour = 16;
-    let currentMin = 30;
+    function setUIValue(h, m) {
+        activeHour = String(h).padStart(2, '0');
+        activeMin = String(m).padStart(2, '0');
+        
+        displayBox.querySelector('.time-val').textContent = `${activeHour}:${activeMin}`;
+        
+        // Update selected class in dropdown
+        hourCol.querySelectorAll('.picker-option').forEach(opt => {
+            if (opt.getAttribute('data-val') === activeHour) {
+                opt.classList.add('selected');
+                // Scroll to center option
+                setTimeout(() => {
+                    hourCol.scrollTop = opt.offsetTop - hourCol.offsetHeight / 2 + opt.offsetHeight / 2;
+                }, 50);
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+        
+        minCol.querySelectorAll('.picker-option').forEach(opt => {
+            if (opt.getAttribute('data-val') === activeMin) {
+                opt.classList.add('selected');
+                // Scroll to center option
+                setTimeout(() => {
+                    minCol.scrollTop = opt.offsetTop - minCol.offsetHeight / 2 + opt.offsetHeight / 2;
+                }, 50);
+            } else {
+                opt.classList.remove('selected');
+            }
+        });
+    }
     
     function updateOriginal() {
-        const hStr = String(currentHour).padStart(2, '0');
-        const mStr = String(currentMin).padStart(2, '0');
-        hourVal.textContent = hStr;
-        minVal.textContent = mStr;
-        originalInput.value = `${hStr}:${mStr}`;
+        originalInput.value = `${activeHour}:${activeMin}`;
         originalInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
     
-    // Event listeners for Hour
-    btnHourMinus.addEventListener('click', () => {
-        currentHour = (currentHour - 1 + 24) % 24;
-        updateOriginal();
+    // Toggle dropdown
+    displayBox.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isClosed = dropdown.style.display === 'none';
+        
+        // Close other dropdowns
+        document.querySelectorAll('.time-picker-dropdown').forEach(d => d.style.display = 'none');
+        
+        if (isClosed) {
+            dropdown.style.display = 'block';
+            setUIValue(activeHour, activeMin);
+        } else {
+            dropdown.style.display = 'none';
+        }
     });
-    btnHourPlus.addEventListener('click', () => {
-        currentHour = (currentHour + 1) % 24;
+    
+    // Hour click handlers
+    hourCol.addEventListener('click', (e) => {
+        const opt = e.target.closest('.picker-option');
+        if (!opt) return;
+        activeHour = opt.getAttribute('data-val');
+        setUIValue(activeHour, activeMin);
         updateOriginal();
     });
     
-    // Event listeners for Minute (steps of 15 minutes)
-    btnMinMinus.addEventListener('click', () => {
-        currentMin = (currentMin - 15 + 60) % 60;
+    // Minute click handlers
+    minCol.addEventListener('click', (e) => {
+        const opt = e.target.closest('.picker-option');
+        if (!opt) return;
+        activeMin = opt.getAttribute('data-val');
+        setUIValue(activeHour, activeMin);
         updateOriginal();
     });
-    btnMinPlus.addEventListener('click', () => {
-        currentMin = (currentMin + 15) % 60;
-        updateOriginal();
+    
+    // Confirm click
+    confirmBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.style.display = 'none';
+    });
+    
+    // Close on click outside
+    document.addEventListener('click', (e) => {
+        if (!wrapper.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
     });
     
     // Intercept programmatic value assignments on instance directly
@@ -1424,11 +1483,8 @@ function setupCustomTimePicker(inputId, showPresets = false) {
         set(val) {
             descriptor.set.call(this, val);
             if (val && val.includes(':')) {
-                const [h, m] = val.split(':').map(Number);
-                currentHour = h;
-                currentMin = m;
-                hourVal.textContent = String(h).padStart(2, '0');
-                minVal.textContent = String(m).padStart(2, '0');
+                const [h, m] = val.split(':');
+                setUIValue(h, m);
             }
         },
         configurable: true
@@ -1436,11 +1492,8 @@ function setupCustomTimePicker(inputId, showPresets = false) {
     
     // Initial sync
     if (originalInput.value && originalInput.value.includes(':')) {
-        const [h, m] = originalInput.value.split(':').map(Number);
-        currentHour = h;
-        currentMin = m;
-        hourVal.textContent = String(h).padStart(2, '0');
-        minVal.textContent = String(m).padStart(2, '0');
+        const [h, m] = originalInput.value.split(':');
+        setUIValue(h, m);
     }
     
     // Presets quick-select buttons
@@ -1454,14 +1507,13 @@ function setupCustomTimePicker(inputId, showPresets = false) {
             btn.className = 'preset-btn';
             btn.textContent = time;
             btn.addEventListener('click', () => {
-                const [h, m] = time.split(':').map(Number);
-                currentHour = h;
-                currentMin = m;
+                const [h, m] = time.split(':');
+                setUIValue(h, m);
                 updateOriginal();
             });
             presetsContainer.appendChild(btn);
         });
-        container.parentNode.insertBefore(presetsContainer, container.nextSibling);
+        wrapper.parentNode.insertBefore(presetsContainer, wrapper.nextSibling);
     }
 }
 
