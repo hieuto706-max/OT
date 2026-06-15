@@ -61,17 +61,29 @@
                     </defs>
                 </svg>
                 <span class="logo-text">OT Manager</span>
+                <span class="web-version-badge" style="font-size: 0.7rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 8px; border-radius: 10px; font-weight: 700; margin-left: 8px;">v1.2.0</span>
+            </div>
+            <div class="landing-nav">
+                <a href="javascript:void(0)" class="nav-link active" data-tab="login">Đăng nhập</a>
+                <a href="javascript:void(0)" class="nav-link" data-tab="features">Tính năng</a>
+                <a href="javascript:void(0)" class="nav-link" data-tab="download">Tải xuống</a>
+                <a href="javascript:void(0)" class="nav-link" data-tab="release">Thông tin phát hành</a>
+                <a href="javascript:void(0)" class="nav-link" data-tab="terms">Điều khoản & Bảo mật</a>
             </div>
         </header>
 
         <div class="landing-container">
-            <!-- Left Side: Login & Features -->
-            <div class="landing-left-side" id="login-section">
-                <!-- Login widget card -->
-                <div class="login-page-card">
+            <!-- TAB 1: Đăng nhập -->
+            <div id="ltab-login" class="landing-tab-content active">
+                <div class="login-page-card" style="margin: 0 auto; max-width: 420px; width: 100%;">
                     <div class="login-header">
                         <h1>Hệ thống OT Manager</h1>
                         <p>Vui lòng đăng nhập để tiếp tục</p>
+                    </div>
+
+                    <div class="login-tabs">
+                        <button type="button" class="login-tab active" data-tab="employee" id="btn-tab-employee">Nhân viên</button>
+                        <button type="button" class="login-tab" data-tab="admin" id="btn-tab-admin">Quản trị viên</button>
                     </div>
 
                     <!-- Form Đăng nhập Nhân viên -->
@@ -92,13 +104,260 @@
                         <p id="login-error-emp" class="form-error"></p>
                     </form>
 
+                    <!-- Form Đăng nhập Quản lý -->
+                    <form id="form-login-admin" class="mobile-form login-form" style="display: none;">
+                        <div class="form-group">
+                            <label for="login-admin-user">Tên đăng nhập Quản lý</label>
+                            <div class="input-wrapper">
+                                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                <input type="text" id="login-admin-user" placeholder="Nhập tên đăng nhập quản trị..." autocomplete="username">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Mật khẩu</label>
+                            <div class="input-wrapper">
+                                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                </svg>
+                                <input type="password" id="login-password" placeholder="Nhập mật khẩu..." autocomplete="current-password">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-purple btn-full" id="btn-login-admin">
+                            Đăng nhập Quản trị
+                        </button>
+                        <p id="login-error-admin" class="form-error"></p>
+                    </form>
+
                     <div class="login-footer">
-                        <div class="login-register-hint">Chưa có tài khoản? Liên hệ quản lý</div>
-                        <div class="login-version-badge">Phiên bản <span class="login-ver-val">v1.2.0</span></div>
+                        <div class="login-register-hint" style="text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 12px;">Chưa có tài khoản? Liên hệ quản lý</div>
                         <div id="connection-status" style="display:none; margin-top:8px;font-size:0.8rem;"></div>
                     </div>
                 </div>
+            </div>
 
+            <!-- TAB 2: Tính năng -->
+            <div id="ltab-features" class="landing-tab-content">
+                <section class="landing-section">
+                    <h2 class="section-title" style="text-align: center;">✨ Chi tiết tính năng nổi bật</h2>
+                    <div class="features-grid-large">
+                        <div class="feat-card-large">
+                            <span class="feat-icon-large">⚡</span>
+                            <h3>Ghi nhận tăng ca nhanh chóng</h3>
+                            <p>Chỉ với 1 chạm để chọn ngày, tích chọn tăng ca trưa hoặc tối để lưu giờ làm việc. Hệ thống tự động tính toán số giờ làm chính xác theo quy định.</p>
+                        </div>
+                        <div class="feat-card-large">
+                            <span class="feat-icon-large">📶</span>
+                            <h3>Hoạt động ngoại tuyến (Offline)</h3>
+                            <p>Tự động lưu trữ dữ liệu tăng ca ngoại tuyến trên thiết bị khi mất kết nối mạng. Đồng bộ tự động ngay lập tức khi mạng hoạt động trở lại.</p>
+                        </div>
+                        <div class="feat-card-large">
+                            <span class="feat-icon-large">📊</span>
+                            <h3>Thống kê trực quan & Xuất báo cáo</h3>
+                            <p>Giao diện quản lý trực quan cho phép xem tổng số ngày, giờ tăng ca theo tháng. Quản trị viên dễ dàng lọc và xuất dữ liệu Excel để làm lương.</p>
+                        </div>
+                        <div class="feat-card-large">
+                            <span class="feat-icon-large">☁️</span>
+                            <h3>Đồng bộ hóa đám mây (Cloud)</h3>
+                            <p>Dữ liệu được lưu trữ an toàn trên đám mây, tự động đồng bộ thời gian thực giữa các thiết bị di động của nhân viên và máy tính của quản lý.</p>
+                        </div>
+                        <div class="feat-card-large">
+                            <span class="feat-icon-large">🔒</span>
+                            <h3>Bảo mật thiết bị (Device Bound)</h3>
+                            <p>Tài khoản nhân viên được liên kết duy nhất với thiết bị sử dụng ban đầu. Tránh việc đăng nhập hộ và đảm bảo tính minh bạch.</p>
+                        </div>
+                        <div class="feat-card-large">
+                            <span class="feat-icon-large">⚙️</span>
+                            <h3>Cấu hình linh hoạt</h3>
+                            <p>Hỗ trợ tự động dò tìm IP Server nội bộ và cấu hình IP máy chủ từ xa dễ dàng, đảm bảo hệ thống luôn sẵn sàng kết nối.</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- TAB 3: Tải xuống -->
+            <div id="ltab-download" class="landing-tab-content">
+                <section class="landing-section">
+                    <h2 class="section-title" style="text-align: center;">📥 Tải ứng dụng</h2>
+                    <div class="download-grid-large">
+                        <div class="download-card-large">
+                            <div>
+                                <div class="card-large-header">
+                                    <span class="card-emoji-large">📱</span>
+                                    <div>
+                                        <h3>Ứng dụng Nhân viên</h3>
+                                        <span class="platform-badge-large">Android (.APK)</span>
+                                    </div>
+                                </div>
+                                <p class="download-desc">Tải ứng dụng trực tiếp cho thiết bị Android để ghi nhận giờ tăng ca, xem lịch sử và nhận phản hồi từ quản lý mọi lúc mọi nơi.</p>
+                            </div>
+                            <div>
+                                <a id="apk-download-btn-landing" href="mobile/OT-Manager-mobile.apk" download class="btn btn-primary" style="width:100%; text-align: center;">Tải APK Android</a>
+                                <div class="qr-box-large">
+                                    <div class="qr-bg-large">
+                                        <img id="apk-qr-code-landing" src="" alt="QR Code">
+                                    </div>
+                                    <span class="qr-hint">Quét mã QR để cài đặt nhanh</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="download-card-large">
+                            <div>
+                                <div class="card-large-header">
+                                    <span class="card-emoji-large">🖥️</span>
+                                    <div>
+                                        <h3>Ứng dụng Quản lý</h3>
+                                        <span class="platform-badge-large">Windows (.EXE)</span>
+                                    </div>
+                                </div>
+                                <p class="download-desc">Ứng dụng chuyên dụng dành cho Quản trị viên và Quản lý để duyệt giờ làm, quản lý thông tin nhân viên, cài đặt quy định tăng ca và xuất báo cáo Excel.</p>
+                            </div>
+                            <div>
+                                <a id="desktop-download-btn-landing" href="https://github.com/hieuto706-max/OT/releases/download/v1.2.0/ot-manager-Setup-1.2.0.exe" target="_blank" class="btn btn-purple" style="width:100%; text-align: center;">Tải Windows EXE</a>
+                            </div>
+                        </div>
+
+                        <div class="download-card-large">
+                            <div>
+                                <div class="card-large-header">
+                                    <span class="card-emoji-large">🍎</span>
+                                    <div>
+                                        <h3>Ứng dụng Nhân viên</h3>
+                                        <span class="platform-badge-large" style="background: rgba(0, 122, 255, 0.15); color: #007AFF;">iOS (iPhone)</span>
+                                    </div>
+                                </div>
+                                <p class="download-desc">Dành cho nhân viên sử dụng iPhone. Bạn có thể truy cập trực tiếp qua trình duyệt Safari tại địa chỉ bên dưới hoặc chờ bản cập nhật từ TestFlight.</p>
+                            </div>
+                            <div>
+                                <a href="https://hieuto706-max.github.io/OT/mobile/" target="_blank" class="btn btn-ghost" style="width:100%; text-align: center; border-color: rgba(0, 122, 255, 0.3); color: #007AFF;">
+                                    Mở trên Safari (Web App)
+                                </a>
+                                <p style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-top: 8px;">Bản iOS native đang được phát triển</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- TAB 4: Thông tin phát hành -->
+            <div id="ltab-release" class="landing-tab-content">
+                <section class="landing-section">
+                    <h2 class="section-title" style="text-align: center;">🚀 Thông tin phát hành & Cập nhật</h2>
+                    <div class="changelog-timeline">
+                        <div class="changelog-item">
+                            <span class="changelog-badge">v1.2.0</span>
+                            <span class="changelog-date">15/06/2026</span>
+                            <ul class="changelog-list">
+                                <li>Tích hợp tính năng "Chốt công & Dọn dẹp" dữ liệu tháng cũ tự động & thủ công.</li>
+                                <li>Tự động sao lưu dữ liệu lên GitHub Gist trước khi dọn dẹp.</li>
+                                <li>Cron job tự động dọn dẹp ngày 15 hàng tháng, xóa dữ liệu từ 2 tháng trước.</li>
+                                <li>Nâng cấp giao diện Admin Desktop với nút Chốt công xác nhận 2 bước.</li>
+                            </ul>
+                        </div>
+                        <div class="changelog-item">
+                            <span class="changelog-badge">v1.1.9</span>
+                            <span class="changelog-date">15/06/2026</span>
+                            <ul class="changelog-list">
+                                <li>Thiết kế lại hộp chọn thời gian di động dạng 24h dễ sử dụng hơn.</li>
+                                <li>Tối ưu hóa hiển thị danh sách lịch sử OT nhỏ gọn và gọn gàng.</li>
+                                <li>Sửa lỗi tự động đăng nhập Admin và lỗi JSON 404 trên GitHub Pages.</li>
+                                <li>Cải tiến giao diện đăng nhập nhân viên trên màn hình Web cân đối hơn.</li>
+                            </ul>
+                        </div>
+                        <div class="changelog-item">
+                            <span class="changelog-badge">v1.1.8</span>
+                            <span class="changelog-date">15/06/2026</span>
+                            <ul class="changelog-list">
+                                <li>Sửa lỗi hiển thị cảnh báo trắng đè lên tiến trình tải cập nhật trên Desktop.</li>
+                                <li>Cấu hình tự động đồng bộ liên kết tải xuống EXE và APK trực tiếp theo phiên bản máy chủ.</li>
+                            </ul>
+                        </div>
+                        <div class="changelog-item">
+                            <span class="changelog-badge">v1.1.7</span>
+                            <span class="changelog-date">15/06/2026</span>
+                            <ul class="changelog-list">
+                                <li>Tự động đóng thầm lặng phiên bản cũ đang chạy khi cài đặt Setup, tránh hoàn toàn lỗi khóa file trên Windows.</li>
+                            </ul>
+                        </div>
+                        <div class="changelog-item">
+                            <span class="changelog-badge">v1.1.6</span>
+                            <span class="changelog-date">15/06/2026</span>
+                            <ul class="changelog-list">
+                                <li>Khắc phục triệt để lỗi chuyển hướng đăng nhập trên trình duyệt web của Admin.</li>
+                                <li>Ẩn các nút cập nhật phiên bản và tắt popup yêu cầu tải xuống APK khi chạy ở môi trường Web.</li>
+                                <li>Bổ sung nút Xin huỷ liên kết thiết bị trực tiếp trên giao diện Web của nhân viên.</li>
+                            </ul>
+                        </div>
+                        <div class="changelog-item">
+                            <span class="changelog-badge">v1.1.5</span>
+                            <span class="changelog-date">14/06/2026</span>
+                            <ul class="changelog-list">
+                                <li>Bảo mật thiết bị mới: Cho phép tối đa 1 Mobile App + 1 Web Browser đăng nhập đồng thời.</li>
+                                <li>Hệ thống phê duyệt hủy liên kết thiết bị từ Admin.</li>
+                                <li>Tối ưu hóa mặc định giờ OT kết thúc chiều thành 16:30 và tự động đồng bộ giờ kết thúc theo giờ bắt đầu.</li>
+                                <li>Loại bỏ thẻ quy định giờ làm khỏi ứng dụng nhân viên.</li>
+                            </ul>
+                        </div>
+                        <div class="changelog-item">
+                            <span class="changelog-badge">v1.1.3</span>
+                            <span class="changelog-date">15/06/2026</span>
+                            <ul class="changelog-list">
+                                <li>Cập nhật ứng dụng Windows tự động mà không cần đóng thủ công.</li>
+                                <li>Thêm tính năng hiện/ẩn mật khẩu khi đăng nhập quản trị.</li>
+                                <li>Tách danh sách quản lý nhân viên thành 2 tab: Quản trị viên và Nhân viên.</li>
+                                <li>Hiển thị thông tin phiên bản ngoài màn hình đăng nhập desktop.</li>
+                                <li>Sửa lỗi đồng bộ và tối ưu hóa hiệu năng cơ sở dữ liệu.</li>
+                            </ul>
+                        </div>
+                        <div class="changelog-item">
+                            <span class="changelog-badge">v1.1.2</span>
+                            <span class="changelog-date">10/06/2026</span>
+                            <ul class="changelog-list">
+                                <li>Thêm tính năng xin huỷ liên kết thiết bị trực tiếp từ app di động.</li>
+                                <li>Cải tiến giao diện đăng nhập di động cân đối và tối ưu hóa cho màn hình dọc.</li>
+                                <li>Thêm thông tin hiển thị phiên bản ở màn hình đăng nhập di động.</li>
+                                <li>Tự động phát hiện và cảnh báo phiên bản cũ để tải bản cập nhật mới.</li>
+                            </ul>
+                        </div>
+                        <div class="changelog-item">
+                            <span class="changelog-badge">v1.1.0</span>
+                            <span class="changelog-date">01/06/2026</span>
+                            <ul class="changelog-list">
+                                <li>Hỗ trợ đồng bộ ngoại tuyến (Offline Mode) an toàn dữ liệu.</li>
+                                <li>Tự động quét và dò tìm IP Server trong mạng WiFi nội bộ.</li>
+                                <li>Tích hợp đăng nhập nhanh cho nhân viên không cần mật khẩu.</li>
+                                <li>Hệ thống thông báo đẩy (Toast notification) trực quan và sinh động.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- TAB 5: Điều khoản & Bảo mật -->
+            <div id="ltab-terms" class="landing-tab-content">
+                <section class="landing-section">
+                    <h2 class="section-title" style="text-align: center;">📜 Điều khoản & Bảo mật</h2>
+                    <div class="terms-card">
+                        <h3>1. Điều khoản sử dụng</h3>
+                        <p>Chào mừng bạn đến với ứng dụng OT Manager. Bằng việc cài đặt và sử dụng ứng dụng này, bạn đồng ý với các quy định sau:</p>
+                        <ul>
+                            <li>Mỗi tài khoản nhân viên chỉ được đăng ký trên một thiết bị di động duy nhất để đảm bảo ghi nhận tăng ca chính xác.</li>
+                            <li>Người dùng chịu trách nhiệm báo cáo trung thực thời gian làm thêm giờ của mình.</li>
+                            <li>Nghiêm cấm mọi hành vi gian lận dữ liệu, đăng nhập hộ hoặc can thiệp vào mã nguồn ứng dụng.</li>
+                        </ul>
+                        <h3>2. Chính sách bảo mật</h3>
+                        <p>Chúng tôi coi trọng tính bảo mật và sự riêng tư đối với dữ liệu của bạn:</p>
+                        <ul>
+                            <li>Thông tin thiết bị (Device ID) được thu thập chỉ với mục đích duy nhất là định danh và liên kết tài khoản bảo mật.</li>
+                            <li>Dữ liệu giờ làm thêm (OT) chỉ được sử dụng cho việc đối chiếu công và tính lương nội bộ của công ty.</li>
+                            <li>Dữ liệu lưu trữ đám mây được bảo vệ an toàn và không chia sẻ cho bất kỳ bên thứ ba nào ngoài doanh nghiệp của bạn.</li>
+                        </ul>
+                    </div>
+                </section>
             </div>
         </div>
     </div>
@@ -260,7 +519,7 @@
                     <div class="profile-avatar" id="profile-avatar">NV</div>
                     <h2 id="profile-name">Nhân viên</h2>
                     <p id="profile-username">@username</p>
-                    <div class="profile-ver-badge">Phiên bản <span id="app-version-display">v1.2.0</span></div>
+                    <div class="profile-ver-badge">Phiên bản <span id="app-version-display">v1.1.3</span></div>
                 </div>
 
                 <div class="card">
@@ -388,13 +647,104 @@
     <!-- Script triggers -->
     <script>
         window.scrollToLogin = function() {
-            const el = document.getElementById('login-section');
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const navLink = document.querySelector('.landing-nav .nav-link[data-tab="login"]');
+            if (navLink) navLink.click();
+            setTimeout(() => {
                 const input = document.getElementById('login-user');
-                if (input) setTimeout(() => input.focus(), 600);
-            }
+                if (input) input.focus();
+            }, 300);
         };
+
+        // Tab switching logic for web landing page
+        document.querySelectorAll('.landing-nav .nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const tabName = this.getAttribute('data-tab');
+                if (!tabName) return;
+
+                // Update active tab buttons
+                document.querySelectorAll('.landing-nav .nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+
+                // Update active tab panels
+                document.querySelectorAll('.landing-tab-content').forEach(p => p.classList.remove('active'));
+                const targetPanel = document.getElementById('ltab-' + tabName);
+                if (targetPanel) {
+                    targetPanel.classList.add('active');
+                }
+
+                // Update hash to support browser history/deep links without jumping
+                history.pushState(null, null, '#' + tabName);
+            });
+        });
+
+        // Deep links/hash navigation handler
+        function checkHashTab() {
+            const hash = window.location.hash.substring(1);
+            const validTabs = ['login', 'features', 'download', 'release', 'terms'];
+            
+            // Map old hash links if any
+            let targetTab = 'login';
+            if (hash === 'features-section') targetTab = 'features';
+            else if (hash === 'download-section') targetTab = 'download';
+            else if (hash === 'login-section') targetTab = 'login';
+            else if (validTabs.includes(hash)) targetTab = hash;
+
+            const navLink = document.querySelector(`.landing-nav .nav-link[data-tab="${targetTab}"]`);
+            if (navLink) {
+                // Deactivate all first
+                document.querySelectorAll('.landing-nav .nav-link').forEach(l => l.classList.remove('active'));
+                navLink.classList.add('active');
+
+                document.querySelectorAll('.landing-tab-content').forEach(p => p.classList.remove('active'));
+                const targetPanel = document.getElementById('ltab-' + targetTab);
+                if (targetPanel) {
+                    targetPanel.classList.add('active');
+                }
+            }
+        }
+
+        window.addEventListener('hashchange', checkHashTab);
+        window.addEventListener('load', checkHashTab);
+
+        // Fetch version from server dynamically
+        window.addEventListener('DOMContentLoaded', () => {
+            const host = window.location.origin;
+            const savedServerIp = localStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com';
+            const checkUrl = (window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io')) ? host : savedServerIp;
+
+            fetch(checkUrl + '/api/version')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.version) {
+                        // Update version displays
+                        document.querySelectorAll('.web-version-badge, .login-ver-val').forEach(el => {
+                            el.textContent = 'v' + data.version;
+                        });
+                        const appVerDisplay = document.getElementById('app-version-display');
+                        if (appVerDisplay) {
+                            appVerDisplay.textContent = 'v' + data.version;
+                        }
+
+                        // Update desktop EXE download url
+                        const desktopBtn = document.getElementById('desktop-download-btn-landing');
+                        if (desktopBtn && data.desktopDownloadUrl) {
+                            desktopBtn.href = data.desktopDownloadUrl;
+                        }
+
+                        // Update mobile APK download url & QR code
+                        const apkBtn = document.getElementById('apk-download-btn-landing');
+                        if (apkBtn && data.mobileDownloadUrl) {
+                            apkBtn.href = data.mobileDownloadUrl;
+                        }
+                        const apkQr = document.getElementById('apk-qr-code-landing');
+                        if (apkQr && data.mobileDownloadUrl) {
+                            apkQr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=' + encodeURIComponent(data.mobileDownloadUrl);
+                        }
+                    }
+                })
+                .catch(err => console.warn('Lỗi lấy phiên bản động từ server:', err));
+        });
     </script>
     <script src="mobile/app.js"></script>
 </body>
