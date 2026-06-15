@@ -2,6 +2,7 @@ import UIKit
 import WebKit
 import Network
 import Darwin
+import Foundation
 
 class ViewController: UIViewController {
 
@@ -154,16 +155,23 @@ class ViewController: UIViewController {
         for ptr in sequence(first: firstAddr, next: { $0.pointee.ifa_next }) {
             let interface = ptr.pointee
             guard let ifaAddr = interface.ifa_addr else { continue }
+            guard let ifaName = interface.ifa_name else { continue }
             let addrFamily = ifaAddr.pointee.sa_family
 
             if addrFamily == UInt8(AF_INET) {
-                let name = String(cString: interface.ifa_name)
+                let name = String(cString: ifaName)
                 if name == "en0" { // en0 = WiFi interface trên iOS
-                    var hostname = [CChar](repeating: 0, count: Int(NI_MAXHOST))
-                    getnameinfo(ifaAddr, socklen_t(ifaAddr.pointee.sa_len),
-                                &hostname, socklen_t(hostname.count),
-                                nil, 0, NI_NUMERICHOST)
-                    address = String(cString: hostname)
+                    var ip = [CChar](repeating: 0, count: Int(INET_ADDRSTRLEN))
+                    let ipAddress = ifaAddr.withMemoryRebound(to: sockaddr_in.self, capacity: 1) { ptr -> String? in
+                        var sinAddr = ptr.pointee.sin_addr
+                        if inet_ntop(AF_INET, &sinAddr, &ip, socklen_t(INET_ADDRSTRLEN)) != nil {
+                            return String(cString: ip)
+                        }
+                        return nil
+                    }
+                    if let ipAddress = ipAddress {
+                        address = ipAddress
+                    }
                 }
             }
         }
