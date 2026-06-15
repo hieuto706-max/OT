@@ -88,19 +88,6 @@ jobs:
           cp mobile/manifest.json mobile-ios/OTManager/www/manifest.json
           cp mobile/icon-192.png mobile-ios/OTManager/www/icon-192.png
 
-      - name: Build iOS App (Simulator)
-        working-directory: mobile-ios
-        run: |
-          xcodebuild -project OTManager.xcodeproj \
-            -scheme OTManager \
-            -sdk iphonesimulator \
-            -configuration Release \
-            -derivedDataPath build \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            build
 
       - name: Build iOS App (Device Unsigned)
         working-directory: mobile-ios
@@ -119,11 +106,6 @@ jobs:
 
       - name: Package iOS App
         run: |
-          # Package Simulator
-          cd mobile-ios/build/Build/Products/Release-iphonesimulator
-          zip -r ../../../../OTManager-iOS-Simulator.zip OTManager.app
-          cd ../../../..
-          
           # Package Device IPA
           mkdir -p Payload
           cp -r mobile-ios/build_device/Build/Products/Release-iphoneos/OTManager.app Payload/
@@ -133,7 +115,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            mobile-ios/OTManager-iOS-Simulator.zip
             OT-Manager-mobile.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
