@@ -70,3 +70,45 @@ jobs:
           files: mobile-android/app/build/outputs/apk/release/OT-Manager-mobile.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-ios:
+    name: Build iOS App
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Sync Web Content to iOS www/
+        run: |
+          cp mobile/index.html mobile-ios/OTManager/www/index.html
+          cp mobile/app.js mobile-ios/OTManager/www/app.js
+          cp mobile/style.css mobile-ios/OTManager/www/style.css
+          cp mobile/download.html mobile-ios/OTManager/www/download.html
+          cp mobile/manifest.json mobile-ios/OTManager/www/manifest.json
+          cp mobile/icon-192.png mobile-ios/OTManager/www/icon-192.png
+
+      - name: Build iOS App (Simulator)
+        working-directory: mobile-ios
+        run: |
+          xcodebuild -project OTManager.xcodeproj \
+            -scheme OTManager \
+            -sdk iphonesimulator \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package iOS App
+        run: |
+          cd mobile-ios/build/Build/Products/Release-iphonesimulator
+          zip -r ../../../../OTManager-iOS-Simulator.zip OTManager.app
+
+      - name: Upload iOS App to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: mobile-ios/OTManager-iOS-Simulator.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

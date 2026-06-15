@@ -39,6 +39,7 @@
       "!node-portable/**",
       "!dist/**",
       "!mobile-android/**",
+      "!mobile-ios/**",
       "!OT-Manager-mobile.apk",
       "!.git/**",
       "!.vscode/**"
