@@ -2584,3 +2584,379 @@ body.is-web-browser #btn-check-update-mobile {
 .preset-btn:active {
     transform: scale(0.95);
 }
+
+/* ==================== WEB LANDING PAGE — Navigation, Tabs, Cards ==================== */
+
+/* Landing Navigation Bar */
+.landing-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.landing-nav::-webkit-scrollbar {
+    display: none;
+}
+
+.landing-nav .nav-link {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+}
+
+.landing-nav .nav-link:hover {
+    color: var(--text-sub);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.landing-nav .nav-link.active {
+    color: var(--green-light);
+    background: rgba(13, 217, 139, 0.1);
+}
+
+/* Login Tabs (Nhân viên / Quản trị viên) */
+.login-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    padding: 4px;
+    border: 1px solid var(--border);
+}
+
+.login-tab {
+    flex: 1;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    letter-spacing: 0.2px;
+}
+
+.login-tab:hover {
+    color: var(--text-sub);
+}
+
+.login-tab.active {
+    background: rgba(13, 217, 139, 0.12);
+    color: var(--green-light);
+    box-shadow: 0 2px 8px rgba(13, 217, 139, 0.1);
+}
+
+/* Landing Tab Content — ẩn các tab không active */
+.landing-tab-content {
+    display: none;
+    width: 100%;
+    animation: fadeInUp 0.4s ease;
+}
+
+.landing-tab-content.active {
+    display: block;
+}
+
+/* Landing Sections */
+.landing-section {
+    padding: 20px 0;
+}
+
+.section-title {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 24px;
+    color: var(--text-white);
+}
+
+/* ==================== FEATURES GRID ==================== */
+.features-grid-large {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+.feat-card-large {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: all 0.35s ease;
+}
+
+.feat-card-large:hover {
+    border-color: rgba(13, 217, 139, 0.2);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.feat-icon-large {
+    font-size: 32px;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.feat-card-large h3 {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-white);
+    margin-bottom: 8px;
+    letter-spacing: -0.3px;
+}
+
+.feat-card-large p {
+    font-size: 13.5px;
+    color: var(--text-sub);
+    line-height: 1.6;
+}
+
+/* ==================== DOWNLOAD CARDS ==================== */
+.download-grid-large {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+.download-card-large {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    transition: all 0.3s ease;
+}
+
+.download-card-large:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: var(--shadow-md);
+}
+
+.card-large-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.card-emoji-large {
+    font-size: 36px;
+    flex-shrink: 0;
+}
+
+.card-large-header h3 {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text-white);
+    letter-spacing: -0.3px;
+}
+
+.platform-badge-large {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    background: rgba(13, 217, 139, 0.12);
+    color: var(--green-light);
+    border-radius: 8px;
+    margin-top: 4px;
+    letter-spacing: 0.3px;
+}
+
+.download-desc {
+    font-size: 13.5px;
+    color: var(--text-sub);
+    line-height: 1.6;
+}
+
+/* QR Code Box */
+.qr-box-large {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.qr-bg-large {
+    background: #fff;
+    padding: 10px;
+    border-radius: 12px;
+    display: inline-flex;
+}
+
+.qr-bg-large img {
+    width: 120px;
+    height: 120px;
+    border-radius: 4px;
+}
+
+.qr-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* Button purple */
+.btn-purple {
+    background: var(--gradient-purple);
+    color: var(--text-white);
+    box-shadow: 0 6px 22px rgba(124, 127, 255, 0.3);
+}
+
+.btn-purple:hover {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 10px 30px rgba(124, 127, 255, 0.45);
+}
+
+.btn-purple:active {
+    transform: translateY(0) scale(0.96);
+}
+
+/* ==================== CHANGELOG TIMELINE ==================== */
+.changelog-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.changelog-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    position: relative;
+}
+
+.changelog-badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 4px 12px;
+    background: rgba(13, 217, 139, 0.12);
+    color: var(--green-light);
+    border-radius: 8px;
+    letter-spacing: 0.3px;
+}
+
+.changelog-date {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-left: 10px;
+}
+
+.changelog-list {
+    margin-top: 12px;
+    padding-left: 20px;
+}
+
+.changelog-list li {
+    font-size: 13.5px;
+    color: var(--text-sub);
+    line-height: 1.7;
+    margin-bottom: 4px;
+}
+
+/* ==================== TERMS CARD ==================== */
+.terms-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+}
+
+.terms-card h3 {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-white);
+    margin-bottom: 12px;
+    margin-top: 20px;
+    letter-spacing: -0.3px;
+}
+
+.terms-card h3:first-child {
+    margin-top: 0;
+}
+
+.terms-card p {
+    font-size: 13.5px;
+    color: var(--text-sub);
+    line-height: 1.7;
+    margin-bottom: 12px;
+}
+
+.terms-card ul {
+    padding-left: 20px;
+    margin-bottom: 8px;
+}
+
+.terms-card li {
+    font-size: 13.5px;
+    color: var(--text-sub);
+    line-height: 1.7;
+    margin-bottom: 8px;
+}
+
+/* ==================== RESPONSIVE — Desktop/Tablet Web ==================== */
+@media (min-width: 768px) {
+    .landing-header {
+        padding: 16px 40px;
+    }
+
+    .landing-logo {
+        margin: 0;
+    }
+
+    .landing-container {
+        max-width: 900px;
+        padding: 40px 32px;
+    }
+
+    .login-page-card {
+        max-width: 440px;
+        margin: 0 auto;
+        padding: 40px 32px;
+    }
+
+    .features-grid-large {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .download-grid-large {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .section-title {
+        font-size: 26px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .landing-container {
+        max-width: 1100px;
+    }
+
+    .features-grid-large {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .download-grid-large {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
