@@ -233,10 +233,10 @@ class ViewController: UIViewController {
                 success = true
                 connection.cancel()
                 semaphore.signal()
-            case .failed:
+            case .failed(_):
                 connection.cancel()
                 semaphore.signal()
-            case .waiting:
+            case .waiting(_):
                 break
             default:
                 break
