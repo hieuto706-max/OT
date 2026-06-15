@@ -161,10 +161,10 @@ class ViewController: UIViewController {
             if addrFamily == UInt8(AF_INET) {
                 let name = String(cString: ifaName)
                 if name == "en0" { // en0 = WiFi interface trên iOS
-                    var ip = [CChar](repeating: 0, count: Int(INET_ADDRSTRLEN))
+                    var ip = [CChar](repeating: 0, count: 16)
                     let ipAddress = ifaAddr.withMemoryRebound(to: sockaddr_in.self, capacity: 1) { ptr -> String? in
                         var sinAddr = ptr.pointee.sin_addr
-                        if inet_ntop(AF_INET, &sinAddr, &ip, socklen_t(INET_ADDRSTRLEN)) != nil {
+                        if inet_ntop(AF_INET, &sinAddr, &ip, socklen_t(16)) != nil {
                             return String(cString: ip)
                         }
                         return nil
