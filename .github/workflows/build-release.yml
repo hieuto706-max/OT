@@ -101,14 +101,37 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+      - name: Build iOS App (Device Unsigned)
+        working-directory: mobile-ios
+        run: |
+          xcodebuild -project OTManager.xcodeproj \
+            -scheme OTManager \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath build_device \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_REQUIRED=NO \
+            build
+
       - name: Package iOS App
         run: |
+          # Package Simulator
           cd mobile-ios/build/Build/Products/Release-iphonesimulator
           zip -r ../../../../OTManager-iOS-Simulator.zip OTManager.app
+          cd ../../../..
+          
+          # Package Device IPA
+          mkdir -p Payload
+          cp -r mobile-ios/build_device/Build/Products/Release-iphoneos/OTManager.app Payload/
+          zip -r OT-Manager-mobile.ipa Payload
 
       - name: Upload iOS App to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: mobile-ios/OTManager-iOS-Simulator.zip
+          files: |
+            mobile-ios/OTManager-iOS-Simulator.zip
+            OT-Manager-mobile.ipa
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
