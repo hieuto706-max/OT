@@ -873,12 +873,12 @@ const server = http.createServer(async (req, res) => {
             return res.end('Server chưa cấu hình GITHUB_TOKEN trên Render để tải bản Desktop.');
         }
 
-        let version = '1.1.9';
+        let version = '1.2.0';
         try {
             const pkgPath = path.join(__dirname, '..', 'package.json');
             if (fs.existsSync(pkgPath)) {
                 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-                version = pkg.version || '1.1.9';
+                version = pkg.version || '1.2.0';
             }
         } catch (e) {}
 
