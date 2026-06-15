@@ -153,13 +153,14 @@ class ViewController: UIViewController {
 
         for ptr in sequence(first: firstAddr, next: { $0.pointee.ifa_next }) {
             let interface = ptr.pointee
-            let addrFamily = interface.ifa_addr.pointee.sa_family
+            guard let ifaAddr = interface.ifa_addr else { continue }
+            let addrFamily = ifaAddr.pointee.sa_family
 
             if addrFamily == UInt8(AF_INET) {
                 let name = String(cString: interface.ifa_name)
                 if name == "en0" { // en0 = WiFi interface trên iOS
                     var hostname = [CChar](repeating: 0, count: Int(NI_MAXHOST))
-                    getnameinfo(interface.ifa_addr, socklen_t(interface.ifa_addr.pointee.sa_len),
+                    getnameinfo(ifaAddr, socklen_t(ifaAddr.pointee.sa_len),
                                 &hostname, socklen_t(hostname.count),
                                 nil, 0, NI_NUMERICHOST)
                     address = String(cString: hostname)
