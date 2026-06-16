@@ -981,7 +981,7 @@ async function syncOfflineData() {
 }
 
 // ==================== INIT ====================
-document.addEventListener('DOMContentLoaded', () => {
+function initApp() {
     const isBrowser = window.location.protocol !== 'file:';
     if (isBrowser) {
         document.body.classList.add('is-web-browser');
@@ -1306,7 +1306,13 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCustomTimePicker('ot-end', true);
     setupCustomTimePicker('edit-ot-start');
     setupCustomTimePicker('edit-ot-end', true);
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}
 
 let currentPickerInputId = null;
 let currentPickerShowPresets = false;
