@@ -2,7 +2,7 @@ services:
   - type: web
     name: ot-manager-server
     env: node
-    plan: free
+    plan: starter
     buildCommand: npm install --production
     startCommand: node server/server.js
     envVars:
