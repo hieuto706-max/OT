@@ -564,7 +564,7 @@ async function exportExcel() {
     try {
         const usersData = await api('/api/users');
         const users = usersData.users.filter(u => u.role === 'employee');
-        // Sort employees alphabetically by fullname
+        // Sắp xếp danh sách nhân viên theo bảng chữ cái
         users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
 
         const recData = await api(`/api/records?month=${month}`);
@@ -573,10 +573,15 @@ async function exportExcel() {
         // Khởi tạo workbook mới của SheetJS
         const wb = XLSX.utils.book_new();
 
-        // 1. Tạo dữ liệu cho Sheet "Tổng Hợp" (Bảng I)
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const exportTime = `${formatDateFull(now)} lúc ${timeStr}`;
+
+        // ==================== SHEET 1: TỔNG HỢP ====================
         const summaryData = [];
         // Tiêu đề báo cáo
         summaryData.push([`BÁO CÁO TĂNG CA - THÁNG ${month}`]);
+        summaryData.push([`Ngày xuất báo cáo: ${exportTime}`]);
         summaryData.push([]); // Dòng trống
         summaryData.push(["I. BẢNG TỔNG HỢP GIỜ TĂNG CA"]);
         summaryData.push(["STT", "Họ và tên", "Mã nhân viên", "Số ngày OT", "OT Trưa (giờ)", "OT Chiều (giờ)", "Tổng OT (giờ)"]);
@@ -597,22 +602,63 @@ async function exportExcel() {
             ]);
         });
 
+        // Thêm hàng tổng cộng động (Excel Formula)
+        const summaryStartRow = 6; // Dòng 6 trong Excel
+        const summaryEndRow = 5 + users.length; // Dòng 5 + N
+
+        summaryData.push([
+            "Tổng cộng", // A
+            "", // B
+            "", // C
+            { f: `SUM(D${summaryStartRow}:D${summaryEndRow})` }, // D (Tổng số ngày)
+            { f: `SUM(E${summaryStartRow}:E${summaryEndRow})` }, // E (Tổng OT Trưa)
+            { f: `SUM(F${summaryStartRow}:F${summaryEndRow})` }, // F (Tổng OT Chiều)
+            { f: `SUM(G${summaryStartRow}:G${summaryEndRow})` }  // G (Tổng cộng tất cả)
+        ]);
+
         const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
-        
-        // Định dạng độ rộng cột
-        wsSummary['!cols'] = [
-            { wch: 6 },   // STT
-            { wch: 25 },  // Họ và tên
-            { wch: 15 },  // Mã nhân viên
-            { wch: 12 },  // Số ngày OT
-            { wch: 15 },  // OT Trưa (giờ)
-            { wch: 15 },  // OT Chiều (giờ)
-            { wch: 15 }   // Tổng OT (giờ)
+
+        // Cấu hình gộp ô tiêu đề
+        wsSummary['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, // Gộp dòng tiêu đề chính
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } }  // Gộp dòng ngày xuất
         ];
 
-        // 2. Tạo dữ liệu cho Sheet "Chi Tiết" (Bảng II)
+        // Định dạng cột và kiểu số hiển thị chuyên nghiệp
+        const summaryRange = XLSX.utils.decode_range(wsSummary['!ref']);
+        for (let R = summaryRange.s.r; R <= summaryRange.e.r; ++R) {
+            for (let C = summaryRange.s.c; C <= summaryRange.e.c; ++C) {
+                const cell_ref = XLSX.utils.encode_cell({ c: C, r: R });
+                const cell = wsSummary[cell_ref];
+                if (!cell) continue;
+
+                if (R >= 5) { // Dòng dữ liệu và Tổng cộng trở đi
+                    if (C === 0 || C === 3) {
+                        cell.t = 'n';
+                        cell.z = '0'; // Số nguyên cho STT và Số ngày
+                    } else if (C === 4 || C === 5 || C === 6) {
+                        cell.t = 'n';
+                        cell.z = '#,##0.0'; // Định dạng giờ thập phân
+                    }
+                }
+            }
+        }
+        
+        // Độ rộng cột cho bảng tổng hợp
+        wsSummary['!cols'] = [
+            { wch: 8 },   // STT
+            { wch: 28 },  // Họ và tên
+            { wch: 18 },  // Mã nhân viên
+            { wch: 14 },  // Số ngày OT
+            { wch: 18 },  // OT Trưa (giờ)
+            { wch: 18 },  // OT Chiều (giờ)
+            { wch: 18 }   // Tổng OT (giờ)
+        ];
+
+        // ==================== SHEET 2: CHI TIẾT ====================
         const detailData = [];
         detailData.push([`CHI TIẾT TĂNG CA - THÁNG ${month}`]);
+        detailData.push([`Ngày xuất báo cáo: ${exportTime}`]);
         detailData.push([]); // Dòng trống
         detailData.push(["II. BẢNG CHI TIẾT TĂNG CA TỪNG NGÀY"]);
         detailData.push(["STT", "Ngày", "Họ và tên", "Mã nhân viên", "OT Trưa", "OT Chiều", "Giờ bắt đầu", "Giờ kết thúc", "Tổng OT (giờ)", "Ghi chú"]);
@@ -620,6 +666,7 @@ async function exportExcel() {
         let detailedIdx = 1;
         users.forEach(u => {
             const userRecords = records.filter(r => r.userId === u.id);
+            // Sắp xếp tăng ca theo ngày
             userRecords.sort((a, b) => a.date.localeCompare(b.date));
             
             userRecords.forEach(r => {
@@ -640,24 +687,69 @@ async function exportExcel() {
             });
         });
 
-        if (detailedIdx === 1) {
-            detailData.push(["Chưa có dữ liệu chi tiết tăng ca cho tháng này."]);
+        const hasDetails = detailedIdx > 1;
+
+        if (!hasDetails) {
+            detailData.push(["Chưa có dữ liệu chi tiết tăng ca cho tháng này.", "", "", "", "", "", "", "", "", ""]);
+        } else {
+            // Thêm hàng tổng cộng động cho bảng chi tiết
+            const detailStartRow = 6;
+            const detailEndRow = 5 + detailedIdx - 1;
+
+            detailData.push([
+                "Tổng cộng", // A
+                "", // B
+                "", // C
+                "", // D
+                { f: `SUM(E${detailStartRow}:E${detailEndRow})` }, // E (OT Trưa)
+                { f: `SUM(F${detailStartRow}:F${detailEndRow})` }, // F (OT Chiều)
+                "", // G
+                "", // H
+                { f: `SUM(I${detailStartRow}:I${detailEndRow})` }, // I (Tổng cộng giờ)
+                ""  // J
+            ]);
         }
 
         const wsDetail = XLSX.utils.aoa_to_sheet(detailData);
-        
-        // Định dạng độ rộng cột
+
+        // Cấu hình gộp ô tiêu đề chi tiết
+        wsDetail['!merges'] = [
+            { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } }, // Gộp tiêu đề
+            { s: { r: 1, c: 0 }, e: { r: 1, c: 9 } }  // Gộp ngày xuất
+        ];
+
+        // Định dạng dữ liệu số cho bảng chi tiết
+        const detailRange = XLSX.utils.decode_range(wsDetail['!ref']);
+        for (let R = detailRange.s.r; R <= detailRange.e.r; ++R) {
+            for (let C = detailRange.s.c; C <= detailRange.e.c; ++C) {
+                const cell_ref = XLSX.utils.encode_cell({ c: C, r: R });
+                const cell = wsDetail[cell_ref];
+                if (!cell) continue;
+
+                if (R >= 5 && hasDetails) {
+                    if (C === 0) {
+                        cell.t = 'n';
+                        cell.z = '0'; // STT số nguyên
+                    } else if (C === 4 || C === 5 || C === 8) {
+                        cell.t = 'n';
+                        cell.z = '#,##0.0'; // Các cột giờ OT định dạng số thực
+                    }
+                }
+            }
+        }
+
+        // Độ rộng cột cho bảng chi tiết
         wsDetail['!cols'] = [
-            { wch: 6 },   // STT
-            { wch: 12 },  // Ngày
-            { wch: 25 },  // Họ và tên
-            { wch: 15 },  // Mã nhân viên
-            { wch: 12 },  // OT Trưa
-            { wch: 12 },  // OT Chiều
-            { wch: 12 },  // Giờ bắt đầu
-            { wch: 12 },  // Giờ kết thúc
-            { wch: 15 },  // Tổng OT (giờ)
-            { wch: 30 }   // Ghi chú
+            { wch: 8 },   // STT
+            { wch: 14 },  // Ngày
+            { wch: 28 },  // Họ và tên
+            { wch: 18 },  // Mã nhân viên
+            { wch: 14 },  // OT Trưa
+            { wch: 14 },  // OT Chiều
+            { wch: 14 },  // Giờ bắt đầu
+            { wch: 14 },  // Giờ kết thúc
+            { wch: 18 },  // Tổng OT (giờ)
+            { wch: 35 }   // Ghi chú
         ];
 
         // Thêm các Sheet vào Workbook
