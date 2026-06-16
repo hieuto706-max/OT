@@ -521,6 +521,8 @@ function resetForm() {
     document.getElementById('ot-start').value = '16:30';
     document.getElementById('ot-end').value = '16:30';
     document.getElementById('ot-note').value = '';
+    const backfillCheckbox = document.getElementById('ot-backfill');
+    if (backfillCheckbox) backfillCheckbox.checked = false;
     updatePreview();
 }
 
@@ -532,7 +534,12 @@ async function handleOTSubmit(e) {
     const lunch = document.getElementById('ot-lunch').checked;
     const start = document.getElementById('ot-start').value;
     const end = document.getElementById('ot-end').value;
-    const note = document.getElementById('ot-note').value.trim();
+    const backfillCheckbox = document.getElementById('ot-backfill');
+    const isBackfill = backfillCheckbox ? backfillCheckbox.checked : false;
+    let note = document.getElementById('ot-note').value.trim();
+    if (isBackfill) {
+        note = '[BÙ THÁNG TRƯỚC] ' + note;
+    }
 
     const eveningOTHours = calcEveningOT(start, end);
     const totalHours = (lunch ? OT_LUNCH_HOURS : 0) + eveningOTHours;
@@ -631,9 +638,14 @@ async function loadHistory() {
             let tags = '';
             if (r.hasLunchOT) tags += '<span class="htag htag-lunch">OT Trưa 1h</span>';
             if (r.eveningOTHours > 0) tags += `<span class="htag htag-evening">OT Chiều ${r.eveningOTHours.toFixed(1)}h</span>`;
+            if (r.note && r.note.includes('[BÙ THÁNG TRƯỚC]')) {
+                tags += '<span class="htag htag-backfill" style="background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3);">Bù tháng trước</span>';
+            }
             if (r.id.startsWith('offline_')) {
                 tags += '<span class="htag htag-offline" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">Chờ đồng bộ</span>';
             }
+
+            const cleanNote = r.note ? r.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').trim() : '';
 
             return `
                 <div class="history-item" style="animation-delay:${i * 0.04}s">
@@ -651,7 +663,7 @@ async function loadHistory() {
                             </div>
                         </div>
                     </div>
-                    ${r.note ? `<div class="history-note">📝 ${r.note}</div>` : ''}
+                    ${cleanNote ? `<div class="history-note">📝 ${cleanNote}</div>` : ''}
                 </div>`;
         }).join('');
 
@@ -1644,7 +1656,11 @@ async function editRecordDialog(id) {
         document.getElementById('edit-ot-lunch').checked = record.hasLunchOT;
         document.getElementById('edit-ot-start').value = record.otStart || '16:30';
         document.getElementById('edit-ot-end').value = record.otEnd || '16:30';
-        document.getElementById('edit-ot-note').value = record.note || '';
+        
+        const isBackfill = record.note && record.note.includes('[BÙ THÁNG TRƯỚC]');
+        const editBackfill = document.getElementById('edit-ot-backfill');
+        if (editBackfill) editBackfill.checked = isBackfill;
+        document.getElementById('edit-ot-note').value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').trim() : '';
 
         // Auto sync edit ot end when edit ot start changes
         const editStartEl = document.getElementById('edit-ot-start');
@@ -1677,7 +1693,13 @@ async function handleEditOTSubmit(e) {
     const lunch = document.getElementById('edit-ot-lunch').checked;
     const start = document.getElementById('edit-ot-start').value;
     const end = document.getElementById('edit-ot-end').value;
-    const note = document.getElementById('edit-ot-note').value.trim();
+    
+    const editBackfill = document.getElementById('edit-ot-backfill');
+    const isBackfill = editBackfill ? editBackfill.checked : false;
+    let note = document.getElementById('edit-ot-note').value.trim();
+    if (isBackfill) {
+        note = '[BÙ THÁNG TRƯỚC] ' + note;
+    }
 
     const eveningOTHours = calcEveningOT(start, end);
     const totalHours = (lunch ? OT_LUNCH_HOURS : 0) + eveningOTHours;

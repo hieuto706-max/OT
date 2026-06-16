@@ -866,7 +866,7 @@ body::before {
 /* Info Cards — Double-Border Glass */
 .info-cards {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 14px;
     margin-bottom: 20px;
 }
@@ -3425,6 +3425,58 @@ body.is-web-browser #btn-check-update-mobile {
     }
 }
 
+/* Safari Input and Form Alignment Fixes */
+.mobile-form input,
+.mobile-form select,
+.mobile-form textarea,
+#form-ot input,
+#form-ot textarea,
+#form-edit-ot input,
+#form-edit-ot textarea {
+    -webkit-appearance: none;
+    appearance: none;
+    line-height: normal; /* Fix vertical alignment on Safari */
+}
+
+/* Ensure consistent height for all primary inputs */
+.mobile-form input:not([type="checkbox"]):not([type="radio"]),
+.mobile-form select,
+#form-ot input[type="date"],
+#form-ot input[type="month"],
+#form-edit-ot input[type="date"],
+#form-edit-ot input[type="month"] {
+    height: 54px;
+    box-sizing: border-box;
+}
+
+/* Specific styling for month filter input on History tab */
+.input-sm {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 10px;
+    color: var(--text-white);
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    outline: none;
+    font-family: inherit;
+    height: 36px;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.2;
+}
+
+.input-sm:focus {
+    border-color: var(--green-light);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+#screen-login {
+    background: transparent !important;
+}
+
 /* ==================== LANDING PAGE PREMIUM DECORATIONS ==================== */
 body.landing-page {
     overflow-x: hidden;
@@ -3471,33 +3523,27 @@ body.landing-page #screen-login {
 /* Mobile phone mockup on the left */
 .mockup-left {
     width: 250px;
+    height: 512px;
     left: -60px;
     top: 22%;
     transform: rotate(15deg);
     animation: driftLeft 24s ease-in-out infinite alternate;
-}
-
-.mockup-left img {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-radius: inherit;
+    background-image: url('../resources/ot_manager_app_review.png');
+    background-size: cover;
+    background-position: center;
 }
 
 /* Desktop dashboard mockup on the right */
 .mockup-right {
     width: 580px;
+    height: 340px;
     right: -140px;
     bottom: 12%;
     transform: rotate(-10deg);
     animation: driftRight 30s ease-in-out infinite alternate;
-}
-
-.mockup-right img {
-    width: 100%;
-    height: auto;
-    display: block;
-    border-radius: inherit;
+    background-image: url('../resources/ot_manager_desktop_mockup.png');
+    background-size: cover;
+    background-position: center;
 }
 
 /* Animations for floating assets */
