@@ -808,6 +808,9 @@ body {
 /* ==================== SCROLL CONTAINER ==================== */
 .mobile-main {
     flex: 1;
+    min-height: 0;
+    position: relative;
+    z-index: 1;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -2262,11 +2265,10 @@ body {
 
 /* iOS Safe Areas support */
 @supports (-webkit-touch-callout: none) {
+    /* Avoid forcing position: fixed on body as it blocks scroll gestures on Safari iOS */
     body {
-        position: fixed;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
+        position: relative;
+        overflow-x: hidden;
     }
 }
 
