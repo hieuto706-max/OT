@@ -1160,6 +1160,13 @@ function initApp() {
             if (this.checked) {
                 if (normalInputs) normalInputs.style.display = 'none';
                 if (backfillGroup) backfillGroup.style.display = 'block';
+                // Reset other OT choices
+                const lunchEl = document.getElementById('ot-lunch');
+                if (lunchEl) lunchEl.checked = false;
+                const startEl = document.getElementById('ot-start');
+                if (startEl) startEl.value = '16:30';
+                const endEl = document.getElementById('ot-end');
+                if (endEl) endEl.value = '16:30';
             } else {
                 if (normalInputs) normalInputs.style.display = 'block';
                 if (backfillGroup) backfillGroup.style.display = 'none';
@@ -1178,12 +1185,20 @@ function initApp() {
             if (this.checked) {
                 if (normalInputs) normalInputs.style.display = 'none';
                 if (backfillGroup) backfillGroup.style.display = 'block';
+                // Reset edit form other OT choices
+                const lunchEl = document.getElementById('edit-ot-lunch');
+                if (lunchEl) lunchEl.checked = false;
+                const startEl = document.getElementById('edit-ot-start');
+                if (startEl) startEl.value = '16:30';
+                const endEl = document.getElementById('edit-ot-end');
+                if (endEl) endEl.value = '16:30';
             } else {
                 if (normalInputs) normalInputs.style.display = 'block';
                 if (backfillGroup) backfillGroup.style.display = 'none';
             }
         });
     }
+
     document.getElementById('ot-start').addEventListener('change', () => {
         const startVal = document.getElementById('ot-start').value;
         const endVal = document.getElementById('ot-end').value;
@@ -1877,7 +1892,7 @@ async function handleEditOTSubmit(e) {
 }
 
 // ==================== AUTO UPDATE FOR MOBILE APP ====================
-const MOBILE_VERSION = '1.3.2';
+const MOBILE_VERSION = '1.3.3';
 let updateCheckInterval = null;
 
 function checkMobileUpdates(isManual) {

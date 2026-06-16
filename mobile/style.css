@@ -558,9 +558,11 @@ body::before {
 .mobile-form textarea,
 #form-ot input[type="date"],
 #form-ot input[type="time"],
+#form-ot input[type="number"],
 #form-ot textarea,
 #form-edit-ot input[type="date"],
 #form-edit-ot input[type="time"],
+#form-edit-ot input[type="number"],
 #form-edit-ot textarea {
     width: 100%;
     padding: 15px 18px;
@@ -3443,8 +3445,10 @@ body.is-web-browser #btn-check-update-mobile {
 .mobile-form select,
 #form-ot input[type="date"],
 #form-ot input[type="month"],
+#form-ot input[type="number"],
 #form-edit-ot input[type="date"],
-#form-edit-ot input[type="month"] {
+#form-edit-ot input[type="month"],
+#form-edit-ot input[type="number"] {
     height: 54px;
     box-sizing: border-box;
 }
