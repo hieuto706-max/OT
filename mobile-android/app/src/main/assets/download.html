@@ -407,8 +407,8 @@
         // Tải thông tin phiên bản từ Server
         const API_SERVER = isGitHubPages ? 'https://ot-manager-server-jbxd.onrender.com' : host;
         
-        // Link tải APK: trỏ thẳng tới server Render để tải trực tiếp từ đĩa cục bộ, tránh lỗi 404 trên repo GitHub private
-        const apkUrl = API_SERVER + '/OT-Manager-mobile-1.3.2.apk';
+        // Link tải APK: trỏ thẳng tới GitHub Pages nếu chạy trên GitHub Pages để tải nhanh hơn
+        const apkUrl = isGitHubPages ? 'OT-Manager-mobile-1.3.2.apk' : (API_SERVER + '/OT-Manager-mobile-1.3.2.apk');
         document.getElementById('apk-download-btn').href = apkUrl;
 
         // Link tải Desktop EXE: trỏ thẳng tới server Render để proxy tải từ private GitHub Releases dùng GITHUB_TOKEN
