@@ -466,25 +466,36 @@ async function refreshCurrentUserInfo() {
 
 // ==================== OT FORM ====================
 function updatePreview() {
-    const lunch = document.getElementById('ot-lunch').checked;
-    const start = document.getElementById('ot-start').value;
-    const end = document.getElementById('ot-end').value;
+    const backfillCheckbox = document.getElementById('ot-backfill');
+    const isBackfill = backfillCheckbox ? backfillCheckbox.checked : false;
     const rows = document.getElementById('preview-rows');
     const totalEl = document.getElementById('preview-total');
 
     let items = [];
     let total = 0;
 
-    if (lunch) {
-        items.push({ label: 'OT Trưa (12:20-13:20)', val: '1 giờ' });
-        total += OT_LUNCH_HOURS;
-    }
+    if (isBackfill) {
+        const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
+        if (hoursVal > 0) {
+            items.push({ label: 'Bù tăng ca', val: `${hoursVal.toFixed(1)} giờ` });
+            total = hoursVal;
+        }
+    } else {
+        const lunch = document.getElementById('ot-lunch').checked;
+        const start = document.getElementById('ot-start').value;
+        const end = document.getElementById('ot-end').value;
 
-    if (start && end) {
-        const ev = calcEveningOT(start, end);
-        if (ev > 0) {
-            items.push({ label: `OT Chiều (${start}-${end})`, val: `${ev.toFixed(1)} giờ` });
-            total += ev;
+        if (lunch) {
+            items.push({ label: 'OT Trưa (12:20-13:20)', val: '1 giờ' });
+            total += OT_LUNCH_HOURS;
+        }
+
+        if (start && end) {
+            const ev = calcEveningOT(start, end);
+            if (ev > 0) {
+                items.push({ label: `OT Chiều (${start}-${end})`, val: `${ev.toFixed(1)} giờ` });
+                total += ev;
+            }
         }
     }
 
@@ -522,7 +533,15 @@ function resetForm() {
     document.getElementById('ot-end').value = '16:30';
     document.getElementById('ot-note').value = '';
     const backfillCheckbox = document.getElementById('ot-backfill');
-    if (backfillCheckbox) backfillCheckbox.checked = false;
+    if (backfillCheckbox) {
+        backfillCheckbox.checked = false;
+        const normalInputs = document.getElementById('ot-normal-inputs');
+        const backfillGroup = document.getElementById('ot-backfill-hours-group');
+        if (normalInputs) normalInputs.style.display = 'block';
+        if (backfillGroup) backfillGroup.style.display = 'none';
+    }
+    const backfillHours = document.getElementById('ot-backfill-hours');
+    if (backfillHours) backfillHours.value = '';
     updatePreview();
 }
 
@@ -541,23 +560,40 @@ async function handleOTSubmit(e) {
         note = '[BÙ THÁNG TRƯỚC] ' + note;
     }
 
-    const eveningOTHours = calcEveningOT(start, end);
-    const totalHours = (lunch ? OT_LUNCH_HOURS : 0) + eveningOTHours;
+    let eveningOTHours = 0;
+    let totalHours = 0;
 
-    if (totalHours <= 0) {
-        showToast('Vui lòng chọn ít nhất một loại OT!', 'error');
-        return;
+    if (isBackfill) {
+        const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
+        if (hoursVal <= 0) {
+            showToast('Vui lòng nhập số giờ bù hợp lệ!', 'error');
+            return;
+        }
+        totalHours = hoursVal;
+        eveningOTHours = hoursVal;
+    } else {
+        eveningOTHours = calcEveningOT(start, end);
+        totalHours = (lunch ? OT_LUNCH_HOURS : 0) + eveningOTHours;
+
+        if (totalHours <= 0) {
+            showToast('Vui lòng chọn ít nhất một loại OT!', 'error');
+            return;
+        }
     }
+
+    const currentMonth = document.getElementById('filter-month')?.value || new Date().toISOString().substring(0, 7);
 
     const recordData = {
         userId: currentUser.id,
         date,
-        hasLunchOT: lunch,
-        otStart: eveningOTHours > 0 ? start : '',
-        otEnd: eveningOTHours > 0 ? end : '',
+        hasLunchOT: isBackfill ? false : lunch,
+        otStart: (!isBackfill && eveningOTHours > 0) ? start : '',
+        otEnd: (!isBackfill && eveningOTHours > 0) ? end : '',
         eveningOTHours,
         totalHours,
-        note
+        note,
+        createdMonth: currentMonth,
+        isBackfill
     };
 
     if (API) {
@@ -602,11 +638,11 @@ async function loadHistory() {
 
         // Merge với bản ghi offline chưa đồng bộ
         const offlineRecords = JSON.parse(safeStorage.getItem('ot_offline_records') || '[]');
-        const userOffline = offlineRecords.filter(r => r.userId === currentUser.id && r.date.startsWith(month));
+        const userOffline = offlineRecords.filter(r => r.userId === currentUser.id && (r.createdMonth === month || (!r.createdMonth && r.date.startsWith(month))));
 
         const mergedRecords = [...userOffline];
         records.forEach(r => {
-            if (!mergedRecords.some(o => o.date === r.date)) {
+            if (!mergedRecords.some(o => o.id === r.id)) {
                 mergedRecords.push(r);
             }
         });
@@ -630,19 +666,32 @@ async function loadHistory() {
         let tLunch = 0, tEvening = 0, tTotal = 0;
 
         list.innerHTML = mergedRecords.map((r, i) => {
+            const isBackfill = r.isBackfill || (r.note && r.note.includes('[BÙ THÁNG TRƯỚC]'));
             const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
             tLunch += lh;
-            tEvening += r.eveningOTHours;
+            tEvening += isBackfill ? 0 : r.eveningOTHours;
             tTotal += r.totalHours;
 
             let tags = '';
             if (r.hasLunchOT) tags += '<span class="htag htag-lunch">OT Trưa 1h</span>';
-            if (r.eveningOTHours > 0) tags += `<span class="htag htag-evening">OT Chiều ${r.eveningOTHours.toFixed(1)}h</span>`;
-            if (r.note && r.note.includes('[BÙ THÁNG TRƯỚC]')) {
-                tags += '<span class="htag htag-backfill" style="background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3);">Bù tháng trước</span>';
+            if (r.eveningOTHours > 0 && !isBackfill) tags += `<span class="htag htag-evening">OT Chiều ${r.eveningOTHours.toFixed(1)}h</span>`;
+            if (isBackfill) {
+                tags += '<span class="htag htag-backfill" style="background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3);">Bù tăng ca</span>';
             }
             if (r.id.startsWith('offline_')) {
                 tags += '<span class="htag htag-offline" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">Chờ đồng bộ</span>';
+            }
+
+            let backfillLine = '';
+            if (isBackfill) {
+                const parts = r.date.split('-');
+                if (parts.length >= 2) {
+                    const compMonth = parseInt(parts[1], 10);
+                    const compYear = parts[0];
+                    backfillLine = `<div class="history-backfill-info" style="color:#ef4444; font-size:0.75rem; margin-top:4px; font-weight:600; display:flex; align-items:center; gap:4px;">
+                        <span>⚠️ Bù tăng ca cho tháng ${compMonth}/${compYear} (ngày ${fmtDate(r.date)})</span>
+                    </div>`;
+                }
             }
 
             const cleanNote = r.note ? r.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').trim() : '';
@@ -653,6 +702,7 @@ async function loadHistory() {
                         <div class="history-left">
                             <span class="history-date">${fmtDate(r.date)}</span>
                             <div class="history-tags">${tags}</div>
+                            ${backfillLine}
                         </div>
                         <div class="history-right">
                             <span class="history-total">${r.totalHours.toFixed(1)}h</span>
@@ -735,19 +785,19 @@ async function loadProfileStats() {
         }
 
         const offlineRecords = JSON.parse(safeStorage.getItem('ot_offline_records') || '[]');
-        const userOffline = offlineRecords.filter(r => r.userId === currentUser.id && r.date.startsWith(month));
+        const userOffline = offlineRecords.filter(r => r.userId === currentUser.id && (r.createdMonth === month || (!r.createdMonth && r.date.startsWith(month))));
 
         const mergedRecords = [...userOffline];
         records.forEach(r => {
-            if (!mergedRecords.some(o => o.date === r.date)) {
+            if (!mergedRecords.some(o => o.id === r.id)) {
                 mergedRecords.push(r);
             }
         });
 
         const days = mergedRecords.length;
         const lunch = mergedRecords.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
-        const evening = mergedRecords.reduce((s, r) => s + r.eveningOTHours, 0);
-        const total = lunch + evening;
+        const evening = mergedRecords.reduce((s, r) => s + ((r.isBackfill || (r.note && r.note.includes('[BÙ THÁNG TRƯỚC]'))) ? 0 : r.eveningOTHours), 0);
+        const total = lunch + evening + mergedRecords.reduce((s, r) => s + ((r.isBackfill || (r.note && r.note.includes('[BÙ THÁNG TRƯỚC]'))) ? r.totalHours : 0), 0);
 
         document.getElementById('stat-days').textContent = days;
         document.getElementById('stat-lunch').textContent = lunch.toFixed(1);
@@ -1101,6 +1151,39 @@ function initApp() {
     document.getElementById('ot-lunch').addEventListener('change', updatePreview);
     document.getElementById('ot-start').addEventListener('change', updatePreview);
     document.getElementById('ot-end').addEventListener('change', updatePreview);
+
+    const otBackfillCheckbox = document.getElementById('ot-backfill');
+    if (otBackfillCheckbox) {
+        otBackfillCheckbox.addEventListener('change', function() {
+            const normalInputs = document.getElementById('ot-normal-inputs');
+            const backfillGroup = document.getElementById('ot-backfill-hours-group');
+            if (this.checked) {
+                if (normalInputs) normalInputs.style.display = 'none';
+                if (backfillGroup) backfillGroup.style.display = 'block';
+            } else {
+                if (normalInputs) normalInputs.style.display = 'block';
+                if (backfillGroup) backfillGroup.style.display = 'none';
+            }
+            updatePreview();
+        });
+    }
+    const otBackfillHours = document.getElementById('ot-backfill-hours');
+    if (otBackfillHours) otBackfillHours.addEventListener('input', updatePreview);
+
+    const editOtBackfillCheckbox = document.getElementById('edit-ot-backfill');
+    if (editOtBackfillCheckbox) {
+        editOtBackfillCheckbox.addEventListener('change', function() {
+            const normalInputs = document.getElementById('edit-ot-normal-inputs');
+            const backfillGroup = document.getElementById('edit-ot-backfill-hours-group');
+            if (this.checked) {
+                if (normalInputs) normalInputs.style.display = 'none';
+                if (backfillGroup) backfillGroup.style.display = 'block';
+            } else {
+                if (normalInputs) normalInputs.style.display = 'block';
+                if (backfillGroup) backfillGroup.style.display = 'none';
+            }
+        });
+    }
     document.getElementById('ot-start').addEventListener('change', () => {
         const startVal = document.getElementById('ot-start').value;
         const endVal = document.getElementById('ot-end').value;
@@ -1657,9 +1740,24 @@ async function editRecordDialog(id) {
         document.getElementById('edit-ot-start').value = record.otStart || '16:30';
         document.getElementById('edit-ot-end').value = record.otEnd || '16:30';
         
-        const isBackfill = record.note && record.note.includes('[BÙ THÁNG TRƯỚC]');
+        const isBackfill = record.isBackfill || (record.note && record.note.includes('[BÙ THÁNG TRƯỚC]'));
         const editBackfill = document.getElementById('edit-ot-backfill');
         if (editBackfill) editBackfill.checked = isBackfill;
+
+        const editNormalInputs = document.getElementById('edit-ot-normal-inputs');
+        const editBackfillGroup = document.getElementById('edit-ot-backfill-hours-group');
+        const editBackfillHours = document.getElementById('edit-ot-backfill-hours');
+
+        if (isBackfill) {
+            if (editNormalInputs) editNormalInputs.style.display = 'none';
+            if (editBackfillGroup) editBackfillGroup.style.display = 'block';
+            if (editBackfillHours) editBackfillHours.value = record.totalHours;
+        } else {
+            if (editNormalInputs) editNormalInputs.style.display = 'block';
+            if (editBackfillGroup) editBackfillGroup.style.display = 'none';
+            if (editBackfillHours) editBackfillHours.value = '';
+        }
+
         document.getElementById('edit-ot-note').value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').trim() : '';
 
         // Auto sync edit ot end when edit ot start changes
@@ -1701,22 +1799,39 @@ async function handleEditOTSubmit(e) {
         note = '[BÙ THÁNG TRƯỚC] ' + note;
     }
 
-    const eveningOTHours = calcEveningOT(start, end);
-    const totalHours = (lunch ? OT_LUNCH_HOURS : 0) + eveningOTHours;
+    let eveningOTHours = 0;
+    let totalHours = 0;
 
-    if (totalHours <= 0) {
-        showToast('Vui lòng chọn ít nhất một loại OT!', 'error');
-        return;
+    if (isBackfill) {
+        const hoursVal = parseFloat(document.getElementById('edit-ot-backfill-hours').value) || 0;
+        if (hoursVal <= 0) {
+            showToast('Vui lòng nhập số giờ bù hợp lệ!', 'error');
+            return;
+        }
+        totalHours = hoursVal;
+        eveningOTHours = hoursVal;
+    } else {
+        eveningOTHours = calcEveningOT(start, end);
+        totalHours = (lunch ? OT_LUNCH_HOURS : 0) + eveningOTHours;
+
+        if (totalHours <= 0) {
+            showToast('Vui lòng chọn ít nhất một loại OT!', 'error');
+            return;
+        }
     }
+
+    const currentMonth = document.getElementById('filter-month')?.value || new Date().toISOString().substring(0, 7);
 
     const updatedData = {
         date,
-        hasLunchOT: lunch,
-        otStart: eveningOTHours > 0 ? start : '',
-        otEnd: eveningOTHours > 0 ? end : '',
+        hasLunchOT: isBackfill ? false : lunch,
+        otStart: (!isBackfill && eveningOTHours > 0) ? start : '',
+        otEnd: (!isBackfill && eveningOTHours > 0) ? end : '',
         eveningOTHours,
         totalHours,
-        note
+        note,
+        createdMonth: currentMonth,
+        isBackfill
     };
 
     if (API && !activeEditRecordId.startsWith('offline_')) {

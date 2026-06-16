@@ -598,7 +598,9 @@ async function handleAPI(req, res, urlPath, method) {
         const month = url.searchParams.get('month');
         let records = [...db.records];
         if (userId) records = records.filter(r => r.userId === userId);
-        if (month) records = records.filter(r => r.date.startsWith(month));
+        if (month) {
+            records = records.filter(r => r.createdMonth === month || (!r.createdMonth && r.date.startsWith(month)));
+        }
         records.sort((a, b) => b.date.localeCompare(a.date));
         return sendJSON(res, 200, { records });
     }
@@ -625,6 +627,8 @@ async function handleAPI(req, res, urlPath, method) {
             eveningOTHours: eveningOTHours || 0,
             totalHours: totalHours || 0,
             note: note || '',
+            createdMonth: body.createdMonth || '',
+            isBackfill: !!body.isBackfill,
             createdAt: existingIdx >= 0 ? db.records[existingIdx].createdAt : new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -671,6 +675,8 @@ async function handleAPI(req, res, urlPath, method) {
         db.records[idx].eveningOTHours = eveningOTHours !== undefined ? eveningOTHours : db.records[idx].eveningOTHours;
         db.records[idx].totalHours = totalHours !== undefined ? totalHours : db.records[idx].totalHours;
         db.records[idx].note = note !== undefined ? note : db.records[idx].note;
+        if (body.createdMonth !== undefined) db.records[idx].createdMonth = body.createdMonth;
+        if (body.isBackfill !== undefined) db.records[idx].isBackfill = !!body.isBackfill;
         db.records[idx].updatedAt = new Date().toISOString();
 
         saveDB(db);

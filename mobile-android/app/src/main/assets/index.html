@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link id="main-theme-style" rel="stylesheet" href="style.css?v=1.3.6">
+    <link id="main-theme-style" rel="stylesheet" href="style.css?v=1.3.7">
 </head>
 <body>
     <!-- ==================== BACKGROUND GLOWING ORBS ==================== -->
@@ -171,23 +171,10 @@
                             <input type="date" id="ot-date" required>
                         </div>
 
-                        <div class="toggle-row">
-                            <label class="toggle-label" for="ot-lunch">
-                                <span class="toggle-text">
-                                    <strong>Tăng ca trưa</strong>
-                                    <small>12:20 - 13:20 (1 tiếng)</small>
-                                </span>
-                                <div class="toggle-switch">
-                                    <input type="checkbox" id="ot-lunch">
-                                    <span class="toggle-slider"></span>
-                                </div>
-                            </label>
-                        </div>
-
                         <div class="toggle-row" style="margin-top: 14px; margin-bottom: 22px;">
                             <label class="toggle-label" for="ot-backfill">
                                 <span class="toggle-text">
-                                    <strong>Bù tăng ca tháng trước</strong>
+                                    <strong>Bù tăng ca</strong>
                                     <small>Ghi nhận bổ sung giờ làm bị thiếu</small>
                                 </span>
                                 <div class="toggle-switch">
@@ -197,13 +184,34 @@
                             </label>
                         </div>
 
-                        <div class="form-group">
-                            <label>Giờ BĐ OT chiều</label>
-                            <input type="time" id="ot-start" value="16:30">
+                        <!-- Backfill hours input -->
+                        <div class="form-group" id="ot-backfill-hours-group" style="display: none; margin-bottom: 14px;">
+                            <label>Số giờ tăng ca cần bù</label>
+                            <input type="number" id="ot-backfill-hours" step="0.1" min="0.1" max="24" placeholder="Nhập số giờ bù (ví dụ: 8.0)">
                         </div>
-                        <div class="form-group">
-                            <label>Giờ KT OT chiều</label>
-                            <input type="time" id="ot-end" value="16:30">
+
+                        <div id="ot-normal-inputs">
+                            <div class="toggle-row">
+                                <label class="toggle-label" for="ot-lunch">
+                                    <span class="toggle-text">
+                                        <strong>Tăng ca trưa</strong>
+                                        <small>12:20 - 13:20 (1 tiếng)</small>
+                                    </span>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="ot-lunch">
+                                        <span class="toggle-slider"></span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Giờ BĐ OT chiều</label>
+                                <input type="time" id="ot-start" value="16:30">
+                            </div>
+                            <div class="form-group">
+                                <label>Giờ KT OT chiều</label>
+                                <input type="time" id="ot-end" value="16:30">
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -354,21 +362,9 @@
                     <input type="date" id="edit-ot-date" required>
                 </div>
                 <div class="toggle-row" style="margin-bottom:14px;">
-                    <label class="toggle-label" for="edit-ot-lunch">
-                        <span class="toggle-text" style="display:flex;flex-direction:column;text-align:left;">
-                            <strong style="font-size:0.85rem;color:var(--text);">Tăng ca trưa</strong>
-                            <small style="font-size:0.7rem;color:var(--text-muted);">12:20 - 13:20 (1 tiếng)</small>
-                        </span>
-                        <div class="toggle-switch">
-                            <input type="checkbox" id="edit-ot-lunch">
-                            <span class="toggle-slider"></span>
-                        </div>
-                    </label>
-                </div>
-                <div class="toggle-row" style="margin-bottom:14px;">
                     <label class="toggle-label" for="edit-ot-backfill">
                         <span class="toggle-text" style="display:flex;flex-direction:column;text-align:left;">
-                            <strong style="font-size:0.85rem;color:var(--text);">Bù tăng ca tháng trước</strong>
+                            <strong style="font-size:0.85rem;color:var(--text);">Bù tăng ca</strong>
                             <small style="font-size:0.7rem;color:var(--text-muted);">Ghi nhận bổ sung giờ làm bị thiếu</small>
                         </span>
                         <div class="toggle-switch">
@@ -377,13 +373,33 @@
                         </div>
                     </label>
                 </div>
-                <div class="form-group" style="margin-bottom:14px;">
-                    <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Giờ BĐ OT chiều</label>
-                    <input type="time" id="edit-ot-start">
+
+                <div class="form-group" id="edit-ot-backfill-hours-group" style="display: none; margin-bottom:14px;">
+                    <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Số giờ tăng ca cần bù</label>
+                    <input type="number" id="edit-ot-backfill-hours" step="0.1" min="0.1" max="24" placeholder="Nhập số giờ bù (ví dụ: 8.0)">
                 </div>
-                <div class="form-group" style="margin-bottom:14px;">
-                    <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Giờ KT OT chiều</label>
-                    <input type="time" id="edit-ot-end">
+
+                <div id="edit-ot-normal-inputs">
+                    <div class="toggle-row" style="margin-bottom:14px;">
+                        <label class="toggle-label" for="edit-ot-lunch">
+                            <span class="toggle-text" style="display:flex;flex-direction:column;text-align:left;">
+                                <strong style="font-size:0.85rem;color:var(--text);">Tăng ca trưa</strong>
+                                <small style="font-size:0.7rem;color:var(--text-muted);">12:20 - 13:20 (1 tiếng)</small>
+                            </span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="edit-ot-lunch">
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Giờ BĐ OT chiều</label>
+                        <input type="time" id="edit-ot-start">
+                    </div>
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Giờ KT OT chiều</label>
+                        <input type="time" id="edit-ot-end">
+                    </div>
                 </div>
                 <div class="form-group" style="margin-bottom:16px;">
                     <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Ghi chú</label>
@@ -447,7 +463,7 @@
             // Hot-update check
             if (window.location.protocol !== 'file:') {
                 const script = document.createElement('script');
-                script.src = 'app.js?v=1.3.6';
+                script.src = 'app.js?v=1.3.7';
                 document.body.appendChild(script);
                 return;
             }
@@ -481,7 +497,7 @@
 
             function loadLocalScript() {
                 const script = document.createElement('script');
-                script.src = 'app.js?v=1.3.6';
+                script.src = 'app.js?v=1.3.7';
                 document.body.appendChild(script);
             }
         })();
