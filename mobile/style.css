@@ -3182,6 +3182,7 @@ body.is-web-browser #btn-check-update-mobile {
     line-height: 1.35;
     background: linear-gradient(135deg, #ffffff 0%, var(--text-sub) 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.5px;
 }
