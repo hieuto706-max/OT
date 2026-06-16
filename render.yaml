@@ -5,9 +5,15 @@ services:
     plan: starter
     buildCommand: npm install --production
     startCommand: node server/server.js
+    disk:
+      name: ot-manager-db
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: PORT
         value: 3456
+      - key: DB_PATH
+        value: /data/db.json
       - key: GIST_ID
         sync: false
       - key: GITHUB_TOKEN

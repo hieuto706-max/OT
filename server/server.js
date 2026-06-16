@@ -32,6 +32,14 @@ function getDbPath() {
 
     if (process.env.DB_PATH) {
         DB_FILE = process.env.DB_PATH;
+        try {
+            const dir = path.dirname(DB_FILE);
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+        } catch (err) {
+            console.error('[Server] Không thể tạo thư mục cho DB_PATH:', err.message);
+        }
         return DB_FILE;
     }
 
@@ -176,23 +184,49 @@ let dbCache = null;
 async function loadDB() {
     if (dbCache) return dbCache;
 
+    const dbFile = getDbPath();
+    let fileLoaded = false;
+    let localDB = null;
+
+    // 1. Thử tải dữ liệu từ file local trước (Đặc biệt tối ưu khi có Persistent Disk)
+    try {
+        if (fs.existsSync(dbFile)) {
+            const data = fs.readFileSync(dbFile, 'utf-8').trim();
+            if (data) {
+                localDB = JSON.parse(data);
+                if (!localDB.users) localDB.users = [];
+                if (!localDB.records) localDB.records = [];
+                dbCache = localDB;
+                fileLoaded = true;
+                console.log('[Database] Tải dữ liệu thành công từ file local db.json.');
+            }
+        }
+    } catch (e) {
+        console.error('[Database] Lỗi khi đọc file local db.json:', e.message);
+    }
+
+    // 2. Nếu file local đã tồn tại và tải thành công, ta tin tưởng nó là bản mới nhất
+    if (fileLoaded && localDB) {
+        return localDB;
+    }
+
+    // 3. Nếu file local chưa tồn tại (lần đầu deploy hoặc ổ đĩa bị reset), ta tải dữ liệu từ GitHub Gist để khôi phục
     let gistLoaded = false;
-    // Tải dữ liệu từ Gist nếu có cấu hình trên môi trường Cloud (chỉ chạy khi server khởi động/chưa có cache)
     if (process.env.GIST_ID && process.env.GITHUB_TOKEN) {
         try {
-            console.log('[Gist] Đang đồng bộ tải dữ liệu từ GitHub Gist...');
+            console.log('[Gist] Không có file local. Đang khôi phục dữ liệu từ GitHub Gist...');
             const gistData = await fetchGist();
             if (gistData) {
                 if (!gistData.users) gistData.users = [];
                 if (!gistData.records) gistData.records = [];
-                // Đồng bộ ghi vào file local db.json
-                fs.writeFileSync(getDbPath(), JSON.stringify(gistData, null, 2), 'utf-8');
-                console.log('[Gist] Đồng bộ tải thành công!');
+                // Đồng bộ ghi vào file local db.json để các lần khởi động sau đọc trực tiếp
+                fs.writeFileSync(dbFile, JSON.stringify(gistData, null, 2), 'utf-8');
+                console.log('[Gist] Khôi phục dữ liệu từ Gist thành công!');
                 dbCache = gistData;
                 return gistData;
             }
         } catch (e) {
-            console.error('[Gist] Lỗi đồng bộ tải từ Gist (sử dụng cache local):', e.message);
+            console.error('[Gist] Lỗi tải từ Gist để khôi phục:', e.message);
             // Nếu là lỗi 404 hoặc không có db.json thì coi như Gist mới/chưa có database
             if (e.message.includes('404') || e.message.includes('not found')) {
                 gistLoaded = false;
@@ -203,19 +237,7 @@ async function loadDB() {
         }
     }
 
-    const dbFile = getDbPath();
-    try {
-        if (fs.existsSync(dbFile)) {
-            const db = JSON.parse(fs.readFileSync(dbFile, 'utf-8'));
-            if (!db.users) db.users = [];
-            if (!db.records) db.records = [];
-            dbCache = db;
-            return db;
-        }
-    } catch (e) {
-        console.error('Error loading DB:', e);
-    }
-    // Default DB
+    // 4. Nếu cả local và Gist đều không có dữ liệu, khởi tạo database mặc định
     const defaultDB = {
         users: [{
             id: generateId(),
@@ -231,7 +253,7 @@ async function loadDB() {
     if (gistLoaded !== 'failed') {
         saveDB(defaultDB);
     } else {
-        console.warn('[Gist] Cảnh báo: Gist lỗi kết nối mạng. Khởi tạo DB tạm thời trong RAM và không ghi đè lên Gist.');
+        console.warn('[Gist] Cảnh báo: Gist lỗi kết nối. Khởi tạo DB tạm thời trong RAM.');
     }
     dbCache = defaultDB;
     return defaultDB;
