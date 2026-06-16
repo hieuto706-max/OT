@@ -3429,6 +3429,10 @@ body.landing-page {
     overflow-x: hidden;
 }
 
+body.landing-page #screen-login {
+    background: transparent !important;
+}
+
 .landing-bg-decorations {
     position: fixed;
     inset: 0;
