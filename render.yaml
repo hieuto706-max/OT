@@ -8,7 +8,7 @@ services:
     disk:
       name: ot-manager-db
       mountPath: /data
-      sizeGB: 1
+      sizeGB: 2
     envVars:
       - key: PORT
         value: 3456
