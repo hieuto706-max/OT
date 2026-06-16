@@ -3354,26 +3354,7 @@ body.is-web-browser #btn-check-update-mobile {
     max-width: 420px;
 }
 
-/* ==================== TẢI XUỐNG NAV TAB HIGHLIGHT ==================== */
-.landing-nav .nav-link[data-tab="download"] {
-    background: linear-gradient(135deg, rgba(124, 127, 255, 0.15) 0%, rgba(13, 217, 139, 0.05) 100%);
-    border: 1px dashed rgba(124, 127, 255, 0.4);
-    color: var(--purple-light);
-    box-shadow: 0 0 10px rgba(124, 127, 255, 0.1);
-}
 
-.landing-nav .nav-link[data-tab="download"]:hover {
-    background: linear-gradient(135deg, rgba(124, 127, 255, 0.25) 0%, rgba(13, 217, 139, 0.1) 100%);
-    box-shadow: 0 0 15px rgba(124, 127, 255, 0.2);
-}
-
-.landing-nav .nav-link[data-tab="download"].active {
-    background: linear-gradient(135deg, var(--purple) 0%, var(--green) 100%);
-    color: var(--text-white);
-    border-style: solid;
-    border-color: var(--purple);
-    box-shadow: 0 0 20px rgba(124, 127, 255, 0.4);
-}
 
 /* Responsive adjustment for Mobile/Tablet */
 @media (max-width: 900px) {
