@@ -402,13 +402,13 @@
         // Thiết lập link tải động dựa vào host hiện tại
         const host = window.location.origin;
         const isGitHubPages = window.location.hostname.includes('github.io');
-        const MOBILE_VERSION = '1.2.0';
+        const MOBILE_VERSION = '1.3.2';
         
         // Tải thông tin phiên bản từ Server
         const API_SERVER = isGitHubPages ? 'https://ot-manager-server-jbxd.onrender.com' : host;
         
         // Link tải APK: trỏ thẳng tới server Render để tải trực tiếp từ đĩa cục bộ, tránh lỗi 404 trên repo GitHub private
-        const apkUrl = API_SERVER + '/OT-Manager-mobile.apk';
+        const apkUrl = API_SERVER + '/OT-Manager-mobile-1.3.2.apk';
         document.getElementById('apk-download-btn').href = apkUrl;
 
         // Link tải Desktop EXE: trỏ thẳng tới server Render để proxy tải từ private GitHub Releases dùng GITHUB_TOKEN

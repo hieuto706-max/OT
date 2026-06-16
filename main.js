@@ -57,8 +57,42 @@ async function createWindow() {
         show: false,
     });
 
-    // Load desktop app từ server (để dùng chung API)
-    mainWindow.loadURL(`${serverUrl}/desktop/index.html`);
+    // Load desktop app từ server (để dùng chung API). Tự động nạp động (Hot-Update) từ Cloud nếu online.
+    let finalDesktopUrl = `${serverUrl}/desktop/index.html`;
+    if (cloudUrl) {
+        try {
+            const checkUrl = `${cloudUrl}/desktop/index.html`;
+            console.log(`[Main] Đang kiểm tra Cloud Server để nạp động (Hot-Update): ${checkUrl}`);
+            const { net } = require('electron');
+            const isOnline = await new Promise((resolve) => {
+                const request = net.request({
+                    method: 'GET',
+                    url: checkUrl,
+                    redirect: 'follow'
+                });
+                request.on('response', (response) => {
+                    resolve(response.statusCode === 200);
+                });
+                request.on('error', () => {
+                    resolve(false);
+                });
+                const timer = setTimeout(() => {
+                    request.abort();
+                    resolve(false);
+                }, 3000);
+                request.end();
+            });
+            if (isOnline) {
+                finalDesktopUrl = checkUrl;
+                console.log(`[Main] Đã kết nối Cloud Server thành công. Nạp động giao diện từ: ${finalDesktopUrl}`);
+            } else {
+                console.log(`[Main] Không kết nối được Cloud Server. Nạp giao diện local: ${finalDesktopUrl}`);
+            }
+        } catch (err) {
+            console.error('[Main] Lỗi kiểm tra Hot-Update:', err.message);
+        }
+    }
+    mainWindow.loadURL(finalDesktopUrl);
 
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();

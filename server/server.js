@@ -720,7 +720,7 @@ async function handleAPI(req, res, urlPath, method) {
         const proto = req.headers['x-forwarded-proto'] || 'http';
         const baseUrl = `${proto}://${req.headers.host}`;
         const desktopDownloadUrl = `${baseUrl}/download/desktop`;
-        const mobileDownloadUrl = `${baseUrl}/OT-Manager-mobile.apk`;
+        const mobileDownloadUrl = `${baseUrl}/OT-Manager-mobile-${version}.apk`;
         return sendJSON(res, 200, { version, desktopDownloadUrl, mobileDownloadUrl });
     }
 
@@ -848,19 +848,31 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Direct download route for the Android APK (serve the local file directly to support private repositories)
-    if (urlPath === '/OT-Manager-mobile.apk') {
-        const apkPath = path.join(__dirname, '..', 'mobile', 'OT-Manager-mobile.apk');
-        fs.readFile(apkPath, (err, data) => {
+    if (urlPath === '/OT-Manager-mobile.apk' || (urlPath.startsWith('/OT-Manager-mobile') && urlPath.endsWith('.apk'))) {
+        const mobileDir = path.join(__dirname, '..', 'mobile');
+        fs.readdir(mobileDir, (err, files) => {
             if (err) {
-                res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-                return res.end('Không tìm thấy file APK trên server.');
+                res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+                return res.end('Lỗi server khi đọc thư mục mobile.');
             }
-            res.writeHead(200, {
-                'Content-Type': 'application/vnd.android.package-archive',
-                'Content-Disposition': 'attachment; filename="OT-Manager-mobile.apk"',
-                'Access-Control-Allow-Origin': '*',
+            const apkFile = files.find(f => f.endsWith('.apk'));
+            if (!apkFile) {
+                res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                return res.end('Không tìm thấy file APK trong thư mục mobile trên server.');
+            }
+            const apkPath = path.join(mobileDir, apkFile);
+            fs.readFile(apkPath, (err, data) => {
+                if (err) {
+                    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                    return res.end('Không tìm thấy file APK trên server.');
+                }
+                res.writeHead(200, {
+                    'Content-Type': 'application/vnd.android.package-archive',
+                    'Content-Disposition': `attachment; filename="${apkFile}"`,
+                    'Access-Control-Allow-Origin': '*',
+                });
+                res.end(data);
             });
-            res.end(data);
         });
         return;
     }
@@ -884,104 +896,121 @@ const server = http.createServer(async (req, res) => {
 
         const owner = 'hieuto706-max';
         const repo = 'OT';
-        const tag = `v${version}`;
-        const assetName = `ot-manager-Setup-${version}.exe`;
 
-        // 1. Get release info from GitHub API
-        const options = {
-            hostname: 'api.github.com',
-            path: `/repos/${owner}/${repo}/releases/tags/${tag}`,
-            method: 'GET',
-            headers: {
-                'Authorization': `token ${token}`,
-                'User-Agent': 'Node.js-Server-App',
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        };
+        const fetchRelease = (versionToFetch) => {
+            const tag = `v${versionToFetch}`;
+            const assetName = `ot-manager-Setup-${versionToFetch}.exe`;
 
-        const reqGit = https.request(options, (resGit) => {
-            let body = '';
-            resGit.on('data', chunk => body += chunk);
-            resGit.on('end', () => {
-                if (resGit.statusCode !== 200) {
-                    res.writeHead(resGit.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
-                    return res.end(`Lỗi GitHub API khi lấy thông tin Release: ${resGit.statusCode}. Chi tiết: ${body}`);
+            // 1. Get release info from GitHub API
+            const options = {
+                hostname: 'api.github.com',
+                path: `/repos/${owner}/${repo}/releases/tags/${tag}`,
+                method: 'GET',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'User-Agent': 'Node.js-Server-App',
+                    'Accept': 'application/vnd.github.v3+json'
                 }
+            };
 
-                try {
-                    const releaseInfo = JSON.parse(body);
-                    const asset = releaseInfo.assets.find(a => a.name === assetName);
-                    if (!asset) {
-                        res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-                        return res.end(`Không tìm thấy file build ${assetName} trong Release ${tag} trên GitHub.`);
+            const reqGit = https.request(options, (resGit) => {
+                let body = '';
+                resGit.on('data', chunk => body += chunk);
+                resGit.on('end', () => {
+                    if (resGit.statusCode === 404 && versionToFetch !== '1.2.0') {
+                        console.log(`[Desktop Download] Release ${tag} không tìm thấy (404). Fallback về v1.2.0`);
+                        return fetchRelease('1.2.0');
+                    }
+                    if (resGit.statusCode !== 200) {
+                        res.writeHead(resGit.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
+                        return res.end(`Lỗi GitHub API khi lấy thông tin Release: ${resGit.statusCode}. Chi tiết: ${body}`);
                     }
 
-                    // 2. Fetch asset binary using octet-stream header
-                    const downloadOptions = {
-                        hostname: 'api.github.com',
-                        path: `/repos/${owner}/${repo}/releases/assets/${asset.id}`,
-                        method: 'GET',
-                        headers: {
-                            'Authorization': `token ${token}`,
-                            'User-Agent': 'Node.js-Server-App',
-                            'Accept': 'application/octet-stream'
+                    try {
+                        const releaseInfo = JSON.parse(body);
+                        const asset = releaseInfo.assets.find(a => a.name === assetName);
+                        if (!asset) {
+                            if (versionToFetch !== '1.2.0') {
+                                console.log(`[Desktop Download] Không tìm thấy asset ${assetName} trong Release ${tag}. Fallback về v1.2.0`);
+                                return fetchRelease('1.2.0');
+                            }
+                            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                            return res.end(`Không tìm thấy file build ${assetName} trong Release ${tag} trên GitHub.`);
                         }
-                    };
 
-                    const handleDownloadRedirect = (dlUrl) => {
-                        const parsedUrl = new URL(dlUrl);
-                        const redirectClient = parsedUrl.protocol === 'https:' ? https : http;
-
-                        redirectClient.get(dlUrl, (resDl) => {
-                            if ([301, 302, 307, 308].includes(resDl.statusCode) && resDl.headers.location) {
-                                return handleDownloadRedirect(resDl.headers.location);
+                        // 2. Fetch asset binary using octet-stream header
+                        const downloadOptions = {
+                            hostname: 'api.github.com',
+                            path: `/repos/${owner}/${repo}/releases/assets/${asset.id}`,
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `token ${token}`,
+                                'User-Agent': 'Node.js-Server-App',
+                                'Accept': 'application/octet-stream'
                             }
+                        };
 
-                            if (resDl.statusCode !== 200) {
-                                res.writeHead(resDl.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
-                                return res.end(`Lỗi khi tải file từ S3: ${resDl.statusCode}`);
-                            }
+                        const handleDownloadRedirect = (dlUrl) => {
+                            const parsedUrl = new URL(dlUrl);
+                            const redirectClient = parsedUrl.protocol === 'https:' ? https : http;
 
-                            res.writeHead(200, {
-                                'Content-Type': 'application/octet-stream',
-                                'Content-Disposition': `attachment; filename="${assetName}"`,
-                                'Content-Length': resDl.headers['content-length']
+                            redirectClient.get(dlUrl, (resDl) => {
+                                if ([301, 302, 307, 308].includes(resDl.statusCode) && resDl.headers.location) {
+                                    return handleDownloadRedirect(resDl.headers.location);
+                                }
+
+                                if (resDl.statusCode !== 200) {
+                                    res.writeHead(resDl.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
+                                    return res.end(`Lỗi khi tải file từ S3: ${resDl.statusCode}`);
+                                }
+
+                                res.writeHead(200, {
+                                    'Content-Type': 'application/octet-stream',
+                                    'Content-Disposition': `attachment; filename="${assetName}"`,
+                                    'Content-Length': resDl.headers['content-length']
+                                });
+
+                                resDl.pipe(res);
+                            }).on('error', (err) => {
+                                res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+                                res.end(`Lỗi kết nối tải file: ${err.message}`);
                             });
+                        };
 
-                            resDl.pipe(res);
-                        }).on('error', (err) => {
-                            res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-                            res.end(`Lỗi kết nối tải file: ${err.message}`);
+                        const reqAsset = https.request(downloadOptions, (resAsset) => {
+                            if ([301, 302, 307, 308].includes(resAsset.statusCode) && resAsset.headers.location) {
+                                handleDownloadRedirect(resAsset.headers.location);
+                            } else {
+                                res.writeHead(resAsset.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
+                                res.end(`Lỗi khi yêu cầu tải file từ GitHub: Mã trạng thái ${resAsset.statusCode}`);
+                            }
                         });
-                    };
 
-                    const reqAsset = https.request(downloadOptions, (resAsset) => {
-                        if ([301, 302, 307, 308].includes(resAsset.statusCode) && resAsset.headers.location) {
-                            handleDownloadRedirect(resAsset.headers.location);
-                        } else {
-                            res.writeHead(resAsset.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
-                            res.end(`Lỗi khi yêu cầu tải file từ GitHub: Mã trạng thái ${resAsset.statusCode}`);
-                        }
-                    });
+                        reqAsset.on('error', (err) => {
+                            res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+                            res.end(`Lỗi tải file build: ${err.message}`);
+                        });
+                        reqAsset.end();
 
-                    reqAsset.on('error', (err) => {
+                    } catch (e) {
                         res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-                        res.end(`Lỗi tải file build: ${err.message}`);
-                    });
-                    reqAsset.end();
-
-                } catch (e) {
-                    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-                    res.end(`Lỗi xử lý thông tin Release: ${e.message}`);
-                }
+                        res.end(`Lỗi xử lý thông tin Release: ${e.message}`);
+                    }
+                });
             });
-        });
 
-        reqGit.on('error', (err) => {
-            res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-            res.end(`Lỗi kết nối GitHub API: ${err.message}`);
-        });
-        reqGit.end();
+            reqGit.on('error', (err) => {
+                if (versionToFetch !== '1.2.0') {
+                    console.error(`[Desktop Download] Lỗi kết nối GitHub API khi tải ${tag}: ${err.message}. Fallback về v1.2.0`);
+                    return fetchRelease('1.2.0');
+                }
+                res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+                res.end(`Lỗi kết nối GitHub API: ${err.message}`);
+            });
+            reqGit.end();
+        };
+
+        fetchRelease(version);
         return;
     }
 

@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="mobile/style.css?v=1.2.0b">
+    <link rel="stylesheet" href="mobile/style.css?v=1.3.2">
 </head>
 <body>
     <!-- ==================== BACKGROUND GLOWING ORBS ==================== -->
@@ -64,85 +64,55 @@
                 <span class="web-version-badge" style="font-size: 0.7rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 8px; border-radius: 10px; font-weight: 700; margin-left: 8px;">v1.3.2</span>
             </div>
             <div class="landing-nav">
-                <a href="javascript:void(0)" class="nav-link active" data-tab="login">Đăng nhập</a>
-                <a href="javascript:void(0)" class="nav-link" data-tab="features">Tính năng</a>
+                <a href="javascript:void(0)" class="nav-link active" data-tab="home">Trang chủ</a>
                 <a href="javascript:void(0)" class="nav-link" data-tab="download">Tải xuống</a>
                 <a href="javascript:void(0)" class="nav-link" data-tab="release">Thông tin phát hành</a>
                 <a href="javascript:void(0)" class="nav-link" data-tab="terms">Điều khoản & Bảo mật</a>
+                <a href="javascript:void(0)" class="nav-link" data-tab="login">Đăng nhập</a>
             </div>
         </header>
 
         <div class="landing-container">
-            <!-- TAB 1: Đăng nhập -->
-            <div id="ltab-login" class="landing-tab-content active">
-                <div class="login-page-card" style="margin: 0 auto; max-width: 420px; width: 100%;">
-                    <div class="login-header">
-                        <h1>Hệ thống OT Manager</h1>
-                        <p>Vui lòng đăng nhập để tiếp tục</p>
-                    </div>
-
-                    <div class="login-tabs">
-                        <button type="button" class="login-tab active" data-tab="employee" id="btn-tab-employee">Nhân viên</button>
-                        <button type="button" class="login-tab" data-tab="admin" id="btn-tab-admin">Quản trị viên</button>
-                    </div>
-
-                    <!-- Form Đăng nhập Nhân viên -->
-                    <form id="form-login-employee" class="mobile-form login-form active">
-                        <div class="form-group">
-                            <label for="login-user">Tên đăng nhập / Mã nhân viên</label>
-                            <div class="input-wrapper">
-                                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                    <circle cx="12" cy="7" r="4"/>
-                                </svg>
-                                <input type="text" id="login-user" placeholder="Nhập mã nhân viên..." autocomplete="username" required>
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-full" id="btn-login-emp">
-                            Đăng nhập Nhân viên
-                        </button>
-                        <p id="login-error-emp" class="form-error"></p>
-                    </form>
-
-                    <!-- Form Đăng nhập Quản lý -->
-                    <form id="form-login-admin" class="mobile-form login-form" style="display: none;">
-                        <div class="form-group">
-                            <label for="login-admin-user">Tên đăng nhập Quản lý</label>
-                            <div class="input-wrapper">
-                                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                    <circle cx="12" cy="7" r="4"/>
-                                </svg>
-                                <input type="text" id="login-admin-user" placeholder="Nhập tên đăng nhập quản trị..." autocomplete="username">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="login-password">Mật khẩu</label>
-                            <div class="input-wrapper">
-                                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
-                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                                </svg>
-                                <input type="password" id="login-password" placeholder="Nhập mật khẩu..." autocomplete="current-password">
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-purple btn-full" id="btn-login-admin">
-                            Đăng nhập Quản trị
-                        </button>
-                        <p id="login-error-admin" class="form-error"></p>
-                    </form>
-
-                    <div class="login-footer">
-                        <div class="login-register-hint" style="text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 12px;">Chưa có tài khoản? Liên hệ quản lý</div>
-                        <div id="connection-status" style="display:none; margin-top:8px;font-size:0.8rem;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 2: Tính năng -->
-            <div id="ltab-features" class="landing-tab-content">
+            <!-- TAB 1: Trang chủ -->
+            <div id="ltab-home" class="landing-tab-content active">
                 <section class="landing-section">
-                    <h2 class="section-title" style="text-align: center;">✨ Chi tiết tính năng nổi bật</h2>
+                    <div class="app-review-container">
+                        <div class="app-review-text">
+                            <span class="badge-new">🌟 GIỚI THIỆU PHIÊN BẢN MỚI</span>
+                            <h2>Giải pháp quản lý tăng ca thông minh thế hệ mới</h2>
+                            <p>OT Manager mang đến hệ thống đột phá giúp ghi nhận, phê duyệt và thống kê giờ làm việc tăng ca (Overtime) một cách chính xác, minh bạch và tức thời ngay trên điện thoại và máy tính.</p>
+                            <ul class="review-bullets">
+                                <li>
+                                    <span class="bullet-icon">🚀</span>
+                                    <div>
+                                        <strong>Giao diện trực quan & Hiện đại:</strong>
+                                        <p>Thiết kế tối giản, hỗ trợ Dark Mode cao cấp và hiệu ứng chuyển động mượt mà.</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="bullet-icon">📱</span>
+                                    <div>
+                                        <strong>Đa nền tảng, truy cập mọi nơi:</strong>
+                                        <p>Ứng dụng di động cài đặt nhanh, app máy tính cho quản lý và phiên bản web tiện lợi.</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="bullet-icon">📊</span>
+                                    <div>
+                                        <strong>Báo cáo & Xuất dữ liệu Excel:</strong>
+                                        <p>Lọc giờ tăng ca theo tháng, xuất file làm lương chính xác chỉ trong vài giây.</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="app-review-image">
+                            <img src="resources/ot_manager_app_review.png" alt="OT Manager App Mockup" class="review-mockup">
+                        </div>
+                    </div>
+                </section>
+
+                <section class="landing-section" style="border-top: 1px solid var(--border); padding-top: 40px; margin-top: 20px;">
+                    <h2 class="section-title" style="text-align: center; margin-bottom: 30px;">✨ Các tính năng nổi bật</h2>
                     <div class="features-grid-large">
                         <div class="feat-card-large">
                             <span class="feat-icon-large">⚡</span>
@@ -176,6 +146,103 @@
                         </div>
                     </div>
                 </section>
+            </div>
+
+            <!-- TAB 2: Đăng nhập -->
+            <div id="ltab-login" class="landing-tab-content">
+                <div class="login-tab-container">
+                    <div class="login-sidebar-info">
+                        <div class="sidebar-logo" style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                            <svg viewBox="0 0 48 48" fill="none" class="logo-svg" style="width: 44px; height: 44px; filter: drop-shadow(0 6px 18px var(--green-glow));">
+                                <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#gm_sb)"/>
+                                <path d="M24 14v10l7 4" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+                                <defs>
+                                    <linearGradient id="gm_sb" x1="4" y1="4" x2="44" y2="44">
+                                        <stop stop-color="#10b981"/>
+                                        <stop offset="1" stop-color="#059669"/>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <span class="logo-text" style="font-size: 26px; font-weight: 950; background: linear-gradient(135deg, var(--green-light), var(--green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.8px;">OT Manager</span>
+                        </div>
+                        <h2>Hệ thống quản lý tăng ca chuyên nghiệp</h2>
+                        <p>Giải pháp thông minh giúp ghi nhận giờ làm việc, phê duyệt tăng ca, tự động đồng bộ đám mây và xuất báo cáo Excel tính lương nhanh chóng.</p>
+                        <div class="sidebar-stats">
+                            <div class="stat-mini-card">
+                                <span class="stat-num">100%</span>
+                                <span class="stat-lbl">Chính xác</span>
+                            </div>
+                            <div class="stat-mini-card">
+                                <span class="stat-num">Đám mây</span>
+                                <span class="stat-lbl">Đồng bộ tức thời</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="login-main-card">
+                        <div class="login-page-card" style="margin: 0 auto; width: 100%;">
+                            <div class="login-header">
+                                <h1>Hệ thống OT Manager</h1>
+                                <p>Vui lòng đăng nhập để tiếp tục</p>
+                            </div>
+
+                            <div class="login-tabs">
+                                <button type="button" class="login-tab active" data-tab="employee" id="btn-tab-employee">Nhân viên</button>
+                                <button type="button" class="login-tab" data-tab="admin" id="btn-tab-admin">Quản trị viên</button>
+                            </div>
+
+                            <!-- Form Đăng nhập Nhân viên -->
+                            <form id="form-login-employee" class="mobile-form login-form active">
+                                <div class="form-group">
+                                    <label for="login-user">Tên đăng nhập / Mã nhân viên</label>
+                                    <div class="input-wrapper">
+                                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="12" cy="7" r="4"/>
+                                        </svg>
+                                        <input type="text" id="login-user" placeholder="Nhập mã nhân viên..." autocomplete="username" required>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-full" id="btn-login-emp">
+                                    Đăng nhập Nhân viên
+                                </button>
+                                <p id="login-error-emp" class="form-error"></p>
+                            </form>
+
+                            <!-- Form Đăng nhập Quản lý -->
+                            <form id="form-login-admin" class="mobile-form login-form" style="display: none;">
+                                <div class="form-group">
+                                    <label for="login-admin-user">Tên đăng nhập Quản lý</label>
+                                    <div class="input-wrapper">
+                                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="12" cy="7" r="4"/>
+                                        </svg>
+                                        <input type="text" id="login-admin-user" placeholder="Nhập tên đăng nhập quản trị..." autocomplete="username">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="login-password">Mật khẩu</label>
+                                    <div class="input-wrapper">
+                                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                        </svg>
+                                        <input type="password" id="login-password" placeholder="Nhập mật khẩu..." autocomplete="current-password">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-purple btn-full" id="btn-login-admin">
+                                    Đăng nhập Quản trị
+                                </button>
+                                <p id="login-error-admin" class="form-error"></p>
+                            </form>
+
+                            <div class="login-footer">
+                                <div class="login-register-hint" style="text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 12px;">Chưa có tài khoản? Liên hệ quản lý</div>
+                                <div id="connection-status" style="display:none; margin-top:8px;font-size:0.8rem;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- TAB 3: Tải xuống -->
@@ -217,7 +284,7 @@
                                 <p class="download-desc">Ứng dụng chuyên dụng dành cho Quản trị viên và Quản lý để duyệt giờ làm, quản lý thông tin nhân viên, cài đặt quy định tăng ca và xuất báo cáo Excel.</p>
                             </div>
                             <div>
-                                <a id="desktop-download-btn-landing" href="https://github.com/hieuto706-max/OT/releases/download/v1.3.2/ot-manager-Setup-1.3.2.exe" target="_blank" class="btn btn-purple" style="width:100%; text-align: center;">Tải Windows EXE</a>
+                                <a id="desktop-download-btn-landing" href="https://github.com/hieuto706-max/OT/releases/download/v1.2.0/ot-manager-Setup-1.2.0.exe" target="_blank" class="btn btn-purple" style="width:100%; text-align: center;">Tải Windows EXE</a>
                             </div>
                         </div>
 
@@ -690,11 +757,11 @@
         // Deep links/hash navigation handler
         function checkHashTab() {
             const hash = window.location.hash.substring(1);
-            const validTabs = ['login', 'features', 'download', 'release', 'terms'];
+            const validTabs = ['home', 'download', 'release', 'terms', 'login'];
             
             // Map old hash links if any
-            let targetTab = 'login';
-            if (hash === 'features-section') targetTab = 'features';
+            let targetTab = 'home';
+            if (hash === 'features-section' || hash === 'features') targetTab = 'home';
             else if (hash === 'download-section') targetTab = 'download';
             else if (hash === 'login-section') targetTab = 'login';
             else if (validTabs.includes(hash)) targetTab = hash;
