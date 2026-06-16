@@ -3418,3 +3418,100 @@ body.is-web-browser #btn-check-update-mobile {
     }
 }
 
+/* ==================== LANDING PAGE PREMIUM DECORATIONS ==================== */
+body.landing-page {
+    overflow-x: hidden;
+}
+
+.landing-bg-decorations {
+    position: fixed;
+    inset: 0;
+    z-index: -2; /* Behind everything except body background */
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.tech-grid {
+    position: absolute;
+    inset: 0;
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    background-size: 50px 50px;
+    background-position: center;
+    mask-image: radial-gradient(circle at center, black 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(circle at center, black 30%, transparent 80%);
+    opacity: 0.8;
+}
+
+.floating-bg-mockup {
+    position: absolute;
+    border-radius: var(--radius);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    background: rgba(5, 5, 12, 0.45);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    opacity: 0.18; /* Soft background blend */
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    will-change: transform, opacity;
+}
+
+/* Mobile phone mockup on the left */
+.mockup-left {
+    width: 250px;
+    left: -60px;
+    top: 22%;
+    transform: rotate(15deg);
+    animation: driftLeft 24s ease-in-out infinite alternate;
+}
+
+.mockup-left img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: inherit;
+}
+
+/* Desktop dashboard mockup on the right */
+.mockup-right {
+    width: 580px;
+    right: -140px;
+    bottom: 12%;
+    transform: rotate(-10deg);
+    animation: driftRight 30s ease-in-out infinite alternate;
+}
+
+.mockup-right img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: inherit;
+}
+
+/* Animations for floating assets */
+@keyframes driftLeft {
+    0% {
+        transform: rotate(15deg) translate(0, 0);
+    }
+    100% {
+        transform: rotate(18deg) translate(15px, 30px);
+    }
+}
+
+@keyframes driftRight {
+    0% {
+        transform: rotate(-10deg) translate(0, 0);
+    }
+    100% {
+        transform: rotate(-7deg) translate(-25px, -20px);
+    }
+}
+
+/* Hide background mockups on small screens to prevent visual clutter */
+@media (max-width: 768px) {
+    .floating-bg-mockup {
+        display: none;
+    }
+}
+
