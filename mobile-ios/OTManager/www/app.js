@@ -840,7 +840,7 @@ function autoResolveRentryUrl() {
         try {
             var xhr = new XMLHttpRequest();
             xhr.open('GET', 'https://rentry.co/otmanager-hieutm-3456?t=' + Date.now(), true);
-            xhr.timeout = 5000;
+            xhr.timeout = 2000;
             xhr.onload = function() {
                 if (xhr.status === 200) {
                     var html = xhr.responseText;

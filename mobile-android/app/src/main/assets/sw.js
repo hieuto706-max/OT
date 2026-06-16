@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ot-manager-v7';
+const CACHE_NAME = 'ot-manager-v8';
 const ASSETS = [
     './',
     'index.html',
@@ -27,18 +27,25 @@ self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
 
     // Always fetch API calls from network
-    if (url.pathname.startsWith('/api/')) {
+    if (url.pathname.indexOf('/api/') !== -1) {
         return event.respondWith(fetch(event.request));
     }
 
-    // For static assets: network first, fallback to cache
+    // For static assets: Stale-While-Revalidate (SWR)
     event.respondWith(
-        fetch(event.request)
-            .then(response => {
-                const clone = response.clone();
-                caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-                return response;
-            })
-            .catch(() => caches.match(event.request))
+        caches.match(event.request).then(cachedResponse => {
+            const fetchPromise = fetch(event.request).then(networkResponse => {
+                if (networkResponse && networkResponse.status === 200) {
+                    const clone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+                }
+                return networkResponse;
+            }).catch(() => {
+                // Ignore network errors in background update
+            });
+
+            // Return cached response instantly if available, otherwise wait for network
+            return cachedResponse || fetchPromise;
+        })
     );
 });
