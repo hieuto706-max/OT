@@ -104,9 +104,6 @@ async function createWindow() {
         console.log(`║                                      ║`);
         console.log(`║   🖥️  App Quản Lý (Desktop):         ║`);
         console.log(`╚══════════════════════════════════════╝\n`);
-        
-        // Kiểm tra cập nhật phần mềm nếu kết nối Cloud
-        checkUpdates(cloudUrl);
     });
 
     // Bắt sự kiện tắt cửa sổ: Không thoát mà ẩn xuống khay hệ thống
@@ -253,9 +250,9 @@ function downloadFile(fileUrl, destPath, onProgress, onComplete, onError) {
     startDownload(fileUrl);
 }
 
-// Tiến trình tự động cập nhật
-function startAutoUpdate(downloadUrl, targetVersion) {
-    const { BrowserWindow, dialog } = require('electron');
+// Tiến trình tự động cập nhật (Được gọi từ local server khi có yêu cầu tải từ in-app)
+global.startElectronUpdate = function(downloadUrl, targetVersion) {
+    const { BrowserWindow } = require('electron');
     const https = require('https');
     const http = require('http');
     const { URL } = require('url');
@@ -283,7 +280,7 @@ function startAutoUpdate(downloadUrl, targetVersion) {
                 if (!redirectUrl.startsWith('http')) {
                     redirectUrl = new URL(redirectUrl, urlToCheck).href;
                 }
-                called = true; // Đánh dấu đã xử lý để tránh các lỗi mạng sau đó kích hoạt callback
+                called = true;
                 return checkUrlExists(redirectUrl, callback, maxRedirects - 1);
             }
             done(res.statusCode === 200);
@@ -295,26 +292,14 @@ function startAutoUpdate(downloadUrl, targetVersion) {
 
     checkUrlExists(downloadUrl, (exists) => {
         if (!exists) {
-            // File chưa tồn tại trên server (chưa release)
-            dialog.showMessageBox(mainWindow, {
-                type: 'warning',
-                title: 'Bản cập nhật chưa sẵn sàng',
-                message: `Phiên bản v${targetVersion} đã được phát hành nhưng file cài đặt chưa sẵn sàng để tải.`,
-                detail: 'File bộ cài đặt (.exe) có thể chưa được upload lên GitHub Releases.\nVui lòng thử lại sau hoặc liên hệ quản trị viên.',
-                buttons: ['Đóng', 'Mở GitHub Releases'],
-                defaultId: 0
-            }).then((result) => {
-                if (result.response === 1) {
-                    shell.openExternal(`https://github.com/hieuto706-max/OT/releases`);
-                }
-            });
+            console.warn(`[Main Update] Không tìm thấy file cài đặt tại URL: ${downloadUrl}`);
             return;
         }
 
         // File tồn tại, tiến hành tải
         showDownloadProgress(downloadUrl, targetVersion);
     });
-}
+};
 
 function showDownloadProgress(downloadUrl, targetVersion) {
     const { BrowserWindow, dialog } = require('electron');

@@ -1021,34 +1021,66 @@ async function checkUpdateManual() {
         const cloudData = await cloudRes.json();
         const cloudVer = cloudData.version || '1.0.0';
 
-        // 4. So sánh phiên bản
         const cmp = compareVersions(localVer, cloudVer);
         if (cmp < 0) {
-            // Có bản cập nhật mới
-            showModal(
-                'Có phiên bản mới!',
-                `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
-                    Phát hiện phiên bản mới của ứng dụng trên hệ thống Cloud:<br>
-                    • Phiên bản hiện tại: <strong style="color: var(--accent-orange);">v${localVer}</strong><br>
-                    • Phiên bản mới nhất: <strong style="color: var(--accent-green-light);">v${cloudVer}</strong>
-                </p>
-                <p style="color: var(--text-muted); font-size: 13px;">
-                    Bạn có muốn mở trình duyệt để tải về phiên bản mới nhất không?
-                </p>`,
-                [
-                    { text: 'Để sau', class: 'btn-ghost' },
-                    { 
-                        text: 'Tải về ngay', 
-                        class: 'btn btn-primary btn-sm', 
-                        action: () => {
-                            const downloadUrl = cloudData.desktopDownloadUrl || `https://github.com/hieuto706-max/OT/releases/download/v${cloudVer}/ot-manager-Setup-${cloudVer}.exe`;
-                            window.open(downloadUrl, '_blank');
-                        } 
-                    }
-                ]
-            );
+            const checkRes = await fetch(`${localServerUrl}/download/desktop?check=true`);
+            const checkData = await checkRes.json();
+
+            if (checkData.ready) {
+                showModal(
+                    'Có phiên bản mới!',
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        Phát hiện phiên bản mới của ứng dụng trên hệ thống Cloud:<br>
+                        • Phiên bản hiện tại: <strong style="color: var(--accent-orange);">v${localVer}</strong><br>
+                        • Phiên bản mới nhất: <strong style="color: var(--accent-green-light);">v${cloudVer}</strong>
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        Bạn có muốn tải xuống phiên bản mới nhất ngay trong ứng dụng không?
+                    </p>`,
+                    [
+                        { text: 'Để sau', class: 'btn-ghost' },
+                        { 
+                            text: 'Tải về ngay', 
+                            class: 'btn btn-primary btn-sm', 
+                            action: async () => {
+                                const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
+                                try {
+                                    await fetch(`${localServerUrl}/api/trigger-update`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ downloadUrl, version: cloudVer })
+                                    });
+                                } catch (e) {
+                                    console.error('Lỗi khi kích hoạt cập nhật:', e);
+                                    window.open(downloadUrl, '_blank');
+                                }
+                            } 
+                        }
+                    ]
+                );
+            } else {
+                showModal(
+                    'Bản cập nhật chưa sẵn sàng',
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        Phiên bản <strong style="color: var(--accent-green-light);">v${cloudVer}</strong> đã được phát hành nhưng file cài đặt (.exe) chưa sẵn sàng để tải.<br><br>
+                        • Phiên bản hiện tại: <strong>v${localVer}</strong>
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        File bộ cài đặt (.exe) có thể chưa được upload lên GitHub Releases. Vui lòng thử lại sau hoặc mở GitHub Releases để kiểm tra.
+                    </p>`,
+                    [
+                        { text: 'Đóng', class: 'btn-ghost' },
+                        { 
+                            text: 'Mở GitHub Releases', 
+                            class: 'btn btn-primary btn-sm', 
+                            action: () => {
+                                window.open('https://github.com/hieuto706-max/OT/releases', '_blank');
+                            } 
+                        }
+                    ]
+                );
+            }
         } else {
-            // Đã là phiên bản mới nhất
             showModal(
                 'Kiểm tra cập nhật',
                 `<p style="color: var(--accent-green-light); font-weight: 600; font-size: 15px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
@@ -1085,28 +1117,63 @@ async function checkUpdateSilent() {
 
         const cmp = compareVersions(localVer, cloudVer);
         if (cmp < 0) {
-            showModal(
-                'Có phiên bản mới!',
-                `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
-                    Phát hiện phiên bản mới của ứng dụng trên hệ thống Cloud:<br>
-                    • Phiên bản hiện tại: <strong style="color: var(--accent-orange);">v${localVer}</strong><br>
-                    • Phiên bản mới nhất: <strong style="color: var(--accent-green-light);">v${cloudVer}</strong>
-                </p>
-                <p style="color: var(--text-muted); font-size: 13px;">
-                    Bạn có muốn mở trình duyệt để tải về phiên bản mới nhất không?
-                </p>`,
-                [
-                    { text: 'Để sau', class: 'btn-ghost' },
-                    { 
-                        text: 'Tải về ngay', 
-                        class: 'btn btn-primary btn-sm', 
-                        action: () => {
-                            const downloadUrl = cloudData.desktopDownloadUrl || `https://github.com/hieuto706-max/OT/releases/download/v${cloudVer}/ot-manager-Setup-${cloudVer}.exe`;
-                            window.open(downloadUrl, '_blank');
-                        } 
-                    }
-                ]
-            );
+            const checkRes = await fetch(`${localServerUrl}/download/desktop?check=true`);
+            const checkData = await checkRes.json();
+
+            if (checkData.ready) {
+                showModal(
+                    'Có phiên bản mới!',
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        Phát hiện phiên bản mới của ứng dụng trên hệ thống Cloud:<br>
+                        • Phiên bản hiện tại: <strong style="color: var(--accent-orange);">v${localVer}</strong><br>
+                        • Phiên bản mới nhất: <strong style="color: var(--accent-green-light);">v${cloudVer}</strong>
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        Bạn có muốn tải xuống phiên bản mới nhất ngay trong ứng dụng không?
+                    </p>`,
+                    [
+                        { text: 'Để sau', class: 'btn-ghost' },
+                        { 
+                            text: 'Tải về ngay', 
+                            class: 'btn btn-primary btn-sm', 
+                            action: async () => {
+                                const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
+                                try {
+                                    await fetch(`${localServerUrl}/api/trigger-update`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ downloadUrl, version: cloudVer })
+                                    });
+                                } catch (e) {
+                                    console.error('Lỗi khi kích hoạt cập nhật:', e);
+                                    window.open(downloadUrl, '_blank');
+                                }
+                            } 
+                        }
+                    ]
+                );
+            } else {
+                showModal(
+                    'Bản cập nhật chưa sẵn sàng',
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        Phiên bản <strong style="color: var(--accent-green-light);">v${cloudVer}</strong> đã được phát hành nhưng file cài đặt (.exe) chưa sẵn sàng để tải.<br><br>
+                        • Phiên bản hiện tại: <strong>v${localVer}</strong>
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        File bộ cài đặt (.exe) có thể chưa được upload lên GitHub Releases. Vui lòng thử lại sau hoặc mở GitHub Releases để kiểm tra.
+                    </p>`,
+                    [
+                        { text: 'Đóng', class: 'btn-ghost' },
+                        { 
+                            text: 'Mở GitHub Releases', 
+                            class: 'btn btn-primary btn-sm', 
+                            action: () => {
+                                window.open('https://github.com/hieuto706-max/OT/releases', '_blank');
+                            } 
+                        }
+                    ]
+                );
+            }
         }
     } catch (err) {
         console.error('Lỗi check cập nhật ngầm:', err);

@@ -752,6 +752,31 @@ async function handleAPI(req, res, urlPath, method) {
         return sendJSON(res, 200, { cloudUrl });
     }
 
+    // --- TRIGGER ELECTRON UPDATE ---
+    if (urlPath === '/api/trigger-update' && method === 'POST') {
+        if (global.startElectronUpdate) {
+            let body = '';
+            req.on('data', chunk => body += chunk);
+            req.on('end', () => {
+                try {
+                    const data = JSON.parse(body || '{}');
+                    const downloadUrl = data.downloadUrl;
+                    const version = data.version;
+                    if (!downloadUrl || !version) {
+                        return sendJSON(res, 400, { success: false, message: 'Thiếu downloadUrl hoặc version trong request body' });
+                    }
+                    global.startElectronUpdate(downloadUrl, version);
+                    return sendJSON(res, 200, { success: true });
+                } catch (e) {
+                    return sendJSON(res, 400, { success: false, message: `Lỗi parse JSON: ${e.message}` });
+                }
+            });
+            return;
+        } else {
+            return sendJSON(res, 500, { success: false, message: 'Electron update handler chưa được đăng ký trên Main process' });
+        }
+    }
+
     // --- MANUAL CLEANUP & BACKUP ---
     if (urlPath === '/api/records/cleanup' && method === 'POST') {
         const body = await parseBody(req);
@@ -879,8 +904,12 @@ const server = http.createServer(async (req, res) => {
 
     // Direct proxy download route for the desktop EXE installer using GITHUB_TOKEN (for private repos)
     if (urlPath === '/download/desktop') {
+        const isCheckOnly = req.url.includes('check=true');
         const token = process.env.GITHUB_TOKEN;
         if (!token) {
+            if (isCheckOnly) {
+                return sendJSON(res, 200, { ready: false, message: 'Server chưa cấu hình GITHUB_TOKEN trên Render để tải bản Desktop.' });
+            }
             res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
             return res.end('Server chưa cấu hình GITHUB_TOKEN trên Render để tải bản Desktop.');
         }
@@ -918,10 +947,16 @@ const server = http.createServer(async (req, res) => {
                 resGit.on('data', chunk => body += chunk);
                 resGit.on('end', () => {
                     if (resGit.statusCode === 404 && versionToFetch !== '1.2.0') {
+                        if (isCheckOnly) {
+                            return sendJSON(res, 200, { ready: false, version: version });
+                        }
                         console.log(`[Desktop Download] Release ${tag} không tìm thấy (404). Fallback về v1.2.0`);
                         return fetchRelease('1.2.0');
                     }
                     if (resGit.statusCode !== 200) {
+                        if (isCheckOnly) {
+                            return sendJSON(res, 200, { ready: false, error: `Lỗi GitHub API: ${resGit.statusCode}` });
+                        }
                         res.writeHead(resGit.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
                         return res.end(`Lỗi GitHub API khi lấy thông tin Release: ${resGit.statusCode}. Chi tiết: ${body}`);
                     }
@@ -931,11 +966,21 @@ const server = http.createServer(async (req, res) => {
                         const asset = releaseInfo.assets.find(a => a.name === assetName);
                         if (!asset) {
                             if (versionToFetch !== '1.2.0') {
+                                if (isCheckOnly) {
+                                    return sendJSON(res, 200, { ready: false, version: version });
+                                }
                                 console.log(`[Desktop Download] Không tìm thấy asset ${assetName} trong Release ${tag}. Fallback về v1.2.0`);
                                 return fetchRelease('1.2.0');
                             }
+                            if (isCheckOnly) {
+                                return sendJSON(res, 200, { ready: false, version: '1.2.0' });
+                            }
                             res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
                             return res.end(`Không tìm thấy file build ${assetName} trong Release ${tag} trên GitHub.`);
+                        }
+
+                        if (isCheckOnly) {
+                            return sendJSON(res, 200, { ready: true, version: versionToFetch });
                         }
 
                         // 2. Fetch asset binary using octet-stream header
