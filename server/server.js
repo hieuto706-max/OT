@@ -983,7 +983,7 @@ const server = http.createServer(async (req, res) => {
                             return sendJSON(res, 200, { ready: true, version: versionToFetch });
                         }
 
-                        // 2. Fetch asset binary using octet-stream header
+                        // 2. Fetch asset binary using octet-stream header (GitHub API returns a 302 Redirect to AWS S3)
                         const downloadOptions = {
                             hostname: 'api.github.com',
                             path: `/repos/${owner}/${repo}/releases/assets/${asset.id}`,
@@ -995,36 +995,15 @@ const server = http.createServer(async (req, res) => {
                             }
                         };
 
-                        const handleDownloadRedirect = (dlUrl) => {
-                            const parsedUrl = new URL(dlUrl);
-                            const redirectClient = parsedUrl.protocol === 'https:' ? https : http;
-
-                            redirectClient.get(dlUrl, (resDl) => {
-                                if ([301, 302, 307, 308].includes(resDl.statusCode) && resDl.headers.location) {
-                                    return handleDownloadRedirect(resDl.headers.location);
-                                }
-
-                                if (resDl.statusCode !== 200) {
-                                    res.writeHead(resDl.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
-                                    return res.end(`Lỗi khi tải file từ S3: ${resDl.statusCode}`);
-                                }
-
-                                res.writeHead(200, {
-                                    'Content-Type': 'application/octet-stream',
-                                    'Content-Disposition': `attachment; filename="${assetName}"`,
-                                    'Content-Length': resDl.headers['content-length']
-                                });
-
-                                resDl.pipe(res);
-                            }).on('error', (err) => {
-                                res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-                                res.end(`Lỗi kết nối tải file: ${err.message}`);
-                            });
-                        };
-
                         const reqAsset = https.request(downloadOptions, (resAsset) => {
+                            // Thay vì tải về rồi truyền qua Render (tốn băng thông Render), 
+                            // chuyển hướng trình duyệt của client tải trực tiếp từ link S3 của GitHub.
                             if ([301, 302, 307, 308].includes(resAsset.statusCode) && resAsset.headers.location) {
-                                handleDownloadRedirect(resAsset.headers.location);
+                                res.writeHead(302, {
+                                    'Location': resAsset.headers.location,
+                                    'Access-Control-Allow-Origin': '*'
+                                });
+                                res.end();
                             } else {
                                 res.writeHead(resAsset.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
                                 res.end(`Lỗi khi yêu cầu tải file từ GitHub: Mã trạng thái ${resAsset.statusCode}`);
