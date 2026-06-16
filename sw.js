@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ot-manager-v8';
+const CACHE_NAME = 'ot-manager-v9';
 const ASSETS = [
     './',
     'index.html',
@@ -24,11 +24,16 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+    // Only handle GET requests and http/https schemes
+    if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
+        return;
+    }
+
     const url = new URL(event.request.url);
 
-    // Always fetch API calls from network
+    // Always bypass Service Worker for API calls
     if (url.pathname.indexOf('/api/') !== -1) {
-        return event.respondWith(fetch(event.request));
+        return;
     }
 
     // For static assets: Stale-While-Revalidate (SWR)
@@ -37,11 +42,15 @@ self.addEventListener('fetch', event => {
             const fetchPromise = fetch(event.request).then(networkResponse => {
                 if (networkResponse && networkResponse.status === 200) {
                     const clone = networkResponse.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, clone).catch(() => {});
+                    });
                 }
                 return networkResponse;
-            }).catch(() => {
-                // Ignore network errors in background update
+            }).catch(err => {
+                // If network fails, try to return cached response
+                if (cachedResponse) return cachedResponse;
+                throw err;
             });
 
             // Return cached response instantly if available, otherwise wait for network
