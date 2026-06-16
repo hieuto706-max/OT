@@ -14,6 +14,29 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="mobile/style.css?v=1.3.3">
+    <style>
+        .landing-nav .nav-link-login {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.25) 100%) !important;
+            color: #10b981 !important;
+            border: 1px solid rgba(16, 185, 129, 0.45) !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15) !important;
+            padding: 8px 18px !important;
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+            margin-left: 10px !important;
+        }
+        .landing-nav .nav-link-login:hover {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(5, 150, 105, 0.35) 100%) !important;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25) !important;
+            color: #10b981 !important;
+            transform: translateY(-1px);
+        }
+        .landing-nav .nav-link-login.active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            color: #ffffff !important;
+            border-color: #10b981 !important;
+        }
+    </style>
 </head>
 <body class="landing-page">
     <!-- ==================== BACKGROUND GLOWING ORBS ==================== -->
@@ -68,14 +91,14 @@
                     </defs>
                 </svg>
                 <span class="logo-text">OT Manager</span>
-                <span class="web-version-badge" style="font-size: 0.7rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 8px; border-radius: 10px; font-weight: 700; margin-left: 8px;">v1.3.2</span>
+                <span class="web-version-badge" style="font-size: 0.7rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 8px; border-radius: 10px; font-weight: 700; margin-left: 8px;">v1.3.3</span>
             </div>
             <div class="landing-nav">
                 <a href="javascript:void(0)" class="nav-link active" data-tab="home">Trang chủ</a>
                 <a href="javascript:void(0)" class="nav-link" data-tab="download">Tải xuống</a>
                 <a href="javascript:void(0)" class="nav-link" data-tab="release">Thông tin phát hành</a>
                 <a href="javascript:void(0)" class="nav-link" data-tab="terms">Điều khoản & Bảo mật</a>
-                <a href="javascript:void(0)" class="nav-link" data-tab="login">Đăng nhập</a>
+                <a href="javascript:void(0)" class="nav-link nav-link-login" data-tab="login">Đăng nhập</a>
             </div>
         </header>
 
@@ -269,7 +292,7 @@
                                 <p class="download-desc">Tải ứng dụng trực tiếp cho thiết bị Android để ghi nhận giờ tăng ca, xem lịch sử và nhận phản hồi từ quản lý mọi lúc mọi nơi.</p>
                             </div>
                             <div>
-                                <a id="apk-download-btn-landing" href="mobile/OT-Manager-mobile-1.3.2.apk" class="btn btn-primary" style="width:100%; text-align: center;">Tải APK Android</a>
+                                <a id="apk-download-btn-landing" href="mobile/OT-Manager-mobile-1.3.3.apk" class="btn btn-primary" style="width:100%; text-align: center;">Tải APK Android</a>
                                 <div class="qr-box-large">
                                     <div class="qr-bg-large">
                                         <img id="apk-qr-code-landing" src="" alt="QR Code">
@@ -291,7 +314,7 @@
                                 <p class="download-desc">Ứng dụng chuyên dụng dành cho Quản trị viên và Quản lý để duyệt giờ làm, quản lý thông tin nhân viên, cài đặt quy định tăng ca và xuất báo cáo Excel.</p>
                             </div>
                             <div>
-                                <a id="desktop-download-btn-landing" href="https://github.com/hieuto706-max/OT/releases/download/v1.2.0/ot-manager-Setup-1.2.0.exe" target="_blank" class="btn btn-purple" style="width:100%; text-align: center;">Tải Windows EXE</a>
+                                <a id="desktop-download-btn-landing" href="https://github.com/hieuto706-max/OT/releases/download/v1.3.3/ot-manager-Setup-1.3.3.exe" target="_blank" class="btn btn-purple" style="width:100%; text-align: center;">Tải Windows EXE</a>
                             </div>
                         </div>
 
@@ -307,7 +330,7 @@
                                 <p class="download-desc">Dành cho nhân viên sử dụng iPhone. Bạn có thể truy cập trực tiếp qua trình duyệt Safari tại địa chỉ bên dưới hoặc chờ bản cập nhật từ TestFlight.</p>
                             </div>
                             <div>
-                                <a href="https://hieuto706-max.github.io/OT/mobile/" target="_blank" class="btn btn-ghost" style="width:100%; text-align: center; border-color: rgba(0, 122, 255, 0.3); color: #007AFF;">
+                                <a href="https://otmanager.id.vn/mobile/" target="_blank" class="btn btn-ghost" style="width:100%; text-align: center; border-color: rgba(0, 122, 255, 0.3); color: #007AFF;">
                                     Mở trên Safari (Web App)
                                 </a>
                                 <p style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-top: 8px;">Bản iOS native đang được phát triển</p>
@@ -322,6 +345,18 @@
                 <section class="landing-section">
                     <h2 class="section-title" style="text-align: center;">🚀 Thông tin phát hành & Cập nhật</h2>
                     <div class="changelog-timeline">
+                        <div class="changelog-item">
+                            <span class="changelog-badge">v1.3.3</span>
+                            <span class="changelog-date">17/06/2026</span>
+                            <ul class="changelog-list">
+                                <li>Xử lý lỗi cổng kết nối bị chiếm dụng (EADDRINUSE) bằng thông báo thân thiện và tự động focus khi mở trùng bản sao.</li>
+                                <li>Sửa nhãn hiển thị phiên bản đồng bộ thành v1.3.3 trên toàn bộ ứng dụng.</li>
+                                <li>Bắt buộc nhập Ghi chú (chi tiết công việc) khi lưu hoặc chỉnh sửa tăng ca để tăng tính minh bạch.</li>
+                                <li>Sửa lỗi nút kiểm tra cập nhật trên Mobile và tự động đồng bộ link tải EXE/APK mới nhất từ API.</li>
+                                <li>Cải tiến giao diện cá nhân di động chỉ tập trung hiển thị Tổng OT tháng này.</li>
+                                <li>Khắc phục lỗi mất hình nền mockup trên Android và tối ưu hóa hiệu năng chuyển động quả cầu sáng nền cực kỳ mượt mà.</li>
+                            </ul>
+                        </div>
                         <div class="changelog-item">
                             <span class="changelog-badge">v1.3.2</span>
                             <span class="changelog-date">16/06/2026</span>
@@ -438,6 +473,12 @@
                             <li>Thông tin thiết bị (Device ID) được thu thập chỉ với mục đích duy nhất là định danh và liên kết tài khoản bảo mật.</li>
                             <li>Dữ liệu giờ làm thêm (OT) chỉ được sử dụng cho việc đối chiếu công và tính lương nội bộ của công ty.</li>
                             <li>Dữ liệu lưu trữ đám mây được bảo vệ an toàn và không chia sẻ cho bất kỳ bên thứ ba nào ngoài doanh nghiệp của bạn.</li>
+                        </ul>
+                        <h3>3. Chính sách cập nhật phần mềm</h3>
+                        <p>Ứng dụng hỗ trợ cập nhật tự động trực tuyến (Hot-update) đối với tài nguyên giao diện nhằm sửa lỗi nhanh nhất:</p>
+                        <ul>
+                            <li>Giao diện di động tự động kiểm tra và tải tài nguyên mới từ máy chủ khi có kết nối Internet.</li>
+                            <li>Tệp cài đặt APK cho Android và EXE cho Windows được cập nhật động và lưu trữ trên máy chủ an toàn.</li>
                         </ul>
                     </div>
                 </section>
@@ -819,7 +860,7 @@
         window.addEventListener('DOMContentLoaded', () => {
             const host = window.location.origin;
             const savedServerIp = localStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com';
-            const checkUrl = (window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io')) ? host : savedServerIp;
+            const checkUrl = (window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io') && !window.location.hostname.includes('otmanager.id.vn')) ? host : savedServerIp;
 
             fetch(checkUrl + '/api/version')
                 .then(res => res.json())

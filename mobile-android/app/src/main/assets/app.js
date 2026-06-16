@@ -39,7 +39,7 @@ function isSessionExpired(loginTimeMs) {
 }
 
 // Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu chạy web local thì tự động dùng origin
-const isLocalWeb = window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io');
+const isLocalWeb = window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io') && !window.location.hostname.includes('otmanager.id.vn');
 let API = isLocalWeb ? window.location.origin : (safeStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com');
 
 // Tự động dọn dẹp các địa chỉ IP cũ từ các phiên bản trước
@@ -91,7 +91,7 @@ function api(endpoint, method, body, skipAuthRedirect) {
         if (currentUser && currentUser.id) {
             xhr.setRequestHeader('x-user-id', currentUser.id);
         }
-        xhr.timeout = (API.indexOf('onrender.com') !== -1) ? 60000 : 10000;
+        xhr.timeout = (API.indexOf('onrender.com') !== -1 || API.indexOf('otmanager.id.vn') !== -1) ? 60000 : 10000;
         xhr.onload = function() {
             try {
                 var data = JSON.parse(xhr.responseText);
@@ -376,7 +376,7 @@ async function handleAdminLogin(e) {
         safeStorage.setItem('ot_login_date', todayStr);
         
         // Chuyển hướng tới trang quản lý desktop
-        const isGitHubPages = window.location.hostname.includes('github.io');
+        const isGitHubPages = window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
         const redirectUrl = isGitHubPages ? '/OT/desktop/index.html' : '/desktop/index.html';
         showToast('Đăng nhập Quản lý thành công, đang chuyển hướng...', 'success');
         setTimeout(() => {
@@ -400,14 +400,9 @@ function enterApp() {
     document.getElementById('profile-name').textContent = currentUser.fullname;
     document.getElementById('profile-username').textContent = `@${currentUser.username}`;
 
-    const isBrowser = window.location.protocol !== 'file:';
     const btnCheckUpdate = document.getElementById('btn-check-update-mobile');
     if (btnCheckUpdate) {
-        if (isBrowser) {
-            btnCheckUpdate.style.display = 'none';
-        } else {
-            btnCheckUpdate.style.display = 'block';
-        }
+        btnCheckUpdate.style.display = 'block';
     }
 
     showScreen('screen-app');
@@ -1052,7 +1047,7 @@ function initApp() {
     if (otDateEl) otDateEl.max = new Date().toISOString().split('T')[0];
     
     // Hiển thị trạng thái kết nối ban đầu
-    if (API && API.indexOf('onrender.com') !== -1) {
+    if (API && (API.indexOf('onrender.com') !== -1 || API.indexOf('otmanager.id.vn') !== -1)) {
         updateConnectionStatus(false, API, true);
     } else {
         updateConnectionStatus(!!API, API);
@@ -1086,7 +1081,7 @@ function initApp() {
             var xhr = new XMLHttpRequest();
             xhr.open('GET', API + '/api/server-info', true);
             // Nếu là Render URL, đặt timeout lớn hơn để cho phép server thức dậy từ trạng thái ngủ
-            xhr.timeout = (API.indexOf('onrender.com') !== -1) ? 60000 : 3000;
+            xhr.timeout = (API.indexOf('onrender.com') !== -1 || API.indexOf('otmanager.id.vn') !== -1) ? 60000 : 3000;
             xhr.onload = function() {
                 if (xhr.status === 200) {
                     updateConnectionStatus(true, API);
@@ -1380,7 +1375,7 @@ function initApp() {
 
     // Thiết lập link tải động và mã QR cho mục Tải ứng dụng
     const host = window.location.origin;
-    const isGitHubPages = window.location.hostname.includes('github.io');
+    const isGitHubPages = window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
     const isMobileFolder = window.location.pathname.includes('/mobile');
 
     // Link APK: Trỏ thẳng tới server Render để tải trực tiếp từ đĩa cục bộ, tránh lỗi 404 trên repo GitHub private
@@ -1695,7 +1690,7 @@ function checkConnection() {
     if (!API) return;
     var xhr = new XMLHttpRequest();
     xhr.open('GET', API + '/api/server-info', true);
-    xhr.timeout = (API.indexOf('onrender.com') !== -1) ? 60000 : 3000;
+    xhr.timeout = (API.indexOf('onrender.com') !== -1 || API.indexOf('otmanager.id.vn') !== -1) ? 60000 : 3000;
     xhr.onload = function() {
         if (xhr.status === 200) {
             updateConnectionStatus(true, API);
@@ -1896,9 +1891,7 @@ const MOBILE_VERSION = '1.3.3';
 let updateCheckInterval = null;
 
 function checkMobileUpdates(isManual) {
-    if (window.location.protocol !== 'file:') {
-        return;
-    }
+    const isMobileApp = window.location.protocol === 'file:' || window.AndroidBridge;
     if (!API) {
         if (isManual) showToast('Chưa kết nối Server!', 'error');
         return;
@@ -1915,7 +1908,11 @@ function checkMobileUpdates(isManual) {
                 try {
                     var info = JSON.parse(xhr.responseText);
                     if (info.version && compareMobileVersions(MOBILE_VERSION, info.version) < 0) {
-                        showMobileUpdateDialog(info.version, info.forceUpdate || false, info.changelog || '');
+                        if (isMobileApp) {
+                            showMobileUpdateDialog(info.version, info.forceUpdate || false, info.changelog || '');
+                        } else {
+                            showToast('Có phiên bản mới: v' + info.version + '. Vui lòng vuốt xuống hoặc làm mới trang để cập nhật!', 'info');
+                        }
                     } else {
                         // Phiên bản hiện tại đã là mới nhất
                         updateVersionDisplay();

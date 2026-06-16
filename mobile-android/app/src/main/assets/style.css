@@ -160,20 +160,19 @@ body::before {
     background: rgba(255, 255, 255, 0.18);
 }
 
-/* ==================== ANIMATIONS ==================== */
 @keyframes orbDrift1 {
-    0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-    100% { transform: translate(7vw, 6vh) scale(1.15) rotate(10deg); }
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    100% { transform: translate3d(7vw, 6vh, 0) scale(1.15); }
 }
 
 @keyframes orbDrift2 {
-    0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-    100% { transform: translate(-9vw, -7vh) scale(1.18) rotate(-15deg); }
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    100% { transform: translate3d(-9vw, -7vh, 0) scale(1.18); }
 }
 
 @keyframes orbDrift3 {
-    0% { transform: translate(0, 0) scale(1) rotate(0deg); }
-    100% { transform: translate(6vw, -9vh) scale(1.1) rotate(25deg); }
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    100% { transform: translate3d(6vw, -9vh, 0) scale(1.1); }
 }
 
 @keyframes shimmerSweep {

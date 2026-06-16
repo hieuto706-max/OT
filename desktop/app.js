@@ -8,7 +8,7 @@
  */
 
 const isElectron = navigator.userAgent.toLowerCase().includes('electron');
-const isGitHubPages = window.location.hostname.includes('github.io');
+const isGitHubPages = window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
 const localServerUrl = isGitHubPages 
     ? (localStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com') 
     : window.location.origin;

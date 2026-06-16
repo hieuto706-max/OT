@@ -1104,8 +1104,14 @@ function getCloudUrl() {
 }
 
 function startServer() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+        const onError = (err) => {
+            reject(err);
+        };
+        server.once('error', onError);
+
         server.listen(PORT, '0.0.0.0', () => {
+            server.removeListener('error', onError);
             const ip = getLocalIP();
             console.log(`✅ OT Manager Server đang chạy!`);
             console.log(`📱 Mobile (Nhân viên): http://${ip}:${PORT}`);

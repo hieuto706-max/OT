@@ -348,6 +348,7 @@ extension ViewController: WKNavigationDelegate {
                 // Chỉ mở bằng Safari nếu là link do người dùng click
                 // và không phải API call
                 let isExternalLink = !urlString.contains("onrender.com") &&
+                                     !urlString.contains("otmanager.id.vn") &&
                                      !urlString.contains("localhost") &&
                                      !urlString.contains("192.168.")
                 if isExternalLink {

@@ -3,6 +3,21 @@ const path = require('path');
 const fs = require('fs');
 const { startServer, stopServer, getLocalIP, PORT } = require('./server/server');
 
+// Ngăn chạy nhiều phiên bản của ứng dụng cùng lúc
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+    app.quit();
+    process.exit(0);
+}
+
+app.on('second-instance', () => {
+    if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.show();
+        mainWindow.focus();
+    }
+});
+
 // Tắt menu mặc định
 Menu.setApplicationMenu(null);
 
@@ -12,7 +27,23 @@ let isQuitting = false;
 
 async function createWindow() {
     // Khởi động server local (Luôn chạy để load giao diện nhanh và hỗ trợ API)
-    await startServer();
+    try {
+        await startServer();
+    } catch (err) {
+        if (err.code === 'EADDRINUSE') {
+            dialog.showErrorBox(
+                'Cổng kết nối bị chiếm dụng',
+                'Ứng dụng OT Manager đã được chạy hoặc cổng 3456 đang bị sử dụng bởi một chương trình khác.\n\nVui lòng kiểm tra khay hệ thống (System Tray) hoặc tắt chương trình đang chiếm dụng cổng này trước khi mở lại.'
+            );
+        } else {
+            dialog.showErrorBox(
+                'Lỗi khởi động máy chủ',
+                'Đã xảy ra lỗi không thể khởi động server local:\n' + err.message
+            );
+        }
+        app.quit();
+        return;
+    }
 
     let serverUrl = `http://localhost:${PORT}`;
     let cloudUrl = '';

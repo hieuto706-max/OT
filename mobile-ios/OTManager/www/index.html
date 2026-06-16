@@ -101,7 +101,7 @@
 
                     <div class="login-footer">
                         <div class="login-register-hint">Chưa có tài khoản? Liên hệ quản lý</div>
-                        <div class="login-version-badge">Phiên bản <span class="login-ver-val">v1.3.2</span></div>
+                        <div class="login-version-badge">Phiên bản <span class="login-ver-val">v1.3.3</span></div>
                         <div id="connection-status" style="display:none; margin-top:8px;font-size:0.8rem;"></div>
                     </div>
                 </div>
@@ -216,7 +216,7 @@
 
                         <div class="form-group">
                             <label>Ghi chú</label>
-                            <textarea id="ot-note" placeholder="Lý do tăng ca, chi tiết công việc..."></textarea>
+                            <textarea id="ot-note" placeholder="Lý do tăng ca, chi tiết công việc..." required></textarea>
                         </div>
 
                         <!-- Preview -->
@@ -270,25 +270,25 @@
                     <div class="profile-avatar" id="profile-avatar">NV</div>
                     <h2 id="profile-name">Nhân viên</h2>
                     <p id="profile-username">@username</p>
-                    <div class="profile-ver-badge">Phiên bản <span id="app-version-display">v1.3.2</span></div>
+                    <div class="profile-ver-badge">Phiên bản <span id="app-version-display">v1.3.3</span></div>
                 </div>
 
                 <div class="card">
                     <div class="card-title">Thống kê tháng này</div>
-                    <div class="stats-grid">
-                        <div class="stat-item">
+                    <div class="stats-grid" style="display: flex; justify-content: center;">
+                        <div class="stat-item" style="display: none;">
                             <span class="stat-number" id="stat-days">0</span>
                             <span class="stat-text">Ngày OT</span>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item" style="display: none;">
                             <span class="stat-number" id="stat-lunch">0</span>
                             <span class="stat-text">OT Trưa (giờ)</span>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item" style="display: none;">
                             <span class="stat-number" id="stat-evening">0</span>
                             <span class="stat-text">OT Chiều (giờ)</span>
                         </div>
-                        <div class="stat-item">
+                        <div class="stat-item" style="flex: 1; max-width: 200px; text-align: center;">
                             <span class="stat-number stat-highlight" id="stat-total">0</span>
                             <span class="stat-text">Tổng OT (giờ)</span>
                         </div>
@@ -403,7 +403,7 @@
                 </div>
                 <div class="form-group" style="margin-bottom:16px;">
                     <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Ghi chú</label>
-                    <textarea id="edit-ot-note" rows="2" placeholder="Lý do..."></textarea>
+                    <textarea id="edit-ot-note" rows="2" placeholder="Lý do..." required></textarea>
                 </div>
                 <div class="confirm-actions" style="display:flex;gap:10px;justify-content:flex-end;">
                     <button type="button" class="btn btn-ghost" id="edit-ot-cancel" style="padding:10px 16px;font-size:0.85rem;border-radius:8px;">Hủy</button>
