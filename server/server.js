@@ -297,8 +297,11 @@ async function performCleanup(month) {
         }
     }
     
-    // 3. Xoá dữ liệu tháng cũ khỏi DB chính
-    db.records = db.records.filter(r => !r.date.startsWith(month) && r.date > month);
+    // 3. Xoá dữ liệu tháng cũ khỏi DB chính (giữ lại các bản ghi bù/bổ sung của tháng sau)
+    db.records = db.records.filter(r => {
+        const recordMonth = r.createdMonth || r.date.substring(0, 7);
+        return recordMonth > month;
+    });
     saveDB(db);
     console.log(`[Cleanup] Đã dọn dẹp dữ liệu của tháng ${month} và các tháng cũ hơn.`);
 }
@@ -353,8 +356,11 @@ async function autoCleanupOn15th(db) {
         const mm = String(prevMonthDate.getMonth() + 1).padStart(2, '0');
         const targetMonth = `${yyyy}-${mm}`; // e.g. "2026-05"
         
-        // Kiểm tra xem còn bản ghi cũ nào không
-        const hasOldRecords = db.records.some(r => r.date.startsWith(targetMonth) || r.date < targetMonth);
+        // Kiểm tra xem còn bản ghi cũ nào không (dựa trên tháng tính công/tháng tạo thay vì ngày tăng ca)
+        const hasOldRecords = db.records.some(r => {
+            const recordMonth = r.createdMonth || r.date.substring(0, 7);
+            return recordMonth <= targetMonth;
+        });
         if (hasOldRecords) {
             console.log(`[Auto Cleanup] Phát hiện hôm nay là ngày ${currentDay} (>= 15) và có dữ liệu của tháng ${targetMonth} (hoặc cũ hơn). Bắt đầu tự động dọn dẹp...`);
             try {
