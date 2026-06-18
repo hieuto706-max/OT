@@ -1922,7 +1922,6 @@ function checkMobileUpdates(isManual) {
                             showToast('Có phiên bản mới: v' + info.version + '. Vui lòng vuốt xuống hoặc làm mới trang để cập nhật!', 'info');
                         }
                     } else {
-                        // Phiên bản hiện tại đã là mới nhất
                         updateVersionDisplay();
                         if (isManual) {
                             showToast('Bạn đang sử dụng phiên bản mới nhất: v' + MOBILE_VERSION, 'success');

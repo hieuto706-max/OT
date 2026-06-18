@@ -160,6 +160,7 @@ body::before {
     background: rgba(255, 255, 255, 0.18);
 }
 
+/* ==================== ANIMATIONS ==================== */
 @keyframes orbDrift1 {
     0% { transform: translate3d(0, 0, 0) scale(1); }
     100% { transform: translate3d(7vw, 6vh, 0) scale(1.15); }
@@ -336,6 +337,19 @@ body::before {
     display: flex;
     flex-direction: column;
     animation: fadeIn 0.5s ease;
+}
+
+#screen-app.active {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100%;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 /* ==================== LANDING & LOGIN PAGE ==================== */
@@ -3365,26 +3379,7 @@ body.is-web-browser #btn-check-update-mobile {
     max-width: 420px;
 }
 
-/* ==================== TẢI XUỐNG NAV TAB HIGHLIGHT ==================== */
-.landing-nav .nav-link[data-tab="download"] {
-    background: linear-gradient(135deg, rgba(124, 127, 255, 0.15) 0%, rgba(13, 217, 139, 0.05) 100%);
-    border: 1px dashed rgba(124, 127, 255, 0.4);
-    color: var(--purple-light);
-    box-shadow: 0 0 10px rgba(124, 127, 255, 0.1);
-}
 
-.landing-nav .nav-link[data-tab="download"]:hover {
-    background: linear-gradient(135deg, rgba(124, 127, 255, 0.25) 0%, rgba(13, 217, 139, 0.1) 100%);
-    box-shadow: 0 0 15px rgba(124, 127, 255, 0.2);
-}
-
-.landing-nav .nav-link[data-tab="download"].active {
-    background: linear-gradient(135deg, var(--purple) 0%, var(--green) 100%);
-    color: var(--text-white);
-    border-style: solid;
-    border-color: var(--purple);
-    box-shadow: 0 0 20px rgba(124, 127, 255, 0.4);
-}
 
 /* Responsive adjustment for Mobile/Tablet */
 @media (max-width: 900px) {
@@ -3537,7 +3532,7 @@ body.landing-page #screen-login {
     top: 22%;
     transform: rotate(15deg);
     animation: driftLeft 24s ease-in-out infinite alternate;
-    background-image: url('../resources/ot_manager_app_review.png');
+    background-image: url('resources/ot_manager_app_review.png');
     background-size: cover;
     background-position: center;
 }
@@ -3550,7 +3545,7 @@ body.landing-page #screen-login {
     bottom: 12%;
     transform: rotate(-10deg);
     animation: driftRight 30s ease-in-out infinite alternate;
-    background-image: url('../resources/ot_manager_desktop_mockup.png');
+    background-image: url('resources/ot_manager_desktop_mockup.png');
     background-size: cover;
     background-position: center;
 }

@@ -551,6 +551,10 @@ async function handleOTSubmit(e) {
     const backfillCheckbox = document.getElementById('ot-backfill');
     const isBackfill = backfillCheckbox ? backfillCheckbox.checked : false;
     let note = document.getElementById('ot-note').value.trim();
+    if (!note) {
+        showToast('Vui lòng nhập ghi chú (lý do tăng ca, chi tiết công việc)!', 'error');
+        return;
+    }
     if (isBackfill) {
         note = '[BÙ THÁNG TRƯỚC] ' + note;
     }
@@ -1805,6 +1809,10 @@ async function handleEditOTSubmit(e) {
     const editBackfill = document.getElementById('edit-ot-backfill');
     const isBackfill = editBackfill ? editBackfill.checked : false;
     let note = document.getElementById('edit-ot-note').value.trim();
+    if (!note) {
+        showToast('Vui lòng nhập ghi chú!', 'error');
+        return;
+    }
     if (isBackfill) {
         note = '[BÙ THÁNG TRƯỚC] ' + note;
     }
@@ -1914,7 +1922,6 @@ function checkMobileUpdates(isManual) {
                             showToast('Có phiên bản mới: v' + info.version + '. Vui lòng vuốt xuống hoặc làm mới trang để cập nhật!', 'info');
                         }
                     } else {
-                        // Phiên bản hiện tại đã là mới nhất
                         updateVersionDisplay();
                         if (isManual) {
                             showToast('Bạn đang sử dụng phiên bản mới nhất: v' + MOBILE_VERSION, 'success');
@@ -2044,3 +2051,8 @@ if (window.location.search.includes('mock=true')) {
         }
     }, 1500);
 }
+
+// Expose functions globally to window for onclick handlers to function reliably in all environments
+window.editRecordDialog = editRecordDialog;
+window.deleteRecord = deleteRecord;
+
