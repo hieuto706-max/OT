@@ -35,13 +35,13 @@ if %ERRORLEVEL% NEQ 0 (
 echo.
 echo [3/3] Sao chep file APK hoan thien (Copying APK)...
 cd /d "%ROOT%"
-copy /Y "%ROOT%\mobile-android\app\build\outputs\apk\release\app-release.apk" "%MOBILE_DIR%\OT-Manager-mobile-1.3.3.apk"
+copy /Y "%ROOT%\mobile-android\app\build\outputs\apk\release\app-release.apk" "%MOBILE_DIR%\OT-Manager-mobile.apk"
 
 echo.
 echo ==================================================
 echo   BIEN DICH THANH CONG!
 echo   File APK da duoc luu tai:
-echo   %MOBILE_DIR%\OT-Manager-mobile-1.3.3.apk
+echo   %MOBILE_DIR%\OT-Manager-mobile.apk
 echo ==================================================
 echo.
 pause

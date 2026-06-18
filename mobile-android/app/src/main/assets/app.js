@@ -376,8 +376,8 @@ async function handleAdminLogin(e) {
         safeStorage.setItem('ot_login_date', todayStr);
         
         // Chuyển hướng tới trang quản lý desktop
-        const isGitHubPages = window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
-        const redirectUrl = isGitHubPages ? '/OT/desktop/index.html' : '/desktop/index.html';
+        const needsOtPrefix = window.location.hostname.includes('github.io');
+        const redirectUrl = needsOtPrefix ? '/OT/desktop/index.html' : '/desktop/index.html';
         showToast('Đăng nhập Quản lý thành công, đang chuyển hướng...', 'success');
         setTimeout(() => {
             window.location.href = redirectUrl;
@@ -540,11 +540,42 @@ function resetForm() {
     updatePreview();
 }
 
+async function checkDuplicateDate(userId, date) {
+    const month = date.substring(0, 7);
+    let records = [];
+    if (API) {
+        try {
+            const data = await api(`/api/records?userId=${userId}&month=${month}`);
+            records = data.records || [];
+        } catch (err) {
+            console.log('Failed to fetch to check duplicates, falling back to cache:', err);
+            records = JSON.parse(safeStorage.getItem(`ot_cached_records_${userId}_${month}`) || '[]');
+        }
+    } else {
+        records = JSON.parse(safeStorage.getItem(`ot_cached_records_${userId}_${month}`) || '[]');
+    }
+
+    const offlineRecords = JSON.parse(safeStorage.getItem('ot_offline_records') || '[]');
+    const userOffline = offlineRecords.filter(r => r.userId === userId && r.date === date);
+
+    const hasOnlineDuplicate = records.some(r => r.date === date);
+    const hasOfflineDuplicate = userOffline.length > 0;
+
+    return hasOnlineDuplicate || hasOfflineDuplicate;
+}
+
 async function handleOTSubmit(e) {
     e.preventDefault();
     if (!currentUser) return;
 
     const date = document.getElementById('ot-date').value;
+    
+    // Kiểm tra ghi trùng ngày
+    const isDuplicate = await checkDuplicateDate(currentUser.id, date);
+    if (isDuplicate) {
+        showToast('Ngày này đã có bản ghi tăng ca! Vui lòng chỉnh sửa trong phần Lịch sử.', 'error');
+        return;
+    }
     const lunch = document.getElementById('ot-lunch').checked;
     const start = document.getElementById('ot-start').value;
     const end = document.getElementById('ot-end').value;
@@ -706,9 +737,9 @@ async function loadHistory() {
                         <div class="history-right">
                             <span class="history-total">${r.totalHours.toFixed(1)}h</span>
                             <div class="history-item-actions">
-                                <span class="action-link edit-link" onclick="editRecordDialog('${r.id}')">Sửa</span>
+                                <button class="action-link edit-link" onclick="editRecordDialog('${r.id}')">Sửa</button>
                                 <span class="action-sep">•</span>
-                                <span class="action-link delete-link" onclick="deleteRecord('${r.id}')">Xóa</span>
+                                <button class="action-link delete-link" onclick="deleteRecord('${r.id}')">Xóa</button>
                             </div>
                         </div>
                     </div>
@@ -1379,7 +1410,7 @@ function initApp() {
 
     // Thiết lập link tải động và mã QR cho mục Tải ứng dụng
     const host = window.location.origin;
-    const isGitHubPages = window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
+    const isGitHubPages = window.location.hostname.includes('github.io');
     const isMobileFolder = window.location.pathname.includes('/mobile');
 
     // Link APK: Trỏ thẳng tới server Render để tải trực tiếp từ đĩa cục bộ, tránh lỗi 404 trên repo GitHub private
@@ -1756,21 +1787,15 @@ async function editRecordDialog(id) {
         
         const isBackfill = record.isBackfill || (record.note && record.note.includes('[BÙ THÁNG TRƯỚC]'));
         const editBackfill = document.getElementById('edit-ot-backfill');
-        if (editBackfill) editBackfill.checked = isBackfill;
+        if (editBackfill) editBackfill.checked = false;
 
         const editNormalInputs = document.getElementById('edit-ot-normal-inputs');
         const editBackfillGroup = document.getElementById('edit-ot-backfill-hours-group');
         const editBackfillHours = document.getElementById('edit-ot-backfill-hours');
 
-        if (isBackfill) {
-            if (editNormalInputs) editNormalInputs.style.display = 'none';
-            if (editBackfillGroup) editBackfillGroup.style.display = 'block';
-            if (editBackfillHours) editBackfillHours.value = record.totalHours;
-        } else {
-            if (editNormalInputs) editNormalInputs.style.display = 'block';
-            if (editBackfillGroup) editBackfillGroup.style.display = 'none';
-            if (editBackfillHours) editBackfillHours.value = '';
-        }
+        if (editNormalInputs) editNormalInputs.style.display = 'block';
+        if (editBackfillGroup) editBackfillGroup.style.display = 'none';
+        if (editBackfillHours) editBackfillHours.value = '';
 
         document.getElementById('edit-ot-note').value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').trim() : '';
 
@@ -1807,7 +1832,7 @@ async function handleEditOTSubmit(e) {
     const end = document.getElementById('edit-ot-end').value;
     
     const editBackfill = document.getElementById('edit-ot-backfill');
-    const isBackfill = editBackfill ? editBackfill.checked : false;
+    const isBackfill = false;
     let note = document.getElementById('edit-ot-note').value.trim();
     if (!note) {
         showToast('Vui lòng nhập ghi chú!', 'error');
@@ -1895,7 +1920,7 @@ async function handleEditOTSubmit(e) {
 }
 
 // ==================== AUTO UPDATE FOR MOBILE APP ====================
-const MOBILE_VERSION = '1.3.3';
+const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.3';
 let updateCheckInterval = null;
 
 function checkMobileUpdates(isManual) {
@@ -1947,8 +1972,11 @@ function checkMobileUpdates(isManual) {
 }
 
 function compareMobileVersions(v1, v2) {
-    var parts1 = v1.split('.').map(Number);
-    var parts2 = v2.split('.').map(Number);
+    if (!v1 || !v2) return 0;
+    var str1 = String(v1).replace(/^[vV]/, '');
+    var str2 = String(v2).replace(/^[vV]/, '');
+    var parts1 = str1.split('.').map(Number);
+    var parts2 = str2.split('.').map(Number);
     for (var i = 0; i < Math.max(parts1.length, parts2.length); i++) {
         var p1 = parts1[i] || 0;
         var p2 = parts2[i] || 0;

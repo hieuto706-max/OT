@@ -727,7 +727,7 @@ async function handleAPI(req, res, urlPath, method) {
         const proto = req.headers['x-forwarded-proto'] || 'http';
         const baseUrl = `${proto}://${req.headers.host}`;
         const desktopDownloadUrl = `${baseUrl}/download/desktop`;
-        const mobileDownloadUrl = `${baseUrl}/OT-Manager-mobile-${version}.apk`;
+        const mobileDownloadUrl = `${baseUrl}/OT-Manager-mobile.apk`;
         return sendJSON(res, 200, { version, desktopDownloadUrl, mobileDownloadUrl });
     }
 

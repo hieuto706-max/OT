@@ -1284,11 +1284,16 @@ body::before {
 }
 
 .action-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.2s;
     user-select: none;
+    display: inline;
 }
 
 .edit-link {

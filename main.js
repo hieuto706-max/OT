@@ -135,6 +135,9 @@ async function createWindow() {
         console.log(`║                                      ║`);
         console.log(`║   🖥️  App Quản Lý (Desktop):         ║`);
         console.log(`╚══════════════════════════════════════╝\n`);
+        
+        // Kích hoạt kiểm tra cập nhật trên startup khi online
+        checkUpdates(cloudUrl);
     });
 
     // Bắt sự kiện tắt cửa sổ: Không thoát mà ẩn xuống khay hệ thống
@@ -167,13 +170,24 @@ function checkUpdates(cloudUrl) {
                 if (res.statusCode === 200) {
                     const info = JSON.parse(data);
                     if (info.version && compareVersions(localVersion, info.version) < 0) {
-                        // Tự động tải và cập nhật ngay khi phát hiện phiên bản mới
-                        if (info.desktopDownloadUrl) {
-                            startAutoUpdate(info.desktopDownloadUrl, info.version);
-                        } else {
-                            const fallbackUrl = `https://github.com/hieuto706-max/OT/releases/download/v${info.version}/ot-manager-Setup-${info.version}.exe`;
-                            shell.openExternal(fallbackUrl);
-                        }
+                        const updateUrl = info.desktopDownloadUrl || `https://github.com/hieuto706-max/OT/releases/download/v${info.version}/ot-manager-Setup-${info.version}.exe`;
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'info',
+                            title: 'Cập nhật phiên bản mới',
+                            message: `Đã có phiên bản mới v${info.version} (phiên bản hiện tại: v${localVersion}).`,
+                            detail: 'Bạn có muốn tải về và cài đặt phiên bản mới ngay bây giờ không?',
+                            buttons: ['Tải về ngay', 'Để sau'],
+                            defaultId: 0,
+                            cancelId: 1
+                        }).then(r => {
+                            if (r.response === 0) {
+                                if (info.desktopDownloadUrl) {
+                                    global.startElectronUpdate(info.desktopDownloadUrl, info.version);
+                                } else {
+                                    shell.openExternal(updateUrl);
+                                }
+                            }
+                        });
                     }
                 }
             } catch (e) {}

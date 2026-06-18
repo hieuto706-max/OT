@@ -361,7 +361,7 @@
                     <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Ngày tăng ca</label>
                     <input type="date" id="edit-ot-date" required>
                 </div>
-                <div class="toggle-row" style="margin-bottom:14px;">
+                <div class="toggle-row" style="margin-bottom:14px; display: none !important;">
                     <label class="toggle-label" for="edit-ot-backfill">
                         <span class="toggle-text" style="display:flex;flex-direction:column;text-align:left;">
                             <strong style="font-size:0.85rem;color:var(--text);">Bù tăng ca</strong>
@@ -374,7 +374,7 @@
                     </label>
                 </div>
 
-                <div class="form-group" id="edit-ot-backfill-hours-group" style="display: none; margin-bottom:14px;">
+                <div class="form-group" id="edit-ot-backfill-hours-group" style="display: none !important; margin-bottom:14px;">
                     <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Số giờ tăng ca cần bù</label>
                     <input type="number" id="edit-ot-backfill-hours" step="0.1" min="0.1" max="24" placeholder="Nhập số giờ bù (ví dụ: 8.0)">
                 </div>
@@ -457,6 +457,9 @@
                 if (input) setTimeout(() => input.focus(), 600);
             }
         };
+    </script>
+    <script>
+        window.PACKAGED_VERSION = '1.3.3';
     </script>
     <script>
         (function() {

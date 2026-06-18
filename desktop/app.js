@@ -197,8 +197,9 @@ function checkMidnightLogout() {
 function logout() {
     localStorage.removeItem('ot_current_user');
     localStorage.removeItem('ot_login_date');
-    showScreen('screen-login');
-    showToast('Đã đăng xuất', 'info');
+    const needsOtPrefix = window.location.hostname.includes('github.io');
+    const mainPageUrl = needsOtPrefix ? '/OT/index.html' : '/index.html';
+    window.location.href = mainPageUrl;
 }
 
 async function checkGistStatus() {
@@ -295,13 +296,22 @@ async function loadMobileInfo() {
 
 async function populateUserFilter() {
     const select = document.getElementById('admin-filter-user');
+    const adminOtUser = document.getElementById('admin-ot-user');
     try {
         const data = await api('/api/users');
         const users = data.users.filter(u => u.role === 'employee');
-        select.innerHTML = '<option value="">Tất cả</option>';
-        users.forEach(u => {
-            select.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
-        });
+        if (select) {
+            select.innerHTML = '<option value="">Tất cả</option>';
+            users.forEach(u => {
+                select.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+            });
+        }
+        if (adminOtUser) {
+            adminOtUser.innerHTML = '<option value="">-- Chọn nhân viên --</option>';
+            users.forEach(u => {
+                adminOtUser.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+            });
+        }
     } catch (e) {}
 }
 
@@ -564,34 +574,77 @@ async function exportExcel() {
     try {
         const usersData = await api('/api/users');
         const users = usersData.users.filter(u => u.role === 'employee');
-        // Sắp xếp danh sách nhân viên theo bảng chữ cái
         users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
 
         const recData = await api(`/api/records?month=${month}`);
         const records = recData.records;
 
-        // Khởi tạo workbook mới của SheetJS
-        const wb = XLSX.utils.book_new();
-
         const now = new Date();
         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         const exportTime = `${formatDateFull(now)} lúc ${timeStr}`;
 
-        // ==================== SHEET 1: TỔNG HỢP ====================
-        const summaryData = [];
-        // Tiêu đề báo cáo
-        summaryData.push([`BÁO CÁO TĂNG CA - THÁNG ${month}`]);
-        summaryData.push([`Ngày xuất báo cáo: ${exportTime}`]);
-        summaryData.push([]); // Dòng trống
-        summaryData.push(["I. BẢNG TỔNG HỢP GIỜ TĂNG CA"]);
-        summaryData.push(["STT", "Họ và tên", "Mã nhân viên", "Số ngày OT", "OT Trưa (giờ)", "OT Chiều (giờ)", "Tổng OT (giờ)"]);
+        // Khởi tạo workbook mới của ExcelJS
+        const workbook = new ExcelJS.Workbook();
+        
+        // ------------------ SHEET 1: TỔNG HỢP ------------------
+        const wsSummary = workbook.addWorksheet('Tổng Hợp', {
+            views: [{ showGridLines: true }]
+        });
 
+        // 1. Tiêu đề chính
+        wsSummary.mergeCells('A1:G1');
+        const title1 = wsSummary.getCell('A1');
+        title1.value = `BÁO CÁO TĂNG CA - THÁNG ${month}`;
+        title1.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+        title1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF312E81' } }; // Indigo 900
+        title1.alignment = { vertical: 'middle', horizontal: 'center' };
+        wsSummary.getRow(1).height = 40;
+
+        // 2. Ngày xuất báo cáo
+        wsSummary.mergeCells('A2:G2');
+        const subtitle1 = wsSummary.getCell('A2');
+        subtitle1.value = `Ngày xuất báo cáo: ${exportTime}`;
+        subtitle1.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF4B5563' } };
+        subtitle1.alignment = { vertical: 'middle', horizontal: 'center' };
+        wsSummary.getRow(2).height = 20;
+
+        // 3. Dòng trống
+        wsSummary.getRow(3).height = 15;
+
+        // 4. Tiêu đề bảng
+        wsSummary.getCell('A4').value = "I. BẢNG TỔNG HỢP GIỜ TĂNG CA";
+        wsSummary.getCell('A4').font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF111827' } };
+        wsSummary.getRow(4).height = 22;
+
+        // 5. Headers
+        const headers1 = ["STT", "Họ và tên", "Mã nhân viên", "Số ngày OT", "OT Trưa (giờ)", "OT Chiều (giờ)", "Tổng OT (giờ)"];
+        wsSummary.getRow(5).values = headers1;
+        wsSummary.getRow(5).height = 28;
+        wsSummary.getRow(5).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+        
+        for (let col = 1; col <= 7; col++) {
+            const cell = wsSummary.getCell(5, col);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } }; // Indigo 600
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+                left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+                bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+                right: { style: 'thin', color: { argb: 'FFCCCCCC' } }
+            };
+        }
+
+        // 6. Dữ liệu nhân viên
+        let summaryStartRow = 6;
         users.forEach((u, i) => {
             const ur = records.filter(r => r.userId === u.id);
             const days = ur.length;
             const lh = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
             const eh = ur.reduce((s, r) => s + r.eveningOTHours, 0);
-            summaryData.push([
+
+            const rowNum = summaryStartRow + i;
+            const row = wsSummary.getRow(rowNum);
+            row.values = [
                 i + 1,
                 u.fullname,
                 u.username,
@@ -599,80 +652,155 @@ async function exportExcel() {
                 lh,
                 eh,
                 lh + eh
-            ]);
-        });
+            ];
+            row.height = 22;
+            row.font = { name: 'Arial', size: 10 };
 
-        // Thêm hàng tổng cộng động (Excel Formula)
-        const summaryStartRow = 6; // Dòng 6 trong Excel
-        const summaryEndRow = 5 + users.length; // Dòng 5 + N
+            for (let col = 1; col <= 7; col++) {
+                const cell = row.getCell(col);
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                    left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                    bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                    right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+                };
 
-        summaryData.push([
-            "Tổng cộng", // A
-            "", // B
-            "", // C
-            { f: `SUM(D${summaryStartRow}:D${summaryEndRow})` }, // D (Tổng số ngày)
-            { f: `SUM(E${summaryStartRow}:E${summaryEndRow})` }, // E (Tổng OT Trưa)
-            { f: `SUM(F${summaryStartRow}:F${summaryEndRow})` }, // F (Tổng OT Chiều)
-            { f: `SUM(G${summaryStartRow}:G${summaryEndRow})` }  // G (Tổng cộng tất cả)
-        ]);
+                if (col === 2) {
+                    cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                } else {
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                }
 
-        const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
-
-        // Cấu hình gộp ô tiêu đề
-        wsSummary['!merges'] = [
-            { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, // Gộp dòng tiêu đề chính
-            { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } }  // Gộp dòng ngày xuất
-        ];
-
-        // Định dạng cột và kiểu số hiển thị chuyên nghiệp
-        const summaryRange = XLSX.utils.decode_range(wsSummary['!ref']);
-        for (let R = summaryRange.s.r; R <= summaryRange.e.r; ++R) {
-            for (let C = summaryRange.s.c; C <= summaryRange.e.c; ++C) {
-                const cell_ref = XLSX.utils.encode_cell({ c: C, r: R });
-                const cell = wsSummary[cell_ref];
-                if (!cell) continue;
-
-                if (R >= 5) { // Dòng dữ liệu và Tổng cộng trở đi
-                    if (C === 0 || C === 3) {
-                        cell.t = 'n';
-                        cell.z = '0'; // Số nguyên cho STT và Số ngày
-                    } else if (C === 4 || C === 5 || C === 6) {
-                        cell.t = 'n';
-                        cell.z = '#,##0.0'; // Định dạng giờ thập phân
-                    }
+                if (col === 1 || col === 4) {
+                    cell.numFmt = '0';
+                } else if (col >= 5) {
+                    cell.numFmt = '#,##0.0';
                 }
             }
-        }
+        });
+
+        // 7. Dòng Tổng cộng
+        const totalRow1Num = summaryStartRow + users.length;
+        wsSummary.mergeCells(`A${totalRow1Num}:C${totalRow1Num}`);
+        wsSummary.getCell(`A${totalRow1Num}`).value = "Tổng cộng";
         
-        // Độ rộng cột cho bảng tổng hợp
-        wsSummary['!cols'] = [
-            { wch: 8 },   // STT
-            { wch: 28 },  // Họ và tên
-            { wch: 18 },  // Mã nhân viên
-            { wch: 14 },  // Số ngày OT
-            { wch: 18 },  // OT Trưa (giờ)
-            { wch: 18 },  // OT Chiều (giờ)
-            { wch: 18 }   // Tổng OT (giờ)
+        wsSummary.getCell(`D${totalRow1Num}`).value = { formula: `SUM(D6:D${totalRow1Num - 1})` };
+        wsSummary.getCell(`E${totalRow1Num}`).value = { formula: `SUM(E6:E${totalRow1Num - 1})` };
+        wsSummary.getCell(`F${totalRow1Num}`).value = { formula: `SUM(F6:F${totalRow1Num - 1})` };
+        wsSummary.getCell(`G${totalRow1Num}`).value = { formula: `SUM(G6:G${totalRow1Num - 1})` };
+
+        const rowTotal1 = wsSummary.getRow(totalRow1Num);
+        rowTotal1.height = 26;
+        rowTotal1.font = { name: 'Arial', size: 10, bold: true };
+        
+        for (let col = 1; col <= 7; col++) {
+            const cell = rowTotal1.getCell(col);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E7FF' } }; // Indigo 100
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                left: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                bottom: { style: 'double', color: { argb: 'FF9CA3AF' } },
+                right: { style: 'thin', color: { argb: 'FF9CA3AF' } }
+            };
+            if (col >= 4) {
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                cell.numFmt = col === 4 ? '0' : '#,##0.0';
+            } else if (col === 1) {
+                cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+            }
+        }
+
+        // Độ rộng cột
+        wsSummary.columns = [
+            { width: 8 },   // STT
+            { width: 28 },  // Họ và tên
+            { width: 16 },  // Mã nhân viên
+            { width: 14 },  // Số ngày OT
+            { width: 18 },  // OT Trưa
+            { width: 18 },  // OT Chiều
+            { width: 18 }   // Tổng OT
         ];
 
-        // ==================== SHEET 2: CHI TIẾT ====================
-        const detailData = [];
-        detailData.push([`CHI TIẾT TĂNG CA - THÁNG ${month}`]);
-        detailData.push([`Ngày xuất báo cáo: ${exportTime}`]);
-        detailData.push([]); // Dòng trống
-        detailData.push(["II. BẢNG CHI TIẾT TĂNG CA TỪNG NGÀY"]);
-        detailData.push(["STT", "Ngày", "Họ và tên", "Mã nhân viên", "OT Trưa", "OT Chiều", "Giờ bắt đầu", "Giờ kết thúc", "Tổng OT (giờ)", "Ghi chú"]);
+        // ------------------ SHEET 2: CHI TIẾT ------------------
+        const wsDetail = workbook.addWorksheet('Chi Tiết', {
+            views: [{ showGridLines: true }]
+        });
 
+        // 1. Tiêu đề chính
+        wsDetail.mergeCells('A1:J1');
+        const title2 = wsDetail.getCell('A1');
+        title2.value = `CHI TIẾT TĂNG CA - THÁNG ${month}`;
+        title2.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+        title2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF312E81' } };
+        title2.alignment = { vertical: 'middle', horizontal: 'center' };
+        wsDetail.getRow(1).height = 40;
+
+        // 2. Ngày xuất báo cáo
+        wsDetail.mergeCells('A2:J2');
+        const subtitle2 = wsDetail.getCell('A2');
+        subtitle2.value = `Ngày xuất báo cáo: ${exportTime}`;
+        subtitle2.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF4B5563' } };
+        subtitle2.alignment = { vertical: 'middle', horizontal: 'center' };
+        wsDetail.getRow(2).height = 20;
+
+        // 3. Dòng trống
+        wsDetail.getRow(3).height = 15;
+
+        // 4. Tiêu đề bảng
+        wsDetail.getCell('A4').value = "II. BẢNG CHI TIẾT TĂNG CA TỪNG NGÀY";
+        wsDetail.getCell('A4').font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF111827' } };
+        wsDetail.getRow(4).height = 22;
+
+        // 5. Headers
+        const headers2 = ["STT", "Ngày", "Họ và tên", "Mã nhân viên", "OT Trưa", "OT Chiều", "Giờ bắt đầu", "Giờ kết thúc", "Tổng OT (giờ)", "Ghi chú"];
+        wsDetail.getRow(5).values = headers2;
+        wsDetail.getRow(5).height = 28;
+        wsDetail.getRow(5).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+        
+        for (let col = 1; col <= 10; col++) {
+            const cell = wsDetail.getCell(5, col);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+                left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+                bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+                right: { style: 'thin', color: { argb: 'FFCCCCCC' } }
+            };
+        }
+
+        // 6. Điền dữ liệu chi tiết
+        let currentDetailRow = 6;
         let detailedIdx = 1;
+        let isFirstUser = true;
+
         users.forEach(u => {
             const userRecords = records.filter(r => r.userId === u.id);
-            // Sắp xếp tăng ca theo ngày
+            if (userRecords.length === 0) return;
             userRecords.sort((a, b) => a.date.localeCompare(b.date));
-            
+
+            // Thêm dòng trống ngăn cách giữa các nhân viên
+            if (!isFirstUser) {
+                wsDetail.addRow([]);
+                wsDetail.getRow(currentDetailRow).height = 12;
+                for (let col = 1; col <= 10; col++) {
+                    const cell = wsDetail.getCell(currentDetailRow, col);
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FAFB' } };
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+                    };
+                }
+                currentDetailRow++;
+            }
+            isFirstUser = false;
+
             userRecords.forEach(r => {
                 const lunchVal = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
                 const eveningVal = r.eveningOTHours > 0 ? r.eveningOTHours : 0;
-                detailData.push([
+
+                const row = wsDetail.getRow(currentDetailRow);
+                row.values = [
                     detailedIdx++,
                     formatDate(r.date),
                     u.fullname,
@@ -683,84 +811,100 @@ async function exportExcel() {
                     r.otEnd || '—',
                     r.totalHours,
                     r.note || '—'
-                ]);
+                ];
+                row.height = 22;
+                row.font = { name: 'Arial', size: 10 };
+
+                for (let col = 1; col <= 10; col++) {
+                    const cell = row.getCell(col);
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                        left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+                        right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+                    };
+
+                    if (col === 3 || col === 10) {
+                        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                    } else {
+                        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                    }
+
+                    if (col === 1) {
+                        cell.numFmt = '0';
+                    } else if (col === 5 || col === 6 || col === 9) {
+                        cell.numFmt = '#,##0.0';
+                    }
+                }
+                currentDetailRow++;
             });
         });
 
-        const hasDetails = detailedIdx > 1;
+        // 7. Tổng cộng chi tiết
+        if (detailedIdx > 1) {
+            const totalRow2Num = currentDetailRow;
+            wsDetail.mergeCells(`A${totalRow2Num}:D${totalRow2Num}`);
+            wsDetail.getCell(`A${totalRow2Num}`).value = "Tổng cộng";
+            
+            wsDetail.getCell(`E${totalRow2Num}`).value = { formula: `SUM(E6:E${totalRow2Num - 1})` };
+            wsDetail.getCell(`F${totalRow2Num}`).value = { formula: `SUM(F6:F${totalRow2Num - 1})` };
+            wsDetail.getCell(`I${totalRow2Num}`).value = { formula: `SUM(I6:I${totalRow2Num - 1})` };
 
-        if (!hasDetails) {
-            detailData.push(["Chưa có dữ liệu chi tiết tăng ca cho tháng này.", "", "", "", "", "", "", "", "", ""]);
-        } else {
-            // Thêm hàng tổng cộng động cho bảng chi tiết
-            const detailStartRow = 6;
-            const detailEndRow = 5 + detailedIdx - 1;
-
-            detailData.push([
-                "Tổng cộng", // A
-                "", // B
-                "", // C
-                "", // D
-                { f: `SUM(E${detailStartRow}:E${detailEndRow})` }, // E (OT Trưa)
-                { f: `SUM(F${detailStartRow}:F${detailEndRow})` }, // F (OT Chiều)
-                "", // G
-                "", // H
-                { f: `SUM(I${detailStartRow}:I${detailEndRow})` }, // I (Tổng cộng giờ)
-                ""  // J
-            ]);
-        }
-
-        const wsDetail = XLSX.utils.aoa_to_sheet(detailData);
-
-        // Cấu hình gộp ô tiêu đề chi tiết
-        wsDetail['!merges'] = [
-            { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } }, // Gộp tiêu đề
-            { s: { r: 1, c: 0 }, e: { r: 1, c: 9 } }  // Gộp ngày xuất
-        ];
-
-        // Định dạng dữ liệu số cho bảng chi tiết
-        const detailRange = XLSX.utils.decode_range(wsDetail['!ref']);
-        for (let R = detailRange.s.r; R <= detailRange.e.r; ++R) {
-            for (let C = detailRange.s.c; C <= detailRange.e.c; ++C) {
-                const cell_ref = XLSX.utils.encode_cell({ c: C, r: R });
-                const cell = wsDetail[cell_ref];
-                if (!cell) continue;
-
-                if (R >= 5 && hasDetails) {
-                    if (C === 0) {
-                        cell.t = 'n';
-                        cell.z = '0'; // STT số nguyên
-                    } else if (C === 4 || C === 5 || C === 8) {
-                        cell.t = 'n';
-                        cell.z = '#,##0.0'; // Các cột giờ OT định dạng số thực
-                    }
+            const rowTotal2 = wsDetail.getRow(totalRow2Num);
+            rowTotal2.height = 26;
+            rowTotal2.font = { name: 'Arial', size: 10, bold: true };
+            
+            for (let col = 1; col <= 10; col++) {
+                const cell = rowTotal2.getCell(col);
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E7FF' } }; // Indigo 100
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                    left: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                    bottom: { style: 'double', color: { argb: 'FF9CA3AF' } },
+                    right: { style: 'thin', color: { argb: 'FF9CA3AF' } }
+                };
+                if (col === 5 || col === 6 || col === 9) {
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                    cell.numFmt = '#,##0.0';
+                } else if (col === 1) {
+                    cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
                 }
             }
+        } else {
+            wsDetail.mergeCells(`A${currentDetailRow}:J${currentDetailRow}`);
+            const emptyCell = wsDetail.getCell(`A${currentDetailRow}`);
+            emptyCell.value = "Chưa có dữ liệu chi tiết tăng ca cho tháng này.";
+            emptyCell.alignment = { vertical: 'middle', horizontal: 'center' };
+            wsDetail.getRow(currentDetailRow).height = 30;
         }
 
-        // Độ rộng cột cho bảng chi tiết
-        wsDetail['!cols'] = [
-            { wch: 8 },   // STT
-            { wch: 14 },  // Ngày
-            { wch: 28 },  // Họ và tên
-            { wch: 18 },  // Mã nhân viên
-            { wch: 14 },  // OT Trưa
-            { wch: 14 },  // OT Chiều
-            { wch: 14 },  // Giờ bắt đầu
-            { wch: 14 },  // Giờ kết thúc
-            { wch: 18 },  // Tổng OT (giờ)
-            { wch: 35 }   // Ghi chú
+        // Độ rộng cột sheet Chi tiết
+        wsDetail.columns = [
+            { width: 8 },   // STT
+            { width: 14 },  // Ngày
+            { width: 28 },  // Họ và tên
+            { width: 16 },  // Mã nhân viên
+            { width: 12 },  // OT Trưa
+            { width: 12 },  // OT Chiều
+            { width: 14 },  // Giờ bắt đầu
+            { width: 14 },  // Giờ kết thúc
+            { width: 16 },  // Tổng OT (giờ)
+            { width: 35 }   // Ghi chú
         ];
 
-        // Thêm các Sheet vào Workbook
-        XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng Hợp");
-        XLSX.utils.book_append_sheet(wb, wsDetail, "Chi Tiết");
+        // 8. Lưu file Excel
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bao-cao-tang-ca-chi-tiet-${month}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
 
-        // Xuất file XLSX thực tế
-        XLSX.writeFile(wb, `bao-cao-tang-ca-chi-tiet-${month}.xlsx`);
-        showToast('Đã xuất file Excel chi tiết!');
-    } catch (e) { 
-        showToast('Lỗi xuất Excel: ' + e.message, 'error'); 
+        showToast('Đã xuất file Excel chi tiết có định dạng!');
+    } catch (e) {
+        showToast('Lỗi xuất Excel: ' + e.message, 'error');
         console.error(e);
     }
 }
@@ -913,6 +1057,55 @@ async function handleOTSubmit(e) {
         updateOTPreview();
         await refreshEmployeeRecords();
         setTimeout(() => { successEl.textContent = ''; }, 3000);
+    } catch (err) {
+        errorEl.textContent = err.message;
+    }
+}
+
+async function handleAdminOTSubmit(e) {
+    e.preventDefault();
+    const userId = document.getElementById('admin-ot-user').value;
+    const date = document.getElementById('admin-ot-date').value;
+    const hasLunch = document.getElementById('admin-ot-lunch').checked;
+    const otStart = document.getElementById('admin-ot-start').value;
+    const otEnd = document.getElementById('admin-ot-end').value;
+    const note = document.getElementById('admin-ot-note').value.trim();
+    const errorEl = document.getElementById('admin-ot-error');
+    const successEl = document.getElementById('admin-ot-success');
+    errorEl.textContent = '';
+    successEl.textContent = '';
+
+    if (!userId) { errorEl.textContent = 'Vui lòng chọn nhân viên!'; return; }
+    if (!date) { errorEl.textContent = 'Vui lòng chọn ngày!'; return; }
+    if (!note) { errorEl.textContent = 'Vui lòng nhập ghi chú!'; return; }
+
+    const eveningHours = calculateEveningOT(otStart, otEnd);
+    const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
+    const totalHours = lunchHours + eveningHours;
+
+    if (totalHours <= 0) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT!'; return; }
+
+    try {
+        const data = await api('/api/records', 'POST', {
+            userId, date, hasLunchOT: hasLunch,
+            otStart: eveningHours > 0 ? otStart : '',
+            otEnd: eveningHours > 0 ? otEnd : '',
+            eveningOTHours: eveningHours, totalHours, note
+        });
+
+        const action = data.updated ? 'Đã cập nhật' : 'Đã lưu';
+        successEl.textContent = `${action} ${totalHours.toFixed(1)} giờ tăng ca thành công!`;
+        showToast(`${action} ${totalHours.toFixed(1)} giờ tăng ca`);
+
+        document.getElementById('admin-ot-user').value = '';
+        document.getElementById('admin-ot-lunch').checked = false;
+        document.getElementById('admin-ot-start').value = '16:30';
+        document.getElementById('admin-ot-end').value = '16:30';
+        document.getElementById('admin-ot-note').value = '';
+
+        setTimeout(() => { successEl.textContent = ''; }, 3000);
+        await refreshAdminStats();
+        await refreshAdminRecords();
     } catch (err) {
         errorEl.textContent = err.message;
     }
@@ -1444,6 +1637,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     const formAdm = document.getElementById('form-login-admin');
     if (formAdm) formAdm.addEventListener('submit', handleAdminLogin);
     document.getElementById('form-ot').addEventListener('submit', handleOTSubmit);
+
+    // Admin Add OT form
+    const adminFormOt = document.getElementById('admin-form-ot');
+    if (adminFormOt) {
+        adminFormOt.addEventListener('submit', handleAdminOTSubmit);
+        const adminOtStart = document.getElementById('admin-ot-start');
+        if (adminOtStart) {
+            adminOtStart.addEventListener('change', () => {
+                const startVal = adminOtStart.value;
+                const endVal = document.getElementById('admin-ot-end').value;
+                if (startVal && endVal) {
+                    const s = timeToMinutes(startVal);
+                    const e = timeToMinutes(endVal);
+                    if (e <= s) {
+                        document.getElementById('admin-ot-end').value = startVal;
+                    }
+                }
+            });
+        }
+    }
 
     // Logout
     document.getElementById('btn-logout-admin').addEventListener('click', logout);
