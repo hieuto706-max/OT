@@ -22,7 +22,7 @@
     "localtunnel": "^2.0.2"
   },
   "build": {
-    "appId": "com.example.otmanager",
+    "appId": "com.hieuto.otmanager",
     "icon": "resources/icon.png",
     "compression": "normal",
     "publish": [
@@ -47,7 +47,9 @@
     "win": {
       "target": "nsis",
       "icon": "resources/icon.png",
-      "artifactName": "${name}-Setup-${version}.${ext}"
+      "artifactName": "${name}-Setup-${version}.${ext}",
+      "certificateFile": "build/certificate.pfx",
+      "certificatePassword": "otmanager123"
     },
     "nsis": {
       "include": "build/installer.nsh"

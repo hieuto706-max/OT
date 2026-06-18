@@ -24,7 +24,7 @@ echo.
 echo [2/3] Bien dich ung dung Android (Building APK)...
 set JAVA_HOME=%ROOT%\temp_jdk\jdk-17.0.19+10
 cd /d "%ROOT%\mobile-android"
-call gradlew.bat assembleRelease --no-daemon
+call gradlew.bat assembleRelease --no-daemon --no-configuration-cache
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [ERROR] Loi bien dich Android app!

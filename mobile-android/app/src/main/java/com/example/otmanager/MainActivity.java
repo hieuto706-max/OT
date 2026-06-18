@@ -132,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        checkAndRequestPermissions();
         webView.loadUrl("file:///android_asset/index.html");
     }
 
@@ -409,6 +410,18 @@ public class MainActivity extends AppCompatActivity {
                         intent.setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive");
                     }
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    
+                    // Kiểm tra quyền cài đặt ứng dụng từ nguồn không xác định đối với Android 8.0+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        if (!getPackageManager().canRequestPackageInstalls()) {
+                            showToastOnUI("Vui lòng cấp quyền cài đặt ứng dụng từ nguồn ngoài để thực hiện cập nhật!");
+                            Intent settingsIntent = new Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                                    .setData(Uri.parse("package:" + getPackageName()));
+                            startActivity(settingsIntent);
+                            return;
+                        }
+                    }
+
                     startActivity(intent);
 
                 } catch (Exception e) {
@@ -432,5 +445,26 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, msg, Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private static final int PERMISSION_REQUEST_CODE = 1001;
+
+    private void checkAndRequestPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            java.util.List<String> permissionsNeeded = new java.util.ArrayList<>();
+            
+            if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(android.Manifest.permission.ACCESS_FINE_LOCATION);
+                permissionsNeeded.add(android.Manifest.permission.ACCESS_COARSE_LOCATION);
+            }
+            
+            if (checkSelfPermission(android.Manifest.permission.READ_PHONE_STATE) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(android.Manifest.permission.READ_PHONE_STATE);
+            }
+            
+            if (!permissionsNeeded.isEmpty()) {
+                requestPermissions(permissionsNeeded.toArray(new String[0]), PERMISSION_REQUEST_CODE);
+            }
+        }
     }
 }
