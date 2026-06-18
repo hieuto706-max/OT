@@ -392,20 +392,40 @@
                             </div>
                             <div class="form-group" style="flex:1;">
                                 <label class="checkbox-label" style="margin-top: 24px; height: 38px; padding: 0 16px;">
-                                    <input type="checkbox" id="admin-ot-lunch">
+                                    <input type="checkbox" id="admin-ot-backfill">
                                     <span class="checkbox-custom"></span>
-                                    Tăng ca trưa (12:20 - 13:20)
+                                    Bù tăng ca
                                 </label>
                             </div>
                         </div>
-                        <div class="form-row" style="display:flex; gap:16px; margin-bottom: 16px;">
-                            <div class="form-group" style="flex:1;">
-                                <label for="admin-ot-start" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">Giờ bắt đầu OT chiều:</label>
-                                <input type="time" id="admin-ot-start" value="16:30" style="width:100%; height:38px; padding:0 12px; box-sizing:border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;">
+
+                        <!-- Backfill hours input -->
+                        <div class="form-group" id="admin-ot-backfill-hours-group" style="display: none; margin-bottom: 16px;">
+                            <label for="admin-ot-backfill-hours" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">Số giờ tăng ca cần bù:</label>
+                            <input type="number" id="admin-ot-backfill-hours" step="0.1" min="0.1" max="24" placeholder="Nhập số giờ bù (ví dụ: 8.0)" style="width:100%; height:38px; padding:0 12px; box-sizing:border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;">
+                        </div>
+
+                        <!-- Normal OT inputs -->
+                        <div id="admin-ot-normal-inputs">
+                            <div class="form-row" style="display:flex; gap:16px; margin-bottom: 16px;">
+                                <div class="form-group" style="flex:1;">
+                                    <label class="checkbox-label" style="margin-top: 0px; height: 38px; padding: 0 16px;">
+                                        <input type="checkbox" id="admin-ot-lunch">
+                                        <span class="checkbox-custom"></span>
+                                        Tăng ca trưa (12:20 - 13:20)
+                                    </label>
+                                </div>
+                                <div class="form-group" style="flex:1;"></div>
                             </div>
-                            <div class="form-group" style="flex:1;">
-                                <label for="admin-ot-end" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">Giờ kết thúc OT chiều:</label>
-                                <input type="time" id="admin-ot-end" value="16:30" style="width:100%; height:38px; padding:0 12px; box-sizing:border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;">
+                            <div class="form-row" style="display:flex; gap:16px; margin-bottom: 16px;">
+                                <div class="form-group" style="flex:1;">
+                                    <label for="admin-ot-start" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">Giờ bắt đầu OT chiều:</label>
+                                    <input type="time" id="admin-ot-start" value="16:30" style="width:100%; height:38px; padding:0 12px; box-sizing:border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;">
+                                </div>
+                                <div class="form-group" style="flex:1;">
+                                    <label for="admin-ot-end" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">Giờ kết thúc OT chiều:</label>
+                                    <input type="time" id="admin-ot-end" value="16:30" style="width:100%; height:38px; padding:0 12px; box-sizing:border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;">
+                                </div>
                             </div>
                         </div>
                         <div class="form-group" style="margin-bottom: 16px;">

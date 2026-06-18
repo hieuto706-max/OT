@@ -1078,10 +1078,12 @@ async function handleAdminOTSubmit(e) {
     e.preventDefault();
     const userId = document.getElementById('admin-ot-user').value;
     const date = document.getElementById('admin-ot-date').value;
-    const hasLunch = document.getElementById('admin-ot-lunch').checked;
+    const adminOtBackfill = document.getElementById('admin-ot-backfill');
+    const isBackfill = adminOtBackfill ? adminOtBackfill.checked : false;
+    const hasLunch = isBackfill ? false : document.getElementById('admin-ot-lunch').checked;
     const otStart = document.getElementById('admin-ot-start').value;
     const otEnd = document.getElementById('admin-ot-end').value;
-    const note = document.getElementById('admin-ot-note').value.trim();
+    let note = document.getElementById('admin-ot-note').value.trim();
     const errorEl = document.getElementById('admin-ot-error');
     const successEl = document.getElementById('admin-ot-success');
     errorEl.textContent = '';
@@ -1091,18 +1093,28 @@ async function handleAdminOTSubmit(e) {
     if (!date) { errorEl.textContent = 'Vui lòng chọn ngày!'; return; }
     if (!note) { errorEl.textContent = 'Vui lòng nhập ghi chú!'; return; }
 
-    const eveningHours = calculateEveningOT(otStart, otEnd);
-    const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
-    const totalHours = lunchHours + eveningHours;
+    let eveningHours = 0;
+    let totalHours = 0;
 
-    if (totalHours <= 0) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT!'; return; }
+    if (isBackfill) {
+        const hoursVal = parseFloat(document.getElementById('admin-ot-backfill-hours').value) || 0;
+        if (hoursVal <= 0) { errorEl.textContent = 'Vui lòng nhập số giờ bù hợp lệ!'; return; }
+        totalHours = hoursVal;
+        eveningHours = hoursVal;
+        note = '[BÙ THÁNG TRƯỚC] ' + note;
+    } else {
+        eveningHours = calculateEveningOT(otStart, otEnd);
+        const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
+        totalHours = lunchHours + eveningHours;
+        if (totalHours <= 0) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT!'; return; }
+    }
 
     try {
         const data = await api('/api/records', 'POST', {
-            userId, date, hasLunchOT: hasLunch,
-            otStart: eveningHours > 0 ? otStart : '',
-            otEnd: eveningHours > 0 ? otEnd : '',
-            eveningOTHours: eveningHours, totalHours, note
+            userId, date, hasLunchOT: isBackfill ? false : hasLunch,
+            otStart: (!isBackfill && eveningHours > 0) ? otStart : '',
+            otEnd: (!isBackfill && eveningHours > 0) ? otEnd : '',
+            eveningOTHours: eveningHours, totalHours, note, isBackfill
         });
 
         const action = data.updated ? 'Đã cập nhật' : 'Đã lưu';
@@ -1110,6 +1122,14 @@ async function handleAdminOTSubmit(e) {
         showToast(`${action} ${totalHours.toFixed(1)} giờ tăng ca`);
 
         document.getElementById('admin-ot-user').value = '';
+        if (adminOtBackfill) adminOtBackfill.checked = false;
+        const normalInputs = document.getElementById('admin-ot-normal-inputs');
+        const backfillGroup = document.getElementById('admin-ot-backfill-hours-group');
+        if (normalInputs) normalInputs.style.display = 'block';
+        if (backfillGroup) backfillGroup.style.display = 'none';
+        const backfillHoursEl = document.getElementById('admin-ot-backfill-hours');
+        if (backfillHoursEl) backfillHoursEl.value = '';
+
         document.getElementById('admin-ot-lunch').checked = false;
         document.getElementById('admin-ot-start').value = '16:30';
         document.getElementById('admin-ot-end').value = '16:30';
@@ -1118,6 +1138,7 @@ async function handleAdminOTSubmit(e) {
         setTimeout(() => { successEl.textContent = ''; }, 3000);
         await refreshAdminStats();
         await refreshAdminRecords();
+        await refreshReport();
     } catch (err) {
         errorEl.textContent = err.message;
     }
@@ -1668,6 +1689,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
+        const adminOtBackfill = document.getElementById('admin-ot-backfill');
+        if (adminOtBackfill) {
+            adminOtBackfill.addEventListener('change', function() {
+                const normalInputs = document.getElementById('admin-ot-normal-inputs');
+                const backfillGroup = document.getElementById('admin-ot-backfill-hours-group');
+                if (this.checked) {
+                    if (normalInputs) normalInputs.style.display = 'none';
+                    if (backfillGroup) backfillGroup.style.display = 'block';
+                    const lunchEl = document.getElementById('admin-ot-lunch');
+                    if (lunchEl) lunchEl.checked = false;
+                    const startEl = document.getElementById('admin-ot-start');
+                    if (startEl) startEl.value = '16:30';
+                    const endEl = document.getElementById('admin-ot-end');
+                    if (endEl) endEl.value = '16:30';
+                } else {
+                    if (normalInputs) normalInputs.style.display = 'block';
+                    if (backfillGroup) backfillGroup.style.display = 'none';
+                }
+            });
+        }
     }
 
     // Logout
@@ -1728,31 +1769,49 @@ async function editRecordDialog(recordId, source) {
         const record = data.records.find(r => r.id === recordId);
         if (!record) return showToast('Không tìm thấy bản ghi', 'error');
 
+        const isBackfill = record.isBackfill || (record.note && record.note.includes('[BÙ THÁNG TRƯỚC]'));
+        const cleanedNote = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').trim() : '';
+
         const body = `
         <form id="modal-form-record" class="login-form active" style="text-align: left; padding: 0;">
             <div class="form-group" style="margin-bottom: 15px;">
                 <label style="display:block;margin-bottom:6px;font-weight:600;">Ngày tăng ca</label>
                 <div class="input-wrapper">
-                    <input type="date" id="modal-rec-date" value="${record.date}" max="${new Date().toISOString().split('T')[0]}" style="padding-left:12px;" required>
+                    <input type="date" id="modal-rec-date" value="${record.date}" max="${new Date().toISOString().split('T')[0]}" style="padding-left:12px; height:38px; border-radius:8px;" required>
                 </div>
             </div>
             <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
-                <input type="checkbox" id="modal-rec-lunch" ${record.hasLunchOT ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;">
-                <label for="modal-rec-lunch" style="margin-bottom: 0; cursor: pointer; user-select:none; font-weight:600;">Tăng ca trưa (12:20 - 13:20)</label>
+                <input type="checkbox" id="modal-rec-backfill" ${isBackfill ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;">
+                <label for="modal-rec-backfill" style="margin-bottom: 0; cursor: pointer; user-select:none; font-weight:600;">Bù tăng ca</label>
             </div>
-            <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
-                <div>
-                    <label style="display:block;margin-bottom:6px;font-weight:600;">Bắt đầu OT chiều</label>
-                    <input type="time" id="modal-rec-start" value="${record.otStart || '16:30'}" class="input-sm" style="width:100%; box-sizing:border-box;">
+
+            <!-- Backfill hours input -->
+            <div class="form-group" id="modal-rec-backfill-hours-group" style="display: ${isBackfill ? 'block' : 'none'}; margin-bottom: 15px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Số giờ tăng ca cần bù</label>
+                <input type="number" id="modal-rec-backfill-hours" step="0.1" min="0.1" max="24" value="${isBackfill ? record.totalHours : ''}" placeholder="Nhập số giờ bù (ví dụ: 8.0)" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+            </div>
+
+            <!-- Normal OT inputs -->
+            <div id="modal-rec-normal-inputs" style="display: ${isBackfill ? 'none' : 'block'};">
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
+                    <input type="checkbox" id="modal-rec-lunch" ${record.hasLunchOT ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;">
+                    <label for="modal-rec-lunch" style="margin-bottom: 0; cursor: pointer; user-select:none; font-weight:600;">Tăng ca trưa (12:20 - 13:20)</label>
                 </div>
-                <div>
-                    <label style="display:block;margin-bottom:6px;font-weight:600;">Kết thúc OT chiều</label>
-                    <input type="time" id="modal-rec-end" value="${record.otEnd || '16:30'}" class="input-sm" style="width:100%; box-sizing:border-box;">
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;">Bắt đầu OT chiều</label>
+                        <input type="time" id="modal-rec-start" value="${record.otStart || '16:30'}" class="input-sm" style="width:100%; box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;">Kết thúc OT chiều</label>
+                        <input type="time" id="modal-rec-end" value="${record.otEnd || '16:30'}" class="input-sm" style="width:100%; box-sizing:border-box;">
+                    </div>
                 </div>
             </div>
+
             <div class="form-group" style="margin-bottom: 0;">
                 <label style="display:block;margin-bottom:6px;font-weight:600;">Ghi chú</label>
-                <textarea id="modal-rec-note" class="input-sm" style="width:100%; height:60px; resize:none; box-sizing:border-box; padding:10px;">${record.note || ''}</textarea>
+                <textarea id="modal-rec-note" class="input-sm" style="width:100%; height:60px; resize:none; box-sizing:border-box; padding:10px;">${cleanedNote}</textarea>
             </div>
         </form>`;
 
@@ -1760,28 +1819,42 @@ async function editRecordDialog(recordId, source) {
             { text: 'Hủy', class: 'btn-ghost' },
             { text: 'Lưu', class: 'btn btn-primary btn-sm', action: async () => {
                 const date = document.getElementById('modal-rec-date').value;
-                const hasLunch = document.getElementById('modal-rec-lunch').checked;
-                const otStart = document.getElementById('modal-rec-start').value;
-                const otEnd = document.getElementById('modal-rec-end').value;
-                const note = document.getElementById('modal-rec-note').value.trim();
+                const recBackfill = document.getElementById('modal-rec-backfill');
+                const isRecBackfill = recBackfill ? recBackfill.checked : false;
+                const hasLunch = isRecBackfill ? false : (document.getElementById('modal-rec-lunch') ? document.getElementById('modal-rec-lunch').checked : false);
+                const otStart = document.getElementById('modal-rec-start') ? document.getElementById('modal-rec-start').value : '';
+                const otEnd = document.getElementById('modal-rec-end') ? document.getElementById('modal-rec-end').value : '';
+                let note = document.getElementById('modal-rec-note').value.trim();
 
                 if (!date) return showToast('Vui lòng chọn ngày!', 'error');
+                if (!note) return showToast('Vui lòng nhập ghi chú!', 'error');
 
-                const eveningHours = calculateEveningOT(otStart, otEnd);
-                const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
-                const totalHours = lunchHours + eveningHours;
+                let eveningHours = 0;
+                let totalHours = 0;
 
-                if (totalHours <= 0) return showToast('Vui lòng chọn ít nhất một loại OT!', 'error');
+                if (isRecBackfill) {
+                    const hoursVal = parseFloat(document.getElementById('modal-rec-backfill-hours').value) || 0;
+                    if (hoursVal <= 0) return showToast('Vui lòng nhập số giờ bù hợp lệ!', 'error');
+                    totalHours = hoursVal;
+                    eveningHours = hoursVal;
+                    note = '[BÙ THÁNG TRƯỚC] ' + note;
+                } else {
+                    eveningHours = calculateEveningOT(otStart, otEnd);
+                    const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
+                    totalHours = lunchHours + eveningHours;
+                    if (totalHours <= 0) return showToast('Vui lòng chọn ít nhất một loại OT!', 'error');
+                }
 
                 try {
                     await api(`/api/records/${recordId}`, 'PUT', {
                         date,
-                        hasLunchOT: hasLunch,
-                        otStart: eveningHours > 0 ? otStart : '',
-                        otEnd: eveningHours > 0 ? otEnd : '',
+                        hasLunchOT: isRecBackfill ? false : hasLunch,
+                        otStart: (!isRecBackfill && eveningHours > 0) ? otStart : '',
+                        otEnd: (!isRecBackfill && eveningHours > 0) ? otEnd : '',
                         eveningOTHours: eveningHours,
                         totalHours,
-                        note
+                        note,
+                        isBackfill: isRecBackfill
                     });
                     showToast('Đã cập nhật bản ghi tăng ca!');
                     if (source === 'admin') {
@@ -1794,6 +1867,27 @@ async function editRecordDialog(recordId, source) {
                 }
             }}
         ]);
+
+        const modalBackfill = document.getElementById('modal-rec-backfill');
+        if (modalBackfill) {
+            modalBackfill.addEventListener('change', function() {
+                const normalInputs = document.getElementById('modal-rec-normal-inputs');
+                const backfillGroup = document.getElementById('modal-rec-backfill-hours-group');
+                if (this.checked) {
+                    if (normalInputs) normalInputs.style.display = 'none';
+                    if (backfillGroup) backfillGroup.style.display = 'block';
+                    const lunchEl = document.getElementById('modal-rec-lunch');
+                    if (lunchEl) lunchEl.checked = false;
+                    const startEl = document.getElementById('modal-rec-start');
+                    if (startEl) startEl.value = '16:30';
+                    const endEl = document.getElementById('modal-rec-end');
+                    if (endEl) endEl.value = '16:30';
+                } else {
+                    if (normalInputs) normalInputs.style.display = 'block';
+                    if (backfillGroup) backfillGroup.style.display = 'none';
+                }
+            });
+        }
 
         const modalStart = document.getElementById('modal-rec-start');
         const modalEnd = document.getElementById('modal-rec-end');

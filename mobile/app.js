@@ -1787,15 +1787,21 @@ async function editRecordDialog(id) {
         
         const isBackfill = record.isBackfill || (record.note && record.note.includes('[BÙ THÁNG TRƯỚC]'));
         const editBackfill = document.getElementById('edit-ot-backfill');
-        if (editBackfill) editBackfill.checked = false;
+        if (editBackfill) editBackfill.checked = isBackfill;
 
         const editNormalInputs = document.getElementById('edit-ot-normal-inputs');
         const editBackfillGroup = document.getElementById('edit-ot-backfill-hours-group');
         const editBackfillHours = document.getElementById('edit-ot-backfill-hours');
 
-        if (editNormalInputs) editNormalInputs.style.display = 'block';
-        if (editBackfillGroup) editBackfillGroup.style.display = 'none';
-        if (editBackfillHours) editBackfillHours.value = '';
+        if (isBackfill) {
+            if (editNormalInputs) editNormalInputs.style.display = 'none';
+            if (editBackfillGroup) editBackfillGroup.style.display = 'block';
+            if (editBackfillHours) editBackfillHours.value = record.totalHours;
+        } else {
+            if (editNormalInputs) editNormalInputs.style.display = 'block';
+            if (editBackfillGroup) editBackfillGroup.style.display = 'none';
+            if (editBackfillHours) editBackfillHours.value = '';
+        }
 
         document.getElementById('edit-ot-note').value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').trim() : '';
 
@@ -1832,7 +1838,7 @@ async function handleEditOTSubmit(e) {
     const end = document.getElementById('edit-ot-end').value;
     
     const editBackfill = document.getElementById('edit-ot-backfill');
-    const isBackfill = false;
+    const isBackfill = editBackfill ? editBackfill.checked : false;
     let note = document.getElementById('edit-ot-note').value.trim();
     if (!note) {
         showToast('Vui lòng nhập ghi chú!', 'error');
