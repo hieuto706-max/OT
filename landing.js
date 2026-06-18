@@ -673,34 +673,45 @@ window.scrollToLogin = function() {
     if (navLink) navLink.click();
 };
 
-// ==================== 3D PARALLAX INTERACTION ====================
+// ==================== 8D DYNAMIC PARALLAX CARDS ====================
 document.addEventListener('DOMContentLoaded', () => {
-    const container = document.getElementById('app-review-3d');
-    const mockup = container ? container.querySelector('.review-mockup') : null;
+    const apply8DEffect = (selector, intensity = 10, innerSelector = null) => {
+        const cards = document.querySelectorAll(selector);
+        cards.forEach(card => {
+            const target = innerSelector ? card.querySelector(innerSelector) : card;
+            if (!target) return;
+            
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = ((centerY - y) / centerY) * intensity;
+                const rotateY = ((x - centerX) / centerX) * intensity;
+                
+                target.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(12px)`;
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                target.style.transform = `rotateX(0deg) rotateY(0deg) translateZ(0)`;
+                target.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+            });
+            
+            card.addEventListener('mouseenter', () => {
+                target.style.transition = 'transform 0.1s ease-out';
+            });
+        });
+    };
     
-    if (container && mockup) {
-        container.addEventListener('mousemove', (e) => {
-            const rect = container.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            
-            // Tính toán góc xoay tối đa 14 độ
-            const rotateX = ((centerY - y) / centerY) * 14;
-            const rotateY = ((x - centerX) / centerX) * 14;
-            
-            mockup.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(10px)`;
-        });
-        
-        container.addEventListener('mouseleave', () => {
-            mockup.style.transform = `rotateX(0deg) rotateY(0deg) translateZ(0)`;
-            mockup.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
-        });
-        
-        container.addEventListener('mouseenter', () => {
-            mockup.style.transition = 'transform 0.1s ease-out';
-        });
-    }
+    // Áp dụng cho ảnh mockup review
+    apply8DEffect('#app-review-3d', 14, '.review-mockup');
+    
+    // Áp dụng cho các loại thẻ trên trang chủ
+    apply8DEffect('.feat-card-large', 12);
+    apply8DEffect('.download-card-large', 10);
+    apply8DEffect('.login-page-card', 8);
+    apply8DEffect('.terms-card', 6);
 });

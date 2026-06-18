@@ -1339,3 +1339,14 @@ select option {
     .badge-3 { left: -7%; }
 }
 
+/* ==================== 8D PARALLAX CARDS SYSTEM ==================== */
+.feat-card-large, .download-card-large, .login-page-card, .terms-card {
+    transform-style: preserve-3d;
+    transition: transform 0.15s ease-out, box-shadow 0.35s ease, border-color 0.3s ease;
+    will-change: transform;
+}
+
+.features-grid-large, .download-grid-large, .login-main-card, .landing-section {
+    perspective: 1200px;
+}
+
