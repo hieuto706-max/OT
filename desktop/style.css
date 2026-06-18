@@ -1374,3 +1374,59 @@ body {
 body.is-web-browser #btn-check-update {
     display: none !important;
 }
+
+/* Redesigned Reset Device/Browser & Approve Unlink Buttons */
+.btn-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 20px; /* sleek pill shape */
+    font-size: 11.5px;
+    font-weight: 600;
+    background: var(--bg-glass);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    white-space: nowrap;
+    outline: none;
+    line-height: 1.2;
+}
+
+.btn-reset-mobile {
+    color: var(--accent-orange);
+    border-color: rgba(245, 158, 11, 0.25);
+}
+
+.btn-reset-mobile:hover {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: var(--accent-orange);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.btn-reset-browser {
+    color: var(--accent-purple-light);
+    border-color: rgba(99, 102, 241, 0.25);
+}
+
+.btn-reset-browser:hover {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: var(--accent-purple-light);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+}
+
+.btn-reset-approve {
+    color: var(--accent-green-light);
+    border-color: rgba(16, 185, 129, 0.25);
+}
+
+.btn-reset-approve:hover {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: var(--accent-green-light);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}
+
+.btn-reset svg {
+    flex-shrink: 0;
+}
+

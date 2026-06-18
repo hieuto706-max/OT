@@ -587,24 +587,36 @@ async function refreshAdminUsers() {
             let deviceUnlinkBtn = '';
             if (u.deviceId) {
                 deviceUnlinkBtn = `
-                    <button class="btn-icon-only" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'mobile')" title="Xóa liên kết App điện thoại" style="margin-right: 4px; color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); padding: 4px 6px;">
-                        📱 Reset Mobile
+                    <button class="btn-reset btn-reset-mobile" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'mobile')" title="Xóa liên kết App điện thoại" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                            <line x1="12" y1="18" x2="12.01" y2="18"/>
+                        </svg>
+                        Reset Mobile
                     </button>
                 `;
             }
             let browserUnlinkBtn = '';
             if (u.browserDeviceId) {
                 browserUnlinkBtn = `
-                    <button class="btn-icon-only" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'browser')" title="Xóa liên kết Trình duyệt web" style="margin-right: 4px; color: #6366f1; border-color: rgba(99, 102, 241, 0.3); padding: 4px 6px;">
-                        🌐 Reset Web
+                    <button class="btn-reset btn-reset-browser" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'browser')" title="Xóa liên kết Trình duyệt web" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="2" y1="12" x2="22" y2="12"/>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                        Reset Web
                     </button>
                 `;
             }
             let approveBtn = '';
             if (u.pendingUnlink) {
                 approveBtn = `
-                    <button class="btn-icon-only" onclick="approveUnlinkDevice('${u.id}', '${u.fullname}')" title="Duyệt yêu cầu huỷ liên kết" style="margin-right: 4px; color: #10b981; border-color: rgba(16, 185, 129, 0.3); font-weight: bold; padding: 4px 6px;">
-                        ✓ Duyệt Huỷ
+                    <button class="btn-reset btn-reset-approve" onclick="approveUnlinkDevice('${u.id}', '${u.fullname}')" title="Duyệt yêu cầu huỷ liên kết" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Duyệt Huỷ
                     </button>
                 `;
             }
@@ -2128,7 +2140,7 @@ async function addUserDialog() {
             <label style="display:block;margin-bottom:6px;font-weight:600;">Tên đăng nhập</label>
             <input type="text" id="modal-user-username" placeholder="Chỉ viết liền, không dấu" class="input-sm" style="width:100%; box-sizing:border-box;" required>
         </div>
-        <div class="form-group" style="margin-bottom: 15px;">
+        <div class="form-group" id="modal-user-password-group" style="margin-bottom: 15px;">
             <label style="display:block;margin-bottom:6px;font-weight:600;">Mật khẩu</label>
             <input type="password" id="modal-user-password" placeholder="Mật khẩu (bỏ trống đối với nhân viên)" class="input-sm" style="width:100%; box-sizing:border-box;">
         </div>
@@ -2174,6 +2186,21 @@ async function addUserDialog() {
             }
         }}
     ]);
+
+    const roleSelect = document.getElementById('modal-user-role');
+    const passwordGroup = document.getElementById('modal-user-password-group');
+    if (roleSelect && passwordGroup) {
+        const togglePassword = () => {
+            if (roleSelect.value === 'employee') {
+                passwordGroup.style.display = 'none';
+                document.getElementById('modal-user-password').value = '';
+            } else {
+                passwordGroup.style.display = 'block';
+            }
+        };
+        roleSelect.addEventListener('change', togglePassword);
+        togglePassword();
+    }
 }
 
 async function editUserDialog(userId) {
@@ -2188,7 +2215,7 @@ async function editUserDialog(userId) {
                 <label style="display:block;margin-bottom:6px;font-weight:600;">Họ và tên</label>
                 <input type="text" id="modal-user-fullname" value="${user.fullname}" class="input-sm" style="width:100%; box-sizing:border-box;" required>
             </div>
-            <div class="form-group" style="margin-bottom: 15px;">
+            <div class="form-group" id="modal-user-password-group" style="margin-bottom: 15px;">
                 <label style="display:block;margin-bottom:6px;font-weight:600;">Mật khẩu mới (Để trống nếu giữ nguyên)</label>
                 <input type="password" id="modal-user-password" placeholder="Nhập mật khẩu mới nếu muốn đổi" class="input-sm" style="width:100%; box-sizing:border-box;">
             </div>
@@ -2233,6 +2260,21 @@ async function editUserDialog(userId) {
                 }
             }}
         ]);
+
+        const roleSelect = document.getElementById('modal-user-role');
+        const passwordGroup = document.getElementById('modal-user-password-group');
+        if (roleSelect && passwordGroup) {
+            const togglePassword = () => {
+                if (roleSelect.value === 'employee') {
+                    passwordGroup.style.display = 'none';
+                    document.getElementById('modal-user-password').value = '';
+                } else {
+                    passwordGroup.style.display = 'block';
+                }
+            };
+            roleSelect.addEventListener('change', togglePassword);
+            togglePassword();
+        }
     } catch (e) {
         showToast('Lỗi tải dữ liệu người dùng', 'error');
     }
