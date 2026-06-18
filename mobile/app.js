@@ -613,7 +613,7 @@ async function handleOTSubmit(e) {
         }
     }
 
-    const currentMonth = document.getElementById('filter-month')?.value || new Date().toISOString().substring(0, 7);
+    const createdMonth = isBackfill ? getCurrentMonth() : date.substring(0, 7);
 
     const recordData = {
         userId: currentUser.id,
@@ -624,7 +624,7 @@ async function handleOTSubmit(e) {
         eveningOTHours,
         totalHours,
         note,
-        createdMonth: currentMonth,
+        createdMonth,
         isBackfill
     };
 
@@ -1609,7 +1609,7 @@ async function handleEditOTSubmit(e) {
         }
     }
 
-    const currentMonth = document.getElementById('filter-month')?.value || new Date().toISOString().substring(0, 7);
+    const createdMonth = isBackfill ? getCurrentMonth() : date.substring(0, 7);
 
     const updatedData = {
         date,
@@ -1619,7 +1619,7 @@ async function handleEditOTSubmit(e) {
         eveningOTHours,
         totalHours,
         note,
-        createdMonth: currentMonth,
+        createdMonth,
         isBackfill
     };
 
