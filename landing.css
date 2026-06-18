@@ -1236,3 +1236,106 @@ select option {
     from { opacity: 0; transform: translateY(20px) scale(0.97); }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* ==================== 5D DYNAMIC MOCKUP EFFECT ==================== */
+.app-review-image {
+    perspective: 1000px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.glow-5d-canvas {
+    position: absolute;
+    width: 120%;
+    height: 120%;
+    background: radial-gradient(circle, rgba(13, 217, 139, 0.15) 0%, rgba(124, 127, 255, 0.08) 40%, transparent 70%);
+    z-index: -1;
+    filter: blur(24px);
+    border-radius: 50%;
+    animation: rotateGlow5d 15s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes rotateGlow5d {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.08); }
+    100% { transform: rotate(360deg) scale(1); }
+}
+
+.review-mockup {
+    width: 100%;
+    max-width: 320px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 
+        0 30px 70px rgba(0, 0, 0, 0.75),
+        0 0 50px rgba(13, 217, 139, 0.12);
+    transform-style: preserve-3d;
+    transition: transform 0.18s ease-out, box-shadow 0.3s ease;
+    will-change: transform;
+}
+
+.review-mockup:hover {
+    box-shadow: 
+        0 40px 95px rgba(0, 0, 0, 0.85),
+        0 0 70px rgba(13, 217, 139, 0.22);
+}
+
+/* Các badge bay lơ lửng 5D */
+.floating-badge {
+    position: absolute;
+    padding: 10px 18px;
+    background: rgba(14, 15, 28, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    pointer-events: none;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+    z-index: 10;
+    transform: translateZ(60px);
+    animation: float5d 6s ease-in-out infinite alternate;
+}
+
+.badge-1 {
+    top: 15%;
+    left: -10%;
+    border-left: 3px solid var(--green);
+    animation-delay: 0s;
+}
+
+.badge-2 {
+    bottom: 25%;
+    right: -10%;
+    border-right: 3px solid var(--purple);
+    animation-delay: 1.5s;
+}
+
+.badge-3 {
+    top: 55%;
+    left: -12%;
+    border-left: 3px solid var(--cyan);
+    animation-delay: 3s;
+}
+
+@keyframes float5d {
+    0% { transform: translateY(0) translateZ(40px) rotate(0deg); }
+    100% { transform: translateY(-16px) translateZ(70px) rotate(2.5deg); }
+}
+
+@media (max-width: 768px) {
+    .floating-badge {
+        font-size: 10px;
+        padding: 6px 12px;
+    }
+    .badge-1 { left: -5%; }
+    .badge-2 { right: -5%; }
+    .badge-3 { left: -7%; }
+}
+

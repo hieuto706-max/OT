@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="landing.css?v=1.3.3">
+    <link rel="stylesheet" href="landing.css?v=1.3.4">
 </head>
 <body class="landing-page">
     <canvas id="canvas-bg"></canvas>
@@ -69,7 +69,7 @@
                     </defs>
                 </svg>
                 <span class="logo-text">OT Manager</span>
-                <span class="web-version-badge" style="font-size: 0.7rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 8px; border-radius: 10px; font-weight: 700; margin-left: 8px;">v1.3.3</span>
+                <span class="web-version-badge" style="font-size: 0.7rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 8px; border-radius: 10px; font-weight: 700; margin-left: 8px;">v1.3.4</span>
             </div>
             <div class="landing-nav">
                 <a href="javascript:void(0)" class="nav-link active" data-tab="home">Trang chủ</a>
@@ -113,8 +113,12 @@
                                 </li>
                             </ul>
                         </div>
-                        <div class="app-review-image">
+                        <div class="app-review-image" id="app-review-3d">
+                            <div class="glow-5d-canvas"></div>
                             <img src="resources/ot_manager_app_review.png" alt="OT Manager App Mockup" class="review-mockup">
+                            <div class="floating-badge badge-1">✅ Đã Duyệt +3h</div>
+                            <div class="floating-badge badge-2">📊 Báo cáo Excel</div>
+                            <div class="floating-badge badge-3">☁️ Cloud Sync</div>
                         </div>
                     </div>
                 </section>
@@ -305,7 +309,7 @@
                                 <p class="download-desc">Ứng dụng chuyên dụng dành cho Quản trị viên và Quản lý để duyệt giờ làm, quản lý thông tin nhân viên, cài đặt quy định tăng ca và xuất báo cáo Excel.</p>
                             </div>
                             <div>
-                                <a id="desktop-download-btn-landing" href="https://github.com/hieuto706-max/OT/releases/download/v1.3.3/ot-manager-Setup-1.3.3.exe" target="_blank" class="btn btn-purple" style="width:100%; text-align: center;">Tải Windows EXE</a>
+                                <a id="desktop-download-btn-landing" href="https://github.com/hieuto706-max/OT/releases/download/v1.3.4/ot-manager-Setup-1.3.4.exe" target="_blank" class="btn btn-purple" style="width:100%; text-align: center;">Tải Windows EXE</a>
                             </div>
                         </div>
 
@@ -336,6 +340,15 @@
                 <section class="landing-section">
                     <h2 class="section-title" style="text-align: center;">🚀 Thông tin phát hành & Cập nhật</h2>
                     <div class="changelog-timeline">
+                        <div class="changelog-item">
+                            <span class="changelog-badge">v1.3.4</span>
+                            <span class="changelog-date">19/06/2026</span>
+                            <ul class="changelog-list">
+                                <li>Tích hợp popup hỏi quyền hệ thống tại runtime đối với ứng dụng Android (quyền định vị quét mạng nội bộ & quyền đọc ID thiết bị duy nhất).</li>
+                                <li>Tái thiết kế bộ ba nút Reset liên kết Mobile/Web và Duyệt hủy thành dạng viên thuốc bo tròn cao cấp kèm icon SVG sinh động.</li>
+                                <li>Tự động ẩn ô nhập mật khẩu khi chọn vai trò Nhân viên trong form quản lý tài khoản để giao diện gọn gàng.</li>
+                            </ul>
+                        </div>
                         <div class="changelog-item">
                             <span class="changelog-badge">v1.3.3</span>
                             <span class="changelog-date">17/06/2026</span>
@@ -461,7 +474,7 @@
                         <h3>2. Chính sách bảo mật</h3>
                         <p>Chúng tôi coi trọng tính bảo mật và sự riêng tư đối với dữ liệu của bạn:</p>
                         <ul>
-                            <li>Thông tin thiết bị (Device ID) được thu thập chỉ với mục đích duy nhất là định danh và liên kết tài khoản bảo mật.</li>
+                            <li>Quyền định vị và quyền trạng thái điện thoại (ID thiết bị) được thu thập khi người dùng đồng ý và chỉ sử dụng cho mục đích: (1) Quét và kết nối Wi-Fi nội bộ tự động để đồng bộ với server của công ty; (2) Liên kết tài khoản an toàn với thiết bị gốc để tránh gian lận giờ công. Chúng tôi cam kết tuyệt đối không theo dõi vị trí thực tế ngoài công ty hay thu thập thông tin cuộc gọi hoặc dữ liệu cá nhân khác của nhân viên.</li>
                             <li>Dữ liệu giờ làm thêm (OT) chỉ được sử dụng cho việc đối chiếu công và tính lương nội bộ của công ty.</li>
                             <li>Dữ liệu lưu trữ đám mây được bảo vệ an toàn và không chia sẻ cho bất kỳ bên thứ ba nào ngoài doanh nghiệp của bạn.</li>
                         </ul>
@@ -477,6 +490,6 @@
         </div>
     </div>
 
-    <script src="landing.js?v=1.3.3"></script>
+    <script src="landing.js?v=1.3.4"></script>
 </body>
 </html>

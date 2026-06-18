@@ -1666,7 +1666,7 @@ async function handleEditOTSubmit(e) {
 }
 
 // ==================== AUTO UPDATE FOR MOBILE APP ====================
-const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.3';
+const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.4';
 let updateCheckInterval = null;
 
 function checkMobileUpdates(isManual) {

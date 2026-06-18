@@ -672,3 +672,35 @@ window.scrollToLogin = function() {
     const navLink = document.querySelector('.landing-nav .nav-link[data-tab="login"]');
     if (navLink) navLink.click();
 };
+
+// ==================== 3D PARALLAX INTERACTION ====================
+document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('app-review-3d');
+    const mockup = container ? container.querySelector('.review-mockup') : null;
+    
+    if (container && mockup) {
+        container.addEventListener('mousemove', (e) => {
+            const rect = container.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            // Tính toán góc xoay tối đa 14 độ
+            const rotateX = ((centerY - y) / centerY) * 14;
+            const rotateY = ((x - centerX) / centerX) * 14;
+            
+            mockup.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(10px)`;
+        });
+        
+        container.addEventListener('mouseleave', () => {
+            mockup.style.transform = `rotateX(0deg) rotateY(0deg) translateZ(0)`;
+            mockup.style.transition = 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+        });
+        
+        container.addEventListener('mouseenter', () => {
+            mockup.style.transition = 'transform 0.1s ease-out';
+        });
+    }
+});
