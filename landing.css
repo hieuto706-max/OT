@@ -854,7 +854,8 @@ body.landing-page #screen-login {
     cursor: pointer;
     transition: all 0.3s var(--bounce);
     text-decoration: none;
-    white-select: none;
+    user-select: none;
+    -webkit-user-select: none;
     position: relative;
 }
 
