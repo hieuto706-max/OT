@@ -346,33 +346,6 @@ function backupGistFile(fileName, data) {
     });
 }
 
-async function autoCleanupOn15th(db) {
-    const today = new Date();
-    const currentDay = today.getDate();
-    if (currentDay >= 15) {
-        // Tính tháng trước
-        const prevMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        const yyyy = prevMonthDate.getFullYear();
-        const mm = String(prevMonthDate.getMonth() + 1).padStart(2, '0');
-        const targetMonth = `${yyyy}-${mm}`; // e.g. "2026-05"
-        
-        // Kiểm tra xem còn bản ghi cũ nào không (dựa trên tháng tính công/tháng tạo thay vì ngày tăng ca)
-        const hasOldRecords = db.records.some(r => {
-            const recordMonth = r.createdMonth || r.date.substring(0, 7);
-            return recordMonth <= targetMonth;
-        });
-        if (hasOldRecords) {
-            console.log(`[Auto Cleanup] Phát hiện hôm nay là ngày ${currentDay} (>= 15) và có dữ liệu của tháng ${targetMonth} (hoặc cũ hơn). Bắt đầu tự động dọn dẹp...`);
-            try {
-                await performCleanup(targetMonth);
-                console.log(`[Auto Cleanup] Tự động dọn dẹp thành công dữ liệu tháng ${targetMonth}!`);
-            } catch (err) {
-                console.error('[Auto Cleanup] Lỗi tự động dọn dẹp:', err.message);
-            }
-        }
-    }
-}
-
 function generateId() {
     return Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
 }
@@ -1156,23 +1129,7 @@ function startServer() {
                     }
                 }
             }
-            
-            // 1. Tự động kiểm tra dọn dẹp dữ liệu vào ngày >= 15 khi khởi động
-            loadDB().then(db => {
-                autoCleanupOn15th(db);
-            }).catch(err => {
-                console.error('[Startup] Lỗi nạp DB để tự động dọn dẹp:', err.message);
-            });
 
-            // 2. Chạy dọn dẹp tự động định kỳ mỗi 24 tiếng
-            setInterval(async () => {
-                try {
-                    const db = await loadDB();
-                    await autoCleanupOn15th(db);
-                } catch (err) {
-                    console.error('[Interval] Lỗi kiểm tra tự động dọn dẹp:', err.message);
-                }
-            }, 24 * 60 * 60 * 1000);
 
             resolve({ ip, port: PORT });
         });
