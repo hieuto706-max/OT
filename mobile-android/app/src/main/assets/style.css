@@ -3581,3 +3581,7 @@ body.landing-page #screen-login {
     }
 }
 
+select option {
+    background-color: #050510 !important;
+    color: var(--text) !important;
+}

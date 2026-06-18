@@ -749,8 +749,9 @@ body {
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
-.input-sm option {
-    background: #0d0e15;
+.input-sm option, select option {
+    background-color: #07070c !important;
+    color: var(--text-primary) !important;
 }
 
 /* ==================== DATA TABLE ==================== */
