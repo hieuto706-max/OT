@@ -314,9 +314,8 @@ async function populateUserFilter() {
         }
         if (adminOtUser) {
             adminOtUser.innerHTML = '<option value="">-- Chọn nhân viên --</option>';
-            users.forEach(u => {
-                const suffix = u.role === 'admin' ? ' (Admin)' : '';
-                adminOtUser.innerHTML += `<option value="${u.id}">${u.fullname}${suffix}</option>`;
+            users.filter(u => u.role === 'employee').forEach(u => {
+                adminOtUser.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
             });
         }
     } catch (e) {}
@@ -1076,7 +1075,14 @@ async function handleOTSubmit(e) {
 
 async function handleAdminOTSubmit(e) {
     e.preventDefault();
-    const userId = document.getElementById('admin-ot-user').value;
+    const targetSelf = document.getElementById('admin-ot-target-self');
+    let userId = '';
+    if (targetSelf && targetSelf.checked) {
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        userId = currentUser ? currentUser.id : '';
+    } else {
+        userId = document.getElementById('admin-ot-user').value;
+    }
     const date = document.getElementById('admin-ot-date').value;
     const adminOtBackfill = document.getElementById('admin-ot-backfill');
     const isBackfill = adminOtBackfill ? adminOtBackfill.checked : false;
@@ -1122,6 +1128,11 @@ async function handleAdminOTSubmit(e) {
         showToast(`${action} ${totalHours.toFixed(1)} giờ tăng ca`);
 
         document.getElementById('admin-ot-user').value = '';
+        if (targetSelf) {
+            targetSelf.checked = true;
+            const event = new Event('change');
+            targetSelf.dispatchEvent(event);
+        }
         if (adminOtBackfill) adminOtBackfill.checked = false;
         const normalInputs = document.getElementById('admin-ot-normal-inputs');
         const backfillGroup = document.getElementById('admin-ot-backfill-hours-group');
@@ -1706,6 +1717,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     if (normalInputs) normalInputs.style.display = 'block';
                     if (backfillGroup) backfillGroup.style.display = 'none';
+                }
+            });
+        }
+        const adminOtTargetSelf = document.getElementById('admin-ot-target-self');
+        const adminOtTargetEmp = document.getElementById('admin-ot-target-emp');
+        if (adminOtTargetSelf && adminOtTargetEmp) {
+            const userGroup = document.getElementById('admin-ot-user-group');
+            const userSelect = document.getElementById('admin-ot-user');
+            adminOtTargetSelf.addEventListener('change', function() {
+                if (this.checked) {
+                    if (userGroup) userGroup.style.display = 'none';
+                    if (userSelect) {
+                        userSelect.required = false;
+                        userSelect.value = '';
+                    }
+                }
+            });
+            adminOtTargetEmp.addEventListener('change', function() {
+                if (this.checked) {
+                    if (userGroup) userGroup.style.display = 'block';
+                    if (userSelect) {
+                        userSelect.required = true;
+                    }
                 }
             });
         }
