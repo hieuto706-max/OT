@@ -494,7 +494,8 @@ async function handleAPI(req, res, urlPath, method) {
     }
 
     if (urlPath === '/api/auth/register' && method === 'POST') {
-        const { fullname, username, password, role } = await parseBody(req);
+        const body = await parseBody(req);
+        const { fullname, username, password, role } = body;
         if (!fullname || !username) return sendError(res, 400, 'Vui lòng điền đầy đủ thông tin!');
         if (username.length < 3) return sendError(res, 400, 'Tên đăng nhập phải có ít nhất 3 ký tự!');
         
@@ -507,12 +508,22 @@ async function handleAPI(req, res, urlPath, method) {
             return sendError(res, 409, 'Tên đăng nhập đã tồn tại!');
         }
 
+        let userManagerId = body.managerId || '';
+        if (reqUserId) {
+            const reqUser = db.users.find(u => u.id === reqUserId);
+            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+                // Nếu là sub-admin tạo, mặc định gán nhân viên vào team của sub-admin này
+                userManagerId = reqUserId;
+            }
+        }
+
         const newUser = {
             id: generateId(),
             username,
             password: password || '123',
             fullname,
             role: role || 'employee',
+            managerId: userManagerId,
             createdAt: new Date().toISOString()
         };
         db.users.push(newUser);
@@ -523,7 +534,15 @@ async function handleAPI(req, res, urlPath, method) {
 
     // --- USERS ---
     if (urlPath === '/api/users' && method === 'GET') {
-        const safeUsers = db.users.map(({ password, ...u }) => u);
+        let filteredUsers = db.users;
+        if (reqUserId) {
+            const reqUser = db.users.find(u => u.id === reqUserId);
+            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+                // Sub-admin: chỉ xem các quản trị viên, nhân viên thuộc team mình, và nhân viên chưa phân team
+                filteredUsers = db.users.filter(u => u.role === 'admin' || u.managerId === reqUserId || !u.managerId);
+            }
+        }
+        const safeUsers = filteredUsers.map(({ password, ...u }) => u);
         return sendJSON(res, 200, { users: safeUsers });
     }
 
@@ -540,6 +559,17 @@ async function handleAPI(req, res, urlPath, method) {
         const user = db.users.find(u => u.id === userId);
         if (!user) return sendError(res, 404, 'Không tìm thấy người dùng!');
         if (user.username === 'admin') return sendError(res, 403, 'Không thể xóa tài khoản admin!');
+
+        // Phân quyền theo Team
+        if (reqUserId) {
+            const reqUser = db.users.find(u => u.id === reqUserId);
+            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+                if (user.managerId && user.managerId !== reqUserId) {
+                    return sendError(res, 403, 'Bạn không có quyền xóa tài khoản của team khác!');
+                }
+            }
+        }
+
         db.users = db.users.filter(u => u.id !== userId);
         db.records = db.records.filter(r => r.userId !== userId);
         saveDB(db);
@@ -549,15 +579,45 @@ async function handleAPI(req, res, urlPath, method) {
     if (urlPath.startsWith('/api/users/') && method === 'PUT') {
         const userId = urlPath.split('/api/users/')[1];
         const body = await parseBody(req);
-        const { fullname, password, role, deviceId, browserDeviceId, pendingUnlink } = body;
+        const { fullname, password, role, deviceId, browserDeviceId, pendingUnlink, managerId } = body;
         const userIdx = db.users.findIndex(u => u.id === userId);
         if (userIdx < 0) return sendError(res, 404, 'Không tìm thấy người dùng!');
+
+        const targetUser = db.users[userIdx];
+        // Phân quyền theo Team
+        if (reqUserId) {
+            const reqUser = db.users.find(u => u.id === reqUserId);
+            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+                if (targetUser.id !== reqUserId && targetUser.managerId && targetUser.managerId !== reqUserId) {
+                    return sendError(res, 403, 'Bạn không có quyền sửa tài khoản của team khác!');
+                }
+            }
+        }
 
         if (fullname) db.users[userIdx].fullname = fullname;
         if (password) db.users[userIdx].password = password;
         if (deviceId !== undefined) db.users[userIdx].deviceId = deviceId;
         if (browserDeviceId !== undefined) db.users[userIdx].browserDeviceId = browserDeviceId;
         if (pendingUnlink !== undefined) db.users[userIdx].pendingUnlink = !!pendingUnlink;
+        
+        if (managerId !== undefined) {
+            if (reqUserId) {
+                const reqUser = db.users.find(u => u.id === reqUserId);
+                if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+                    // Sub-admin chỉ được gán về chính mình hoặc để trống
+                    if (managerId && managerId !== reqUserId) {
+                        db.users[userIdx].managerId = reqUserId;
+                    } else {
+                        db.users[userIdx].managerId = managerId;
+                    }
+                } else {
+                    db.users[userIdx].managerId = managerId;
+                }
+            } else {
+                db.users[userIdx].managerId = managerId;
+            }
+        }
+
         if (role) {
             if (db.users[userIdx].username === 'admin' && role !== 'admin') {
                 return sendError(res, 403, 'Không thể thay đổi vai trò của admin mặc định!');
@@ -576,6 +636,18 @@ async function handleAPI(req, res, urlPath, method) {
         const userId = url.searchParams.get('userId');
         const month = url.searchParams.get('month');
         let records = [...db.records];
+
+        // Lọc records theo team nếu requester là Sub-admin
+        if (reqUserId) {
+            const reqUser = db.users.find(u => u.id === reqUserId);
+            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+                const allowedUserIds = db.users
+                    .filter(u => u.role === 'admin' || u.managerId === reqUserId || !u.managerId)
+                    .map(u => u.id);
+                records = records.filter(r => allowedUserIds.includes(r.userId));
+            }
+        }
+
         if (userId) records = records.filter(r => r.userId === userId);
         if (month) {
             records = records.filter(r => r.createdMonth === month || (!r.createdMonth && r.date.startsWith(month)));
@@ -666,9 +738,22 @@ async function handleAPI(req, res, urlPath, method) {
     if (urlPath === '/api/stats' && method === 'GET') {
         const currentMonth = getCurrentMonth();
         const today = new Date().toISOString().split('T')[0];
-        const employees = db.users.filter(u => u.role === 'employee');
-        const monthRecords = db.records.filter(r => r.date.startsWith(currentMonth));
-        const todayRecords = db.records.filter(r => r.date === today);
+        
+        let employees = db.users.filter(u => u.role === 'employee');
+        let allowedUserIds = employees.map(u => u.id);
+
+        if (reqUserId) {
+            const reqUser = db.users.find(u => u.id === reqUserId);
+            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+                // Sub-admin: chỉ thống kê nhân viên thuộc team của mình
+                employees = db.users.filter(u => u.role === 'employee' && u.managerId === reqUserId);
+                // Thống kê bao gồm cả chính mình (admin) và nhân viên trong team
+                allowedUserIds = [reqUserId, ...employees.map(u => u.id)];
+            }
+        }
+
+        const monthRecords = db.records.filter(r => r.date.startsWith(currentMonth) && allowedUserIds.includes(r.userId));
+        const todayRecords = db.records.filter(r => r.date === today && allowedUserIds.includes(r.userId));
 
         return sendJSON(res, 200, {
             totalUsers: employees.length,

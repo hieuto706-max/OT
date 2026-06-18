@@ -32,6 +32,10 @@ async function api(endpoint, method = 'GET', body = null) {
         method,
         headers: { 'Content-Type': 'application/json' },
     };
+    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+    if (currentUser && currentUser.id) {
+        opts.headers['x-user-id'] = currentUser.id;
+    }
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(`${API_BASE}${endpoint}`, opts);
     const data = await res.json();
@@ -576,7 +580,12 @@ async function exportExcel() {
     const month = document.getElementById('report-filter-month').value;
     try {
         const usersData = await api('/api/users');
-        const users = usersData.users;
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        let users = usersData.users;
+        if (currentUser && currentUser.username !== 'admin') {
+            // Lọc chỉ xuất báo cáo của chính Admin đó và nhân viên thuộc team mình quản lý
+            users = users.filter(u => u.id === currentUser.id || u.managerId === currentUser.id);
+        }
         users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
 
         const recData = await api(`/api/records?month=${month}`);
@@ -1802,7 +1811,16 @@ async function editRecordDialog(recordId, source) {
     }
 }
 
-function addUserDialog() {
+async function addUserDialog() {
+    let admins = [];
+    try {
+        const uData = await api('/api/users');
+        admins = uData.users.filter(u => u.role === 'admin');
+    } catch (e) {
+        console.error('Lỗi lấy danh sách admin:', e);
+    }
+    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+
     const body = `
     <form id="modal-form-add-user" class="login-form active" style="text-align: left; padding: 0;">
         <div class="form-group" style="margin-bottom: 15px;">
@@ -1817,11 +1835,18 @@ function addUserDialog() {
             <label style="display:block;margin-bottom:6px;font-weight:600;">Mật khẩu</label>
             <input type="password" id="modal-user-password" placeholder="Mật khẩu (bỏ trống đối với nhân viên)" class="input-sm" style="width:100%; box-sizing:border-box;">
         </div>
-        <div class="form-group" style="margin-bottom: 0;">
+        <div class="form-group" style="margin-bottom: 15px;">
             <label style="display:block;margin-bottom:6px;font-weight:600;">Vai trò</label>
             <select id="modal-user-role" class="input-sm" style="width:100%; box-sizing:border-box;">
                 <option value="employee">Nhân viên (Điện thoại)</option>
                 <option value="admin">Quản lý (Desktop)</option>
+            </select>
+        </div>
+        <div class="form-group" id="modal-user-manager-group" style="margin-bottom: 0;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">Quản lý trực tiếp (Team)</label>
+            <select id="modal-user-manager" class="input-sm" style="width:100%; box-sizing:border-box;">
+                <option value="">-- Chưa phân team --</option>
+                ${admins.map(adm => `<option value="${adm.id}" ${currentUser && currentUser.id === adm.id ? 'selected' : ''}>${adm.fullname} (${adm.username})</option>`).join('')}
             </select>
         </div>
     </form>`;
@@ -1833,6 +1858,7 @@ function addUserDialog() {
             const username = document.getElementById('modal-user-username').value.trim();
             const password = document.getElementById('modal-user-password').value;
             const role = document.getElementById('modal-user-role').value;
+            const managerId = document.getElementById('modal-user-manager') ? document.getElementById('modal-user-manager').value : '';
 
             if (!fullname || !username) return showToast('Vui lòng điền họ tên và tên đăng nhập!', 'error');
             if (username.length < 3) return showToast('Tên đăng nhập tối thiểu 3 ký tự!', 'error');
@@ -1843,7 +1869,7 @@ function addUserDialog() {
             }
 
             try {
-                await api('/api/auth/register', 'POST', { fullname, username, password: password || '123', role });
+                await api('/api/auth/register', 'POST', { fullname, username, password: password || '123', role, managerId });
                 showToast('Thêm nhân viên thành công!');
                 await Promise.all([populateUserFilter(), refreshAdminUsers(), refreshAdminStats(), refreshReport()]);
             } catch (err) {
@@ -1851,6 +1877,18 @@ function addUserDialog() {
             }
         }}
     ]);
+
+    const roleSelect = document.getElementById('modal-user-role');
+    const managerGroup = document.getElementById('modal-user-manager-group');
+    if (roleSelect && managerGroup) {
+        roleSelect.addEventListener('change', () => {
+            if (roleSelect.value === 'admin') {
+                managerGroup.style.display = 'none';
+            } else {
+                managerGroup.style.display = 'block';
+            }
+        });
+    }
 }
 
 async function editUserDialog(userId) {
@@ -1858,6 +1896,8 @@ async function editUserDialog(userId) {
         const data = await api('/api/users');
         const user = data.users.find(u => u.id === userId);
         if (!user) return showToast('Không tìm thấy nhân viên', 'error');
+
+        const admins = data.users.filter(u => u.role === 'admin');
 
         const body = `
         <form id="modal-form-edit-user" class="login-form active" style="text-align: left; padding: 0;">
@@ -1869,11 +1909,18 @@ async function editUserDialog(userId) {
                 <label style="display:block;margin-bottom:6px;font-weight:600;">Mật khẩu mới (Để trống nếu giữ nguyên)</label>
                 <input type="password" id="modal-user-password" placeholder="Nhập mật khẩu mới nếu muốn đổi" class="input-sm" style="width:100%; box-sizing:border-box;">
             </div>
-            <div class="form-group" style="margin-bottom: 0;">
+            <div class="form-group" style="margin-bottom: 15px;">
                 <label style="display:block;margin-bottom:6px;font-weight:600;">Vai trò</label>
                 <select id="modal-user-role" class="input-sm" style="width:100%; box-sizing:border-box;">
                     <option value="employee" ${user.role === 'employee' ? 'selected' : ''}>Nhân viên (Điện thoại)</option>
                     <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Quản lý (Desktop)</option>
+                </select>
+            </div>
+            <div class="form-group" id="modal-edit-user-manager-group" style="margin-bottom: 0; display: ${user.role === 'admin' ? 'none' : 'block'};">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Quản lý trực tiếp (Team)</label>
+                <select id="modal-user-manager" class="input-sm" style="width:100%; box-sizing:border-box;">
+                    <option value="">-- Chưa phân team --</option>
+                    ${admins.map(adm => `<option value="${adm.id}" ${user.managerId === adm.id ? 'selected' : ''}>${adm.fullname} (${adm.username})</option>`).join('')}
                 </select>
             </div>
         </form>`;
@@ -1884,10 +1931,14 @@ async function editUserDialog(userId) {
                 const fullname = document.getElementById('modal-user-fullname').value.trim();
                 const password = document.getElementById('modal-user-password').value;
                 const role = document.getElementById('modal-user-role').value;
+                const managerId = document.getElementById('modal-user-manager') ? document.getElementById('modal-user-manager').value : '';
 
                 if (!fullname) return showToast('Vui lòng điền họ tên!', 'error');
 
                 const payload = { fullname, role };
+                if (role !== 'admin') {
+                    payload.managerId = managerId;
+                }
                 if (password) {
                     if (password.length < 4) return showToast('Mật khẩu tối thiểu 4 ký tự!', 'error');
                     payload.password = password;
@@ -1902,6 +1953,18 @@ async function editUserDialog(userId) {
                 }
             }}
         ]);
+
+        const roleSelect = document.getElementById('modal-user-role');
+        const managerGroup = document.getElementById('modal-edit-user-manager-group');
+        if (roleSelect && managerGroup) {
+            roleSelect.addEventListener('change', () => {
+                if (roleSelect.value === 'admin') {
+                    managerGroup.style.display = 'none';
+                } else {
+                    managerGroup.style.display = 'block';
+                }
+            });
+        }
     } catch (e) {
         showToast('Lỗi tải dữ liệu người dùng', 'error');
     }
