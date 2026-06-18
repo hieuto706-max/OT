@@ -19,6 +19,7 @@
   "devDependencies": {
     "electron": "^42.4.0",
     "electron-builder": "^24.13.3",
+    "javascript-obfuscator": "^5.4.3",
     "localtunnel": "^2.0.2"
   },
   "build": {
