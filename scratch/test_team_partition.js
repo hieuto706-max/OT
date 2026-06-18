@@ -52,7 +52,8 @@ async function runTests() {
             fullname: 'Sub-admin Manager',
             username: 'subadmin_test',
             password: 'pwd_subadmin',
-            role: 'admin'
+            role: 'admin',
+            team: 'Team 1'
         });
         if (resSub.statusCode !== 201) throw new Error(`Failed to create sub-admin: ${resSub.body.error}`);
         const subadminId = resSub.body.user.id;
@@ -63,7 +64,8 @@ async function runTests() {
             fullname: 'Other Admin',
             username: 'otheradmin_test',
             password: 'pwd_otheradmin',
-            role: 'admin'
+            role: 'admin',
+            team: 'Team 2'
         });
         if (resOtherAdmin.statusCode !== 201) throw new Error(`Failed to create other admin: ${resOtherAdmin.body.error}`);
         const otherAdminId = resOtherAdmin.body.user.id;
@@ -75,25 +77,25 @@ async function runTests() {
             fullname: 'Unassigned Employee',
             username: 'unassigned_test',
             role: 'employee',
-            managerId: ''
+            team: ''
         });
         const unassignedId = resEmpUnassigned.body.user.id;
 
-        // Employee 2: Assigned to subadmin_test
+        // Employee 2: Assigned to Team 1
         const resEmpTeam = await request({ path: '/api/auth/register', method: 'POST', headers: { 'x-user-id': subadminId } }, {
             fullname: 'Team Employee',
             username: 'teamemp_test',
             role: 'employee',
-            managerId: subadminId
+            team: 'Team 1'
         });
         const teamEmpId = resEmpTeam.body.user.id;
 
-        // Employee 3: Assigned to otheradmin_test
+        // Employee 3: Assigned to Team 2
         const resEmpOtherTeam = await request({ path: '/api/auth/register', method: 'POST', headers: { 'x-user-id': otherAdminId } }, {
             fullname: 'Other Team Employee',
             username: 'otheremp_test',
             role: 'employee',
-            managerId: otherAdminId
+            team: 'Team 2'
         });
         const otherEmpId = resEmpOtherTeam.body.user.id;
 
@@ -155,10 +157,10 @@ async function runTests() {
             headers: { 'x-user-id': subadminId }
         }, {
             fullname: 'Unassigned Employee Pulled',
-            managerId: subadminId
+            team: 'Team 1'
         });
         if (resEditUnassigned.statusCode !== 200) throw new Error(`Failed to update unassigned employee: ${resEditUnassigned.body.error}`);
-        if (resEditUnassigned.body.user.managerId !== subadminId) throw new Error('Manager assignment failed on edit');
+        if (resEditUnassigned.body.user.team !== 'Team 1') throw new Error('Team assignment failed on edit');
         console.log(' -> Successfully pulled unassigned employee.');
 
         // 7. Test sub-admin editing another team's employee (Should be forbidden)

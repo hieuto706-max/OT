@@ -508,12 +508,12 @@ async function handleAPI(req, res, urlPath, method) {
             return sendError(res, 409, 'Tên đăng nhập đã tồn tại!');
         }
 
-        let userManagerId = body.managerId || '';
+        let userTeam = body.team || '';
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
             if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
                 // Nếu là sub-admin tạo, mặc định gán nhân viên vào team của sub-admin này
-                userManagerId = reqUserId;
+                userTeam = reqUser.team || '';
             }
         }
 
@@ -523,7 +523,7 @@ async function handleAPI(req, res, urlPath, method) {
             password: password || '123',
             fullname,
             role: role || 'employee',
-            managerId: userManagerId,
+            team: userTeam,
             createdAt: new Date().toISOString()
         };
         db.users.push(newUser);
@@ -538,8 +538,9 @@ async function handleAPI(req, res, urlPath, method) {
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
             if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+                const reqUserTeam = reqUser.team || '';
                 // Sub-admin: chỉ xem các quản trị viên, nhân viên thuộc team mình, và nhân viên chưa phân team
-                filteredUsers = db.users.filter(u => u.role === 'admin' || u.managerId === reqUserId || !u.managerId);
+                filteredUsers = db.users.filter(u => u.role === 'admin' || (reqUserTeam && u.team === reqUserTeam) || !u.team);
             }
         }
         const safeUsers = filteredUsers.map(({ password, ...u }) => u);
@@ -564,7 +565,8 @@ async function handleAPI(req, res, urlPath, method) {
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
             if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
-                if (user.managerId && user.managerId !== reqUserId) {
+                const reqUserTeam = reqUser.team || '';
+                if (user.team && user.team !== reqUserTeam) {
                     return sendError(res, 403, 'Bạn không có quyền xóa tài khoản của team khác!');
                 }
             }
@@ -579,7 +581,7 @@ async function handleAPI(req, res, urlPath, method) {
     if (urlPath.startsWith('/api/users/') && method === 'PUT') {
         const userId = urlPath.split('/api/users/')[1];
         const body = await parseBody(req);
-        const { fullname, password, role, deviceId, browserDeviceId, pendingUnlink, managerId } = body;
+        const { fullname, password, role, deviceId, browserDeviceId, pendingUnlink, team } = body;
         const userIdx = db.users.findIndex(u => u.id === userId);
         if (userIdx < 0) return sendError(res, 404, 'Không tìm thấy người dùng!');
 
@@ -588,7 +590,8 @@ async function handleAPI(req, res, urlPath, method) {
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
             if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
-                if (targetUser.id !== reqUserId && targetUser.managerId && targetUser.managerId !== reqUserId) {
+                const reqUserTeam = reqUser.team || '';
+                if (targetUser.id !== reqUserId && targetUser.team && targetUser.team !== reqUserTeam) {
                     return sendError(res, 403, 'Bạn không có quyền sửa tài khoản của team khác!');
                 }
             }
@@ -600,21 +603,22 @@ async function handleAPI(req, res, urlPath, method) {
         if (browserDeviceId !== undefined) db.users[userIdx].browserDeviceId = browserDeviceId;
         if (pendingUnlink !== undefined) db.users[userIdx].pendingUnlink = !!pendingUnlink;
         
-        if (managerId !== undefined) {
+        if (team !== undefined) {
             if (reqUserId) {
                 const reqUser = db.users.find(u => u.id === reqUserId);
                 if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
-                    // Sub-admin chỉ được gán về chính mình hoặc để trống
-                    if (managerId && managerId !== reqUserId) {
-                        db.users[userIdx].managerId = reqUserId;
+                    // Sub-admin chỉ được gán về team của mình hoặc để trống
+                    const reqUserTeam = reqUser.team || '';
+                    if (team && team !== reqUserTeam) {
+                        db.users[userIdx].team = reqUserTeam;
                     } else {
-                        db.users[userIdx].managerId = managerId;
+                        db.users[userIdx].team = team;
                     }
                 } else {
-                    db.users[userIdx].managerId = managerId;
+                    db.users[userIdx].team = team;
                 }
             } else {
-                db.users[userIdx].managerId = managerId;
+                db.users[userIdx].team = team;
             }
         }
 
@@ -641,8 +645,9 @@ async function handleAPI(req, res, urlPath, method) {
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
             if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+                const reqUserTeam = reqUser.team || '';
                 const allowedUserIds = db.users
-                    .filter(u => u.role === 'admin' || u.managerId === reqUserId || !u.managerId)
+                    .filter(u => u.role === 'admin' || (reqUserTeam && u.team === reqUserTeam) || !u.team)
                     .map(u => u.id);
                 records = records.filter(r => allowedUserIds.includes(r.userId));
             }
@@ -745,8 +750,9 @@ async function handleAPI(req, res, urlPath, method) {
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
             if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+                const adminTeam = reqUser.team || '';
                 // Sub-admin: chỉ thống kê nhân viên thuộc team của mình
-                employees = db.users.filter(u => u.role === 'employee' && u.managerId === reqUserId);
+                employees = db.users.filter(u => u.role === 'employee' && u.team === adminTeam);
                 // Thống kê bao gồm cả chính mình (admin) và nhân viên trong team
                 allowedUserIds = [reqUserId, ...employees.map(u => u.id)];
             }
