@@ -112,9 +112,9 @@ body::before {
     opacity: 0.85; /* Increased opacity to compensate for lack of blend-mode */
     will-change: transform;
     pointer-events: none;
-    /* Soft fallback blur that is light on GPU */
-    filter: blur(50px);
-    -webkit-filter: blur(50px);
+    /* Soft fallback blur that is light on GPU - radial-gradient is naturally soft so we do not need CPU-heavy blur filters */
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
 }
 
 .orb-1 {

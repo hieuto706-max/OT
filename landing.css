@@ -139,8 +139,9 @@ body::before {
     opacity: 0.7;
     will-change: transform;
     pointer-events: none;
-    filter: blur(80px);
-    -webkit-filter: blur(80px);
+    /* Soft fallback blur that is light on GPU - radial-gradient is naturally soft so we do not need CPU-heavy blur filters */
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
 }
 
 .orb-1 {
