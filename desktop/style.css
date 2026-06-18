@@ -2,6 +2,7 @@
 /* Premium Glassmorphic Dark UI Theme */
 
 :root {
+    color-scheme: dark;
     /* Color Palette */
     --bg-primary: #07070c;
     --bg-secondary: #0c0d14;

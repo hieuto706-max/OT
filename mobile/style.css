@@ -2,6 +2,7 @@
 /* Premium Dark Glassmorphism Design System v3 — Ultra Sharp & Dynamic */
 
 :root {
+    color-scheme: dark;
     /* Deep, Rich Dark Palette */
     --bg-primary: #020205;
     --bg-secondary: #050510;
