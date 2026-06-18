@@ -14,32 +14,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="landing.css?v=1.3.3">
-    <script>
-        (function() {
-            function isSessionExpired(loginTimeMs) {
-                if (!loginTimeMs) return true;
-                const loginDate = new Date(parseInt(loginTimeMs, 10));
-                const cutoff = new Date(loginDate.getFullYear(), loginDate.getMonth(), loginDate.getDate() + 1, 5, 0, 0, 0);
-                return Date.now() >= cutoff.getTime();
-            }
-            try {
-                const saved = localStorage.getItem('ot_mobile_user');
-                const loginTime = localStorage.getItem('ot_login_time');
-                if (saved && loginTime && !isSessionExpired(loginTime)) {
-                    const user = JSON.parse(saved);
-                    const needsOtPrefix = window.location.hostname.includes('github.io');
-                    const prefix = needsOtPrefix ? '/OT' : '';
-                    if (user.role === 'employee') {
-                        window.location.replace(prefix + '/mobile/');
-                    } else if (user.role === 'admin') {
-                        window.location.replace(prefix + '/desktop/');
-                    }
-                }
-            } catch (e) {
-                console.error('Redirect check error:', e);
-            }
-        })();
-    </script>
 </head>
 <body class="landing-page">
     <canvas id="canvas-bg"></canvas>
@@ -217,6 +191,19 @@
                             <div class="login-header">
                                 <h1>Hệ thống OT Manager</h1>
                                 <p>Vui lòng đăng nhập để tiếp tục</p>
+                            </div>
+
+                            <!-- Hộp thông tin khi đã đăng nhập -->
+                            <div id="login-welcome-box" style="display: none; text-align: center; padding: 10px 0;">
+                                <div style="font-size: 2.2rem; margin-bottom: 12px;">👋</div>
+                                <h3 id="welcome-user-title" style="color: var(--text-white); margin-bottom: 8px; font-weight: 800;">Chào mừng trở lại!</h3>
+                                <p id="welcome-user-desc" style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 24px; line-height: 1.5;"></p>
+                                <button type="button" id="btn-enter-app" class="btn btn-primary btn-full" style="margin-bottom: 12px;">
+                                    Vào ứng dụng
+                                </button>
+                                <button type="button" id="btn-logout-portal" class="btn btn-ghost btn-full">
+                                    Đăng xuất tài khoản
+                                </button>
                             </div>
 
                             <div class="login-tabs">

@@ -361,10 +361,77 @@ class Interactive8DBackground {
     }
 }
 
+// Helper to check session expiration
+function isSessionExpired(loginTimeMs) {
+    if (!loginTimeMs) return true;
+    const loginDate = new Date(parseInt(loginTimeMs, 10));
+    const cutoff = new Date(loginDate.getFullYear(), loginDate.getMonth(), loginDate.getDate() + 1, 5, 0, 0, 0);
+    return Date.now() >= cutoff.getTime();
+}
+
 // ==================== LANDING LOGIC & AUTOPING ====================
 document.addEventListener('DOMContentLoaded', () => {
     // Khởi tạo hình nền cấu trúc 8D
     new Interactive8DBackground();
+
+    // Kiểm tra session hiện có để hiển thị Welcome Box
+    const saved = safeStorage.getItem('ot_mobile_user');
+    const loginTime = safeStorage.getItem('ot_login_time');
+    const welcomeBox = document.getElementById('login-welcome-box');
+    const loginTabs = document.querySelector('.login-tabs');
+    const formEmp = document.getElementById('form-login-employee');
+    const formAdmin = document.getElementById('form-login-admin');
+
+    if (saved && loginTime && !isSessionExpired(loginTime)) {
+        try {
+            const user = JSON.parse(saved);
+            if (welcomeBox && loginTabs && formEmp && formAdmin) {
+                const descEl = document.getElementById('welcome-user-desc');
+                if (descEl) {
+                    descEl.innerHTML = `Bạn đã đăng nhập dưới tên <strong style="color:var(--green-light); font-weight:700;">${user.fullname}</strong> (${user.role === 'admin' ? 'Quản trị viên' : 'Nhân viên'}).`;
+                }
+
+                // Hiển thị welcome box, ẩn các form đăng nhập
+                welcomeBox.style.display = 'block';
+                loginTabs.style.display = 'none';
+                formEmp.style.display = 'none';
+                formEmp.classList.remove('active');
+                formAdmin.style.display = 'none';
+                formAdmin.classList.remove('active');
+
+                // Bắt sự kiện nút Vào ứng dụng
+                const btnEnter = document.getElementById('btn-enter-app');
+                if (btnEnter) {
+                    if (user.role === 'admin') {
+                        btnEnter.className = 'btn btn-purple btn-full';
+                    }
+                    btnEnter.addEventListener('click', () => {
+                        window.location.replace(getRedirectPrefix() + (user.role === 'admin' ? '/desktop/' : '/mobile/'));
+                    });
+                }
+
+                // Bắt sự kiện nút Đăng xuất trên cổng portal
+                const btnLogoutPortal = document.getElementById('btn-logout-portal');
+                if (btnLogoutPortal) {
+                    btnLogoutPortal.addEventListener('click', () => {
+                        safeStorage.removeItem('ot_mobile_user');
+                        safeStorage.removeItem('ot_login_time');
+                        safeStorage.removeItem('ot_current_user');
+                        safeStorage.removeItem('ot_login_date');
+                        showToast('Đã đăng xuất tài khoản thành công', 'info');
+                        
+                        // Phục hồi giao diện đăng nhập bình thường
+                        welcomeBox.style.display = 'none';
+                        loginTabs.style.display = 'flex';
+                        const btnTabEmp = document.getElementById('btn-tab-employee');
+                        if (btnTabEmp) btnTabEmp.click();
+                    });
+                }
+            }
+        } catch (e) {
+            console.error('Lỗi khởi tạo Welcome Box:', e);
+        }
+    }
 
     const host = window.location.origin;
     const savedServerIp = localStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com';
@@ -477,8 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. Login widget form tabs (Employee vs Admin)
     const btnTabEmp = document.getElementById('btn-tab-employee');
     const btnTabAdmin = document.getElementById('btn-tab-admin');
-    const formEmp = document.getElementById('form-login-employee');
-    const formAdmin = document.getElementById('form-login-admin');
+    // formEmp và formAdmin đã được khai báo ở đầu DOMContentLoaded
 
     if (btnTabEmp && btnTabAdmin && formEmp && formAdmin) {
         btnTabEmp.addEventListener('click', () => {
