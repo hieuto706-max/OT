@@ -769,6 +769,49 @@ async function handleAPI(req, res, urlPath, method) {
         });
     }
 
+    // --- TEAMS CONFIG ---
+    if (urlPath === '/api/teams' && method === 'GET') {
+        const defaultTeams = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6', 'Team 7', 'Team 8', 'Team 9', 'Team 10'];
+        const teams = db.teams || defaultTeams;
+        return sendJSON(res, 200, { teams });
+    }
+
+    if (urlPath === '/api/teams' && method === 'POST') {
+        if (reqUserId) {
+            const user = db.users.find(u => u.id === reqUserId);
+            if (!user || user.role !== 'admin') {
+                return sendError(res, 403, 'Bạn không có quyền thiết lập team!');
+            }
+        }
+        const body = await parseBody(req);
+        const { teams, oldName, newName, deletedTeam } = body;
+        if (!teams || !Array.isArray(teams)) {
+            return sendError(res, 400, 'Danh sách team không hợp lệ!');
+        }
+
+        // Rename team for users
+        if (oldName && newName) {
+            db.users.forEach(u => {
+                if (u.team === oldName) {
+                    u.team = newName;
+                }
+            });
+        }
+
+        // Delete team for users
+        if (deletedTeam) {
+            db.users.forEach(u => {
+                if (u.team === deletedTeam) {
+                    u.team = '';
+                }
+            });
+        }
+
+        db.teams = teams;
+        saveDB(db);
+        return sendJSON(res, 200, { success: true, teams });
+    }
+
     // --- GIST STATUS ---
     if (urlPath === '/api/gist-status' && method === 'GET') {
         const isRender = !!process.env.RENDER;

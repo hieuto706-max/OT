@@ -15,7 +15,17 @@ const localServerUrl = isGitHubPages
 let API_BASE = localServerUrl;
 const OT_LUNCH_HOURS = 1;
 const WORK_END = '16:30';
-const TEAMS = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6', 'Team 7', 'Team 8', 'Team 9', 'Team 10'];
+let TEAMS = [];
+
+async function loadTeams() {
+    try {
+        const res = await api('/api/teams');
+        TEAMS = res.teams || [];
+    } catch (e) {
+        console.error('Lỗi load teams:', e);
+        TEAMS = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6', 'Team 7', 'Team 8', 'Team 9', 'Team 10'];
+    }
+}
 
 // Add blink-red style rules dynamically
 const style = document.createElement('style');
@@ -242,14 +252,138 @@ async function initAdminDashboard(user) {
     document.getElementById('admin-filter-month').value = currentMonth;
     document.getElementById('report-filter-month').value = currentMonth;
 
+    await loadTeams();
     await populateUserFilter();
     await Promise.all([
         refreshAdminRecords(),
         refreshAdminUsers(),
         refreshReport(),
-        refreshAdminStats()
+        refreshAdminStats(),
+        refreshAdminTeams()
     ]);
     checkGistStatus();
+}
+
+function refreshAdminTeams() {
+    const tbody = document.getElementById('admin-teams-body');
+    if (!tbody) return;
+
+    if (!TEAMS || TEAMS.length === 0) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="3">Chưa có team nào được thiết lập</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = TEAMS.map((teamName, index) => {
+        return `<tr>
+            <td><strong>${index + 1}</strong></td>
+            <td><strong>${teamName}</strong></td>
+            <td>
+                <div class="action-buttons">
+                    <button class="btn-icon-only edit" onclick="renameTeam('${teamName}')" title="Đổi tên" style="margin-right: 4px; padding: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </button>
+                    <button class="btn-icon-only delete" onclick="deleteTeam('${teamName}')" title="Xóa" style="padding: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+async function addTeam() {
+    const input = document.getElementById('input-new-team');
+    if (!input) return;
+    const teamName = input.value.trim();
+    if (!teamName) return showToast('Vui lòng nhập tên team!', 'error');
+
+    if (TEAMS.includes(teamName)) {
+        return showToast('Team này đã tồn tại!', 'error');
+    }
+
+    const updatedTeams = [...TEAMS, teamName];
+    try {
+        await api('/api/teams', 'POST', { teams: updatedTeams });
+        TEAMS = updatedTeams;
+        input.value = '';
+        showToast('Thêm team thành công!');
+        refreshAdminTeams();
+        await populateUserFilter();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function renameTeam(oldName) {
+    const body = `
+    <div style="text-align: left; padding: 5px 0;">
+        <label style="display:block; margin-bottom:8px; font-weight:600;">Tên team mới:</label>
+        <input type="text" id="modal-new-team-name" class="input-sm" value="${oldName}" style="width:100%; box-sizing:border-box; height:38px;">
+    </div>`;
+
+    showModal('Đổi tên Team', body, [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Lưu', class: 'btn btn-primary btn-sm', action: async () => {
+            const newName = document.getElementById('modal-new-team-name').value.trim();
+            if (!newName) return showToast('Tên team không được để trống!', 'error');
+            if (newName === oldName) return;
+
+            if (TEAMS.includes(newName)) {
+                return showToast('Tên team này đã tồn tại!', 'error');
+            }
+
+            const updatedTeams = TEAMS.map(t => t === oldName ? newName : t);
+            try {
+                await api('/api/teams', 'POST', { teams: updatedTeams, oldName, newName });
+                TEAMS = updatedTeams;
+                showToast('Đổi tên team thành công!');
+                refreshAdminTeams();
+                await Promise.all([
+                    populateUserFilter(),
+                    refreshAdminUsers()
+                ]);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+async function deleteTeam(teamName) {
+    try {
+        const uData = await api('/api/users');
+        const userCount = uData.users.filter(u => u.team === teamName).length;
+        let warningText = `Bạn có chắc muốn xóa team <strong>${teamName}</strong>?`;
+        if (userCount > 0) {
+            warningText += `<br><br><span style="color:var(--accent-red); font-weight:600;">⚠️ Cảnh báo: Hiện có ${userCount} tài khoản đang thuộc team này. Họ sẽ bị đưa về trạng thái "Chưa phân team".</span>`;
+        }
+
+        showModal('Xóa Team', warningText, [
+            { text: 'Hủy', class: 'btn-ghost' },
+            { text: 'Xóa', class: 'btn btn-danger btn-sm', action: async () => {
+                const updatedTeams = TEAMS.filter(t => t !== teamName);
+                try {
+                    await api('/api/teams', 'POST', { teams: updatedTeams, deletedTeam: teamName });
+                    TEAMS = updatedTeams;
+                    showToast('Đã xóa team!');
+                    refreshAdminTeams();
+                    await Promise.all([
+                        populateUserFilter(),
+                        refreshAdminUsers()
+                    ]);
+                } catch (e) {
+                    showToast(e.message, 'error');
+                }
+            }}
+        ]);
+    } catch (e) {
+        showToast('Lỗi khi lấy thông tin nhân viên', 'error');
+    }
 }
 
 // Khởi tạo kênh nhận sự kiện thời gian thực (SSE)
@@ -1799,6 +1933,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (btnAddUser) {
         btnAddUser.addEventListener('click', addUserDialog);
     }
+
+    // Add Team trigger
+    const btnAddTeam = document.getElementById('btn-add-team');
+    if (btnAddTeam) {
+        btnAddTeam.addEventListener('click', addTeam);
+    }
+
+    // Expose global methods
+    window.renameTeam = renameTeam;
+    window.deleteTeam = deleteTeam;
 });
 
 // ==================== DYNAMIC DIALOGS (ADD/EDIT) ====================
