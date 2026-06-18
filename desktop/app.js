@@ -202,6 +202,8 @@ function checkMidnightLogout() {
 function logout() {
     localStorage.removeItem('ot_current_user');
     localStorage.removeItem('ot_login_date');
+    localStorage.removeItem('ot_mobile_user');
+    localStorage.removeItem('ot_login_time');
     const needsOtPrefix = window.location.hostname.includes('github.io');
     const mainPageUrl = needsOtPrefix ? '/OT/index.html' : '/index.html';
     window.location.href = mainPageUrl;

@@ -425,6 +425,8 @@ function logout() {
     currentUser = null;
     safeStorage.removeItem('ot_mobile_user');
     safeStorage.removeItem('ot_login_time');
+    safeStorage.removeItem('ot_current_user');
+    safeStorage.removeItem('ot_login_date');
     showScreen('screen-login');
     const loginForm = document.getElementById('form-login-employee');
     if (loginForm) loginForm.reset();
