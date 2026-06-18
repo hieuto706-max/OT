@@ -299,17 +299,20 @@ async function populateUserFilter() {
     const adminOtUser = document.getElementById('admin-ot-user');
     try {
         const data = await api('/api/users');
-        const users = data.users.filter(u => u.role === 'employee');
+        const users = data.users;
+        users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
         if (select) {
             select.innerHTML = '<option value="">Tất cả</option>';
             users.forEach(u => {
-                select.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                const suffix = u.role === 'admin' ? ' (Admin)' : '';
+                select.innerHTML += `<option value="${u.id}">${u.fullname}${suffix}</option>`;
             });
         }
         if (adminOtUser) {
             adminOtUser.innerHTML = '<option value="">-- Chọn nhân viên --</option>';
             users.forEach(u => {
-                adminOtUser.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                const suffix = u.role === 'admin' ? ' (Admin)' : '';
+                adminOtUser.innerHTML += `<option value="${u.id}">${u.fullname}${suffix}</option>`;
             });
         }
     } catch (e) {}
@@ -573,7 +576,7 @@ async function exportExcel() {
     const month = document.getElementById('report-filter-month').value;
     try {
         const usersData = await api('/api/users');
-        const users = usersData.users.filter(u => u.role === 'employee');
+        const users = usersData.users;
         users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
 
         const recData = await api(`/api/records?month=${month}`);
