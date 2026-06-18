@@ -1837,11 +1837,11 @@ async function editRecordDialog(recordId, source) {
                 <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
                     <div>
                         <label style="display:block;margin-bottom:6px;font-weight:600;">Bắt đầu OT chiều</label>
-                        <input type="text" id="modal-rec-start" value="${record.otStart || '16:30'}" placeholder="16:30" pattern="^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$" title="Định dạng 24h (ví dụ: 18:30)" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+                        <input type="time" id="modal-rec-start" value="${record.otStart || '16:30'}" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
                     </div>
                     <div>
                         <label style="display:block;margin-bottom:6px;font-weight:600;">Kết thúc OT chiều</label>
-                        <input type="text" id="modal-rec-end" value="${record.otEnd || '16:30'}" placeholder="16:30" pattern="^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$" title="Định dạng 24h (ví dụ: 18:30)" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+                        <input type="time" id="modal-rec-end" value="${record.otEnd || '16:30'}" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
                     </div>
                 </div>
             </div>
