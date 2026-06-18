@@ -402,7 +402,7 @@ public class MainActivity extends AppCompatActivity {
                     Intent intent = new Intent(Intent.ACTION_VIEW);
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                         Uri apkUri = FileProvider.getUriForFile(MainActivity.this, 
-                                "com.example.otmanager.fileprovider", apkFile);
+                                "com.hieuto.otmanager.fileprovider", apkFile);
                         intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
                         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     } else {

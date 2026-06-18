@@ -7,18 +7,27 @@ android {
     namespace = "com.example.otmanager"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.example.otmanager"
+        applicationId = "com.hieuto.otmanager"
         minSdk = 21
         targetSdk = 36
         versionCode = 16
         versionName = "1.3.3"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("release.jks")
+            storePassword = "otmanager123"
+            keyAlias = "otmanager"
+            keyPassword = "otmanager123"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
