@@ -492,6 +492,9 @@
                                     }
 
                                     // Save to cache
+                                    const oldJS = localStorage.getItem('cached_app_js');
+                                    const oldCSS = localStorage.getItem('cached_style_css');
+
                                     localStorage.setItem('cached_style_css', cssText);
                                     localStorage.setItem('cached_app_js', jsText);
                                     console.log('Assets cached successfully for offline use.');
@@ -501,7 +504,9 @@
                                         applyCachedAssets(jsText, cssText);
                                         loadedFromCache = true;
                                     } else {
-                                        console.log('New update downloaded and cached. It will be active on next app launch.');
+                                        if (jsText !== oldJS || cssText !== oldCSS) {
+                                            showHotUpdateNotification();
+                                        }
                                     }
                                 } else if (!loadedFromCache) {
                                     loadLocalScript();
@@ -526,6 +531,73 @@
                 if (!loadedFromCache) loadLocalScript();
             };
             xhr.send();
+
+            function showHotUpdateNotification() {
+                if (!document.getElementById('hot-update-pulse-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'hot-update-pulse-style';
+                    style.textContent = `
+                        @keyframes hotUpdatePulse {
+                            0% { transform: scale(1); }
+                            50% { transform: scale(1.15); filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.6)); }
+                            100% { transform: scale(1); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+
+                const overlay = document.createElement('div');
+                overlay.id = 'hot-update-overlay';
+                overlay.style.position = 'fixed';
+                overlay.style.inset = '0';
+                overlay.style.background = 'rgba(2, 2, 4, 0.85)';
+                overlay.style.backdropFilter = 'blur(16px)';
+                overlay.style.webkitBackdropFilter = 'blur(16px)';
+                overlay.style.zIndex = '99999';
+                overlay.style.display = 'flex';
+                overlay.style.alignItems = 'center';
+                overlay.style.justifyContent = 'center';
+                overlay.style.padding = '20px';
+                
+                overlay.innerHTML = `
+                    <div style="
+                        background: linear-gradient(145deg, #0a0b14 0%, #050609 100%);
+                        border: 1px solid rgba(255,255,255,0.08);
+                        border-radius: 16px;
+                        padding: 32px 24px;
+                        width: 100%;
+                        max-width: 320px;
+                        text-align: center;
+                        box-shadow: 0 20px 50px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.1);
+                    ">
+                        <div style="font-size: 2.8rem; margin-bottom: 12px; display: inline-block; animation: hotUpdatePulse 2s infinite ease-in-out;">⚡</div>
+                        <h3 style="margin: 0 0 10px 0; color: #10b981; font-size: 1.2rem; font-weight: 800; font-family: 'Inter', sans-serif;">Đã có bản vá mới!</h3>
+                        <p style="margin: 0 0 20px 0; color: #a0aec0; font-size: 0.85rem; line-height: 1.6; font-family: 'Inter', sans-serif;">
+                            Hệ thống đã tự động tải về bản vá sửa lỗi mới nhất. Vui lòng làm mới ứng dụng để áp dụng ngay.
+                        </p>
+                        <button id="btn-hot-update-reload" style="
+                            width: 100%;
+                            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                            color: #fff;
+                            border: none;
+                            padding: 12px;
+                            font-size: 0.9rem;
+                            font-weight: 700;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                            font-family: 'Inter', sans-serif;
+                        ">
+                            Áp dụng và làm mới ngay
+                        </button>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+                
+                document.getElementById('btn-hot-update-reload').addEventListener('click', function() {
+                    window.location.reload();
+                });
+            }
 
             function applyCachedAssets(jsText, cssText) {
                 // Apply CSS
