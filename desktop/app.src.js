@@ -234,6 +234,15 @@ function logout() {
     localStorage.removeItem('ot_mobile_user');
     localStorage.removeItem('ot_login_time');
     localStorage.removeItem('ot_auth_token');
+    
+    if (isElectron) {
+        // Trong Electron, reset và hiển thị lại màn hình đăng nhập thay vì chuyển hướng ra Landing Page
+        showScreen('screen-login');
+        const loginForm = document.getElementById('form-login-admin');
+        if (loginForm) loginForm.reset();
+        return;
+    }
+
     const needsOtPrefix = window.location.hostname.includes('github.io');
     const mainPageUrl = needsOtPrefix ? '/OT/index.html' : '/index.html';
     window.location.href = mainPageUrl;

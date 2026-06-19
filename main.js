@@ -103,7 +103,7 @@ async function createWindow() {
 
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
-        mainWindow.webContents.openDevTools(); // Mở DevTools để chẩn đoán lỗi
+        // mainWindow.webContents.openDevTools(); // Mở DevTools để chẩn đoán lỗi
         console.log(`\n╔══════════════════════════════════════╗`);
         console.log(`║   OT Manager đang chạy!              ║`);
         console.log(`║                                      ║`);
@@ -117,8 +117,7 @@ async function createWindow() {
         checkUpdates(cloudUrl);
     });
 
-    // Bảo mật: Tắt DevTools trong môi trường production (Tạm thời tắt để debug)
-    /*
+    // Bảo mật: Tắt DevTools trong môi trường production
     if (app.isPackaged) {
         mainWindow.webContents.on('before-input-event', (event, input) => {
             if (input.key === 'F12' ||
@@ -128,7 +127,6 @@ async function createWindow() {
             }
         });
     }
-    */
 
     // Bảo mật: Chặn navigation ra ngoài whitelist
     const allowedHosts = ['localhost', '127.0.0.1', 'otmanager.id.vn', 'ot-manager-server-jbxd.onrender.com'];
