@@ -64,10 +64,51 @@ if (!isLocalWeb && savedIp && (savedIp.includes('otms.onrender.com') || savedIp.
 const OT_LUNCH_HOURS = 1;
 const WORK_END_MIN = 16 * 60 + 30; // 16:30
 
-// Tạo/Lấy Device ID duy nhất cho điện thoại
+// Tạo vân tay trình duyệt để giữ cố định Device ID trên Web ngay cả khi xóa lịch sử
+function getBrowserFingerprint() {
+    try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.textBaseline = "top";
+        ctx.font = "14px 'Arial'";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "#f60";
+        ctx.fillRect(125,1,62,20);
+        ctx.fillStyle = "#069";
+        ctx.fillText("OT_Manager_Fingerprint", 2, 15);
+        ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+        ctx.fillText("OT_Manager_Fingerprint", 4, 17);
+        const canvasData = canvas.toDataURL();
+        
+        let hash = 0;
+        const str = canvasData + navigator.language + screen.width + 'x' + screen.height + screen.colorDepth;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return 'web_' + Math.abs(hash).toString(36);
+    } catch (e) {
+        let hash = 0;
+        const str = navigator.userAgent + navigator.language + screen.width + 'x' + screen.height + screen.colorDepth;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return 'web_fallback_' + Math.abs(hash).toString(36);
+    }
+}
+
+// Tạo/Lấy Device ID duy nhất cho điện thoại hoặc trình duyệt web
 let deviceId = safeStorage.getItem('ot_device_id') || '';
 if (!deviceId) {
-    deviceId = 'dev_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    const isWebBrowser = window.location.protocol !== 'file:';
+    if (isWebBrowser) {
+        deviceId = getBrowserFingerprint();
+    } else {
+        deviceId = 'dev_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    }
     safeStorage.setItem('ot_device_id', deviceId);
 }
 
