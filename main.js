@@ -3,11 +3,12 @@ const path = require('path');
 const fs = require('fs');
 const { startServer, stopServer, getLocalIP, PORT } = require('./server/server');
 
-// Vô hiệu hóa tăng tốc phần cứng để tránh lỗi crash GPU
+// Vô hiệu hóa tăng tốc phần cứng và sandbox để tránh lỗi crash tiến trình renderer/GPU
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('disable-gpu');
 app.commandLine.appendSwitch('disable-software-rasterizer');
 app.commandLine.appendSwitch('disable-gpu-sandbox');
+app.commandLine.appendSwitch('no-sandbox');
 
 // Ngăn chạy nhiều phiên bản của ứng dụng cùng lúc
 const gotTheLock = app.requestSingleInstanceLock();
@@ -90,51 +91,19 @@ async function createWindow() {
             nodeIntegration: false,
             contextIsolation: true,
             enableRemoteModule: false,
-            sandbox: true,
+            sandbox: false,
         },
         autoHideMenuBar: true,
         show: false,
     });
 
-    // Load desktop app từ server (để dùng chung API). Tự động nạp động (Hot-Update) từ Cloud nếu online.
+    // Load desktop app từ server local (để tránh lỗi DNS/SSL/Render ngủ đông gây ra màn hình đen)
     let finalDesktopUrl = `${serverUrl}/desktop/index.html`;
-    if (cloudUrl) {
-        try {
-            const checkUrl = `${cloudUrl}/desktop/index.html`;
-            console.log(`[Main] Đang kiểm tra Cloud Server để nạp động (Hot-Update): ${checkUrl}`);
-            const { net } = require('electron');
-            const isOnline = await new Promise((resolve) => {
-                const request = net.request({
-                    method: 'GET',
-                    url: checkUrl,
-                    redirect: 'follow'
-                });
-                request.on('response', (response) => {
-                    resolve(response.statusCode === 200);
-                });
-                request.on('error', () => {
-                    resolve(false);
-                });
-                const timer = setTimeout(() => {
-                    request.abort();
-                    resolve(false);
-                }, 3000);
-                request.end();
-            });
-            if (isOnline) {
-                finalDesktopUrl = checkUrl;
-                console.log(`[Main] Đã kết nối Cloud Server thành công. Nạp động giao diện từ: ${finalDesktopUrl}`);
-            } else {
-                console.log(`[Main] Không kết nối được Cloud Server. Nạp giao diện local: ${finalDesktopUrl}`);
-            }
-        } catch (err) {
-            console.error('[Main] Lỗi kiểm tra Hot-Update:', err.message);
-        }
-    }
     mainWindow.loadURL(finalDesktopUrl);
 
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
+        mainWindow.webContents.openDevTools(); // Mở DevTools để chẩn đoán lỗi
         console.log(`\n╔══════════════════════════════════════╗`);
         console.log(`║   OT Manager đang chạy!              ║`);
         console.log(`║                                      ║`);
@@ -148,7 +117,8 @@ async function createWindow() {
         checkUpdates(cloudUrl);
     });
 
-    // Bảo mật: Tắt DevTools trong môi trường production
+    // Bảo mật: Tắt DevTools trong môi trường production (Tạm thời tắt để debug)
+    /*
     if (app.isPackaged) {
         mainWindow.webContents.on('before-input-event', (event, input) => {
             if (input.key === 'F12' ||
@@ -158,6 +128,7 @@ async function createWindow() {
             }
         });
     }
+    */
 
     // Bảo mật: Chặn navigation ra ngoài whitelist
     const allowedHosts = ['localhost', '127.0.0.1', 'otmanager.id.vn', 'ot-manager-server-jbxd.onrender.com'];
