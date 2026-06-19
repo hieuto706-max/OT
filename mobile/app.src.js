@@ -718,7 +718,7 @@ async function loadHistory() {
         let tLunch = 0, tEvening = 0, tTotal = 0;
 
         list.innerHTML = mergedRecords.map((r, i) => {
-            const isBackfill = r.isBackfill || (r.note && r.note.includes('[BÙ THÁNG TRƯỚC]'));
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
             const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
             tLunch += lh;
             tEvening += isBackfill ? 0 : r.eveningOTHours;
@@ -746,7 +746,7 @@ async function loadHistory() {
                 }
             }
 
-            const cleanNote = r.note ? r.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').trim() : '';
+            const cleanNote = r.note ? r.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
 
             return `
                 <div class="history-item" style="animation-delay:${i * 0.04}s">
@@ -848,8 +848,8 @@ async function loadProfileStats() {
 
         const days = mergedRecords.length;
         const lunch = mergedRecords.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
-        const evening = mergedRecords.reduce((s, r) => s + ((r.isBackfill || (r.note && r.note.includes('[BÙ THÁNG TRƯỚC]'))) ? 0 : r.eveningOTHours), 0);
-        const total = lunch + evening + mergedRecords.reduce((s, r) => s + ((r.isBackfill || (r.note && r.note.includes('[BÙ THÁNG TRƯỚC]'))) ? r.totalHours : 0), 0);
+        const evening = mergedRecords.reduce((s, r) => s + ((r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')))) ? 0 : r.eveningOTHours), 0);
+        const total = lunch + evening + mergedRecords.reduce((s, r) => s + ((r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')))) ? r.totalHours : 0), 0);
 
         document.getElementById('stat-days').textContent = days;
         document.getElementById('stat-lunch').textContent = lunch.toFixed(1);
@@ -1323,26 +1323,30 @@ function initApp() {
         scrollContainer.addEventListener('touchstart', e => {
             if (scrollContainer.scrollTop === 0) {
                 touchStart = e.touches[0].clientY;
-                isPulling = true;
             }
+            isPulling = false;
         }, { passive: true });
 
         scrollContainer.addEventListener('touchmove', e => {
-            if (!isPulling) return;
             const currentY = e.touches[0].clientY;
             const dist = currentY - touchStart;
+            
+            if (scrollContainer.scrollTop === 0 && dist > 10) {
+                isPulling = true;
+            }
+            
+            if (!isPulling) return;
+            
             if (dist > 0) {
-                if (dist > 5) {
-                    ptr.classList.add('visible');
-                    const icon = ptr.querySelector('.ptr-icon');
-                    const text = ptr.querySelector('.ptr-text');
-                    if (dist > 80) {
-                        icon.classList.add('rotate');
-                        text.textContent = 'Thả tay để làm mới...';
-                    } else {
-                        icon.classList.remove('rotate');
-                        text.textContent = 'Kéo để làm mới...';
-                    }
+                ptr.classList.add('visible');
+                const icon = ptr.querySelector('.ptr-icon');
+                const text = ptr.querySelector('.ptr-text');
+                if (dist > 80) {
+                    icon.classList.add('rotate');
+                    text.textContent = 'Thả tay để làm mới...';
+                } else {
+                    icon.classList.remove('rotate');
+                    text.textContent = 'Kéo để làm mới...';
                 }
             }
         }, { passive: true });
@@ -1545,7 +1549,7 @@ async function editRecordDialog(id) {
         document.getElementById('edit-ot-start').value = record.otStart || '16:30';
         document.getElementById('edit-ot-end').value = record.otEnd || '16:30';
         
-        const isBackfill = record.isBackfill || (record.note && record.note.includes('[BÙ THÁNG TRƯỚC]'));
+        const isBackfill = record.isBackfill || (record.note && (record.note.includes('[BÙ THÁNG TRƯỚC]') || record.note.includes('[TĂNG THÁNG NÀY]')));
         const editBackfill = document.getElementById('edit-ot-backfill');
         if (editBackfill) editBackfill.checked = isBackfill;
 
@@ -1563,7 +1567,7 @@ async function editRecordDialog(id) {
             if (editBackfillHours) editBackfillHours.value = '';
         }
 
-        document.getElementById('edit-ot-note').value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').trim() : '';
+        document.getElementById('edit-ot-note').value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
 
         // Auto sync edit ot end when edit ot start changes
         const editStartEl = document.getElementById('edit-ot-start');
@@ -1701,7 +1705,7 @@ function checkMobileUpdates(isManual) {
     try {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', API + '/api/version?t=' + Date.now(), true);
-        xhr.timeout = 5000;
+        xhr.timeout = (API.indexOf('onrender.com') !== -1 || API.indexOf('otmanager.id.vn') !== -1) ? 60000 : 30000;
         xhr.onload = function () {
             if (xhr.status === 200) {
                 try {

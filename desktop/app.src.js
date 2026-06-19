@@ -1310,7 +1310,8 @@ async function handleAdminOTSubmit(e) {
             userId, date, hasLunchOT: isBackfill ? false : hasLunch,
             otStart: (!isBackfill && eveningHours > 0) ? otStart : '',
             otEnd: (!isBackfill && eveningHours > 0) ? otEnd : '',
-            eveningOTHours: eveningHours, totalHours, note, isBackfill
+            eveningOTHours: eveningHours, totalHours, note, isBackfill,
+            createdMonth: isBackfill ? getCurrentMonth() : date.substring(0, 7)
         });
 
         const action = data.updated ? 'Đã cập nhật' : 'Đã lưu';
@@ -2004,8 +2005,8 @@ async function editRecordDialog(recordId, source) {
         const record = data.records.find(r => r.id === recordId);
         if (!record) return showToast('Không tìm thấy bản ghi', 'error');
 
-        const isBackfill = record.isBackfill || (record.note && record.note.includes('[BÙ THÁNG TRƯỚC]'));
-        const cleanedNote = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').trim() : '';
+        const isBackfill = record.isBackfill || (record.note && (record.note.includes('[BÙ THÁNG TRƯỚC]') || record.note.includes('[TĂNG THÁNG NÀY]')));
+        const cleanedNote = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
 
         const body = `
         <form id="modal-form-record" class="login-form active" style="text-align: left; padding: 0;">
@@ -2089,7 +2090,8 @@ async function editRecordDialog(recordId, source) {
                         eveningOTHours: eveningHours,
                         totalHours,
                         note,
-                        isBackfill: isRecBackfill
+                        isBackfill: isRecBackfill,
+                        createdMonth: isRecBackfill ? getCurrentMonth() : date.substring(0, 7)
                     });
                     showToast('Đã cập nhật bản ghi tăng ca!');
                     if (source === 'admin') {

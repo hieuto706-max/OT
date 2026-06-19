@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
-const { startTunnel, stopTunnel } = require('./tunnel');
+const { startTunnel, stopTunnel, updateRentry } = require('./tunnel');
 
 // ==================== ENVIRONMENT VARIABLES ====================
 function loadEnv() {
@@ -1514,7 +1514,6 @@ function startServer() {
                 } else {
                     console.log(`☁️ App đang cấu hình trỏ về Cloud Server: ${cloudUrl}. Cập nhật Rentry và bỏ qua Tunnel local.`);
                     try {
-                        const { updateRentry } = require('./tunnel');
                         updateRentry(cloudUrl);
                     } catch (e) {
                         console.error('[Server] Lỗi cập nhật Rentry:', e.message);
@@ -1526,7 +1525,6 @@ function startServer() {
                 const cloudUrl = process.env.RENDER_EXTERNAL_URL || process.env.SERVER_URL;
                 if (cloudUrl) {
                     try {
-                        const { updateRentry } = require('./tunnel');
                         updateRentry(cloudUrl);
                         console.log(`[Cloud] Đã tự động cập nhật URL Cloud lên Rentry: ${cloudUrl}`);
                     } catch (e) {
