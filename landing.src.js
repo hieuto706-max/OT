@@ -677,6 +677,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const splash = document.getElementById('splash');
         if (splash) splash.classList.remove('active');
     }, 1000);
+
+    // Toggle mobile menu
+    const toggleBtn = document.getElementById('mobile-menu-toggle');
+    const landingNav = document.querySelector('.landing-nav');
+    if (toggleBtn && landingNav) {
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            landingNav.classList.toggle('open');
+            toggleBtn.classList.toggle('active');
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!landingNav.contains(e.target) && e.target !== toggleBtn) {
+                landingNav.classList.remove('open');
+                toggleBtn.classList.remove('active');
+            }
+        });
+
+        // Close menu when clicking a link
+        landingNav.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                landingNav.classList.remove('open');
+                toggleBtn.classList.remove('active');
+            });
+        });
+    }
 });
 
 // Expose scroll helper globally
