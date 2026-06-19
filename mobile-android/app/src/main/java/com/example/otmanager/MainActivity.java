@@ -110,25 +110,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         
-        // Đăng ký Bridge Javascript với Native Android
-        webView.addJavascriptInterface(new Object() {
-            @JavascriptInterface
-            public void startAutoDiscovery() {
-                autoDiscoverAndConnectServer();
-            }
-
-            @JavascriptInterface
-            public String getAndroidId() {
-                try {
-                    return android.provider.Settings.Secure.getString(
-                        getContentResolver(), 
-                        android.provider.Settings.Secure.ANDROID_ID
-                    );
-                } catch (Exception e) {
-                    return "";
-                }
-            }
-        }, "AndroidBridge");
+        // Đăng ký Bridge Javascript với Native Android sử dụng public class tĩnh để tránh lỗi reflection trên một số dòng máy
+        webView.addJavascriptInterface(new WebAppInterface(this), "AndroidBridge");
 
         // Xử lý nút Back bằng OnBackPressedCallback (thay thế onBackPressed deprecated)
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -476,6 +459,31 @@ public class MainActivity extends AppCompatActivity {
             
             if (!permissionsNeeded.isEmpty()) {
                 requestPermissions(permissionsNeeded.toArray(new String[0]), PERMISSION_REQUEST_CODE);
+            }
+        }
+    }
+
+    public static class WebAppInterface {
+        private final MainActivity activity;
+
+        public WebAppInterface(MainActivity activity) {
+            this.activity = activity;
+        }
+
+        @JavascriptInterface
+        public void startAutoDiscovery() {
+            activity.autoDiscoverAndConnectServer();
+        }
+
+        @JavascriptInterface
+        public String getAndroidId() {
+            try {
+                return android.provider.Settings.Secure.getString(
+                    activity.getContentResolver(), 
+                    android.provider.Settings.Secure.ANDROID_ID
+                );
+            } catch (Exception e) {
+                return "";
             }
         }
     }

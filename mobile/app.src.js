@@ -110,13 +110,17 @@ function getDeviceId() {
     if (!isWebBrowser) {
         // Android App
         if (!id || id.startsWith('dev_')) {
-            if (window.AndroidBridge && typeof window.AndroidBridge.getAndroidId === 'function') {
-                const nativeId = window.AndroidBridge.getAndroidId();
-                if (nativeId) {
-                    id = 'android_' + nativeId;
-                    safeStorage.setItem('ot_device_id', id);
-                    deviceId = id;
+            try {
+                if (window.AndroidBridge && typeof window.AndroidBridge.getAndroidId === 'function') {
+                    const nativeId = window.AndroidBridge.getAndroidId();
+                    if (nativeId) {
+                        id = 'android_' + nativeId;
+                        safeStorage.setItem('ot_device_id', id);
+                        deviceId = id;
+                    }
                 }
+            } catch (err) {
+                console.error("Lỗi lấy Android ID từ native bridge:", err);
             }
         }
     } else {
@@ -146,7 +150,7 @@ let historyRecordsList = [];
 // ==================== API CLIENT ====================
 // Dùng XMLHttpRequest thay cho fetch để tương thích Android 5.0 WebView
 function api(endpoint, method, body, skipAuthRedirect) {
-    getDeviceId(); // Đảm bảo đã cập nhật deviceId từ AndroidBridge nếu có
+    deviceId = getDeviceId(); // Đảm bảo đã cập nhật deviceId từ AndroidBridge nếu có
     method = method || 'GET';
     body = body || null;
 
@@ -353,7 +357,7 @@ async function cacheUsernames() {
 
 async function handleEmployeeLogin(e) {
     e.preventDefault();
-    getDeviceId(); // Cập nhật deviceId mới nhất trước khi kiểm tra/đăng nhập
+    deviceId = getDeviceId(); // Cập nhật deviceId mới nhất trước khi kiểm tra/đăng nhập
     const username = document.getElementById('login-user').value.trim();
     const errEl = document.getElementById('login-error-emp');
     errEl.textContent = '';
@@ -438,7 +442,7 @@ async function handleEmployeeLogin(e) {
 
 async function handleAdminLogin(e) {
     e.preventDefault();
-    getDeviceId(); // Cập nhật deviceId mới nhất trước khi đăng nhập
+    deviceId = getDeviceId(); // Cập nhật deviceId mới nhất trước khi đăng nhập
     const username = document.getElementById('login-admin-user').value.trim();
     const password = document.getElementById('login-password').value;
     const errEl = document.getElementById('login-error-admin');
