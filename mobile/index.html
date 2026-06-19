@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link id="main-theme-style" rel="stylesheet" href="style.css?v=1.3.4">
+    <link id="main-theme-style" rel="stylesheet" href="style.css?v=1.3.5">
 </head>
 <body>
     <!-- ==================== BACKGROUND GLOWING ORBS ==================== -->
@@ -101,7 +101,7 @@
 
                     <div class="login-footer">
                         <div class="login-register-hint">Chưa có tài khoản? Liên hệ quản lý</div>
-                        <div class="login-version-badge">Phiên bản <span class="login-ver-val">v1.3.4</span></div>
+                        <div class="login-version-badge">Phiên bản <span class="login-ver-val">v1.3.5</span></div>
                         <div id="connection-status" style="display:none; margin-top:8px;font-size:0.8rem;"></div>
                     </div>
                 </div>
@@ -425,16 +425,25 @@
         };
     </script>
     <script>
-        window.PACKAGED_VERSION = '1.3.4';
+        window.PACKAGED_VERSION = '1.3.5';
     </script>
     <script>
         (function() {
             // Hot-update check
             if (window.location.protocol !== 'file:') {
                 const script = document.createElement('script');
-                script.src = 'app.js?v=1.3.4';
+                script.src = 'app.js?v=1.3.5';
                 document.body.appendChild(script);
                 return;
+            }
+
+            // Check compatibility of cached assets with current package version
+            const cachedVersion = localStorage.getItem('cached_app_version');
+            if (cachedVersion !== window.PACKAGED_VERSION) {
+                console.log('New packaged version detected. Invalidating stale localStorage cache...');
+                localStorage.removeItem('cached_app_js');
+                localStorage.removeItem('cached_style_css');
+                localStorage.setItem('cached_app_version', window.PACKAGED_VERSION);
             }
 
             const savedServer = localStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com';
@@ -455,13 +464,19 @@
                 return;
             }
 
-            // In parallel (or after cache load), check online update
+            // In parallel (or after cache load), check online update (with generous 60s timeout for Render wake up)
             const xhr = new XMLHttpRequest();
             xhr.open('GET', savedServer + '/api/version?t=' + Date.now(), true);
-            xhr.timeout = 3000;
+            xhr.timeout = 60000;
             xhr.onload = function() {
                 if (xhr.status === 200) {
                     console.log('Server is online. Downloading latest assets for caching...');
+                    
+                    let serverVersion = window.PACKAGED_VERSION;
+                    try {
+                        const resObj = JSON.parse(xhr.responseText);
+                        if (resObj.version) serverVersion = resObj.version;
+                    } catch(e) {}
                     
                     // Fetch latest CSS
                     const xhrCSS = new XMLHttpRequest();
@@ -497,6 +512,7 @@
 
                                     localStorage.setItem('cached_style_css', cssText);
                                     localStorage.setItem('cached_app_js', jsText);
+                                    localStorage.setItem('cached_app_version', serverVersion);
                                     console.log('Assets cached successfully for offline use.');
 
                                     // If not loaded from cache yet, load them now
@@ -618,7 +634,7 @@
 
             function loadLocalScript() {
                 const script = document.createElement('script');
-                script.src = 'app.js?v=1.3.4';
+                script.src = 'app.js?v=1.3.5';
                 document.body.appendChild(script);
             }
         })();

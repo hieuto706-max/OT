@@ -1,6 +1,6 @@
 @echo off
 echo ==================================================
-echo   OT Manager - Android App Build Script (v1.3.4)
+echo   OT Manager - Android App Build Script (v1.3.5)
 echo ==================================================
 echo.
 

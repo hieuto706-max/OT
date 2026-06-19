@@ -1396,22 +1396,25 @@ function initApp() {
     // Kéo để làm mới (Pull to refresh)
     let touchStart = 0;
     let isPulling = false;
+    let startedAtTop = false;
     const ptr = document.getElementById('pull-to-refresh');
     const scrollContainer = document.querySelector('.mobile-main');
 
     if (scrollContainer && ptr) {
         scrollContainer.addEventListener('touchstart', e => {
-            if (scrollContainer.scrollTop === 0) {
+            startedAtTop = (scrollContainer.scrollTop <= 0);
+            if (startedAtTop) {
                 touchStart = e.touches[0].clientY;
             }
             isPulling = false;
         }, { passive: true });
 
         scrollContainer.addEventListener('touchmove', e => {
+            if (!startedAtTop) return;
             const currentY = e.touches[0].clientY;
             const dist = currentY - touchStart;
             
-            if (scrollContainer.scrollTop === 0 && dist > 10) {
+            if (scrollContainer.scrollTop <= 0 && dist > 10) {
                 isPulling = true;
             }
             
@@ -1600,9 +1603,23 @@ function startAutoDiscovery() {
     });
 }
 
-// Register Service Worker for PWA
+// Register Service Worker for PWA and handle auto-update detection
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').then(reg => {
+        reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        showToast('Đã tải bản cập nhật mới trên Web. Đang tự động tải lại trang...', 'info');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    }
+                });
+            }
+        });
+    }).catch(() => {});
 }
 
 // ==================== EDIT DYNAMIC OVERLAY ====================
@@ -1794,7 +1811,7 @@ async function handleEditOTSubmit(e) {
 }
 
 // ==================== AUTO UPDATE FOR MOBILE APP ====================
-const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.4';
+const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.5';
 let updateCheckInterval = null;
 
 function checkMobileUpdates(isManual) {
