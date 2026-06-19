@@ -1281,7 +1281,18 @@ const server = http.createServer(async (req, res) => {
                 res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
                 return res.end('Lỗi server khi đọc thư mục mobile.');
             }
-            const apkFile = files.find(f => f.endsWith('.apk'));
+            
+            // Ưu tiên chọn đúng file được yêu cầu từ URL
+            const requestedFile = path.basename(urlPath);
+            let apkFile = null;
+            if (files.includes(requestedFile)) {
+                apkFile = requestedFile;
+            } else {
+                // Fallback: Tìm file .apk mới nhất (sắp xếp giảm dần theo thời gian hoặc bảng chữ cái)
+                const apkFiles = files.filter(f => f.endsWith('.apk')).sort((a, b) => b.localeCompare(a));
+                apkFile = apkFiles[0];
+            }
+
             if (!apkFile) {
                 res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
                 return res.end('Không tìm thấy file APK trong thư mục mobile trên server.');
