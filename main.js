@@ -3,6 +3,12 @@ const path = require('path');
 const fs = require('fs');
 const { startServer, stopServer, getLocalIP, PORT } = require('./server/server');
 
+// Vô hiệu hóa tăng tốc phần cứng để tránh lỗi crash GPU
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('disable-gpu');
+app.commandLine.appendSwitch('disable-software-rasterizer');
+app.commandLine.appendSwitch('disable-gpu-sandbox');
+
 // Ngăn chạy nhiều phiên bản của ứng dụng cùng lúc
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
