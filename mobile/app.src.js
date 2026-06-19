@@ -67,21 +67,33 @@ const WORK_END_MIN = 16 * 60 + 30; // 16:30
 // Tạo vân tay trình duyệt để giữ cố định Device ID trên Web ngay cả khi xóa lịch sử
 function getBrowserFingerprint() {
     try {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        ctx.textBaseline = "top";
-        ctx.font = "14px 'Arial'";
-        ctx.textBaseline = "alphabetic";
-        ctx.fillStyle = "#f60";
-        ctx.fillRect(125,1,62,20);
-        ctx.fillStyle = "#069";
-        ctx.fillText("OT_Manager_Fingerprint", 2, 15);
-        ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
-        ctx.fillText("OT_Manager_Fingerprint", 4, 17);
-        const canvasData = canvas.toDataURL();
+        const ua = navigator.userAgent;
+        // Detect OS
+        let os = "unknown_os";
+        if (ua.indexOf("Windows") !== -1) os = "Windows";
+        else if (ua.indexOf("Macintosh") !== -1) os = "Mac";
+        else if (ua.indexOf("Linux") !== -1) os = "Linux";
+        else if (ua.indexOf("Android") !== -1) os = "Android";
+        else if (ua.indexOf("iPhone") !== -1 || ua.indexOf("iPad") !== -1) os = "iOS";
+
+        // Detect Browser
+        let browser = "unknown_browser";
+        if (ua.indexOf("Firefox") !== -1) browser = "Firefox";
+        else if (ua.indexOf("Edge") !== -1 || ua.indexOf("Edg") !== -1) browser = "Edge";
+        else if (ua.indexOf("OPR") !== -1 || ua.indexOf("Opera") !== -1) browser = "Opera";
+        else if (ua.indexOf("Chrome") !== -1) browser = "Chrome";
+        else if (ua.indexOf("Safari") !== -1) browser = "Safari";
+
+        // System specs
+        const screenSpecs = Math.max(screen.width, screen.height) + 'x' + Math.min(screen.width, screen.height) + 'x' + screen.colorDepth;
+        const tz = new Date().getTimezoneOffset();
+        const cores = navigator.hardwareConcurrency || '';
+        const platform = navigator.platform || '';
+        const lang = navigator.language || '';
+
+        const str = os + '_' + browser + '_' + screenSpecs + '_' + tz + '_' + platform + '_' + cores + '_' + lang;
         
         let hash = 0;
-        const str = canvasData + navigator.language + screen.width + 'x' + screen.height + screen.colorDepth;
         for (let i = 0; i < str.length; i++) {
             const char = str.charCodeAt(i);
             hash = ((hash << 5) - hash) + char;
@@ -90,7 +102,7 @@ function getBrowserFingerprint() {
         return 'web_' + Math.abs(hash).toString(36);
     } catch (e) {
         let hash = 0;
-        const str = navigator.userAgent + navigator.language + screen.width + 'x' + screen.height + screen.colorDepth;
+        const str = navigator.userAgent + (navigator.language || '') + screen.width + 'x' + screen.height;
         for (let i = 0; i < str.length; i++) {
             const char = str.charCodeAt(i);
             hash = ((hash << 5) - hash) + char;
@@ -436,7 +448,38 @@ async function handleEmployeeLogin(e) {
                 return;
             }
         }
-        errEl.textContent = err.message;
+        
+        if (err.message.includes('trình duyệt khác') || err.message.includes('thiết bị khác')) {
+            errEl.innerHTML = `${err.message}<br><button type="button" class="btn btn-ghost btn-sm" id="btn-request-unlink-login" style="margin-top: 10px; width: 100%; border: 1px dashed rgba(239, 68, 68, 0.4); padding: 8px 16px; font-size: 0.85rem; font-weight: 600; border-radius: 8px; color: #ef4444; background: rgba(239, 68, 68, 0.04); cursor: pointer; transition: all 0.2s ease-in-out; display: block; box-sizing: border-box;">Xin Quản lý huỷ liên kết</button>`;
+            
+            const unlinkBtn = document.getElementById('btn-request-unlink-login');
+            if (unlinkBtn) {
+                // Hover effects
+                unlinkBtn.addEventListener('mouseenter', () => {
+                    unlinkBtn.style.background = 'rgba(239, 68, 68, 0.1)';
+                    unlinkBtn.style.borderColor = '#ef4444';
+                });
+                unlinkBtn.addEventListener('mouseleave', () => {
+                    unlinkBtn.style.background = 'rgba(239, 68, 68, 0.04)';
+                    unlinkBtn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                });
+                unlinkBtn.addEventListener('click', async () => {
+                    unlinkBtn.disabled = true;
+                    unlinkBtn.textContent = 'Đang gửi yêu cầu...';
+                    try {
+                        const unlinkRes = await api('/api/auth/request-unlink', 'POST', { username }, true);
+                        showToast('Gửi yêu cầu thành công!', 'success');
+                        errEl.innerHTML = `<span style="color:#10b981; font-weight: 700; display: block; margin-top: 8px;">✅ ${unlinkRes.message || 'Đã gửi yêu cầu huỷ liên kết đến Quản trị viên!'}</span>`;
+                    } catch (unlinkErr) {
+                        showToast(unlinkErr.message, 'error');
+                        unlinkBtn.disabled = false;
+                        unlinkBtn.textContent = 'Xin Quản lý huỷ liên kết';
+                    }
+                });
+            }
+        } else {
+            errEl.textContent = err.message;
+        }
     }
 }
 

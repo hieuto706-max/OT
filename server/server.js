@@ -645,7 +645,7 @@ async function handleAPI(req, res, urlPath, method) {
 
     // --- Phân quyền: Các API nhạy cảm yêu cầu JWT ---
     // Bỏ qua auth cho: login, version, server-info, cloud-url, gist-status
-    const publicEndpoints = ['/api/auth/login', '/api/version', '/api/server-info', '/api/cloud-url', '/api/gist-status'];
+    const publicEndpoints = ['/api/auth/login', '/api/auth/request-unlink', '/api/version', '/api/server-info', '/api/cloud-url', '/api/gist-status'];
     const isPublicEndpoint = publicEndpoints.some(ep => urlPath === ep || urlPath.startsWith(ep + '/'));
 
     if (!isPublicEndpoint && !jwtPayload && !req.headers['x-user-id']) {
@@ -729,6 +729,17 @@ async function handleAPI(req, res, urlPath, method) {
         const { password: _, ...safeUser } = user;
         const token = signJWT({ userId: user.id, role: user.role, team: user.team || '' }, 24 * 3600);
         return sendJSON(res, 200, { user: safeUser, token }, req);
+    }
+
+    if (urlPath === '/api/auth/request-unlink' && method === 'POST') {
+        const { username } = await parseBody(req);
+        if (!username) return sendError(res, 400, 'Thiếu tên đăng nhập!', req);
+        const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+        if (!user) return sendError(res, 404, 'Không tìm thấy tên đăng nhập trong hệ thống!', req);
+        
+        user.pendingUnlink = true;
+        saveDB(db);
+        return sendJSON(res, 200, { success: true, message: 'Đã gửi yêu cầu huỷ liên kết đến Quản trị viên!' }, req);
     }
 
     if (urlPath === '/api/auth/register' && method === 'POST') {
