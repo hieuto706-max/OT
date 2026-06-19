@@ -30,8 +30,8 @@ const req = https.request(options, (res) => {
     let body = '';
     res.on('data', (chunk) => body += chunk);
     res.on('end', () => {
-        if (res.statusCode === 200) {
-            console.log('✅ Gửi URL thành công! Bing đã tiếp nhận danh sách và đang xử lý.');
+        if (res.statusCode === 200 || res.statusCode === 202) {
+            console.log('✅ Gửi URL thành công! Bing/Yandex đã tiếp nhận danh sách và đang xử lý.');
         } else {
             console.error(`❌ Gửi thất bại. Mã lỗi HTTP từ IndexNow: ${res.statusCode}`);
             console.error(`Chi tiết: ${body}`);
