@@ -440,31 +440,111 @@
             }
 
             const savedServer = localStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com';
+            
+            // Try loading from localStorage cache first (even if offline)
+            const cachedJS = localStorage.getItem('cached_app_js');
+            const cachedCSS = localStorage.getItem('cached_style_css');
+
+            let loadedFromCache = false;
+            if (cachedJS && cachedCSS) {
+                console.log('Loading app from local cache (offline update support)...');
+                applyCachedAssets(cachedJS, cachedCSS);
+                loadedFromCache = true;
+            }
+
             if (!savedServer) {
-                loadLocalScript();
+                if (!loadedFromCache) loadLocalScript();
                 return;
             }
 
+            // In parallel (or after cache load), check online update
             const xhr = new XMLHttpRequest();
             xhr.open('GET', savedServer + '/api/version?t=' + Date.now(), true);
-            xhr.timeout = 2500;
+            xhr.timeout = 3000;
             xhr.onload = function() {
                 if (xhr.status === 200) {
-                    console.log('Server is online. Loading live remote JS/CSS for instant updates.');
-                    const styleLink = document.getElementById('main-theme-style');
-                    if (styleLink) {
-                        styleLink.href = savedServer + '/mobile/style.css?t=' + Date.now();
-                    }
-                    const script = document.createElement('script');
-                    script.src = savedServer + '/mobile/app.js?t=' + Date.now();
-                    document.body.appendChild(script);
+                    console.log('Server is online. Downloading latest assets for caching...');
+                    
+                    // Fetch latest CSS
+                    const xhrCSS = new XMLHttpRequest();
+                    xhrCSS.open('GET', savedServer + '/mobile/style.css?t=' + Date.now(), true);
+                    xhrCSS.onload = function() {
+                        if (xhrCSS.status === 200) {
+                            const cssText = xhrCSS.responseText;
+                            
+                            // Check that the returned CSS is not an HTML page
+                            if (!cssText || cssText.trim().startsWith('<!DOCTYPE') || cssText.trim().startsWith('<html')) {
+                                console.error('CSS download failed or returned invalid content.');
+                                if (!loadedFromCache) loadLocalScript();
+                                return;
+                            }
+
+                            // Fetch latest JS
+                            const xhrJS = new XMLHttpRequest();
+                            xhrJS.open('GET', savedServer + '/mobile/app.js?t=' + Date.now(), true);
+                            xhrJS.onload = function() {
+                                if (xhrJS.status === 200) {
+                                    const jsText = xhrJS.responseText;
+                                    
+                                    // Check that the returned JS is not an HTML page and has reasonable size
+                                    if (!jsText || jsText.length < 5000 || jsText.trim().startsWith('<!DOCTYPE') || jsText.trim().startsWith('<html')) {
+                                        console.error('JS download failed or returned invalid content.');
+                                        if (!loadedFromCache) loadLocalScript();
+                                        return;
+                                    }
+
+                                    // Save to cache
+                                    localStorage.setItem('cached_style_css', cssText);
+                                    localStorage.setItem('cached_app_js', jsText);
+                                    console.log('Assets cached successfully for offline use.');
+
+                                    // If not loaded from cache yet, load them now
+                                    if (!loadedFromCache) {
+                                        applyCachedAssets(jsText, cssText);
+                                        loadedFromCache = true;
+                                    } else {
+                                        console.log('New update downloaded and cached. It will be active on next app launch.');
+                                    }
+                                } else if (!loadedFromCache) {
+                                    loadLocalScript();
+                                }
+                            };
+                            xhrJS.onerror = function() { if (!loadedFromCache) loadLocalScript(); };
+                            xhrJS.send();
+                        } else if (!loadedFromCache) {
+                            loadLocalScript();
+                        }
+                    };
+                    xhrCSS.onerror = function() { if (!loadedFromCache) loadLocalScript(); };
+                    xhrCSS.send();
                 } else {
-                    loadLocalScript();
+                    if (!loadedFromCache) loadLocalScript();
                 }
             };
-            xhr.onerror = loadLocalScript;
-            xhr.ontimeout = loadLocalScript;
+            xhr.onerror = function() {
+                if (!loadedFromCache) loadLocalScript();
+            };
+            xhr.ontimeout = function() {
+                if (!loadedFromCache) loadLocalScript();
+            };
             xhr.send();
+
+            function applyCachedAssets(jsText, cssText) {
+                // Apply CSS
+                const styleLink = document.getElementById('main-theme-style');
+                if (styleLink) {
+                    styleLink.parentNode.removeChild(styleLink);
+                }
+                const styleEl = document.createElement('style');
+                styleEl.id = 'main-theme-style';
+                styleEl.textContent = cssText;
+                document.head.appendChild(styleEl);
+
+                // Apply JS
+                const scriptEl = document.createElement('script');
+                scriptEl.textContent = jsText;
+                document.body.appendChild(scriptEl);
+            }
 
             function loadLocalScript() {
                 const script = document.createElement('script');
