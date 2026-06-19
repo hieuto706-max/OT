@@ -124,6 +124,7 @@ if (!deviceId) {
 }
 
 let currentUser = null;
+let historyRecordsList = [];
 
 // ==================== API CLIENT ====================
 // Dùng XMLHttpRequest thay cho fetch để tương thích Android 5.0 WebView
@@ -753,6 +754,9 @@ async function loadHistory() {
 
         // Sắp xếp giảm dần theo ngày
         mergedRecords.sort((a, b) => b.date.localeCompare(a.date));
+
+        // Lưu vào danh sách bộ nhớ tạm toàn cục để chỉnh sửa dễ dàng
+        historyRecordsList = mergedRecords;
 
         if (mergedRecords.length === 0) {
             list.innerHTML = `
@@ -1583,62 +1587,74 @@ let activeEditRecordId = null;
 async function editRecordDialog(id) {
     activeEditRecordId = id;
     try {
-        let record = null;
-        if (id.startsWith('offline_')) {
-            const offlineRecords = JSON.parse(safeStorage.getItem('ot_offline_records') || '[]');
-            record = offlineRecords.find(r => r.id === id);
-        } else {
-            const month = document.getElementById('filter-month').value;
-            const cached = JSON.parse(safeStorage.getItem(`ot_cached_records_${currentUser.id}_${month}`) || '[]');
-            record = cached.find(r => r.id === id);
+        let record = historyRecordsList.find(r => r.id === id);
+        if (!record) {
+            if (id.startsWith('offline_')) {
+                const offlineRecords = JSON.parse(safeStorage.getItem('ot_offline_records') || '[]');
+                record = offlineRecords.find(r => r.id === id);
+            } else {
+                const month = document.getElementById('filter-month') ? document.getElementById('filter-month').value : getCurrentMonth();
+                const cached = JSON.parse(safeStorage.getItem(`ot_cached_records_${currentUser.id}_${month}`) || '[]');
+                record = cached.find(r => r.id === id);
+            }
         }
 
         if (!record) return showToast('Không tìm thấy bản ghi', 'error');
 
-        document.getElementById('edit-ot-date').value = record.date;
-        document.getElementById('edit-ot-date').max = new Date().toISOString().split('T')[0];
-        document.getElementById('edit-ot-lunch').checked = record.hasLunchOT;
-        document.getElementById('edit-ot-start').value = record.otStart || '16:30';
-        document.getElementById('edit-ot-end').value = record.otEnd || '16:30';
-        
-        const isBackfill = record.isBackfill || (record.note && (record.note.includes('[BÙ THÁNG TRƯỚC]') || record.note.includes('[TĂNG THÁNG NÀY]')));
-        const editBackfill = document.getElementById('edit-ot-backfill');
-        if (editBackfill) editBackfill.checked = isBackfill;
+        const elDate = document.getElementById('edit-ot-date');
+        const elLunch = document.getElementById('edit-ot-lunch');
+        const elStart = document.getElementById('edit-ot-start');
+        const elEnd = document.getElementById('edit-ot-end');
+        const elBackfill = document.getElementById('edit-ot-backfill');
+        const elNormalInputs = document.getElementById('edit-ot-normal-inputs');
+        const elBackfillGroup = document.getElementById('edit-ot-backfill-hours-group');
+        const elBackfillHours = document.getElementById('edit-ot-backfill-hours');
+        const elNote = document.getElementById('edit-ot-note');
+        const elOverlay = document.getElementById('edit-overlay');
 
-        const editNormalInputs = document.getElementById('edit-ot-normal-inputs');
-        const editBackfillGroup = document.getElementById('edit-ot-backfill-hours-group');
-        const editBackfillHours = document.getElementById('edit-ot-backfill-hours');
-
-        if (isBackfill) {
-            if (editNormalInputs) editNormalInputs.style.display = 'none';
-            if (editBackfillGroup) editBackfillGroup.style.display = 'block';
-            if (editBackfillHours) editBackfillHours.value = record.totalHours;
-        } else {
-            if (editNormalInputs) editNormalInputs.style.display = 'block';
-            if (editBackfillGroup) editBackfillGroup.style.display = 'none';
-            if (editBackfillHours) editBackfillHours.value = '';
+        if (!elDate || !elLunch || !elStart || !elEnd || !elNote || !elOverlay) {
+            console.error('DOM Elements for editing are missing!', { elDate, elLunch, elStart, elEnd, elNote, elOverlay });
+            return showToast('Lỗi giao diện: Thiếu các thành phần giao diện sửa tăng ca.', 'error');
         }
 
-        document.getElementById('edit-ot-note').value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
+        elDate.value = record.date;
+        elDate.max = new Date().toISOString().split('T')[0];
+        elLunch.checked = record.hasLunchOT;
+        elStart.value = record.otStart || '16:30';
+        elEnd.value = record.otEnd || '16:30';
+        
+        const isBackfill = record.isBackfill || (record.note && (record.note.includes('[BÙ THÁNG TRƯỚC]') || record.note.includes('[TĂNG THÁNG NÀY]')));
+        if (elBackfill) elBackfill.checked = isBackfill;
+
+        if (isBackfill) {
+            if (elNormalInputs) elNormalInputs.style.display = 'none';
+            if (elBackfillGroup) elBackfillGroup.style.display = 'block';
+            if (elBackfillHours) elBackfillHours.value = record.totalHours;
+        } else {
+            if (elNormalInputs) elNormalInputs.style.display = 'block';
+            if (elBackfillGroup) elBackfillGroup.style.display = 'none';
+            if (elBackfillHours) elBackfillHours.value = '';
+        }
+
+        elNote.value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
 
         // Auto sync edit ot end when edit ot start changes
-        const editStartEl = document.getElementById('edit-ot-start');
-        if (editStartEl && !editStartEl.dataset.listenerBound) {
-            editStartEl.dataset.listenerBound = 'true';
-            editStartEl.addEventListener('change', () => {
-                const startVal = editStartEl.value;
-                const endVal = document.getElementById('edit-ot-end').value;
+        if (!elStart.dataset.listenerBound) {
+            elStart.dataset.listenerBound = 'true';
+            elStart.addEventListener('change', () => {
+                const startVal = elStart.value;
+                const endVal = elEnd.value;
                 if (startVal && endVal) {
                     const s = timeToMinutes(startVal);
                     const e = timeToMinutes(endVal);
                     if (e <= s) {
-                        document.getElementById('edit-ot-end').value = startVal;
+                        elEnd.value = startVal;
                     }
                 }
             });
         }
 
-        document.getElementById('edit-overlay').classList.add('active');
+        elOverlay.classList.add('active');
     } catch (err) {
         showToast('Lỗi tải dữ liệu: ' + err.message, 'error');
     }
@@ -1648,14 +1664,26 @@ async function handleEditOTSubmit(e) {
     e.preventDefault();
     if (!currentUser || !activeEditRecordId) return;
 
-    const date = document.getElementById('edit-ot-date').value;
-    const lunch = document.getElementById('edit-ot-lunch').checked;
-    const start = document.getElementById('edit-ot-start').value;
-    const end = document.getElementById('edit-ot-end').value;
-    
-    const editBackfill = document.getElementById('edit-ot-backfill');
-    const isBackfill = editBackfill ? editBackfill.checked : false;
-    let note = document.getElementById('edit-ot-note').value.trim();
+    const elDate = document.getElementById('edit-ot-date');
+    const elLunch = document.getElementById('edit-ot-lunch');
+    const elStart = document.getElementById('edit-ot-start');
+    const elEnd = document.getElementById('edit-ot-end');
+    const elBackfill = document.getElementById('edit-ot-backfill');
+    const elBackfillHours = document.getElementById('edit-ot-backfill-hours');
+    const elNote = document.getElementById('edit-ot-note');
+    const elOverlay = document.getElementById('edit-overlay');
+
+    if (!elDate || !elLunch || !elStart || !elEnd || !elNote || !elOverlay) {
+        return showToast('Lỗi giao diện: Không tìm thấy các trường thông tin chỉnh sửa.', 'error');
+    }
+
+    const date = elDate.value;
+    const lunch = elLunch.checked;
+    const start = elStart.value;
+    const end = elEnd.value;
+    const isBackfill = elBackfill ? elBackfill.checked : false;
+    let note = elNote.value.trim();
+
     if (!note) {
         showToast('Vui lòng nhập ghi chú!', 'error');
         return;
@@ -1668,7 +1696,7 @@ async function handleEditOTSubmit(e) {
     let totalHours = 0;
 
     if (isBackfill) {
-        const hoursVal = parseFloat(document.getElementById('edit-ot-backfill-hours').value) || 0;
+        const hoursVal = elBackfillHours ? parseFloat(elBackfillHours.value) || 0 : 0;
         if (hoursVal <= 0) {
             showToast('Vui lòng nhập số giờ bù hợp lệ!', 'error');
             return;
@@ -1703,7 +1731,7 @@ async function handleEditOTSubmit(e) {
         try {
             await api(`/api/records/${activeEditRecordId}`, 'PUT', updatedData);
             showToast('Đã cập nhật tăng ca thành công!');
-            document.getElementById('edit-overlay').classList.remove('active');
+            elOverlay.classList.remove('active');
             loadHistory();
             loadProfileStats();
             return;
@@ -1735,7 +1763,7 @@ async function handleEditOTSubmit(e) {
 
     safeStorage.setItem('ot_offline_records', JSON.stringify(offlineRecords));
     showToast('Đã lưu chỉnh sửa ngoại tuyến (offline)!', 'warning');
-    document.getElementById('edit-overlay').classList.remove('active');
+    elOverlay.classList.remove('active');
     loadHistory();
     loadProfileStats();
     updateSyncBanner();
