@@ -116,6 +116,18 @@ public class MainActivity extends AppCompatActivity {
             public void startAutoDiscovery() {
                 autoDiscoverAndConnectServer();
             }
+
+            @JavascriptInterface
+            public String getAndroidId() {
+                try {
+                    return android.provider.Settings.Secure.getString(
+                        getContentResolver(), 
+                        android.provider.Settings.Secure.ANDROID_ID
+                    );
+                } catch (Exception e) {
+                    return "";
+                }
+            }
         }, "AndroidBridge");
 
         // Xử lý nút Back bằng OnBackPressedCallback (thay thế onBackPressed deprecated)

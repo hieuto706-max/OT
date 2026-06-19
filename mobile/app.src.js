@@ -107,7 +107,18 @@ if (!deviceId) {
     if (isWebBrowser) {
         deviceId = getBrowserFingerprint();
     } else {
-        deviceId = 'dev_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        // Nếu là Android App (chạy qua file: và có AndroidBridge)
+        if (window.AndroidBridge && typeof window.AndroidBridge.getAndroidId === 'function') {
+            const nativeId = window.AndroidBridge.getAndroidId();
+            if (nativeId) {
+                deviceId = 'android_' + nativeId;
+            }
+        }
+        
+        // Fallback nếu không có AndroidBridge hoặc bị lỗi
+        if (!deviceId) {
+            deviceId = 'dev_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        }
     }
     safeStorage.setItem('ot_device_id', deviceId);
 }
