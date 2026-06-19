@@ -101,27 +101,44 @@ function getBrowserFingerprint() {
 }
 
 // Tạo/Lấy Device ID duy nhất cho điện thoại hoặc trình duyệt web
-let deviceId = safeStorage.getItem('ot_device_id') || '';
-if (!deviceId) {
+let deviceId = '';
+
+function getDeviceId() {
+    let id = safeStorage.getItem('ot_device_id') || '';
     const isWebBrowser = window.location.protocol !== 'file:';
-    if (isWebBrowser) {
-        deviceId = getBrowserFingerprint();
-    } else {
-        // Nếu là Android App (chạy qua file: và có AndroidBridge)
-        if (window.AndroidBridge && typeof window.AndroidBridge.getAndroidId === 'function') {
-            const nativeId = window.AndroidBridge.getAndroidId();
-            if (nativeId) {
-                deviceId = 'android_' + nativeId;
+    
+    if (!isWebBrowser) {
+        // Android App
+        if (!id || id.startsWith('dev_')) {
+            if (window.AndroidBridge && typeof window.AndroidBridge.getAndroidId === 'function') {
+                const nativeId = window.AndroidBridge.getAndroidId();
+                if (nativeId) {
+                    id = 'android_' + nativeId;
+                    safeStorage.setItem('ot_device_id', id);
+                    deviceId = id;
+                }
             }
         }
-        
-        // Fallback nếu không có AndroidBridge hoặc bị lỗi
-        if (!deviceId) {
-            deviceId = 'dev_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    } else {
+        // Web Browser
+        if (!id) {
+            id = getBrowserFingerprint();
+            safeStorage.setItem('ot_device_id', id);
+            deviceId = id;
         }
     }
-    safeStorage.setItem('ot_device_id', deviceId);
+    
+    if (!id) {
+        // Fallback ngẫu nhiên
+        id = 'dev_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        safeStorage.setItem('ot_device_id', id);
+        deviceId = id;
+    }
+    return id;
 }
+
+// Khởi tạo lần đầu
+deviceId = getDeviceId();
 
 let currentUser = null;
 let historyRecordsList = [];
@@ -129,6 +146,7 @@ let historyRecordsList = [];
 // ==================== API CLIENT ====================
 // Dùng XMLHttpRequest thay cho fetch để tương thích Android 5.0 WebView
 function api(endpoint, method, body, skipAuthRedirect) {
+    getDeviceId(); // Đảm bảo đã cập nhật deviceId từ AndroidBridge nếu có
     method = method || 'GET';
     body = body || null;
 
@@ -335,6 +353,7 @@ async function cacheUsernames() {
 
 async function handleEmployeeLogin(e) {
     e.preventDefault();
+    getDeviceId(); // Cập nhật deviceId mới nhất trước khi kiểm tra/đăng nhập
     const username = document.getElementById('login-user').value.trim();
     const errEl = document.getElementById('login-error-emp');
     errEl.textContent = '';
@@ -419,6 +438,7 @@ async function handleEmployeeLogin(e) {
 
 async function handleAdminLogin(e) {
     e.preventDefault();
+    getDeviceId(); // Cập nhật deviceId mới nhất trước khi đăng nhập
     const username = document.getElementById('login-admin-user').value.trim();
     const password = document.getElementById('login-password').value;
     const errEl = document.getElementById('login-error-admin');
