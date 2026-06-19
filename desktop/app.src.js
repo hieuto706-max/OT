@@ -55,6 +55,11 @@ async function api(endpoint, method = 'GET', body = null) {
         method,
         headers: { 'Content-Type': 'application/json' },
     };
+    // Gửi JWT Token nếu có
+    const token = localStorage.getItem('ot_auth_token');
+    if (token) {
+        opts.headers['Authorization'] = `Bearer ${token}`;
+    }
     const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
     if (currentUser && currentUser.id) {
         opts.headers['x-user-id'] = currentUser.id;
@@ -158,6 +163,7 @@ async function handleEmployeeLogin(e) {
         }
 
         localStorage.setItem('ot_current_user', JSON.stringify(user));
+        if (data.token) localStorage.setItem('ot_auth_token', data.token);
         const todayStr = new Date().toISOString().split('T')[0];
         localStorage.setItem('ot_login_date', todayStr);
         try {
@@ -192,6 +198,7 @@ async function handleAdminLogin(e) {
         }
 
         localStorage.setItem('ot_current_user', JSON.stringify(user));
+        if (data.token) localStorage.setItem('ot_auth_token', data.token);
         const todayStr = new Date().toISOString().split('T')[0];
         localStorage.setItem('ot_login_date', todayStr);
         try {
@@ -226,6 +233,7 @@ function logout() {
     localStorage.removeItem('ot_login_date');
     localStorage.removeItem('ot_mobile_user');
     localStorage.removeItem('ot_login_time');
+    localStorage.removeItem('ot_auth_token');
     const needsOtPrefix = window.location.hostname.includes('github.io');
     const mainPageUrl = needsOtPrefix ? '/OT/index.html' : '/index.html';
     window.location.href = mainPageUrl;

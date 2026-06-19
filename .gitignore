@@ -11,4 +11,4 @@ mobile-android/local.properties
 node-portable/
 android-sdk/
 db.json
-
+.env

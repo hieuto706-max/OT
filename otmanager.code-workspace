@@ -19,13 +19,13 @@
 	],
 	"settings": {
 		"java.configuration.updateBuildConfiguration": "interactive",
-		"java.import.gradle.java.home": "C:/Users/hieut/OneDrive/MYTNH~1/NEWFOL~2/temp_jdk/JDK-17~1.19_",
-		"gradle.java.home": "C:/Users/hieut/OneDrive/MYTNH~1/NEWFOL~2/temp_jdk/JDK-17~1.19_",
-		"java.jdt.ls.java.home": "C:/Users/hieut/OneDrive/MYTNH~1/NEWFOL~2/temp_jdk/JDK-17~1.19_",
+		"java.import.gradle.java.home": "C:/Users/hieut/OneDrive/MYTNH~1/OTMANA~1/temp_jdk/JDK-17~1.19_",
+		"gradle.java.home": "C:/Users/hieut/OneDrive/MYTNH~1/OTMANA~1/temp_jdk/JDK-17~1.19_",
+		"java.jdt.ls.java.home": "C:/Users/hieut/OneDrive/MYTNH~1/OTMANA~1/temp_jdk/JDK-17~1.19_",
 		"java.configuration.runtimes": [
 			{
 				"name": "JavaSE-17",
-				"path": "C:/Users/hieut/OneDrive/MYTNH~1/NEWFOL~2/temp_jdk/JDK-17~1.19_",
+				"path": "C:/Users/hieut/OneDrive/MYTNH~1/OTMANA~1/temp_jdk/JDK-17~1.19_",
 				"default": true
 			}
 		],

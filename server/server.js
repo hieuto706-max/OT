@@ -131,26 +131,47 @@ function authenticateToken(req) {
     return verifyJWT(token);
 }
 
-// ==================== GPS VALIDATION ====================
-const OFFICE_LAT = parseFloat(process.env.OFFICE_LAT) || 0;
-const OFFICE_LON = parseFloat(process.env.OFFICE_LON) || 0;
-const ALLOWED_RADIUS = parseFloat(process.env.ALLOWED_RADIUS_METERS) || 200;
+// ==================== GPS VALIDATION (DISABLED) ====================
 
-function haversineDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371000; // Bán kính Trái Đất (mét)
-    const toRad = deg => deg * Math.PI / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+// ==================== DATABASE ENCRYPTION (AES-256-CBC) ====================
+const DB_ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY || '';
+
+function encryptData(plaintext) {
+    if (!DB_ENCRYPTION_KEY) return plaintext;
+    try {
+        const key = Buffer.from(DB_ENCRYPTION_KEY, 'hex');
+        if (key.length !== 32) {
+            console.warn('[Encryption] DB_ENCRYPTION_KEY phải đúng 64 ký tự hex (32 bytes). Bỏ qua mã hóa.');
+            return plaintext;
+        }
+        const iv = crypto.randomBytes(16);
+        const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+        let encrypted = cipher.update(plaintext, 'utf8', 'hex');
+        encrypted += cipher.final('hex');
+        return 'enc:' + iv.toString('hex') + ':' + encrypted;
+    } catch (e) {
+        console.error('[Encryption] Lỗi mã hóa:', e.message);
+        return plaintext;
+    }
 }
 
-function validateLocation(lat, lon) {
-    if (!OFFICE_LAT || !OFFICE_LON || !lat || !lon) {
-        return { lat: lat || null, lon: lon || null, distance: null, isNearOffice: null };
+function decryptData(ciphertext) {
+    if (!DB_ENCRYPTION_KEY || !ciphertext.startsWith('enc:')) return ciphertext;
+    try {
+        const key = Buffer.from(DB_ENCRYPTION_KEY, 'hex');
+        const parts = ciphertext.split(':');
+        if (parts.length !== 3) return ciphertext;
+        const iv = Buffer.from(parts[1], 'hex');
+        const encrypted = parts[2];
+        const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return decrypted;
+    } catch (e) {
+        console.error('[Decryption] Lỗi giải mã:', e.message);
+        return ciphertext;
     }
-    const distance = Math.round(haversineDistance(lat, lon, OFFICE_LAT, OFFICE_LON));
-    return { lat, lon, distance, isNearOffice: distance <= ALLOWED_RADIUS };
 }
 
 // ==================== CORS & SECURITY HEADERS ====================
@@ -305,7 +326,9 @@ function fetchGist() {
                     if (!file) {
                         return reject(new Error('db.json not found in Gist'));
                     }
-                    const db = JSON.parse(file.content);
+                    // Giải mã nếu dữ liệu đã được mã hóa
+                    const rawContent = decryptData(file.content);
+                    const db = JSON.parse(rawContent);
                     resolve(db);
                 } catch (e) {
                     reject(e);
@@ -320,10 +343,13 @@ function fetchGist() {
 
 function updateGist(data) {
     return new Promise((resolve, reject) => {
+        // Mã hóa dữ liệu trước khi đẩy lên Gist
+        const dbContent = JSON.stringify(data, null, 2);
+        const encryptedContent = encryptData(dbContent);
         const payload = JSON.stringify({
             files: {
                 'db.json': {
-                    content: JSON.stringify(data, null, 2)
+                    content: encryptedContent
                 }
             }
         });
@@ -447,15 +473,18 @@ async function loadDB() {
 
 function saveDB(data) {
     dbCache = data;
-    fs.writeFileSync(getDbPath(), JSON.stringify(data, null, 2), 'utf-8');
-    notifySseClients({ type: 'update' });
+    // Sử dụng Write Queue để đảm bảo tuần tự ghi
+    enqueueWrite(() => {
+        fs.writeFileSync(getDbPath(), JSON.stringify(data, null, 2), 'utf-8');
+        notifySseClients({ type: 'update' });
 
-    // Cập nhật bất đồng bộ lên Gist (không làm nghẽn phản hồi API)
-    if (process.env.GIST_ID && process.env.GITHUB_TOKEN) {
-        updateGist(data).catch(e => {
-            console.error('[Gist] Lỗi cập nhật lên Gist:', e.message);
-        });
-    }
+        // Cập nhật bất đồng bộ lên Gist (không làm nghẽn phản hồi API)
+        if (process.env.GIST_ID && process.env.GITHUB_TOKEN) {
+            return updateGist(data).catch(e => {
+                console.error('[Gist] Lỗi cập nhật lên Gist:', e.message);
+            });
+        }
+    });
 }
 
 async function performCleanup(month) {
@@ -603,19 +632,37 @@ function getCurrentMonth() {
 async function handleAPI(req, res, urlPath, method) {
     const db = await loadDB();
 
+    // --- Xác thực JWT Token ---
+    const jwtPayload = authenticateToken(req);
+    // Fallback: Hỗ trợ cơ chế cũ (x-user-id header) để backward compatible trong giai đoạn chuyển đổi
+    const reqUserId = jwtPayload ? jwtPayload.userId : req.headers['x-user-id'];
+    const reqDeviceId = jwtPayload ? jwtPayload.deviceId : req.headers['x-device-id'];
+    const reqUserRole = jwtPayload ? jwtPayload.role : null;
+    const reqUserTeam = jwtPayload ? jwtPayload.team : null;
+
+    // Gắn thông tin user vào request để các route sử dụng
+    req.user = jwtPayload || null;
+
+    // --- Phân quyền: Các API nhạy cảm yêu cầu JWT ---
+    // Bỏ qua auth cho: login, version, server-info, cloud-url, gist-status
+    const publicEndpoints = ['/api/auth/login', '/api/version', '/api/server-info', '/api/cloud-url', '/api/gist-status'];
+    const isPublicEndpoint = publicEndpoints.some(ep => urlPath === ep || urlPath.startsWith(ep + '/'));
+
+    if (!isPublicEndpoint && !jwtPayload && !req.headers['x-user-id']) {
+        return sendError(res, 401, 'Yêu cầu xác thực! Vui lòng đăng nhập lại.', req);
+    }
+
     // Kiểm tra xem tài khoản có bị xóa khỏi hệ thống hoặc bị hủy liên kết thiết bị không
-    const reqUserId = req.headers['x-user-id'];
-    const reqDeviceId = req.headers['x-device-id'];
     if (reqUserId && !urlPath.startsWith('/api/auth/')) {
         const user = db.users.find(u => u.id === reqUserId);
         if (!user) {
-            return sendError(res, 401, 'Tài khoản của bạn đã bị xóa khỏi hệ thống!');
+            return sendError(res, 401, 'Tài khoản của bạn đã bị xóa khỏi hệ thống!', req);
         }
         if (user.role === 'employee') {
             const matchesNative = user.deviceId && user.deviceId === reqDeviceId;
             const matchesBrowser = user.browserDeviceId && user.browserDeviceId === reqDeviceId;
             if (!matchesNative && !matchesBrowser) {
-                return sendError(res, 403, 'Thiết bị hoặc trình duyệt này đã bị hủy liên kết khỏi tài khoản!');
+                return sendError(res, 403, 'Thiết bị hoặc trình duyệt này đã bị hủy liên kết khỏi tài khoản!', req);
             }
         }
     }
@@ -626,7 +673,7 @@ async function handleAPI(req, res, urlPath, method) {
     if (queryUserId && !urlPath.startsWith('/api/auth/')) {
         const userExists = db.users.some(u => u.id === queryUserId);
         if (!userExists) {
-            return sendError(res, 401, 'Tài khoản của bạn đã bị xóa khỏi hệ thống!');
+            return sendError(res, 401, 'Tài khoản của bạn đã bị xóa khỏi hệ thống!', req);
         }
     }
 
@@ -636,7 +683,7 @@ async function handleAPI(req, res, urlPath, method) {
         
         // Tìm user không phân biệt chữ hoa chữ thường
         const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
-        if (!user) return sendError(res, 401, 'Sai tên đăng nhập!');
+        if (!user) return sendError(res, 401, 'Sai tên đăng nhập!', req);
 
         // Nếu là nhân viên, cho phép đăng nhập không cần mật khẩu và liên kết thiết bị
         if (user.role === 'employee') {
@@ -647,12 +694,12 @@ async function handleAPI(req, res, urlPath, method) {
                         // Kiểm tra xem trình duyệt này đã liên kết với tài khoản khác chưa
                         const otherOwner = db.users.find(u => u.role === 'employee' && u.id !== user.id && u.browserDeviceId === deviceId);
                         if (otherOwner) {
-                            return sendError(res, 403, 'Trình duyệt này đã được liên kết với một tài khoản khác!');
+                            return sendError(res, 403, 'Trình duyệt này đã được liên kết với một tài khoản khác!', req);
                         }
                         user.browserDeviceId = deviceId;
                         saveDB(db);
                     } else if (user.browserDeviceId !== deviceId) {
-                        return sendError(res, 403, 'Tài khoản này đã được đăng nhập trên một trình duyệt khác!');
+                        return sendError(res, 403, 'Tài khoản này đã được đăng nhập trên một trình duyệt khác!', req);
                     }
                 } else {
                     // Đăng nhập từ ứng dụng điện thoại (native app)
@@ -660,41 +707,48 @@ async function handleAPI(req, res, urlPath, method) {
                         // Kiểm tra xem thiết bị này đã liên kết với tài khoản khác chưa
                         const otherOwner = db.users.find(u => u.role === 'employee' && u.id !== user.id && u.deviceId === deviceId);
                         if (otherOwner) {
-                            return sendError(res, 403, 'Thiết bị này đã được liên kết với một tài khoản khác!');
+                            return sendError(res, 403, 'Thiết bị này đã được liên kết với một tài khoản khác!', req);
                         }
                         user.deviceId = deviceId;
                         saveDB(db);
                     } else if (user.deviceId !== deviceId) {
-                        return sendError(res, 403, 'Tài khoản này đã được đăng nhập trên một thiết bị khác!');
+                        return sendError(res, 403, 'Tài khoản này đã được đăng nhập trên một thiết bị khác!', req);
                     }
                 }
             }
             const { password: _, ...safeUser } = user;
-            return sendJSON(res, 200, { user: safeUser });
+            const token = signJWT({ userId: user.id, role: user.role, team: user.team || '', deviceId: deviceId || '' }, 7 * 24 * 3600);
+            return sendJSON(res, 200, { user: safeUser, token }, req);
         }
 
         // Nếu là admin, yêu cầu mật khẩu
-        if (user.password !== password) {
-            return sendError(res, 401, 'Sai mật khẩu!');
+        if (!verifyPassword(password || '', user.password)) {
+            return sendError(res, 401, 'Sai mật khẩu!', req);
         }
 
         const { password: _, ...safeUser } = user;
-        return sendJSON(res, 200, { user: safeUser });
+        const token = signJWT({ userId: user.id, role: user.role, team: user.team || '' }, 24 * 3600);
+        return sendJSON(res, 200, { user: safeUser, token }, req);
     }
 
     if (urlPath === '/api/auth/register' && method === 'POST') {
+        // Phân quyền: Chỉ Admin/Sub-Admin mới được tạo tài khoản
+        if (jwtPayload && reqUserRole !== 'admin') {
+            return sendError(res, 403, 'Chỉ quản trị viên mới được tạo tài khoản mới!', req);
+        }
+
         const body = await parseBody(req);
         const { fullname, username, password, role } = body;
-        if (!fullname || !username) return sendError(res, 400, 'Vui lòng điền đầy đủ thông tin!');
-        if (username.length < 3) return sendError(res, 400, 'Tên đăng nhập phải có ít nhất 3 ký tự!');
+        if (!fullname || !username) return sendError(res, 400, 'Vui lòng điền đầy đủ thông tin!', req);
+        if (username.length < 3) return sendError(res, 400, 'Tên đăng nhập phải có ít nhất 3 ký tự!', req);
         
         const isEmployee = role !== 'admin';
         if (!isEmployee && (!password || password.length < 4)) {
-            return sendError(res, 400, 'Mật khẩu quản trị viên phải có ít nhất 4 ký tự!');
+            return sendError(res, 400, 'Mật khẩu quản trị viên phải có ít nhất 4 ký tự!', req);
         }
 
         if (db.users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
-            return sendError(res, 409, 'Tên đăng nhập đã tồn tại!');
+            return sendError(res, 409, 'Tên đăng nhập đã tồn tại!', req);
         }
 
         let userTeam = body.team || '';
@@ -709,7 +763,7 @@ async function handleAPI(req, res, urlPath, method) {
         const newUser = {
             id: generateId(),
             username,
-            password: password || '123',
+            password: isEmployee ? (password || '123') : hashPassword(password),
             fullname,
             role: role || 'employee',
             team: userTeam,
@@ -718,7 +772,7 @@ async function handleAPI(req, res, urlPath, method) {
         db.users.push(newUser);
         saveDB(db);
         const { password: _, ...safeUser } = newUser;
-        return sendJSON(res, 201, { user: safeUser });
+        return sendJSON(res, 201, { user: safeUser }, req);
     }
 
     // --- USERS ---
@@ -855,6 +909,11 @@ async function handleAPI(req, res, urlPath, method) {
         const { userId, date, hasLunchOT, otStart, otEnd, eveningOTHours, totalHours, note } = body;
         if (!userId || !date) return sendError(res, 400, 'Thiếu thông tin!');
 
+        // Phân quyền: Nhân viên chỉ được tạo bản ghi cho chính mình
+        if (jwtPayload && reqUserRole === 'employee' && reqUserId !== userId) {
+            return sendError(res, 403, 'Bạn chỉ được ghi nhận tăng ca cho chính mình!', req);
+        }
+
         const userExists = db.users.some(u => u.id === userId);
         if (!userExists) {
             return sendError(res, 401, 'Tài khoản của bạn đã bị xóa khỏi hệ thống!');
@@ -895,6 +954,10 @@ async function handleAPI(req, res, urlPath, method) {
             if (!userExists) {
                 return sendError(res, 401, 'Tài khoản của bạn đã bị xóa khỏi hệ thống!');
             }
+            // Phân quyền: Nhân viên chỉ được xóa bản ghi của chính mình
+            if (jwtPayload && reqUserRole === 'employee' && record.userId !== reqUserId) {
+                return sendError(res, 403, 'Bạn chỉ được xóa bản ghi của chính mình!', req);
+            }
         }
         db.records = db.records.filter(r => r.id !== recordId);
         saveDB(db);
@@ -907,6 +970,11 @@ async function handleAPI(req, res, urlPath, method) {
         const { date, hasLunchOT, otStart, otEnd, eveningOTHours, totalHours, note } = body;
         const idx = db.records.findIndex(r => r.id === recordId);
         if (idx < 0) return sendError(res, 404, 'Không tìm thấy bản ghi!');
+
+        // Phân quyền: Nhân viên chỉ được sửa bản ghi của chính mình
+        if (jwtPayload && reqUserRole === 'employee' && db.records[idx].userId !== reqUserId) {
+            return sendError(res, 403, 'Bạn chỉ được sửa bản ghi của chính mình!', req);
+        }
 
         const userExists = db.users.some(u => u.id === db.records[idx].userId);
         if (!userExists) {
@@ -966,10 +1034,11 @@ async function handleAPI(req, res, urlPath, method) {
     }
 
     if (urlPath === '/api/teams' && method === 'POST') {
+        // Phân quyền: Admin và Sub-Admin đều được cấu hình team
         if (reqUserId) {
             const user = db.users.find(u => u.id === reqUserId);
             if (!user || user.role !== 'admin') {
-                return sendError(res, 403, 'Bạn không có quyền thiết lập team!');
+                return sendError(res, 403, 'Bạn không có quyền thiết lập team!', req);
             }
         }
         const body = await parseBody(req);
@@ -1161,10 +1230,12 @@ const server = http.createServer(async (req, res) => {
 
     // CORS Preflight
     if (method === 'OPTIONS') {
+        const corsOrigin = getCorsOrigin(req);
         res.writeHead(204, {
-            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Origin': corsOrigin,
             'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, x-device-id, x-user-id',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-device-id, x-user-id',
+            'Access-Control-Max-Age': '86400',
         });
         return res.end();
     }
@@ -1175,7 +1246,7 @@ const server = http.createServer(async (req, res) => {
             'Content-Type': 'text/event-stream',
             'Cache-Control': 'no-cache',
             'Connection': 'keep-alive',
-            'Access-Control-Allow-Origin': '*'
+            'Access-Control-Allow-Origin': getCorsOrigin(req)
         });
         res.write('\n');
         sseClients.push(res);

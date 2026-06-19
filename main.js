@@ -83,6 +83,8 @@ async function createWindow() {
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
+            enableRemoteModule: false,
+            sandbox: true,
         },
         autoHideMenuBar: true,
         show: false,
@@ -138,6 +140,52 @@ async function createWindow() {
         
         // Kích hoạt kiểm tra cập nhật trên startup khi online
         checkUpdates(cloudUrl);
+    });
+
+    // Bảo mật: Tắt DevTools trong môi trường production
+    if (app.isPackaged) {
+        mainWindow.webContents.on('before-input-event', (event, input) => {
+            if (input.key === 'F12' ||
+                (input.control && input.shift && ['I', 'J', 'C', 'K'].includes(input.key.toUpperCase())) ||
+                (input.control && input.key.toUpperCase() === 'U')) {
+                event.preventDefault();
+            }
+        });
+    }
+
+    // Bảo mật: Chặn navigation ra ngoài whitelist
+    const allowedHosts = ['localhost', '127.0.0.1', 'otmanager.id.vn', 'ot-manager-server-jbxd.onrender.com'];
+    mainWindow.webContents.on('will-navigate', (event, url) => {
+        try {
+            const parsed = new URL(url);
+            const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith('.' + h)) ||
+                              parsed.hostname.match(/^192\.168\./) ||
+                              parsed.protocol === 'data:';
+            if (!isAllowed) {
+                console.warn(`[Security] Chặn chuyển hướng tới: ${url}`);
+                event.preventDefault();
+            }
+        } catch (e) {
+            event.preventDefault();
+        }
+    });
+
+    // Bảo mật: Chặn mở cửa sổ mới (popup) trỏ đến URL ngoài
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        try {
+            const parsed = new URL(url);
+            const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith('.' + h)) ||
+                              parsed.hostname.match(/^192\.168\./);
+            if (!isAllowed) {
+                console.warn(`[Security] Chặn mở cửa sổ mới tới: ${url}`);
+                // Mở link ngoài bằng trình duyệt mặc định thay vì trong app
+                shell.openExternal(url);
+                return { action: 'deny' };
+            }
+        } catch (e) {
+            return { action: 'deny' };
+        }
+        return { action: 'allow' };
     });
 
     // Bắt sự kiện tắt cửa sổ: Không thoát mà ẩn xuống khay hệ thống

@@ -97,6 +97,11 @@ function api(endpoint, method, body, skipAuthRedirect) {
         var xhr = new XMLHttpRequest();
         xhr.open(method, API + endpoint, true);
         xhr.setRequestHeader('Content-Type', 'application/json');
+        // Gửi JWT Token nếu có
+        var authToken = safeStorage.getItem('ot_auth_token');
+        if (authToken) {
+            xhr.setRequestHeader('Authorization', 'Bearer ' + authToken);
+        }
         if (typeof deviceId !== 'undefined' && deviceId) {
             xhr.setRequestHeader('x-device-id', deviceId);
         }
@@ -331,6 +336,7 @@ async function handleEmployeeLogin(e) {
         currentUser = data.user;
         safeStorage.setItem('ot_mobile_user', JSON.stringify(currentUser));
         safeStorage.setItem('ot_login_time', Date.now().toString());
+        if (data.token) safeStorage.setItem('ot_auth_token', data.token);
         cacheUsernames();
         enterApp();
     } catch (err) {
@@ -381,6 +387,7 @@ async function handleAdminLogin(e) {
         // Lưu thông tin đăng nhập quản lý
         safeStorage.setItem('ot_mobile_user', JSON.stringify(data.user));
         safeStorage.setItem('ot_login_time', Date.now().toString());
+        if (data.token) safeStorage.setItem('ot_auth_token', data.token);
         
         // Đồng bộ session quản lý cho desktop/app.js tự động nhận diện
         safeStorage.setItem('ot_current_user', JSON.stringify(data.user));
@@ -439,6 +446,7 @@ function logout() {
     safeStorage.removeItem('ot_login_time');
     safeStorage.removeItem('ot_current_user');
     safeStorage.removeItem('ot_login_date');
+    safeStorage.removeItem('ot_auth_token');
     showScreen('screen-login');
     const loginForm = document.getElementById('form-login-employee');
     if (loginForm) loginForm.reset();
