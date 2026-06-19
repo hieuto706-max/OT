@@ -1349,6 +1349,85 @@ const server = http.createServer(async (req, res) => {
         const owner = 'hieuto706-max';
         const repo = 'OT';
 
+        const redirectToAsset = (assetId) => {
+            const downloadOptions = {
+                hostname: 'api.github.com',
+                path: `/repos/${owner}/${repo}/releases/assets/${assetId}`,
+                method: 'GET',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'User-Agent': 'Node.js-Server-App',
+                    'Accept': 'application/octet-stream'
+                }
+            };
+
+            const reqAsset = https.request(downloadOptions, (resAsset) => {
+                if ([301, 302, 307, 308].includes(resAsset.statusCode) && resAsset.headers.location) {
+                    res.writeHead(302, {
+                        'Location': resAsset.headers.location,
+                        'Access-Control-Allow-Origin': '*'
+                    });
+                    res.end();
+                } else {
+                    res.writeHead(resAsset.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
+                    res.end(`Lỗi khi yêu cầu tải file từ GitHub: Mã trạng thái ${resAsset.statusCode}`);
+                }
+            });
+
+            reqAsset.on('error', (err) => {
+                res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+                res.end(`Lỗi tải file build: ${err.message}`);
+            });
+            reqAsset.end();
+        };
+
+        const fetchLatestRelease = () => {
+            const latestOptions = {
+                hostname: 'api.github.com',
+                path: `/repos/${owner}/${repo}/releases/latest`,
+                method: 'GET',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'User-Agent': 'Node.js-Server-App',
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            };
+
+            const reqLatest = https.request(latestOptions, (resLatest) => {
+                let bodyLatest = '';
+                resLatest.on('data', chunk => bodyLatest += chunk);
+                resLatest.on('end', () => {
+                    if (resLatest.statusCode !== 200) {
+                        res.writeHead(resLatest.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
+                        return res.end(`Lỗi GitHub API khi lấy thông tin Release mới nhất: ${resLatest.statusCode}`);
+                    }
+                    try {
+                        const latestInfo = JSON.parse(bodyLatest);
+                        const latestTagName = latestInfo.tag_name;
+                        const latestVer = latestTagName.replace(/^[vV]/, '');
+                        const latestAssetName = `ot-manager-Setup-${latestVer}.exe`;
+                        
+                        const latestAsset = latestInfo.assets.find(a => a.name === latestAssetName);
+                        if (!latestAsset) {
+                            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+                            return res.end(`Không tìm thấy file build ${latestAssetName} trong Release mới nhất ${latestTagName} trên GitHub.`);
+                        }
+                        
+                        redirectToAsset(latestAsset.id);
+                    } catch (e) {
+                        res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+                        res.end(`Lỗi xử lý thông tin Release mới nhất: ${e.message}`);
+                    }
+                });
+            });
+
+            reqLatest.on('error', (errLatest) => {
+                res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+                res.end(`Lỗi kết nối GitHub khi lấy Release mới nhất: ${errLatest.message}`);
+            });
+            reqLatest.end();
+        };
+
         const fetchRelease = (versionToFetch) => {
             const tag = `v${versionToFetch}`;
             const assetName = `ot-manager-Setup-${versionToFetch}.exe`;
@@ -1369,12 +1448,12 @@ const server = http.createServer(async (req, res) => {
                 let body = '';
                 resGit.on('data', chunk => body += chunk);
                 resGit.on('end', () => {
-                    if (resGit.statusCode === 404 && versionToFetch !== '1.2.0') {
+                    if (resGit.statusCode === 404) {
                         if (isCheckOnly) {
                             return sendJSON(res, 200, { ready: false, version: version });
                         }
-                        console.log(`[Desktop Download] Release ${tag} không tìm thấy (404). Fallback về v1.2.0`);
-                        return fetchRelease('1.2.0');
+                        console.log(`[Desktop Download] Release ${tag} không tìm thấy (404). Đang lấy Release mới nhất khả dụng...`);
+                        return fetchLatestRelease();
                     }
                     if (resGit.statusCode !== 200) {
                         if (isCheckOnly) {
@@ -1388,56 +1467,18 @@ const server = http.createServer(async (req, res) => {
                         const releaseInfo = JSON.parse(body);
                         const asset = releaseInfo.assets.find(a => a.name === assetName);
                         if (!asset) {
-                            if (versionToFetch !== '1.2.0') {
-                                if (isCheckOnly) {
-                                    return sendJSON(res, 200, { ready: false, version: version });
-                                }
-                                console.log(`[Desktop Download] Không tìm thấy asset ${assetName} trong Release ${tag}. Fallback về v1.2.0`);
-                                return fetchRelease('1.2.0');
-                            }
                             if (isCheckOnly) {
-                                return sendJSON(res, 200, { ready: false, version: '1.2.0' });
+                                return sendJSON(res, 200, { ready: false, version: version });
                             }
-                            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-                            return res.end(`Không tìm thấy file build ${assetName} trong Release ${tag} trên GitHub.`);
+                            console.log(`[Desktop Download] Không tìm thấy asset ${assetName} trong Release ${tag}. Đang lấy Release mới nhất...`);
+                            return fetchLatestRelease();
                         }
 
                         if (isCheckOnly) {
                             return sendJSON(res, 200, { ready: true, version: versionToFetch });
                         }
 
-                        // 2. Fetch asset binary using octet-stream header (GitHub API returns a 302 Redirect to AWS S3)
-                        const downloadOptions = {
-                            hostname: 'api.github.com',
-                            path: `/repos/${owner}/${repo}/releases/assets/${asset.id}`,
-                            method: 'GET',
-                            headers: {
-                                'Authorization': `token ${token}`,
-                                'User-Agent': 'Node.js-Server-App',
-                                'Accept': 'application/octet-stream'
-                            }
-                        };
-
-                        const reqAsset = https.request(downloadOptions, (resAsset) => {
-                            // Thay vì tải về rồi truyền qua Render (tốn băng thông Render), 
-                            // chuyển hướng trình duyệt của client tải trực tiếp từ link S3 của GitHub.
-                            if ([301, 302, 307, 308].includes(resAsset.statusCode) && resAsset.headers.location) {
-                                res.writeHead(302, {
-                                    'Location': resAsset.headers.location,
-                                    'Access-Control-Allow-Origin': '*'
-                                });
-                                res.end();
-                            } else {
-                                res.writeHead(resAsset.statusCode, { 'Content-Type': 'text/plain; charset=utf-8' });
-                                res.end(`Lỗi khi yêu cầu tải file từ GitHub: Mã trạng thái ${resAsset.statusCode}`);
-                            }
-                        });
-
-                        reqAsset.on('error', (err) => {
-                            res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-                            res.end(`Lỗi tải file build: ${err.message}`);
-                        });
-                        reqAsset.end();
+                        redirectToAsset(asset.id);
 
                     } catch (e) {
                         res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -1447,12 +1488,8 @@ const server = http.createServer(async (req, res) => {
             });
 
             reqGit.on('error', (err) => {
-                if (versionToFetch !== '1.2.0') {
-                    console.error(`[Desktop Download] Lỗi kết nối GitHub API khi tải ${tag}: ${err.message}. Fallback về v1.2.0`);
-                    return fetchRelease('1.2.0');
-                }
-                res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-                res.end(`Lỗi kết nối GitHub API: ${err.message}`);
+                console.error(`[Desktop Download] Lỗi kết nối GitHub API khi tải ${tag}: ${err.message}. Đang lấy Release mới nhất...`);
+                return fetchLatestRelease();
             });
             reqGit.end();
         };

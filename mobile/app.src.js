@@ -1444,8 +1444,22 @@ function initApp() {
     const scrollContainer = document.querySelector('.mobile-main');
 
     if (scrollContainer && ptr) {
+        // Kiểm tra xem vị trí cuộn có thực sự ở đỉnh trang (bao gồm cả container cuộn phụ của lịch sử)
+        const checkAtTop = () => {
+            if (scrollContainer.scrollTop > 0) return false;
+            
+            const activeTab = document.querySelector('.tab-content.active');
+            if (activeTab && activeTab.id === 'tab-history') {
+                const historyList = document.getElementById('history-list');
+                if (historyList && historyList.scrollTop > 0) {
+                    return false;
+                }
+            }
+            return true;
+        };
+
         scrollContainer.addEventListener('touchstart', e => {
-            startedAtTop = (scrollContainer.scrollTop <= 0);
+            startedAtTop = checkAtTop();
             if (startedAtTop) {
                 touchStart = e.touches[0].clientY;
             }
@@ -1457,7 +1471,8 @@ function initApp() {
             const currentY = e.touches[0].clientY;
             const dist = currentY - touchStart;
             
-            if (scrollContainer.scrollTop <= 0 && dist > 10) {
+            // Đặt ngưỡng dist > 30 để tránh vô tình kích hoạt khi vuốt chạm nhẹ
+            if (checkAtTop() && dist > 30) {
                 isPulling = true;
             }
             
