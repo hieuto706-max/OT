@@ -12,6 +12,186 @@ const os = require('os');
 const crypto = require('crypto');
 const { startTunnel, stopTunnel } = require('./tunnel');
 
+// ==================== ENVIRONMENT VARIABLES ====================
+function loadEnv() {
+    const envPath = path.join(__dirname, '..', '.env');
+    try {
+        if (fs.existsSync(envPath)) {
+            const content = fs.readFileSync(envPath, 'utf-8');
+            content.split('\n').forEach(line => {
+                line = line.trim();
+                if (!line || line.startsWith('#')) return;
+                const eqIdx = line.indexOf('=');
+                if (eqIdx < 0) return;
+                const key = line.substring(0, eqIdx).trim();
+                let value = line.substring(eqIdx + 1).trim();
+                // Loại bỏ ngoặc kép bọc giá trị
+                if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+                    value = value.slice(1, -1);
+                }
+                if (!process.env[key]) {
+                    process.env[key] = value;
+                }
+            });
+            console.log('[Env] Đã nạp biến môi trường từ .env');
+        }
+    } catch (e) {
+        console.error('[Env] Lỗi đọc file .env:', e.message);
+    }
+}
+loadEnv();
+
+// ==================== PASSWORD HASHING ====================
+function hashPassword(password) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
+    return `pbkdf2$100000$${salt}$${hash}`;
+}
+
+function verifyPassword(password, stored) {
+    // Hỗ trợ so sánh với mật khẩu plaintext cũ (backward compatibility)
+    if (!stored.startsWith('pbkdf2$')) {
+        return password === stored;
+    }
+    const parts = stored.split('$');
+    if (parts.length !== 4) return false;
+    const iterations = parseInt(parts[1], 10);
+    const salt = parts[2];
+    const storedHash = parts[3];
+    const hash = crypto.pbkdf2Sync(password, salt, iterations, 64, 'sha512').toString('hex');
+    // Sử dụng timingSafeEqual để chống tấn công Timing Attack
+    try {
+        return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(storedHash, 'hex'));
+    } catch (e) {
+        return false;
+    }
+}
+
+// Tự động chuyển đổi mật khẩu plaintext sang dạng băm khi khởi động
+async function migratePasswords(db) {
+    let migrated = false;
+    db.users.forEach(user => {
+        if (user.role === 'admin' && user.password && !user.password.startsWith('pbkdf2$')) {
+            console.log(`[Migration] Băm mật khẩu cho tài khoản admin: ${user.username}`);
+            user.password = hashPassword(user.password);
+            migrated = true;
+        }
+    });
+    return migrated;
+}
+
+// ==================== JWT TOKEN ====================
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
+
+function base64UrlEncode(data) {
+    return Buffer.from(data).toString('base64')
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function base64UrlDecode(str) {
+    str = str.replace(/-/g, '+').replace(/_/g, '/');
+    while (str.length % 4) str += '=';
+    return Buffer.from(str, 'base64').toString('utf-8');
+}
+
+function signJWT(payload, expiresInSeconds) {
+    const header = { alg: 'HS256', typ: 'JWT' };
+    const now = Math.floor(Date.now() / 1000);
+    const fullPayload = { ...payload, iat: now, exp: now + (expiresInSeconds || 7 * 24 * 3600) };
+    const headerB64 = base64UrlEncode(JSON.stringify(header));
+    const payloadB64 = base64UrlEncode(JSON.stringify(fullPayload));
+    const signature = crypto.createHmac('sha256', JWT_SECRET)
+        .update(`${headerB64}.${payloadB64}`).digest('base64')
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return `${headerB64}.${payloadB64}.${signature}`;
+}
+
+function verifyJWT(token) {
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+        const [headerB64, payloadB64, signature] = parts;
+        const expectedSig = crypto.createHmac('sha256', JWT_SECRET)
+            .update(`${headerB64}.${payloadB64}`).digest('base64')
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        if (signature !== expectedSig) return null;
+        const payload = JSON.parse(base64UrlDecode(payloadB64));
+        if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) return null;
+        return payload;
+    } catch (e) {
+        return null;
+    }
+}
+
+// Giải mã JWT từ header Authorization: Bearer <token>
+function authenticateToken(req) {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
+    const token = authHeader.substring(7);
+    return verifyJWT(token);
+}
+
+// ==================== GPS VALIDATION ====================
+const OFFICE_LAT = parseFloat(process.env.OFFICE_LAT) || 0;
+const OFFICE_LON = parseFloat(process.env.OFFICE_LON) || 0;
+const ALLOWED_RADIUS = parseFloat(process.env.ALLOWED_RADIUS_METERS) || 200;
+
+function haversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // Bán kính Trái Đất (mét)
+    const toRad = deg => deg * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function validateLocation(lat, lon) {
+    if (!OFFICE_LAT || !OFFICE_LON || !lat || !lon) {
+        return { lat: lat || null, lon: lon || null, distance: null, isNearOffice: null };
+    }
+    const distance = Math.round(haversineDistance(lat, lon, OFFICE_LAT, OFFICE_LON));
+    return { lat, lon, distance, isNearOffice: distance <= ALLOWED_RADIUS };
+}
+
+// ==================== CORS & SECURITY HEADERS ====================
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+    : null; // null = cho phép tất cả (backward compatible)
+
+function getCorsOrigin(req) {
+    const origin = req.headers['origin'] || '';
+    if (!ALLOWED_ORIGINS) return '*'; // Backward compatible
+    if (ALLOWED_ORIGINS.includes(origin)) return origin;
+    // Cho phép localhost và các IP nội bộ
+    if (origin.includes('localhost') || origin.includes('127.0.0.1') || /^https?:\/\/192\.168\./.test(origin)) {
+        return origin;
+    }
+    return ''; // Từ chối
+}
+
+function getSecurityHeaders(req) {
+    const isHTTPS = req.headers['x-forwarded-proto'] === 'https' || process.env.RENDER;
+    const headers = {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Referrer-Policy': 'no-referrer',
+    };
+    if (isHTTPS) {
+        headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains';
+    }
+    return headers;
+}
+
+// ==================== WRITE QUEUE (Chống xung đột ghi) ====================
+let writeQueue = Promise.resolve();
+
+function enqueueWrite(fn) {
+    writeQueue = writeQueue.then(fn).catch(e => {
+        console.error('[WriteQueue] Lỗi:', e.message);
+    });
+    return writeQueue;
+}
+
 const PORT = process.env.PORT || 3456;
 let DB_FILE = null;
 let sseClients = [];
@@ -207,6 +387,12 @@ async function loadDB() {
 
     // 2. Nếu file local đã tồn tại và tải thành công, ta tin tưởng nó là bản mới nhất
     if (fileLoaded && localDB) {
+        // Tự động băm mật khẩu plaintext cũ
+        const migrated = await migratePasswords(localDB);
+        if (migrated) {
+            saveDB(localDB);
+            console.log('[Migration] Đã tự động băm mật khẩu plaintext.');
+        }
         return localDB;
     }
 
@@ -242,7 +428,7 @@ async function loadDB() {
         users: [{
             id: generateId(),
             username: 'admin',
-            password: 'admin123',
+            password: hashPassword('admin123'),
             fullname: 'Quản trị viên',
             role: 'admin',
             createdAt: new Date().toISOString()
@@ -391,18 +577,21 @@ function parseBody(req) {
     });
 }
 
-function sendJSON(res, statusCode, data) {
+function sendJSON(res, statusCode, data, req) {
+    const corsOrigin = req ? getCorsOrigin(req) : '*';
+    const secHeaders = req ? getSecurityHeaders(req) : {};
     res.writeHead(statusCode, {
         'Content-Type': 'application/json; charset=utf-8',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': corsOrigin,
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, x-device-id, x-user-id',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-device-id, x-user-id',
+        ...secHeaders,
     });
     res.end(JSON.stringify(data));
 }
 
-function sendError(res, statusCode, message) {
-    sendJSON(res, statusCode, { error: message });
+function sendError(res, statusCode, message, req) {
+    sendJSON(res, statusCode, { error: message }, req);
 }
 
 function getCurrentMonth() {
