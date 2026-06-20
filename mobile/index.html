@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>\n<script>\nif(!window.location.search.includes("cleared")){\nlocalStorage.clear();sessionStorage.clear();caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k))));navigator.serviceWorker.getRegistrations().then(rs=>{for(let r of rs)r.unregister()});window.location.href=window.location.pathname+"?cleared=1";\n}\n<\/script>
+<head>
+        <script>
+                    if (!window.location.search.includes("cleared")) {
+                                    localStorage.clear();
+                                    sessionStorage.clear();
+                                    caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k))));
+                                    navigator.serviceWorker.getRegistrations().then(rs => {
+                                                        for (let r of rs) {
+                                                                                r.unregister();
+                                                        }
+                                    });
+                                    window.location.href = window.location.pathname + "?cleared=1";
+                    }
+                        </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>OT Manager - HÃ¡Â»Â thÃ¡Â»Âng quÃ¡ÂºÂ£n lÃÂ½ tÃÂng ca</title>
