@@ -1,57 +1,50 @@
-const CACHE_NAME = 'ot-manager-v12';
+const CACHE_NAME = 'ot-manager-v13';
 const ASSETS = [
-    './',
-    'index.html',
-    'style.css',
-    'app.js',
-    'manifest.json',
-];
+      './',
+      'index.html',
+      'style.css',
+      'app.js',
+      'manifest.json',
+    ];
 
 self.addEventListener('install', event => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
-    );
-    self.skipWaiting();
+      event.waitUntil(
+              caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+            );
+      self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
-    event.waitUntil(
-        caches.keys().then(keys =>
-            Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-        )
-    );
-    self.clients.claim();
+      event.waitUntil(
+              caches.keys().then(keys => Promise.all(
+                        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+                      ))
+            );
+      self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
-    // Only handle GET requests and http/https schemes
-    if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
-        return;
-    }
-
-    const url = new URL(event.request.url);
-
-    // Always bypass Service Worker for API calls
-    if (url.pathname.indexOf('/api/') !== -1) {
-        return;
-    }
-
-    // For static assets: Network-First (Falling back to Cache)
-    event.respondWith(
-        fetch(event.request).then(networkResponse => {
-            if (networkResponse && networkResponse.status === 200) {
-                const clone = networkResponse.clone();
-                caches.open(CACHE_NAME).then(cache => {
-                    cache.put(event.request, clone).catch(() => {});
-                });
-            }
-            return networkResponse;
-        }).catch(err => {
-            // If network fails, try to return cached response
-            return caches.match(event.request).then(cachedResponse => {
-                if (cachedResponse) return cachedResponse;
-                throw err;
-            });
-        })
-    );
+      if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
+              return;
+      }
+      const url = new URL(event.request.url);
+      if (url.pathname.indexOf('/api/') !== -1) {
+              return;
+      }
+      event.respondWith(
+              fetch(event.request).then(networkResponse => {
+                        if (networkResponse && networkResponse.status === 200) {
+                                    const clone = networkResponse.clone();
+                                    caches.open(CACHE_NAME).then(cache => {
+                                                  cache.put(event.request, clone).catch(() => {});
+                                    });
+                        }
+                        return networkResponse;
+              }).catch(err => {
+                        return caches.match(event.request).then(cachedResponse => {
+                                    if (cachedResponse) return cachedResponse;
+                                    throw err;
+                        });
+              })
+            );
 });
