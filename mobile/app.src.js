@@ -1838,7 +1838,18 @@ function initApp() {
     const apkUrl = API ? (API + '/OT-Manager-mobile.apk') : defaultApk;
 
     const apkBtnLanding = document.getElementById('apk-download-btn-landing');
-    if (apkBtnLanding) apkBtnLanding.href = apkUrl;
+    if (apkBtnLanding) {
+        apkBtnLanding.setAttribute('data-url', apkUrl);
+        apkBtnLanding.style.cursor = 'pointer';
+        if (!apkBtnLanding.dataset.listenerAdded) {
+            apkBtnLanding.dataset.listenerAdded = 'true';
+            apkBtnLanding.addEventListener('click', function(e) {
+                e.preventDefault();
+                const downloadUrl = this.getAttribute('data-url');
+                if (downloadUrl) window.location.href = downloadUrl;
+            });
+        }
+    }
 
     const apkQrLanding = document.getElementById('apk-qr-code-landing');
     if (apkQrLanding) {
@@ -1846,19 +1857,39 @@ function initApp() {
         apkQrLanding.src = qrApiUrl;
     }
 
-
     const desktopBtnLanding = document.getElementById('desktop-download-btn-landing');
     if (desktopBtnLanding) {
+        desktopBtnLanding.style.cursor = 'pointer';
+        if (!desktopBtnLanding.dataset.listenerAdded) {
+            desktopBtnLanding.dataset.listenerAdded = 'true';
+            desktopBtnLanding.addEventListener('click', function(e) {
+                e.preventDefault();
+                const downloadUrl = this.getAttribute('data-url');
+                if (downloadUrl) window.open(downloadUrl, '_blank');
+            });
+        }
         fetch((API || host) + '/api/version')
             .then(res => res.json())
             .then(data => {
                 if (data.desktopDownloadUrl) {
-                    desktopBtnLanding.href = data.desktopDownloadUrl;
+                    desktopBtnLanding.setAttribute('data-url', data.desktopDownloadUrl);
                 }
             })
             .catch(err => {
                 console.error('Không thể lấy link EXE từ server:', err);
             });
+    }
+
+    const iosBtnLanding = document.getElementById('ios-download-btn-landing');
+    if (iosBtnLanding) {
+        iosBtnLanding.style.cursor = 'pointer';
+        if (!iosBtnLanding.dataset.listenerAdded) {
+            iosBtnLanding.dataset.listenerAdded = 'true';
+            iosBtnLanding.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.open('https://otmanager.id.vn/mobile/', '_blank');
+            });
+        }
     }
     
 }

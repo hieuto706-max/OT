@@ -349,7 +349,7 @@
                     <h2 class="card-title">Bản cho Quản lý<span id="desktop-ver" style="font-size: 0.95rem; color: #a78bfa; font-weight: 500; margin-left: 6px;"></span></h2>
                     <p class="card-desc">Ứng dụng quản trị trên máy tính Windows. Xem báo cáo, thống kê và duyệt tăng ca.</p>
                 </div>
-                <a id="desktop-download-btn" href="https://github.com/hieuto706-max/OT/releases/download/v1.3.5/ot-manager-Setup-1.3.5.exe" target="_blank" class="btn btn-purple">
+                <a id="desktop-download-btn" class="btn btn-purple" style="cursor: pointer;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                         <polyline points="7 10 12 15 17 10" />
@@ -373,7 +373,7 @@
                 </div>
                 
                 <div style="width: 100%;">
-                    <a id="apk-download-btn" href="#" class="btn btn-green">
+                    <a id="apk-download-btn" class="btn btn-green" style="cursor: pointer;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                             <polyline points="7 10 12 15 17 10" />
@@ -404,15 +404,24 @@
         const isGitHubPages = window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
         const MOBILE_VERSION = '1.3.5';
         
-        // Tải thông tin phiên bản từ Server
-        const API_SERVER = isGitHubPages ? 'https://ot-manager-server-jbxd.onrender.com' : host;
-        
         // Link tải APK: trỏ thẳng tới GitHub Pages nếu chạy trên GitHub Pages để tải nhanh hơn
         const apkUrl = isGitHubPages ? 'OT-Manager-mobile.apk' : (API_SERVER + '/OT-Manager-mobile.apk');
-        document.getElementById('apk-download-btn').href = apkUrl;
+        const apkBtn = document.getElementById('apk-download-btn');
+        apkBtn.setAttribute('data-url', apkUrl);
+        apkBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const downloadUrl = this.getAttribute('data-url');
+            if (downloadUrl) window.location.href = downloadUrl;
+        });
 
         // Link tải Desktop EXE: trỏ thẳng tới server Render để proxy tải từ private GitHub Releases dùng GITHUB_TOKEN
-        document.getElementById('desktop-download-btn').href = API_SERVER + '/download/desktop';
+        const desktopBtn = document.getElementById('desktop-download-btn');
+        desktopBtn.setAttribute('data-url', API_SERVER + '/download/desktop');
+        desktopBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const downloadUrl = this.getAttribute('data-url');
+            if (downloadUrl) window.open(downloadUrl, '_blank');
+        });
         
         // Tạo mã QR QR Code kết nối tới link tải APK trực tiếp (phải là URL tuyệt đối để quét được)
         const needsOtPrefix = window.location.hostname.includes('github.io');
@@ -422,7 +431,7 @@
             : (API_SERVER + '/OT-Manager-mobile.apk');
         const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0b0b14&data=${encodeURIComponent(absoluteApkUrl)}`;
         document.getElementById('apk-qr-code').src = qrApiUrl;
-
+ 
         fetch(API_SERVER + '/api/version')
             .then(res => res.json())
             .then(data => {
@@ -431,10 +440,10 @@
                     document.getElementById('mobile-ver').textContent = `v${data.version}`;
                 }
                 if (data.desktopDownloadUrl) {
-                    document.getElementById('desktop-download-btn').href = data.desktopDownloadUrl;
+                    document.getElementById('desktop-download-btn').setAttribute('data-url', data.desktopDownloadUrl);
                 }
                 if (data.mobileDownloadUrl) {
-                    document.getElementById('apk-download-btn').href = data.mobileDownloadUrl;
+                    document.getElementById('apk-download-btn').setAttribute('data-url', data.mobileDownloadUrl);
                     document.getElementById('apk-qr-code').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0b0b14&data=${encodeURIComponent(data.mobileDownloadUrl)}`;
                 }
             })

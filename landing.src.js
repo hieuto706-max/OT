@@ -1241,13 +1241,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Update Windows EXE release link
                 const desktopBtn = document.getElementById('desktop-download-btn-landing');
                 if (desktopBtn && data.desktopDownloadUrl) {
-                    desktopBtn.href = data.desktopDownloadUrl;
+                    desktopBtn.setAttribute('data-url', data.desktopDownloadUrl);
                 }
 
                 // Update Android APK link & QR Code
                 const apkBtn = document.getElementById('apk-download-btn-landing');
                 if (apkBtn && data.mobileDownloadUrl) {
-                    apkBtn.href = data.mobileDownloadUrl;
+                    apkBtn.setAttribute('data-url', data.mobileDownloadUrl);
                 }
                 const apkQr = document.getElementById('apk-qr-code-landing');
                 if (apkQr && data.mobileDownloadUrl) {
@@ -1256,6 +1256,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
         .catch(err => console.warn('Lỗi đồng bộ thông tin phiên bản từ server:', err));
+
+    // Dynamic download event handlers to prevent showing raw link URLs in browser status bars on hover
+    const apkBtn = document.getElementById('apk-download-btn-landing');
+    if (apkBtn) {
+        apkBtn.style.cursor = 'pointer';
+        apkBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const downloadUrl = this.getAttribute('data-url') || 'https://ot-manager-server-jbxd.onrender.com/OT-Manager-mobile.apk';
+            window.location.href = downloadUrl;
+        });
+    }
+    const desktopBtn = document.getElementById('desktop-download-btn-landing');
+    if (desktopBtn) {
+        desktopBtn.style.cursor = 'pointer';
+        desktopBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const downloadUrl = this.getAttribute('data-url') || 'https://github.com/hieuto706-max/OT/releases/download/v1.3.5/ot-manager-Setup-1.3.5.exe';
+            window.open(downloadUrl, '_blank');
+        });
+    }
+    const iosBtn = document.getElementById('ios-download-btn-landing');
+    if (iosBtn) {
+        iosBtn.style.cursor = 'pointer';
+        iosBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.open('https://otmanager.id.vn/mobile/', '_blank');
+        });
+    }
 
     // 2. Connection Status check
     const statusEl = document.getElementById('connection-status');
