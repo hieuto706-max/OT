@@ -1,0 +1,23 @@
+[Wrapper] Renaming config.json to config_temp.json...
+[Wrapper] Launching Electron screenshot capture...
+
+[Automation] Starting capture script...
+[Automation] Navigating to http://localhost:3456/desktop/index.html...
+[21316:0622/033713.291:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)
+[21316:0622/033713.292:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)
+[21316:0622/033713.292:ERROR:net\disk_cache\cache_util_win.cc:25] Unable to move the cache: Access is denied. (0x5)
+[21316:0622/033713.294:ERROR:net\disk_cache\disk_cache.cc:284] Unable to create cache
+[21316:0622/033713.294:ERROR:gpu\ipc\host\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2
+[21316:0622/033713.294:ERROR:net\disk_cache\disk_cache.cc:284] Unable to create cache
+[21316:0622/033713.294:ERROR:gpu\ipc\host\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2
+[21316:0622/033713.294:ERROR:net\disk_cache\disk_cache.cc:284] Unable to create cache
+[21316:0622/033713.294:ERROR:gpu\ipc\host\gpu_disk_cache.cc:737] Gpu Cache Creation failed: -2
+[21316:0622/033716.273:ERROR:components\services\storage\service_worker\service_worker_storage.cc:1814] Failed to delete the database: Database IO error
+[Automation] Page loaded. Waiting for 3 seconds for UI settling...
+[Automation] Capturing desktop_login.png...
+(node:21316) UnhandledPromiseRejectionWarning: Error: UnknownVizError
+(Use `electron --trace-warnings ...` to show where the warning was created)
+(node:21316) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 1)
+[Wrapper] Error during execution: Command failed: "C:\Users\hieut\OneDrive\Máy tính\OT Manager\node_modules\electron\dist\electron.exe" "C:\Users\hieut\OneDrive\Máy tính\OT Manager\scratch\capture.js"
+[Wrapper] Restoring config_temp.json back to config.json...
+[Wrapper] Restored successfully.

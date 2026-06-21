@@ -1,0 +1,77 @@
+{
+  "users": [
+    {
+      "id": "mq8sutuob2fdf68f",
+      "username": "admin",
+      "password": "pbkdf2$100000$dbbc667780c718c078bfe830b6a0d5f8$c4a61030958b5adb822cfdc5e0f3f4c86fb0568fa27e3d03317f2cda8e42f94db6644cae2e5161e288c63df8a06f1a29b28a6ab7a987306da0206bb34f97d1a4",
+      "fullname": "Quản trị viên",
+      "role": "admin",
+      "createdAt": "2026-06-11T01:09:07.872Z",
+      "team": "",
+      "updatedAt": "2026-06-21T19:07:51.265Z"
+    },
+    {
+      "id": "mq96p0lz6a1e92a9",
+      "username": "testemp",
+      "password": "password123",
+      "fullname": "Test Employee Edited",
+      "role": "employee",
+      "createdAt": "2026-06-11T07:36:31.322Z",
+      "updatedAt": "2026-06-21T19:11:26.602Z",
+      "browserDeviceId": "web_ua257u",
+      "pendingUnlink": false,
+      "deviceId": null,
+      "team": "Team 1"
+    },
+    {
+      "id": "mqnzjbc30890f4e9",
+      "username": "testemp 1",
+      "password": "123",
+      "fullname": "Test Employee Edited B",
+      "role": "employee",
+      "team": "Team 2",
+      "createdAt": "2026-06-21T16:12:40.611Z",
+      "updatedAt": "2026-06-21T18:28:20.836Z"
+    }
+  ],
+  "records": [
+    {
+      "id": "mqnzm0jn02fc352c",
+      "userId": "mq96p0lz6a1e92a9",
+      "date": "2026-06-20",
+      "hasLunchOT": false,
+      "otStart": "",
+      "otEnd": "",
+      "eveningOTHours": 1,
+      "totalHours": 1,
+      "note": "[BÙ THÁNG TRƯỚC] Bu tang ca ngay 20/06",
+      "createdMonth": "2026-06",
+      "isBackfill": true,
+      "status": "approved",
+      "createdAt": "2026-06-21T16:14:46.595Z",
+      "updatedAt": "2026-06-21T16:30:28.724Z"
+    },
+    {
+      "id": "mqnztvndc71e7d3e",
+      "userId": "mq96p0lz6a1e92a9",
+      "date": "2026-06-21",
+      "hasLunchOT": true,
+      "otStart": "16:30",
+      "otEnd": "19:30",
+      "eveningOTHours": 3,
+      "totalHours": 4,
+      "note": "132",
+      "createdMonth": "",
+      "isBackfill": false,
+      "status": "approved",
+      "createdAt": "2026-06-21T16:20:53.497Z",
+      "updatedAt": "2026-06-21T16:20:53.497Z"
+    }
+  ],
+  "teams": [
+    "Team 1",
+    "Team 2",
+    "Team 3"
+  ],
+  "closedMonths": []
+}
