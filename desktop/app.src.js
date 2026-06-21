@@ -112,15 +112,45 @@ async function isPrivateMode() {
         if (navigator.serviceWorker && typeof navigator.serviceWorker.register === 'function') {
             navigator.serviceWorker.register('nonexistent-sw-test.js').then((reg) => {
                 reg.unregister();
-                resolve(false);
+                runOPFSTimingCheck();
             }).catch((err) => {
                 if (err && err.name === 'SecurityError') {
                     resolve(true);
                 } else {
-                    resolve(false);
+                    runOPFSTimingCheck();
                 }
             });
         } else {
+            runOPFSTimingCheck();
+        }
+
+        function runOPFSTimingCheck() {
+            if (navigator.storage && typeof navigator.storage.getDirectory === 'function' && typeof Worker === 'function') {
+                try {
+                    const src = `(async()=>{try{const r=await navigator.storage.getDirectory(),f=await(await r.getFileHandle('_',{create:true})).createSyncAccessHandle(),b=new Uint8Array(1);let m=1/0;for(let i=0;i<5;i++){f.write(b,{at:0});const s=performance.now();f.flush();const dt=performance.now()-s;if(dt<m)m=dt}f.close();postMessage(m<.1)}catch{postMessage(false)}})()`;
+                    const blob = new Blob([src], { type: 'application/javascript' });
+                    const w = new Worker(URL.createObjectURL(blob));
+                    w.onmessage = (e) => {
+                        w.terminate();
+                        resolve(e.data);
+                    };
+                    w.onerror = () => {
+                        w.terminate();
+                        fallbackQuota();
+                    };
+                    setTimeout(() => {
+                        w.terminate();
+                        fallbackQuota();
+                    }, 400);
+                } catch (err) {
+                    fallbackQuota();
+                }
+            } else {
+                fallbackQuota();
+            }
+        }
+
+        function fallbackQuota() {
             const ua = navigator.userAgent.toLowerCase();
             const isSafari = ua.includes('safari') && !ua.includes('chrome') && !ua.includes('android');
             if (isSafari) {
