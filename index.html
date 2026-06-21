@@ -9,7 +9,13 @@
             var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             if (isMobile && !window.location.search.includes('desktop=true')) {
                 var needsOtPrefix = window.location.hostname.includes('github.io');
-                var mobileUrl = (needsOtPrefix ? '/OT/mobile/' : '/mobile/') + window.location.search;
+                var query = window.location.search;
+                if (!query) {
+                    query = '?cleared=1';
+                } else if (!query.includes('cleared')) {
+                    query += '&cleared=1';
+                }
+                var mobileUrl = (needsOtPrefix ? '/OT/mobile/' : '/mobile/') + query;
                 window.location.replace(mobileUrl);
             }
         })();
