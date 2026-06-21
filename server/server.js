@@ -1227,6 +1227,7 @@ function serveStatic(req, res, basePath, urlPath) {
         res.writeHead(200, {
             'Content-Type': contentType,
             'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
         });
         res.end(data);
     });

@@ -1730,7 +1730,7 @@ body::before {
 }
 
 .confirm-overlay.active {
-    display: flex;
+    display: flex !important;
     animation: fadeIn 0.3s ease;
 }
 

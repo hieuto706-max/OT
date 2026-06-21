@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ot-manager-v12';
+const CACHE_NAME = 'ot-manager-v14';
 const ASSETS = [
     './',
     'index.html',

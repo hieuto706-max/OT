@@ -4,6 +4,65 @@
  * Kết nối server qua REST API
  */
 
+
+// Polyfills for older Android WebView (Android 5.0 / Chrome 37) compatibility
+if (!String.prototype.includes) {
+    String.prototype.includes = function(search, start) {
+        'use strict';
+        if (search instanceof RegExp) {
+            throw TypeError('first argument must not be a RegExp');
+        }
+        if (start === undefined) { start = 0; }
+        return this.indexOf(search, start) !== -1;
+    };
+}
+
+if (!Array.prototype.includes) {
+    Array.prototype.includes = function(search, start) {
+        'use strict';
+        if (this == null) {
+            throw new TypeError('"this" is null or not defined');
+        }
+        var o = Object(this);
+        var len = o.length >>> 0;
+        if (len === 0) {
+            return false;
+        }
+        var n = start | 0;
+        var k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+        while (k < len) {
+            if (o[k] === search) {
+                return true;
+            }
+            k++;
+        }
+        return false;
+    };
+}
+
+if (!Array.prototype.find) {
+    Array.prototype.find = function(predicate) {
+        if (this == null) {
+            throw new TypeError('"this" is null or not defined');
+        }
+        var o = Object(this);
+        var len = o.length >>> 0;
+        if (typeof predicate !== 'function') {
+            throw new TypeError('predicate must be a function');
+        }
+        var thisArg = arguments[1];
+        var k = 0;
+        while (k < len) {
+            var kValue = o[k];
+            if (predicate.call(thisArg, kValue, k, o)) {
+                return kValue;
+            }
+            k++;
+        }
+        return undefined;
+    };
+}
+
 // Prevent developer tools and right click
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('keydown', e => {
@@ -51,6 +110,8 @@ function isSessionExpired(loginTimeMs) {
 }
 
 // Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu chạy web local thì tự động dùng origin
+const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.5';
+let updateCheckInterval = null;
 const isLocalWeb = window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io') && !window.location.hostname.includes('otmanager.id.vn');
 let API = isLocalWeb ? window.location.origin : (safeStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com');
 
@@ -792,6 +853,15 @@ async function handleOTSubmit(e) {
 }
 
 // ==================== HISTORY ====================
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;')
+                      .replace(/"/g, '&quot;')
+                      .replace(/'/g, '&#039;');
+}
+
 async function loadHistory() {
     if (!currentUser) return;
     const month = document.getElementById('filter-month').value;
@@ -893,7 +963,7 @@ async function loadHistory() {
                             </div>
                         </div>
                     </div>
-                    ${cleanNote ? `<div class="history-note">📝 ${cleanNote}</div>` : ''}
+                    ${cleanNote ? `<div class="history-note">📝 ${escapeHTML(cleanNote)}</div>` : ''}
                 </div>`;
         }).join('');
 
@@ -1666,6 +1736,7 @@ function startAutoDiscovery() {
     });
 }
 
+/*
 // Register Service Worker for PWA and handle auto-update detection
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(reg => {
@@ -1684,35 +1755,44 @@ if ('serviceWorker' in navigator) {
         });
     }).catch(() => {});
 }
+*/
 
 // ==================== EDIT DYNAMIC OVERLAY ====================
 let activeEditRecordId = null;
 
 async function editRecordDialog(id) {
     console.log('[editRecordDialog] Called with id:', id);
+    console.log('[editRecordDialog] historyRecordsList length:', historyRecordsList.length);
+    console.log('[editRecordDialog] historyRecordsList:', JSON.stringify(historyRecordsList));
     activeEditRecordId = id;
     try {
-        let record = null;
-        if (id.startsWith('offline_')) {
-            const offlineRecords = JSON.parse(safeStorage.getItem('ot_offline_records') || '[]');
-            record = offlineRecords.find(r => r.id === id);
-        } else {
-            const month = document.getElementById('filter-month') ? document.getElementById('filter-month').value : getCurrentMonth();
-            const cached = JSON.parse(safeStorage.getItem(`ot_cached_records_${currentUser.id}_${month}`) || '[]');
-            record = cached.find(r => r.id === id);
-            
-            if (!record && API) {
-                try {
-                    const data = await api(`/api/records?userId=${currentUser.id}&month=${month}`);
-                    record = data.records.find(r => r.id === id);
-                } catch (apiErr) {
-                    console.error('[editRecordDialog] API fallback fetch error:', apiErr);
+        console.log('[editRecordDialog] Step 1: Finding record');
+        let record = historyRecordsList.find(r => r.id === id);
+        console.log('[editRecordDialog] Step 2: Record found:', !!record);
+        if (!record) {
+            if (id.startsWith('offline_')) {
+                const offlineRecords = JSON.parse(safeStorage.getItem('ot_offline_records') || '[]');
+                record = offlineRecords.find(r => r.id === id);
+            } else {
+                const month = document.getElementById('filter-month') ? document.getElementById('filter-month').value : getCurrentMonth();
+                const cached = JSON.parse(safeStorage.getItem(`ot_cached_records_${currentUser.id}_${month}`) || '[]');
+                record = cached.find(r => r.id === id);
+                
+                if (!record && API) {
+                    try {
+                        const data = await api(`/api/records?userId=${currentUser.id}&month=${month}`);
+                        record = data.records.find(r => r.id === id);
+                    } catch (apiErr) {
+                        console.error('[editRecordDialog] API fallback fetch error:', apiErr);
+                    }
                 }
             }
         }
+        console.log('[editRecordDialog] Step 3: Record after fallback:', !!record);
 
         if (!record) return showToast('Không tìm thấy bản ghi', 'error');
 
+        console.log('[editRecordDialog] Step 4: Getting elements');
         const elDate = document.getElementById('edit-ot-date');
         const elLunch = document.getElementById('edit-ot-lunch');
         const elStart = document.getElementById('edit-ot-start');
@@ -1723,20 +1803,28 @@ async function editRecordDialog(id) {
         const elBackfillHours = document.getElementById('edit-ot-backfill-hours');
         const elNote = document.getElementById('edit-ot-note');
         const elOverlay = document.getElementById('edit-overlay');
+        console.log('[editRecordDialog] Step 5: Got elements:', { elDate: !!elDate, elLunch: !!elLunch, elStart: !!elStart, elEnd: !!elEnd, elOverlay: !!elOverlay });
 
         if (!elDate || !elLunch || !elStart || !elEnd || !elNote || !elOverlay) {
             console.error('DOM Elements for editing are missing!', { elDate, elLunch, elStart, elEnd, elNote, elOverlay });
             return showToast('Lỗi giao diện: Thiếu các thành phần giao diện sửa tăng ca.', 'error');
         }
 
+        console.log('[editRecordDialog] Step 6: Setting element values');
         elDate.value = record.date;
+        console.log('[editRecordDialog] Step 7: Date set');
         elDate.max = new Date().toISOString().split('T')[0];
+        console.log('[editRecordDialog] Step 8: Date max set');
         elLunch.checked = record.hasLunchOT;
+        console.log('[editRecordDialog] Step 9: Lunch set');
         elStart.value = record.otStart || '16:30';
+        console.log('[editRecordDialog] Step 10: Start set');
         elEnd.value = record.otEnd || '16:30';
+        console.log('[editRecordDialog] Step 11: End set');
         
         const isBackfill = record.isBackfill || (record.note && (record.note.includes('[BÙ THÁNG TRƯỚC]') || record.note.includes('[TĂNG THÁNG NÀY]')));
         if (elBackfill) elBackfill.checked = isBackfill;
+        console.log('[editRecordDialog] Step 12: Backfill checkbox set');
 
         if (isBackfill) {
             if (elNormalInputs) elNormalInputs.style.display = 'none';
@@ -1747,8 +1835,10 @@ async function editRecordDialog(id) {
             if (elBackfillGroup) elBackfillGroup.style.display = 'none';
             if (elBackfillHours) elBackfillHours.value = '';
         }
+        console.log('[editRecordDialog] Step 13: Backfill layout set');
 
         elNote.value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
+        console.log('[editRecordDialog] Step 14: Note set');
 
         // Auto sync edit ot end when edit ot start changes
         if (!elStart.dataset.listenerBound) {
@@ -1765,8 +1855,11 @@ async function editRecordDialog(id) {
                 }
             });
         }
+        console.log('[editRecordDialog] Step 15: Listener set');
 
+        console.log('[editRecordDialog] Adding active class to overlay:', elOverlay);
         elOverlay.classList.add('active');
+        console.log('[editRecordDialog] ClassList after adding active:', elOverlay.className);
     } catch (err) {
         console.error('[editRecordDialog] ERROR:', err);
         showToast('Lỗi tải dữ liệu: ' + err.message, 'error');
@@ -1883,8 +1976,6 @@ async function handleEditOTSubmit(e) {
 }
 
 // ==================== AUTO UPDATE FOR MOBILE APP ====================
-const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.5';
-let updateCheckInterval = null;
 
 function checkMobileUpdates(isManual) {
     const isMobileApp = window.location.protocol === 'file:' || window.AndroidBridge;
