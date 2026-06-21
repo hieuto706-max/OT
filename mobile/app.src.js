@@ -122,6 +122,51 @@ if (!isLocalWeb && savedIp && (savedIp.includes('otms.onrender.com') || savedIp.
     API = 'https://ot-manager-server-jbxd.onrender.com';
 }
 
+async function isPrivateMode() {
+    try {
+        const isChrome = navigator.userAgent.includes("Chrome") || navigator.userAgent.includes("CriOS");
+        if (isChrome && navigator.storage && navigator.storage.estimate) {
+            const estimate = await navigator.storage.estimate();
+            if (estimate.quota < 120000000) return true;
+        }
+        const isSafari = navigator.vendor && navigator.vendor.includes("Apple");
+        if (isSafari) {
+            if (window.openDatabase) {
+                try {
+                    window.openDatabase(null, null, null, null);
+                } catch (e) {
+                    return true;
+                }
+            }
+            if (navigator.storage && navigator.storage.estimate) {
+                const estimate = await navigator.storage.estimate();
+                if (estimate.quota === 0 || estimate.quota < 50000000) return true;
+            }
+        }
+        const isFirefox = navigator.userAgent.includes("Firefox");
+        if (isFirefox) {
+            if (!navigator.serviceWorker) return true;
+            if (navigator.storage && navigator.storage.persist) {
+                try {
+                    await navigator.storage.persist();
+                } catch (e) {
+                    return true;
+                }
+            }
+        }
+        try {
+            const testKey = "__private_test__";
+            localStorage.setItem(testKey, "1");
+            localStorage.removeItem(testKey);
+        } catch (e) {
+            return true;
+        }
+    } catch (err) {
+        console.warn("Private mode check error:", err);
+    }
+    return false;
+}
+
 const OT_LUNCH_HOURS = 1;
 const WORK_END_MIN = 16 * 60 + 30; // 16:30
 
@@ -439,6 +484,12 @@ async function handleEmployeeLogin(e) {
     const username = document.getElementById('login-user').value.trim();
     const errEl = document.getElementById('login-error-emp');
     errEl.textContent = '';
+
+    if (window.location.protocol !== 'file:' && await isPrivateMode()) {
+        errEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
+        return;
+    }
+
     const isBrowser = window.location.protocol !== 'file:';
 
     if (!API) {
@@ -556,6 +607,11 @@ async function handleAdminLogin(e) {
     const password = document.getElementById('login-password').value;
     const errEl = document.getElementById('login-error-admin');
     errEl.textContent = '';
+
+    if (window.location.protocol !== 'file:' && await isPrivateMode()) {
+        errEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
+        return;
+    }
 
     if (!API) {
         errEl.textContent = 'Không thể đăng nhập quản trị khi ngoại tuyến (Offline)!';

@@ -138,6 +138,51 @@ if (!isLocalWeb && savedIp && (savedIp.includes('otms.onrender.com') || savedIp.
     API = 'https://ot-manager-server-jbxd.onrender.com';
 }
 
+async function isPrivateMode() {
+    try {
+        const isChrome = navigator.userAgent.includes("Chrome") || navigator.userAgent.includes("CriOS");
+        if (isChrome && navigator.storage && navigator.storage.estimate) {
+            const estimate = await navigator.storage.estimate();
+            if (estimate.quota < 120000000) return true;
+        }
+        const isSafari = navigator.vendor && navigator.vendor.includes("Apple");
+        if (isSafari) {
+            if (window.openDatabase) {
+                try {
+                    window.openDatabase(null, null, null, null);
+                } catch (e) {
+                    return true;
+                }
+            }
+            if (navigator.storage && navigator.storage.estimate) {
+                const estimate = await navigator.storage.estimate();
+                if (estimate.quota === 0 || estimate.quota < 50000000) return true;
+            }
+        }
+        const isFirefox = navigator.userAgent.includes("Firefox");
+        if (isFirefox) {
+            if (!navigator.serviceWorker) return true;
+            if (navigator.storage && navigator.storage.persist) {
+                try {
+                    await navigator.storage.persist();
+                } catch (e) {
+                    return true;
+                }
+            }
+        }
+        try {
+            const testKey = "__private_test__";
+            localStorage.setItem(testKey, "1");
+            localStorage.removeItem(testKey);
+        } catch (e) {
+            return true;
+        }
+    } catch (err) {
+        console.warn("Private mode check error:", err);
+    }
+    return false;
+}
+
 function getRedirectPrefix() {
     const needsOtPrefix = window.location.hostname.includes('github.io');
     return needsOtPrefix ? '/OT' : '';
@@ -1242,13 +1287,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Employee Login
     if (formEmp) {
-        formEmp.addEventListener('submit', (e) => {
+        formEmp.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = document.getElementById('login-user').value.trim();
             const errEl = document.getElementById('login-error-emp');
             errEl.textContent = '';
 
             const submitBtn = document.getElementById('btn-login-emp');
+
+            if (await isPrivateMode()) {
+                errEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
+                return;
+            }
+
+            const username = document.getElementById('login-user').value.trim();
             submitBtn.disabled = true;
             submitBtn.textContent = 'Đang đăng nhập...';
 
@@ -1326,14 +1377,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Admin Login
     if (formAdmin) {
-        formAdmin.addEventListener('submit', (e) => {
+        formAdmin.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = document.getElementById('login-admin-user').value.trim();
-            const password = document.getElementById('login-password').value;
             const errEl = document.getElementById('login-error-admin');
             errEl.textContent = '';
 
             const submitBtn = document.getElementById('btn-login-admin');
+
+            if (await isPrivateMode()) {
+                errEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
+                return;
+            }
+
+            const username = document.getElementById('login-admin-user').value.trim();
+            const password = document.getElementById('login-password').value;
             submitBtn.disabled = true;
             submitBtn.textContent = 'Đang đăng nhập...';
 

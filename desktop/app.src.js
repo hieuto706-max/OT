@@ -98,6 +98,51 @@ function getCurrentMonth() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
+async function isPrivateMode() {
+    try {
+        const isChrome = navigator.userAgent.includes("Chrome") || navigator.userAgent.includes("CriOS");
+        if (isChrome && navigator.storage && navigator.storage.estimate) {
+            const estimate = await navigator.storage.estimate();
+            if (estimate.quota < 120000000) return true;
+        }
+        const isSafari = navigator.vendor && navigator.vendor.includes("Apple");
+        if (isSafari) {
+            if (window.openDatabase) {
+                try {
+                    window.openDatabase(null, null, null, null);
+                } catch (e) {
+                    return true;
+                }
+            }
+            if (navigator.storage && navigator.storage.estimate) {
+                const estimate = await navigator.storage.estimate();
+                if (estimate.quota === 0 || estimate.quota < 50000000) return true;
+            }
+        }
+        const isFirefox = navigator.userAgent.includes("Firefox");
+        if (isFirefox) {
+            if (!navigator.serviceWorker) return true;
+            if (navigator.storage && navigator.storage.persist) {
+                try {
+                    await navigator.storage.persist();
+                } catch (e) {
+                    return true;
+                }
+            }
+        }
+        try {
+            const testKey = "__private_test__";
+            localStorage.setItem(testKey, "1");
+            localStorage.removeItem(testKey);
+        } catch (e) {
+            return true;
+        }
+    } catch (err) {
+        console.warn("Private mode check error:", err);
+    }
+    return false;
+}
+
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
@@ -160,6 +205,11 @@ async function handleEmployeeLogin(e) {
     const errorEl = document.getElementById('login-error-emp');
     errorEl.textContent = '';
 
+    if (await isPrivateMode()) {
+        errorEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
+        return;
+    }
+
     try {
         const data = await api('/api/auth/login', 'POST', { username });
         const user = data.user;
@@ -194,6 +244,11 @@ async function handleAdminLogin(e) {
     const password = document.getElementById('login-password').value;
     const errorEl = document.getElementById('login-error-admin');
     errorEl.textContent = '';
+
+    if (await isPrivateMode()) {
+        errorEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
+        return;
+    }
 
     try {
         const data = await api('/api/auth/login', 'POST', { username, password });
