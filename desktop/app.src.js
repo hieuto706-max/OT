@@ -124,19 +124,88 @@ async function isPrivateMode() {
             return;
         }
 
-        if (navigator.serviceWorker && typeof navigator.serviceWorker.register === 'function') {
-            navigator.serviceWorker.register('sw.js').then((reg) => {
-                reg.unregister();
-                detectChromiumOrFallback();
-            }).catch((err) => {
-                if (err && err.name === 'SecurityError') {
-                    resolve(true);
-                } else {
-                    detectChromiumOrFallback();
-                }
-            });
+        // Engine-level detection for Safari
+        const ua = navigator.userAgent.toLowerCase();
+        let toFixedEngineID = 0;
+        let neg = parseInt("-1");
+        try {
+            neg.toFixed(neg);
+        } catch (e) {
+            toFixedEngineID = e.message ? e.message.length : 0;
+        }
+        const isSafari = (ua.includes('safari') && !ua.includes('chrome') && !ua.includes('android')) || 
+                         (toFixedEngineID === 44 || toFixedEngineID === 43);
+
+        if (isSafari) {
+            safariPrivateTest();
         } else {
-            detectChromiumOrFallback();
+            if (navigator.serviceWorker && typeof navigator.serviceWorker.register === 'function') {
+                navigator.serviceWorker.register('sw.js').then((reg) => {
+                    reg.unregister();
+                    detectChromiumOrFallback();
+                }).catch((err) => {
+                    if (err && err.name === 'SecurityError') {
+                        resolve(true);
+                    } else {
+                        detectChromiumOrFallback();
+                    }
+                });
+            } else {
+                detectChromiumOrFallback();
+            }
+        }
+
+        async function safariPrivateTest() {
+            if (navigator.storage && typeof navigator.storage.getDirectory === 'function') {
+                try {
+                    await navigator.storage.getDirectory();
+                    resolve(false);
+                } catch (e) {
+                    const message = (e instanceof Error && typeof e.message === 'string') ? e.message : String(e);
+                    if (message.includes('unknown transient reason')) {
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
+                }
+            } else if (navigator.maxTouchPoints !== undefined) {
+                // Safari 13-18 IndexedDB Blob test
+                const tmp = String(Math.random());
+                try {
+                    const dbReq = indexedDB.open(tmp, 1);
+                    dbReq.onupgradeneeded = (ev) => {
+                        const db = ev.target.result;
+                        try {
+                            db.createObjectStore('t', { autoIncrement: true }).put(new Blob());
+                            resolve(false);
+                        } catch (err) {
+                            const message = (err instanceof Error && typeof err.message === 'string') ? err.message : String(err);
+                            if (message.includes('are not yet supported')) {
+                                resolve(true);
+                            } else {
+                                resolve(false);
+                            }
+                        } finally {
+                            db.close();
+                            indexedDB.deleteDatabase(tmp);
+                        }
+                    };
+                    dbReq.onerror = () => resolve(false);
+                } catch (err) {
+                    resolve(false);
+                }
+            } else {
+                if (window.openDatabase) {
+                    try {
+                        window.openDatabase(null, null, null, null);
+                        resolve(false);
+                    } catch (e) {
+                        resolve(true);
+                    }
+                } else {
+                    resolve(false);
+                }
+            }
         }
 
         function detectChromiumOrFallback() {
@@ -160,7 +229,7 @@ async function isPrivateMode() {
                     setTimeout(() => {
                         w.terminate();
                         fallbackQuota();
-                    }, 2000); // 2 seconds timeout for slower mobile worker cold starts
+                    }, 2000);
                 } catch (err) {
                     fallbackQuota();
                 }
@@ -170,30 +239,15 @@ async function isPrivateMode() {
         }
 
         function fallbackQuota() {
-            const ua = navigator.userAgent.toLowerCase();
-            const isSafari = ua.includes('safari') && !ua.includes('chrome') && !ua.includes('android');
-            if (isSafari) {
-                if (window.openDatabase) {
-                    try {
-                        window.openDatabase(null, null, null, null);
-                        resolve(false);
-                    } catch (e) {
-                        resolve(true);
-                    }
-                } else {
-                    resolve(false);
-                }
+            const isMobile = /android|iphone|ipad|ipod/i.test(ua);
+            if (isMobile) {
+                resolve(false);
+            } else if (navigator.storage && navigator.storage.estimate) {
+                navigator.storage.estimate().then((est) => {
+                    resolve(est.quota < 120000000);
+                }).catch(() => resolve(false));
             } else {
-                const isMobile = /android|iphone|ipad|ipod/i.test(ua);
-                if (isMobile) {
-                    resolve(false); // Mobile quota is highly dynamic and unreliable. Avoid blocking.
-                } else if (navigator.storage && navigator.storage.estimate) {
-                    navigator.storage.estimate().then((est) => {
-                        resolve(est.quota < 120000000);
-                    }).catch(() => resolve(false));
-                } else {
-                    resolve(false);
-                }
+                resolve(false);
             }
         }
     });
