@@ -123,48 +123,52 @@ if (!isLocalWeb && savedIp && (savedIp.includes('otms.onrender.com') || savedIp.
 }
 
 async function isPrivateMode() {
-    try {
-        const isChrome = navigator.userAgent.includes("Chrome") || navigator.userAgent.includes("CriOS");
-        if (isChrome && navigator.storage && navigator.storage.estimate) {
-            const estimate = await navigator.storage.estimate();
-            if (estimate.quota < 120000000) return true;
-        }
-        const isSafari = navigator.vendor && navigator.vendor.includes("Apple");
-        if (isSafari) {
-            if (window.openDatabase) {
-                try {
-                    window.openDatabase(null, null, null, null);
-                } catch (e) {
-                    return true;
-                }
-            }
-            if (navigator.storage && navigator.storage.estimate) {
-                const estimate = await navigator.storage.estimate();
-                if (estimate.quota === 0 || estimate.quota < 50000000) return true;
-            }
-        }
-        const isFirefox = navigator.userAgent.includes("Firefox");
-        if (isFirefox) {
-            if (!navigator.serviceWorker) return true;
-            if (navigator.storage && navigator.storage.persist) {
-                try {
-                    await navigator.storage.persist();
-                } catch (e) {
-                    return true;
-                }
-            }
-        }
+    return new Promise((resolve) => {
         try {
             const testKey = "__private_test__";
             localStorage.setItem(testKey, "1");
             localStorage.removeItem(testKey);
         } catch (e) {
-            return true;
+            resolve(true);
+            return;
         }
-    } catch (err) {
-        console.warn("Private mode check error:", err);
-    }
-    return false;
+
+        if (navigator.serviceWorker && typeof navigator.serviceWorker.register === 'function') {
+            navigator.serviceWorker.register('nonexistent-sw-test.js').then((reg) => {
+                reg.unregister();
+                resolve(false);
+            }).catch((err) => {
+                if (err && err.name === 'SecurityError') {
+                    resolve(true);
+                } else {
+                    resolve(false);
+                }
+            });
+        } else {
+            const ua = navigator.userAgent.toLowerCase();
+            const isSafari = ua.includes('safari') && !ua.includes('chrome') && !ua.includes('android');
+            if (isSafari) {
+                if (window.openDatabase) {
+                    try {
+                        window.openDatabase(null, null, null, null);
+                        resolve(false);
+                    } catch (e) {
+                        resolve(true);
+                    }
+                } else {
+                    resolve(false);
+                }
+            } else {
+                if (navigator.storage && navigator.storage.estimate) {
+                    navigator.storage.estimate().then((est) => {
+                        resolve(est.quota < 120000000);
+                    }).catch(() => resolve(false));
+                } else {
+                    resolve(false);
+                }
+            }
+        }
+    });
 }
 
 const OT_LUNCH_HOURS = 1;
