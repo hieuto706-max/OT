@@ -561,13 +561,7 @@ function getGreeting() {
 }
 
 function handleUnauthenticated() {
-    if (window.location.protocol !== 'file:') {
-        const needsOtPrefix = window.location.hostname.includes('github.io');
-        const homepageUrl = needsOtPrefix ? '/OT/' : '/';
-        window.location.replace(homepageUrl);
-    } else {
-        showScreen('screen-login');
-    }
+    showScreen('screen-login');
 }
 
 function logout() {
