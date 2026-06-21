@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
+        <script>
+                if (!window.location.search.includes("cleared")) {
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k))));
+                        navigator.serviceWorker.getRegistrations().then(rs => {
+                                for (let r of rs) {
+                                        r.unregister();
+                                }
+                        });
+                        window.location.href = window.location.pathname + "?cleared=1";
+                }
+                        </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>OT Manager - Hệ thống quản lý tăng ca</title>
@@ -13,7 +26,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link id="main-theme-style" rel="stylesheet" href="style.css?v=1.3.5">
+    <link id="main-theme-style" rel="stylesheet" href="style.css?v=1.3.6">
 </head>
 <body>
     <!-- ==================== BACKGROUND GLOWING ORBS ==================== -->
@@ -425,14 +438,14 @@
         };
     </script>
     <script>
-        window.PACKAGED_VERSION = '1.3.5';
+        window.PACKAGED_VERSION = '1.3.6';
     </script>
     <script>
         (function() {
             // Hot-update check
             if (window.location.protocol !== 'file:') {
                 const script = document.createElement('script');
-                script.src = 'app.js?v=1.3.5';
+                script.src = 'app.js?v=1.3.6';
                 document.body.appendChild(script);
                 return;
             }
@@ -634,7 +647,7 @@
 
             function loadLocalScript() {
                 const script = document.createElement('script');
-                script.src = 'app.js?v=1.3.5';
+                script.src = 'app.js?v=1.3.6';
                 document.body.appendChild(script);
             }
         })();

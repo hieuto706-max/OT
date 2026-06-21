@@ -4,19 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>OT Manager - Hệ thống quản lý tăng ca</title>
-    <meta name="description" content="Ghi nhận tăng ca - OT Manager">
-    <meta name="theme-color" content="#07070c">
+    <meta name="description" content="Ghi nhận tăng ca nội bộ - OT Manager">
+    <meta name="theme-color" content="#020806">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="OT Manager">
     <link rel="manifest" href="mobile/manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="landing.css?v=1.3.5">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="landing.css?v=1.3.6.0">
 </head>
 <body class="landing-page">
     <canvas id="canvas-bg"></canvas>
+    <canvas id="canvas-3d-model"></canvas>
+    
     <!-- ==================== BACKGROUND GLOWING ORBS ==================== -->
     <div class="bg-glow-orbs">
         <div class="orb orb-1"></div>
@@ -24,11 +26,12 @@
         <div class="orb orb-3"></div>
     </div>
 
-    <!-- ==================== BACKGROUND TECH GRID & FLOATING GRAPHICS ==================== -->
+    <!-- ==================== BACKGROUND TECH GRID ==================== -->
     <div class="landing-bg-decorations">
         <div class="tech-grid"></div>
-        <div class="floating-bg-mockup mockup-left"></div>
-        <div class="floating-bg-mockup mockup-right"></div>
+        <div class="tech-lines"></div>
+        <div class="vr-scanline-overlay"></div>
+        <div class="vr-grid-floor"></div>
     </div>
 
     <!-- ==================== SPLASH SCREEN ==================== -->
@@ -36,26 +39,28 @@
         <div class="splash-content">
             <div class="splash-icon">
                 <svg viewBox="0 0 64 64" fill="none">
-                    <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#gm1)"/>
-                    <path d="M32 18v14l9 5" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#splash-grad)"/>
+                    <path d="M32 18v14l9 5" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
                     <defs>
-                        <linearGradient id="gm1" x1="4" y1="4" x2="60" y2="60">
-                            <stop stop-color="#10b981"/>
-                            <stop offset="1" stop-color="#059669"/>
+                        <linearGradient id="splash-grad" x1="4" y1="4" x2="60" y2="60">
+                            <stop stop-color="#0dd98b"/>
+                            <stop offset="1" stop-color="#056340"/>
                         </linearGradient>
                     </defs>
                 </svg>
             </div>
             <h1>OT Manager</h1>
-            <p>Đang tải ứng dụng...</p>
+            <p>Hệ thống ghi nhận tăng ca nội bộ</p>
             <div class="splash-loader">
                 <div class="loader-bar"></div>
             </div>
         </div>
     </div>
 
-    <!-- ==================== LOGIN SCREEN & LANDING PAGE ==================== -->
+    <!-- ==================== MAIN WORKSPACE ==================== -->
     <div id="screen-login" class="screen active">
+        
+        <!-- HEADER -->
         <header class="landing-header">
             <div class="landing-logo">
                 <svg viewBox="0 0 48 48" fill="none" class="logo-svg">
@@ -63,20 +68,18 @@
                     <path d="M24 14v10l7 4" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
                     <defs>
                         <linearGradient id="gm2" x1="4" y1="4" x2="44" y2="44">
-                            <stop stop-color="#10b981"/>
-                            <stop offset="1" stop-color="#059669"/>
+                            <stop stop-color="#0dd98b"/>
+                            <stop offset="1" stop-color="#058053"/>
                         </linearGradient>
                     </defs>
                 </svg>
                 <span class="logo-text">OT Manager</span>
-                <span class="web-version-badge" style="font-size: 0.7rem; background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 2px 8px; border-radius: 10px; font-weight: 700; margin-left: 8px;">v1.3.5</span>
+                <span class="web-version-badge">v1.3.5</span>
             </div>
             <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle navigation">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="24" height="24">
-                    <line x1="3" y1="12" x2="21" y2="12"></line>
-                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                    <line x1="3" y1="18" x2="21" y2="18"></line>
-                </svg>
+                <div class="hamburger-bar"></div>
+                <div class="hamburger-bar"></div>
+                <div class="hamburger-bar"></div>
             </button>
             <div class="landing-nav">
                 <a href="javascript:void(0)" class="nav-link active" data-tab="home">Trang chủ</a>
@@ -87,129 +90,265 @@
             </div>
         </header>
 
+        <!-- CONTAINER FOR TAB CONTENTS -->
         <div class="landing-container">
-            <!-- TAB 1: Trang chủ -->
+            
+            <!-- TAB 1: TRANG CHỦ -->
             <div id="ltab-home" class="landing-tab-content active">
-                <section class="landing-section">
+                <section class="landing-section hero-section-wrapper">
                     <div class="app-review-container">
                         <div class="app-review-text">
-                            <span class="badge-new">🌟 GIỚI THIỆU PHIÊN BẢN MỚI</span>
-                            <h2>Giải pháp quản lý tăng ca thông minh thế hệ mới</h2>
-                            <p>OT Manager mang đến hệ thống đột phá giúp ghi nhận, phê duyệt và thống kê giờ làm việc tăng ca (Overtime) một cách chính xác, minh bạch và tức thời ngay trên điện thoại và máy tính.</p>
-                            <ul class="review-bullets">
-                                <li>
-                                    <span class="bullet-icon">🚀</span>
-                                    <div>
-                                        <strong>Giao diện trực quan & Hiện đại:</strong>
-                                        <p>Thiết kế tối giản, hỗ trợ Dark Mode cao cấp và hiệu ứng chuyển động mượt mà.</p>
-                                    </div>
-                                </li>
-                                <li>
-                                    <span class="bullet-icon">📱</span>
-                                    <div>
-                                        <strong>Đa nền tảng, truy cập mọi nơi:</strong>
-                                        <p>Ứng dụng di động cài đặt nhanh, app máy tính cho quản lý và phiên bản web tiện lợi.</p>
-                                    </div>
-                                </li>
-                                <li>
-                                    <span class="bullet-icon">📊</span>
-                                    <div>
-                                        <strong>Báo cáo & Xuất dữ liệu Excel:</strong>
-                                        <p>Lọc giờ tăng ca theo tháng, xuất file làm lương chính xác chỉ trong vài giây.</p>
-                                    </div>
-                                </li>
-                            </ul>
+                            <span class="badge-new">⚡ HỆ THỐNG GHI NHẬN NỘI BỘ</span>
+                            <h2>Ghi nhận & thống kê giờ tăng ca chính xác</h2>
+                            <p>OT Manager cung cấp giải pháp ghi nhận, lưu trữ và kết xuất dữ liệu tăng ca (Overtime) minh bạch và tức thời cho nhân viên và quản lý.</p>
+                            
+                            <div class="hero-cta-buttons">
+                                <button class="btn btn-primary" onclick="document.querySelector('.landing-nav .nav-link[data-tab=\'login\']').click()">Đăng nhập ngay</button>
+                                <button class="btn btn-ghost" onclick="document.querySelector('.landing-nav .nav-link[data-tab=\'download\']').click()">Tải ứng dụng</button>
+                            </div>
+
+                            <div class="hero-mini-stats">
+                                <div class="mini-stat-item">
+                                    <span class="mini-stat-num">Đồng bộ</span>
+                                    <span class="mini-stat-label">Thời gian thực</span>
+                                </div>
+                                <div class="mini-stat-item">
+                                    <span class="mini-stat-num">100%</span>
+                                    <span class="mini-stat-label">Chính xác</span>
+                                </div>
+                                <div class="mini-stat-item">
+                                    <span class="mini-stat-num">Offline</span>
+                                    <span class="mini-stat-label">Tự lưu trữ</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="app-review-image" id="app-review-3d">
+                        <div class="app-review-image tilt-element" id="app-review-3d">
                             <div class="glow-5d-canvas"></div>
-                            <img src="resources/ot_manager_app_review.png" alt="OT Manager App Mockup" class="review-mockup">
-                            <div class="floating-badge badge-1">✅ Đã Duyệt +3h</div>
+                            <div class="hud-ring-1"></div>
+                            <div class="hud-ring-2"></div>
+                            <div class="device-mockup-wrapper tilt-card vr-corners">
+                                <img src="resources/ot_manager_app_review.png?v=1.3.5-showcase" alt="OT Manager App Mockup" class="review-mockup">
+                            </div>
+                            <div class="floating-badge badge-1">✅ Đã Duyệt +3.5h</div>
                             <div class="floating-badge badge-2">📊 Báo cáo Excel</div>
-                            <div class="floating-badge badge-3">☁️ Cloud Sync</div>
+                            <div class="floating-badge badge-3">☁️ Tự động đồng bộ</div>
                         </div>
                     </div>
                 </section>
 
-                <section class="landing-section" style="border-top: 1px solid var(--border); padding-top: 40px; margin-top: 20px;">
-                    <h2 class="section-title" style="text-align: center; margin-bottom: 30px;">✨ Các tính năng nổi bật</h2>
+                <section class="landing-section features-section-container">
+                    <h2 class="section-title text-center">Các tính năng hệ thống</h2>
                     <div class="features-grid-large">
-                        <div class="feat-card-large">
-                            <span class="feat-icon-large">⚡</span>
+                        <div class="feat-card-large vr-corners">
+                            <div class="feat-icon-large">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" stroke-opacity="0.3"/>
+                                    <path d="M12 6v6l4 2" stroke-linecap="round"/>
+                                    <path d="M12 2v2M12 20v2M2 12h2M20 12h2" stroke-linecap="round" stroke-opacity="0.5"/>
+                                </svg>
+                            </div>
                             <h3>Ghi nhận tăng ca nhanh chóng</h3>
-                            <p>Chỉ với 1 chạm để chọn ngày, tích chọn tăng ca trưa hoặc tối để lưu giờ làm việc. Hệ thống tự động tính toán số giờ làm chính xác theo quy định.</p>
+                            <p>Tích chọn tăng ca trưa hoặc tối dễ dàng. Hệ thống tự động tính toán tổng số giờ làm việc theo quy định nội bộ của công ty.</p>
                         </div>
-                        <div class="feat-card-large">
-                            <span class="feat-icon-large">📶</span>
+                        <div class="feat-card-large vr-corners">
+                            <div class="feat-icon-large">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 1l22 22" stroke-opacity="0.6"/>
+                                    <path d="M16.72 11.06A10.94 10.94 0 0 0 12 10a10.94 10.94 0 0 0-4.72 1.06M5 12.5a12.5 12.5 0 0 0 14 0" stroke-linecap="round" stroke-opacity="0.4"/>
+                                    <path d="M8.5 16.5a5 5 0 0 1 7 0" stroke-linecap="round"/>
+                                    <circle cx="12" cy="20" r="1" fill="currentColor"/>
+                                </svg>
+                            </div>
                             <h3>Hoạt động ngoại tuyến (Offline)</h3>
-                            <p>Tự động lưu trữ dữ liệu tăng ca ngoại tuyến trên thiết bị khi mất kết nối mạng. Đồng bộ tự động ngay lập tức khi mạng hoạt động trở lại.</p>
+                            <p>Tự động lưu trữ dữ liệu OT vào bộ nhớ cục bộ khi thiết bị mất kết nối mạng và đồng bộ tự động lại ngay khi có kết nối trở lại.</p>
                         </div>
-                        <div class="feat-card-large">
-                            <span class="feat-icon-large">📊</span>
-                            <h3>Thống kê trực quan & Xuất báo cáo</h3>
-                            <p>Giao diện quản lý trực quan cho phép xem tổng số ngày, giờ tăng ca theo tháng. Quản trị viên dễ dàng lọc và xuất dữ liệu Excel để làm lương.</p>
+                        <div class="feat-card-large vr-corners">
+                            <div class="feat-icon-large">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3z" stroke-opacity="0.3"/>
+                                    <path d="M9 17v-4M12 17V9M15 17v-6" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <h3>Thống kê & Xuất báo cáo</h3>
+                            <p>Cho phép theo dõi trực quan tổng số ngày và giờ OT theo từng tháng. Hỗ trợ xuất dữ liệu ra file Excel phục vụ công tác đối chiếu công.</p>
                         </div>
-                        <div class="feat-card-large">
-                            <span class="feat-icon-large">☁️</span>
-                            <h3>Đồng bộ hóa đám mây (Cloud)</h3>
-                            <p>Dữ liệu được lưu trữ an toàn trên đám mây, tự động đồng bộ thời gian thực giữa các thiết bị di động của nhân viên và máy tính của quản lý.</p>
+                        <div class="feat-card-large vr-corners">
+                            <div class="feat-icon-large">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17.5 19A5.5 5.5 0 0 0 18 8h-1.26A8 8 0 1 0 3 15.25" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.3"/>
+                                    <path d="M12 12v6M9 15l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <h3>Đồng bộ hóa tức thời</h3>
+                            <p>Dữ liệu được cập nhật thời gian thực, đảm bảo sự đồng bộ giữa thiết bị cá nhân của nhân viên và bảng điều khiển quản lý của admin.</p>
                         </div>
-                        <div class="feat-card-large">
-                            <span class="feat-icon-large">🔒</span>
+                        <div class="feat-card-large vr-corners">
+                            <div class="feat-icon-large">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" stroke-opacity="0.3"/>
+                                    <circle cx="12" cy="18" r="1" stroke-opacity="0.5"/>
+                                    <rect x="9" y="8" width="6" height="5" rx="1"/>
+                                    <path d="M10 8V6.5a2 2 0 1 1 4 0V8" stroke-linecap="round"/>
+                                </svg>
+                            </div>
                             <h3>Bảo mật thiết bị (Device Bound)</h3>
-                            <p>Tài khoản nhân viên được liên kết duy nhất với thiết bị sử dụng ban đầu. Tránh việc đăng nhập hộ và đảm bảo tính minh bạch.</p>
+                            <p>Tài khoản nhân viên liên kết duy nhất với thiết bị trình duyệt và ứng dụng khởi tạo ban đầu, nâng cao tính xác thực và hạn chế đăng nhập hộ.</p>
                         </div>
-                        <div class="feat-card-large">
-                            <span class="feat-icon-large">⚙️</span>
-                            <h3>Cấu hình linh hoạt</h3>
-                            <p>Hỗ trợ tự động dò tìm IP Server nội bộ và cấu hình IP máy chủ từ xa dễ dàng, đảm bảo hệ thống luôn sẵn sàng kết nối.</p>
+                        <div class="feat-card-large vr-corners">
+                            <div class="feat-icon-large">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="3" stroke-opacity="0.4"/>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <h3>Cấu hình mạng linh hoạt</h3>
+                            <p>Tự động phát hiện mạng kết nối cục bộ và hỗ trợ cấu hình máy chủ từ xa, đảm bảo ứng dụng luôn giữ kết nối ổn định.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ACTUAL APP GALLERY -->
+                <section class="landing-section gallery-section-container" style="border-top: 1px solid var(--border); padding-top: 50px; margin-top: 30px;">
+                    <h2 class="section-title text-center">📸 Hình ảnh giao diện thực tế</h2>
+                    <div class="gallery-wrapper">
+                        <!-- Navigation for gallery roles -->
+                        <div class="gallery-toggle-tabs">
+                            <button type="button" class="gallery-tab active" data-gallery="employee">Giao diện Nhân viên</button>
+                            <button type="button" class="gallery-tab" data-gallery="admin">Giao diện Quản lý (Desktop)</button>
+                        </div>
+                        
+                        <!-- Employee Gallery -->
+                        <div id="gallery-content-employee" class="gallery-content active">
+                            <div class="gallery-grid">
+                                <div class="gallery-card">
+                                    <div class="gallery-img-wrapper">
+                                        <img src="resources/mobile_login.png?v=1.3.5-mockup" alt="Cổng đăng nhập di động">
+                                    </div>
+                                    <div class="gallery-info">
+                                        <h4>Cổng đăng nhập di động</h4>
+                                        <p>Giao diện đăng nhập đơn giản bằng mã nhân viên dành cho thiết bị di động.</p>
+                                    </div>
+                                </div>
+                                <div class="gallery-card">
+                                    <div class="gallery-img-wrapper">
+                                        <img src="resources/mobile_records.png?v=1.3.5-mockup" alt="Giao diện báo cáo OT">
+                                    </div>
+                                    <div class="gallery-info">
+                                        <h4>Giao diện báo cáo OT trưa & tối</h4>
+                                        <p>Cho phép nhân viên nhanh chóng ghi nhận làm thêm trưa và đăng ký giờ OT tối.</p>
+                                    </div>
+                                </div>
+                                <div class="gallery-card">
+                                    <div class="gallery-img-wrapper">
+                                        <img src="resources/ot_manager_mobile_review.png?v=1.3.5-mockup" alt="Bảng chấm công di động">
+                                    </div>
+                                    <div class="gallery-info">
+                                        <h4>Trang chấm công di động</h4>
+                                        <p>Lịch hiển thị chi tiết các ngày OT trưa, OT chiều và ghi chú chi tiết công việc.</p>
+                                    </div>
+                                </div>
+                                <div class="gallery-card">
+                                    <div class="gallery-img-wrapper">
+                                        <img src="mobile/icon-192.png" alt="Biểu tượng App di động" style="object-fit: contain; padding: 30px;">
+                                    </div>
+                                    <div class="gallery-info">
+                                        <h4>Biểu tượng ứng dụng di động</h4>
+                                        <p>Logo nhận diện chính thức của ứng dụng di động cài đặt nhanh PWA / APK.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Admin Gallery -->
+                        <div id="gallery-content-admin" class="gallery-content">
+                            <div class="gallery-grid">
+                                <div class="gallery-card">
+                                    <div class="gallery-img-wrapper">
+                                        <img src="resources/desktop_login.png" alt="Cổng đăng nhập Admin">
+                                    </div>
+                                    <div class="gallery-info">
+                                        <h4>Cổng đăng nhập Quản trị</h4>
+                                        <p>Xác thực bảo mật cao dành cho Admin/Sub-Admin trên nền tảng máy tính.</p>
+                                    </div>
+                                </div>
+                                <div class="gallery-card">
+                                    <div class="gallery-img-wrapper">
+                                        <img src="resources/desktop_records.png" alt="Bảng chấm OT tập trung">
+                                    </div>
+                                    <div class="gallery-info">
+                                        <h4>Bảng điều khiển chấm OT</h4>
+                                        <p>Theo dõi thời gian thực lịch trình đăng ký làm thêm giờ, lọc theo tháng/tên và ghi chú.</p>
+                                    </div>
+                                </div>
+                                <div class="gallery-card">
+                                    <div class="gallery-img-wrapper">
+                                        <img src="resources/desktop_users.png" alt="Quản lý tài khoản">
+                                    </div>
+                                    <div class="gallery-info">
+                                        <h4>Quản lý tài khoản & Phân Team</h4>
+                                        <p>Thêm tài khoản nhân viên mới, cấu hình đội nhóm làm việc và quản lý kết nối thiết bị.</p>
+                                    </div>
+                                </div>
+                                <div class="gallery-card">
+                                    <div class="gallery-img-wrapper">
+                                        <img src="resources/desktop_reports.png" alt="Báo cáo & Kết xuất">
+                                    </div>
+                                    <div class="gallery-info">
+                                        <h4>Báo cáo & Kết xuất Excel</h4>
+                                        <p>Tổng hợp số ngày/giờ làm việc tăng ca của từng nhân viên để phục vụ xuất Excel chốt lương.</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
             </div>
 
-            <!-- TAB 2: Đăng nhập -->
+            <!-- TAB 2: ĐĂNG NHẬP -->
             <div id="ltab-login" class="landing-tab-content">
                 <div class="login-tab-container">
                     <div class="login-sidebar-info">
-                        <div class="sidebar-logo" style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
-                            <svg viewBox="0 0 48 48" fill="none" class="logo-svg" style="width: 44px; height: 44px; filter: drop-shadow(0 6px 18px var(--green-glow));">
+                        <div class="sidebar-logo">
+                            <svg viewBox="0 0 48 48" fill="none" class="logo-svg">
                                 <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#gm_sb)"/>
                                 <path d="M24 14v10l7 4" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
                                 <defs>
                                     <linearGradient id="gm_sb" x1="4" y1="4" x2="44" y2="44">
-                                        <stop stop-color="#10b981"/>
-                                        <stop offset="1" stop-color="#059669"/>
+                                        <stop stop-color="#0dd98b"/>
+                                        <stop offset="1" stop-color="#058053"/>
                                     </linearGradient>
                                 </defs>
                             </svg>
-                            <span class="logo-text" style="font-size: 26px; font-weight: 950; background: linear-gradient(135deg, var(--green-light), var(--green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.8px;">OT Manager</span>
+                            <span class="logo-text">OT Manager</span>
                         </div>
-                        <h2>Hệ thống quản lý tăng ca chuyên nghiệp</h2>
-                        <p>Giải pháp thông minh giúp ghi nhận giờ làm việc, phê duyệt tăng ca, tự động đồng bộ đám mây và xuất báo cáo Excel tính lương nhanh chóng.</p>
+                        <h2>Hệ thống Ghi nhận Tăng ca Nội bộ</h2>
+                        <p>Cổng xác thực nội bộ của ứng dụng quản lý tăng ca. Vui lòng nhập thông tin nhân viên hoặc tài khoản quản trị để truy cập trang làm việc.</p>
+                        
                         <div class="sidebar-stats">
                             <div class="stat-mini-card">
-                                <span class="stat-num">100%</span>
-                                <span class="stat-lbl">Chính xác</span>
+                                <span class="stat-num">Định danh</span>
+                                <span class="stat-lbl">Thiết bị cố định</span>
                             </div>
                             <div class="stat-mini-card">
-                                <span class="stat-num">Đám mây</span>
-                                <span class="stat-lbl">Đồng bộ tức thời</span>
+                                <span class="stat-num">Bảo mật</span>
+                                <span class="stat-lbl">Mã hóa đầu cuối</span>
                             </div>
                         </div>
                     </div>
+
                     <div class="login-main-card">
-                        <div class="login-page-card" style="margin: 0 auto; width: 100%;">
+                        <div class="login-page-card">
                             <div class="login-header">
-                                <h1>Hệ thống OT Manager</h1>
-                                <p>Vui lòng đăng nhập để tiếp tục</p>
+                                <h1>Xác thực tài khoản</h1>
+                                <p>Nhập thông tin truy cập hệ thống</p>
                             </div>
 
-                            <!-- Hộp thông tin khi đã đăng nhập -->
-                            <div id="login-welcome-box" style="display: none; text-align: center; padding: 10px 0;">
-                                <div style="font-size: 2.2rem; margin-bottom: 12px;">👋</div>
-                                <h3 id="welcome-user-title" style="color: var(--text-white); margin-bottom: 8px; font-weight: 800;">Chào mừng trở lại!</h3>
-                                <p id="welcome-user-desc" style="color: var(--text-sub); font-size: 0.9rem; margin-bottom: 24px; line-height: 1.5;"></p>
-                                <button type="button" id="btn-enter-app" class="btn btn-primary btn-full" style="margin-bottom: 12px;">
+                            <!-- Welcome box if already logged in -->
+                            <div id="login-welcome-box" style="display: none;">
+                                <div class="welcome-box-icon">👋</div>
+                                <h3 id="welcome-user-title">Chào mừng trở lại!</h3>
+                                <p id="welcome-user-desc"></p>
+                                <button type="button" id="btn-enter-app" class="btn btn-primary btn-full">
                                     Vào ứng dụng
                                 </button>
                                 <button type="button" id="btn-logout-portal" class="btn btn-ghost btn-full">
@@ -217,17 +356,21 @@
                                 </button>
                             </div>
 
-                            <div class="login-tabs">
-                                <button type="button" class="login-tab active" data-tab="employee" id="btn-tab-employee">Nhân viên</button>
-                                <button type="button" class="login-tab" data-tab="admin" id="btn-tab-admin">Quản trị viên</button>
+                            <!-- Tabs toggle -->
+                            <div class="login-tabs-container-wrapper">
+                                <div class="login-tabs">
+                                    <div class="login-tabs-slider"></div>
+                                    <button type="button" class="login-tab active" data-tab="employee" id="btn-tab-employee">Nhân viên</button>
+                                    <button type="button" class="login-tab" data-tab="admin" id="btn-tab-admin">Quản lý</button>
+                                </div>
                             </div>
 
-                            <!-- Form Đăng nhập Nhân viên -->
+                            <!-- Employee Form -->
                             <form id="form-login-employee" class="mobile-form login-form active">
                                 <div class="form-group">
                                     <label for="login-user">Tên đăng nhập / Mã nhân viên</label>
                                     <div class="input-wrapper">
-                                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                                             <circle cx="12" cy="7" r="4"/>
                                         </svg>
@@ -240,12 +383,12 @@
                                 <p id="login-error-emp" class="form-error"></p>
                             </form>
 
-                            <!-- Form Đăng nhập Quản lý -->
+                            <!-- Admin Form -->
                             <form id="form-login-admin" class="mobile-form login-form" style="display: none;">
                                 <div class="form-group">
                                     <label for="login-admin-user">Tên đăng nhập Quản lý</label>
                                     <div class="input-wrapper">
-                                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                                             <circle cx="12" cy="7" r="4"/>
                                         </svg>
@@ -255,7 +398,7 @@
                                 <div class="form-group">
                                     <label for="login-password">Mật khẩu</label>
                                     <div class="input-wrapper">
-                                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                                        <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                                             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                                         </svg>
@@ -269,245 +412,244 @@
                             </form>
 
                             <div class="login-footer">
-                                <div class="login-register-hint" style="text-align: center; color: var(--text-muted); font-size: 0.8rem; margin-top: 12px;">Chưa có tài khoản? Liên hệ quản lý</div>
-                                <div id="connection-status" style="display:none; margin-top:8px;font-size:0.8rem;"></div>
+                                <div class="login-register-hint">Chưa có tài khoản? Liên hệ quản lý trực tiếp</div>
+                                <div id="connection-status" style="display:none;"></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- TAB 3: Tải xuống -->
+            <!-- TAB 3: TẢI XUỐNG -->
             <div id="ltab-download" class="landing-tab-content">
                 <section class="landing-section">
-                    <h2 class="section-title" style="text-align: center;">📥 Tải ứng dụng</h2>
+                    <h2 class="section-title text-center">Tải ứng dụng</h2>
                     <div class="download-grid-large">
-                        <div class="download-card-large">
-                            <div>
+                        
+                        <!-- Card 1: Android -->
+                        <div class="download-card-large theme-android">
+                            <div class="download-card-content">
                                 <div class="card-large-header">
-                                    <span class="card-emoji-large">📱</span>
+                                    <div class="card-emoji-large">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                                            <path d="M12 18h.01" stroke-linecap="round"/>
+                                        </svg>
+                                    </div>
                                     <div>
-                                        <h3>Ứng dụng Nhân viên</h3>
+                                        <h3>App Nhân viên</h3>
                                         <span class="platform-badge-large">Android (.APK)</span>
                                     </div>
                                 </div>
-                                <p class="download-desc">Tải ứng dụng trực tiếp cho thiết bị Android để ghi nhận giờ tăng ca, xem lịch sử và nhận phản hồi từ quản lý mọi lúc mọi nơi.</p>
+                                <p class="download-desc">Tải ứng dụng trực tiếp cho thiết bị Android để ghi nhận giờ tăng ca nhanh chóng và nhận phê duyệt tức thời từ quản lý.</p>
                             </div>
-                            <div>
-                                <a id="apk-download-btn-landing" href="https://ot-manager-server-jbxd.onrender.com/OT-Manager-mobile.apk" class="btn btn-primary" style="width:100%; text-align: center;">Tải APK Android</a>
+                            <div class="download-card-actions">
+                                <a id="apk-download-btn-landing" href="https://ot-manager-server-jbxd.onrender.com/OT-Manager-mobile.apk" class="btn btn-primary btn-full">Tải APK Android</a>
                                 <div class="qr-box-large">
                                     <div class="qr-bg-large">
-                                        <img id="apk-qr-code-landing" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=https%3A%2F%2Fot-manager-server-jbxd.onrender.com%2FOT-Manager-mobile.apk" alt="QR Code" style="width:120px;height:120px;display:block;margin:0 auto;">
+                                        <div class="qr-scanner-line"></div>
+                                        <img id="apk-qr-code-landing" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=020806&data=https%3A%2F%2Fot-manager-server-jbxd.onrender.com%2FOT-Manager-mobile.apk" alt="QR Code">
                                     </div>
-                                    <span class="qr-hint">Quét mã QR để cài đặt nhanh</span>
+                                    <span class="qr-hint">Quét mã QR bằng điện thoại để tải nhanh</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="download-card-large">
-                            <div>
+                        <!-- Card 2: Windows Admin -->
+                        <div class="download-card-large theme-windows">
+                            <div class="download-card-content">
                                 <div class="card-large-header">
-                                    <span class="card-emoji-large">🖥️</span>
+                                    <div class="card-emoji-large">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2" stroke-opacity="0.3"/>
+                                            <line x1="8" y1="21" x2="16" y2="21"/>
+                                            <line x1="12" y1="17" x2="12" y2="21"/>
+                                        </svg>
+                                    </div>
                                     <div>
-                                        <h3>Ứng dụng Quản lý</h3>
+                                        <h3>App Quản lý</h3>
                                         <span class="platform-badge-large">Windows (.EXE)</span>
                                     </div>
                                 </div>
-                                <p class="download-desc">Ứng dụng chuyên dụng dành cho Quản trị viên và Quản lý để duyệt giờ làm, quản lý thông tin nhân viên, cài đặt quy định tăng ca và xuất báo cáo Excel.</p>
+                                <p class="download-desc">Ứng dụng chuyên dụng dành cho Quản trị viên và Quản lý để kiểm soát công việc, phê duyệt tăng ca và kết xuất tệp báo cáo Excel.</p>
                             </div>
-                            <div>
-                                <a id="desktop-download-btn-landing" href="https://github.com/hieuto706-max/OT/releases/download/v1.3.5/ot-manager-Setup-1.3.5.exe" target="_blank" class="btn btn-purple" style="width:100%; text-align: center;">Tải Windows EXE</a>
+                            <div class="download-card-actions">
+                                <a id="desktop-download-btn-landing" href="https://github.com/hieuto706-max/OT/releases/download/v1.3.5/ot-manager-Setup-1.3.5.exe" target="_blank" class="btn btn-purple btn-full">Tải Windows EXE</a>
                             </div>
                         </div>
 
-                        <div class="download-card-large">
-                            <div>
+                        <!-- Card 3: iOS Safari -->
+                        <div class="download-card-large theme-ios">
+                            <div class="download-card-content">
                                 <div class="card-large-header">
-                                    <span class="card-emoji-large">🍎</span>
+                                    <div class="card-emoji-large">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M12 20.357s-3.5-3.5-3.5-6.5a3.5 3.5 0 0 1 7 0c0 3-3.5 6.5-3.5 6.5z" stroke-opacity="0.3"/>
+                                            <path d="M12 2v8M9 5l3-3 3 3"/>
+                                        </svg>
+                                    </div>
                                     <div>
-                                        <h3>Ứng dụng Nhân viên</h3>
-                                        <span class="platform-badge-large" style="background: rgba(0, 122, 255, 0.15); color: #007AFF;">iOS (iPhone)</span>
+                                        <h3>App Nhân viên</h3>
+                                        <span class="platform-badge-large text-ios">iOS (iPhone)</span>
                                     </div>
                                 </div>
-                                <p class="download-desc">Dành cho nhân viên sử dụng iPhone. Bạn có thể truy cập trực tiếp qua trình duyệt Safari tại địa chỉ bên dưới hoặc chờ bản cập nhật từ TestFlight.</p>
+                                <p class="download-desc">Dành cho nhân viên sử dụng iPhone. Bạn có thể truy cập trực tiếp qua trình duyệt Safari như Web App để ghi nhận OT tức thời.</p>
                             </div>
-                            <div>
-                                <a href="https://otmanager.id.vn/mobile/" target="_blank" class="btn btn-ghost" style="width:100%; text-align: center; border-color: rgba(0, 122, 255, 0.3); color: #007AFF;">
+                            <div class="download-card-actions">
+                                <a href="https://otmanager.id.vn/mobile/" target="_blank" class="btn btn-ghost btn-full btn-ios-border">
                                     Mở trên Safari (Web App)
                                 </a>
-                                <p style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-top: 8px;">Bản iOS native đang được phát triển</p>
+                                <p class="ios-development-hint">Bản cài đặt iOS Native đang được phát triển nội bộ</p>
                             </div>
                         </div>
                     </div>
                 </section>
             </div>
 
-            <!-- TAB 4: Thông tin phát hành -->
+            <!-- TAB 4: THÔNG TIN PHÁT HÀNH -->
             <div id="ltab-release" class="landing-tab-content">
                 <section class="landing-section">
-                    <h2 class="section-title" style="text-align: center;">🚀 Thông tin phát hành & Cập nhật</h2>
+                    <h2 class="section-title text-center">Nhật ký cập nhật hệ thống</h2>
                     <div class="changelog-timeline">
+                        
+                        <!-- Item 1: v1.3.5 -->
                         <div class="changelog-item">
-                            <span class="changelog-badge">v1.3.5</span>
-                            <span class="changelog-date">20/06/2026</span>
-                            <ul class="changelog-list">
-                                <li>Vô hiệu hóa Android Auto Backup để tránh khôi phục cache `localStorage` cũ khi cài lại APK.</li>
-                                <li>Tích hợp Cache Buster tự động dọn sạch cache cũ khi nâng cấp phiên bản đóng gói.</li>
-                                <li>Kéo dài timeout kiểm tra cập nhật (60s) để tránh lỗi timeout do server Render ngủ đông.</li>
-                                <li>Khắc phục triệt để lỗi cuộn ngược trang Lịch sử kích hoạt nhầm cơ chế kéo để làm mới (Pull-to-refresh).</li>
-                                <li>Hỗ trợ Web tự động phát hiện phiên bản mới và reload trang tự động sau 1.5 giây.</li>
-                            </ul>
+                            <div class="changelog-header-btn">
+                                <span class="changelog-badge">v1.3.5</span>
+                                <span class="changelog-date">20/06/2026</span>
+                                <span class="changelog-chevron">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="changelog-body-expand">
+                                <ul class="changelog-list">
+                                    <li>Vô hiệu hóa Android Auto Backup nhằm tránh khôi phục cache `localStorage` cũ khi cài lại ứng dụng APK.</li>
+                                    <li>Tích hợp Cache Buster tự động dọn sạch cache tài nguyên cũ khi nâng cấp phiên bản đóng gói.</li>
+                                    <li>Kéo dài thời gian timeout kiểm tra cập nhật để khắc phục các lỗi do máy chủ ngủ đông.</li>
+                                    <li>Khắc phục triệt để lỗi cuộn ngược trang Lịch sử gây kích hoạt nhầm cơ chế Pull-to-refresh trên trình duyệt di động.</li>
+                                    <li>Hỗ trợ phiên bản Web tự động phát hiện bản cập nhật mới và tải lại trang tự động sau 1.5 giây.</li>
+                                </ul>
+                            </div>
                         </div>
+
+                        <!-- Item 2: v1.3.4 -->
                         <div class="changelog-item">
-                            <span class="changelog-badge">v1.3.4</span>
-                            <span class="changelog-date">19/06/2026</span>
-                            <ul class="changelog-list">
-                                <li>Tích hợp popup hỏi quyền hệ thống tại runtime đối với ứng dụng Android (quyền định vị quét mạng nội bộ & quyền đọc ID thiết bị duy nhất).</li>
-                                <li>Tái thiết kế bộ ba nút Reset liên kết Mobile/Web và Duyệt hủy thành dạng viên thuốc bo tròn cao cấp kèm icon SVG sinh động.</li>
-                                <li>Tự động ẩn ô nhập mật khẩu khi chọn vai trò Nhân viên trong form quản lý tài khoản để giao diện gọn gàng.</li>
-                            </ul>
+                            <div class="changelog-header-btn">
+                                <span class="changelog-badge">v1.3.4</span>
+                                <span class="changelog-date">19/06/2026</span>
+                                <span class="changelog-chevron">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="changelog-body-expand">
+                                <ul class="changelog-list">
+                                    <li>Tích hợp popup hỏi quyền hệ thống tại runtime đối với ứng dụng Android (quyền quét mạng nội bộ & quyền đọc ID thiết bị duy nhất).</li>
+                                    <li>Tái thiết kế bộ ba nút Reset liên kết Mobile/Web và Duyệt hủy thành dạng viên thuốc bo tròn cao cấp kèm icon SVG sinh động.</li>
+                                    <li>Tự động ẩn ô nhập mật khẩu khi chọn vai trò Nhân viên trong form quản lý tài khoản để giao diện gọn gàng.</li>
+                                </ul>
+                            </div>
                         </div>
+
+                        <!-- Item 3: v1.3.3 -->
                         <div class="changelog-item">
-                            <span class="changelog-badge">v1.3.3</span>
-                            <span class="changelog-date">17/06/2026</span>
-                            <ul class="changelog-list">
-                                <li>Xử lý lỗi cổng kết nối bị chiếm dụng (EADDRINUSE) bằng thông báo thân thiện và tự động focus khi mở trùng bản sao.</li>
-                                <li>Sửa nhãn hiển thị phiên bản đồng bộ thành v1.3.3 trên toàn bộ ứng dụng.</li>
-                                <li>Bắt buộc nhập Ghi chú (chi tiết công việc) khi lưu hoặc chỉnh sửa tăng ca để tăng tính minh bạch.</li>
-                                <li>Sửa lỗi nút kiểm tra cập nhật trên Mobile và tự động đồng bộ link tải EXE/APK mới nhất từ API.</li>
-                                <li>Cải tiến giao diện cá nhân di động chỉ tập trung hiển thị Tổng OT tháng này.</li>
-                                <li>Khắc phục lỗi mất hình nền mockup trên Android và tối ưu hóa hiệu năng chuyển động quả cầu sáng nền cực kỳ mượt mà.</li>
-                            </ul>
+                            <div class="changelog-header-btn">
+                                <span class="changelog-badge">v1.3.3</span>
+                                <span class="changelog-date">17/06/2026</span>
+                                <span class="changelog-chevron">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="changelog-body-expand">
+                                <ul class="changelog-list">
+                                    <li>Xử lý lỗi cổng kết nối bị chiếm dụng (EADDRINUSE) bằng thông báo thân thiện và tự động focus khi mở trùng bản sao.</li>
+                                    <li>Sửa nhãn hiển thị phiên bản đồng bộ thành v1.3.3 trên toàn bộ ứng dụng.</li>
+                                    <li>Bắt buộc nhập Ghi chú (chi tiết công việc) khi lưu hoặc chỉnh sửa tăng ca để tăng tính minh bạch.</li>
+                                    <li>Sửa lỗi nút kiểm tra cập nhật trên Mobile và tự động đồng bộ link tải EXE/APK mới nhất từ API.</li>
+                                    <li>Cải tiến giao diện cá nhân di động chỉ tập trung hiển thị Tổng OT tháng này.</li>
+                                    <li>Khắc phục lỗi mất hình nền mockup trên Android và tối ưu hóa hiệu năng chuyển động quả cầu sáng nền cực kỳ mượt mà.</li>
+                                </ul>
+                            </div>
                         </div>
+
+                        <!-- Item 4: v1.3.2 -->
                         <div class="changelog-item">
-                            <span class="changelog-badge">v1.3.2</span>
-                            <span class="changelog-date">16/06/2026</span>
-                            <ul class="changelog-list">
-                                <li>Thiết kế lại bộ chọn giờ di động (Time Picker) dạng dải trượt ngang trượt mượt mà, hỗ trợ tự động căn giữa.</li>
-                                <li>Tối ưu hóa giao diện lịch sử OT trên thiết bị di động gọn gàng và đẹp mắt.</li>
-                                <li>Cập nhật đường link tải ứng dụng APK trực tiếp từ server để hỗ trợ download trên repository private.</li>
-                            </ul>
+                            <div class="changelog-header-btn">
+                                <span class="changelog-badge">v1.3.2</span>
+                                <span class="changelog-date">16/06/2026</span>
+                                <span class="changelog-chevron">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="changelog-body-expand">
+                                <ul class="changelog-list">
+                                    <li>Thiết kế lại bộ chọn giờ di động (Time Picker) dạng dải trượt ngang trượt mượt mà, hỗ trợ tự động căn giữa.</li>
+                                    <li>Tối ưu hóa giao diện lịch sử OT trên thiết bị di động gọn gàng và đẹp mắt.</li>
+                                    <li>Cập nhật đường link tải ứng dụng APK trực tiếp từ server để hỗ trợ download trên repository private.</li>
+                                </ul>
+                            </div>
                         </div>
+
+                        <!-- Item 5: v1.2.0 -->
                         <div class="changelog-item">
-                            <span class="changelog-badge">v1.2.0</span>
-                            <span class="changelog-date">15/06/2026</span>
-                            <ul class="changelog-list">
-                                <li>Tích hợp tính năng "Chốt công & Dọn dẹp" dữ liệu tháng cũ tự động & thủ công.</li>
-                                <li>Tự động sao lưu dữ liệu lên GitHub Gist trước khi dọn dẹp.</li>
-                                <li>Cron job tự động dọn dẹp ngày 15 hàng tháng, xóa dữ liệu từ 2 tháng trước.</li>
-                                <li>Nâng cấp giao diện Admin Desktop với nút Chốt công xác nhận 2 bước.</li>
-                            </ul>
-                        </div>
-                        <div class="changelog-item">
-                            <span class="changelog-badge">v1.1.9</span>
-                            <span class="changelog-date">15/06/2026</span>
-                            <ul class="changelog-list">
-                                <li>Thiết kế lại hộp chọn thời gian di động dạng 24h dễ sử dụng hơn.</li>
-                                <li>Tối ưu hóa hiển thị danh sách lịch sử OT nhỏ gọn và gọn gàng.</li>
-                                <li>Sửa lỗi tự động đăng nhập Admin và lỗi JSON 404 trên GitHub Pages.</li>
-                                <li>Cải tiến giao diện đăng nhập nhân viên trên màn hình Web cân đối hơn.</li>
-                            </ul>
-                        </div>
-                        <div class="changelog-item">
-                            <span class="changelog-badge">v1.1.8</span>
-                            <span class="changelog-date">15/06/2026</span>
-                            <ul class="changelog-list">
-                                <li>Sửa lỗi hiển thị cảnh báo trắng đè lên tiến trình tải cập nhật trên Desktop.</li>
-                                <li>Cấu hình tự động đồng bộ liên kết tải xuống EXE và APK trực tiếp theo phiên bản máy chủ.</li>
-                            </ul>
-                        </div>
-                        <div class="changelog-item">
-                            <span class="changelog-badge">v1.1.7</span>
-                            <span class="changelog-date">15/06/2026</span>
-                            <ul class="changelog-list">
-                                <li>Tự động đóng thầm lặng phiên bản cũ đang chạy khi cài đặt Setup, tránh hoàn toàn lỗi khóa file trên Windows.</li>
-                            </ul>
-                        </div>
-                        <div class="changelog-item">
-                            <span class="changelog-badge">v1.1.6</span>
-                            <span class="changelog-date">15/06/2026</span>
-                            <ul class="changelog-list">
-                                <li>Khắc phục triệt để lỗi chuyển hướng đăng nhập trên trình duyệt web của Admin.</li>
-                                <li>Ẩn các nút cập nhật phiên bản và tắt popup yêu cầu tải xuống APK khi chạy ở môi trường Web.</li>
-                                <li>Bổ sung nút Xin huỷ liên kết thiết bị trực tiếp trên giao diện Web của nhân viên.</li>
-                            </ul>
-                        </div>
-                        <div class="changelog-item">
-                            <span class="changelog-badge">v1.1.5</span>
-                            <span class="changelog-date">14/06/2026</span>
-                            <ul class="changelog-list">
-                                <li>Bảo mật thiết bị mới: Cho phép tối đa 1 Mobile App + 1 Web Browser đăng nhập đồng thời.</li>
-                                <li>Hệ thống phê duyệt hủy liên kết thiết bị từ Admin.</li>
-                                <li>Tối ưu hóa mặc định giờ OT kết thúc chiều thành 16:30 và tự động đồng bộ giờ kết thúc theo giờ bắt đầu.</li>
-                                <li>Loại bỏ thẻ quy định giờ làm khỏi ứng dụng nhân viên.</li>
-                            </ul>
-                        </div>
-                        <div class="changelog-item">
-                            <span class="changelog-badge">v1.1.3</span>
-                            <span class="changelog-date">15/06/2026</span>
-                            <ul class="changelog-list">
-                                <li>Cập nhật ứng dụng Windows tự động mà không cần đóng thủ công.</li>
-                                <li>Thêm tính năng hiện/ẩn mật khẩu khi đăng nhập quản trị.</li>
-                                <li>Tách danh sách quản lý nhân viên thành 2 tab: Quản trị viên và Nhân viên.</li>
-                                <li>Hiển thị thông tin phiên bản ngoài màn hình đăng nhập desktop.</li>
-                                <li>Sửa lỗi đồng bộ và tối ưu hóa hiệu năng cơ sở dữ liệu.</li>
-                            </ul>
-                        </div>
-                        <div class="changelog-item">
-                            <span class="changelog-badge">v1.1.2</span>
-                            <span class="changelog-date">10/06/2026</span>
-                            <ul class="changelog-list">
-                                <li>Thêm tính năng xin huỷ liên kết thiết bị trực tiếp từ app di động.</li>
-                                <li>Cải tiến giao diện đăng nhập di động cân đối và tối ưu hóa cho màn hình dọc.</li>
-                                <li>Thêm thông tin hiển thị phiên bản ở màn hình đăng nhập di động.</li>
-                                <li>Tự động phát hiện và cảnh báo phiên bản cũ để tải bản cập nhật mới.</li>
-                            </ul>
-                        </div>
-                        <div class="changelog-item">
-                            <span class="changelog-badge">v1.1.0</span>
-                            <span class="changelog-date">01/06/2026</span>
-                            <ul class="changelog-list">
-                                <li>Hỗ trợ đồng bộ ngoại tuyến (Offline Mode) an toàn dữ liệu.</li>
-                                <li>Tự động quét và dò tìm IP Server trong mạng WiFi nội bộ.</li>
-                                <li>Tích hợp đăng nhập nhanh cho nhân viên không cần mật khẩu.</li>
-                                <li>Hệ thống thông báo đẩy (Toast notification) trực quan và sinh động.</li>
-                            </ul>
+                            <div class="changelog-header-btn">
+                                <span class="changelog-badge">v1.2.0</span>
+                                <span class="changelog-date">15/06/2026</span>
+                                <span class="changelog-chevron">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="changelog-body-expand">
+                                <ul class="changelog-list">
+                                    <li>Tích hợp tính năng "Chốt công & Dọn dẹp" dữ liệu tháng cũ tự động & thủ công.</li>
+                                    <li>Tự động sao lưu dữ liệu lên GitHub Gist trước khi dọn dẹp dữ liệu cũ.</li>
+                                    <li>Cron job tự động dọn dẹp ngày 15 hàng tháng, xóa dữ liệu từ 2 tháng trước.</li>
+                                    <li>Nâng cấp giao diện Admin Desktop với nút Chốt công xác nhận 2 bước an toàn.</li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </section>
             </div>
 
-            <!-- TAB 5: Điều khoản & Bảo mật -->
+            <!-- TAB 5: ĐIỀU KHOẢN & BẢO MẬT -->
             <div id="ltab-terms" class="landing-tab-content">
                 <section class="landing-section">
-                    <h2 class="section-title" style="text-align: center;">📜 Điều khoản & Bảo mật</h2>
+                    <h2 class="section-title text-center">Điều khoản & Bảo mật</h2>
                     <div class="terms-card">
-                        <h3>1. Điều khoản sử dụng</h3>
-                        <p>Chào mừng bạn đến với ứng dụng OT Manager. Bằng việc cài đặt và sử dụng ứng dụng này, bạn đồng ý với các quy định sau:</p>
-                        <ul>
-                            <li>Mỗi tài khoản nhân viên chỉ được đăng ký trên một thiết bị di động duy nhất để đảm bảo ghi nhận tăng ca chính xác.</li>
-                            <li>Người dùng chịu trách nhiệm báo cáo trung thực thời gian làm thêm giờ của mình.</li>
-                            <li>Nghiêm cấm mọi hành vi gian lận dữ liệu, đăng nhập hộ hoặc can thiệp vào mã nguồn ứng dụng.</li>
-                        </ul>
-                        <h3>2. Chính sách bảo mật</h3>
-                        <p>Chúng tôi coi trọng tính bảo mật và sự riêng tư đối với dữ liệu của bạn:</p>
-                        <ul>
-                            <li>Quyền định vị và quyền trạng thái điện thoại (ID thiết bị) được thu thập khi người dùng đồng ý và chỉ sử dụng cho mục đích: (1) Quét và kết nối Wi-Fi nội bộ tự động để đồng bộ với server của công ty; (2) Liên kết tài khoản an toàn với thiết bị gốc để tránh gian lận giờ công. Chúng tôi cam kết tuyệt đối không theo dõi vị trí thực tế ngoài công ty hay thu thập thông tin cuộc gọi hoặc dữ liệu cá nhân khác của nhân viên.</li>
-                            <li>Dữ liệu giờ làm thêm (OT) chỉ được sử dụng cho việc đối chiếu công và tính lương nội bộ của công ty.</li>
-                            <li>Dữ liệu lưu trữ đám mây được bảo vệ an toàn và không chia sẻ cho bất kỳ bên thứ ba nào ngoài doanh nghiệp của bạn.</li>
-                        </ul>
-                        <h3>3. Chính sách cập nhật phần mềm</h3>
-                        <p>Ứng dụng hỗ trợ cập nhật tự động trực tuyến (Hot-update) đối với tài nguyên giao diện nhằm sửa lỗi nhanh nhất:</p>
-                        <ul>
-                            <li>Giao diện di động tự động kiểm tra và tải tài nguyên mới từ máy chủ khi có kết nối Internet.</li>
-                            <li>Tệp cài đặt APK cho Android và EXE cho Windows được cập nhật động và lưu trữ trên máy chủ an toàn.</li>
-                        </ul>
+                        <div class="terms-section">
+                            <h3>1. Điều khoản sử dụng</h3>
+                            <p>Chào mừng bạn đến với ứng dụng OT Manager. Bằng việc cài đặt và sử dụng ứng dụng ghi nhận này, bạn đồng ý với các quy định sau:</p>
+                            <ul>
+                                <li>Mỗi tài khoản nhân viên chỉ được đăng ký trên một trình duyệt di động hoặc ứng dụng di động duy nhất để đảm bảo tính minh bạch.</li>
+                                <li>Người dùng chịu trách nhiệm báo cáo trung thực thời gian làm thêm giờ của mình theo quy định công ty.</li>
+                                <li>Nghiêm cấm mọi hành vi can thiệp dữ liệu, đăng nhập hộ hoặc thay đổi cấu trúc mã nguồn ứng dụng.</li>
+                            </ul>
+                        </div>
+                        <div class="terms-section">
+                            <h3>2. Chính sách bảo mật thông tin</h3>
+                            <p>Hệ thống tôn trọng và bảo vệ tính riêng tư đối với dữ liệu của bạn:</p>
+                            <ul>
+                                <li><strong>Mục đích quyền hệ thống:</strong> Quyền quét mạng nội bộ và lấy mã nhận diện trình duyệt/thiết bị chỉ được sử dụng cho mục đích: (1) Hỗ trợ đồng bộ dữ liệu nhanh với server của công ty; (2) Liên kết tài khoản an toàn để bảo vệ quyền lợi cá nhân. Hệ thống cam kết không thu thập vị trí bên ngoài hay thông tin cuộc gọi khác của nhân viên.</li>
+                                <li><strong>Sử dụng dữ liệu:</strong> Dữ liệu giờ làm thêm (OT) chỉ được sử dụng cho việc quản lý chấm công và đối chiếu dữ liệu tính lương nội bộ của công ty.</li>
+                                <li><strong>Bảo mật:</strong> Dữ liệu lưu trữ được mã hóa an toàn trên server công ty và không chia sẻ cho bất kỳ bên thứ ba nào.</li>
+                            </ul>
+                        </div>
                     </div>
                 </section>
             </div>
         </div>
     </div>
 
-    <script src="landing.js?v=1.3.5"></script>
+    <script src="landing.js?v=1.3.6.0"></script>
 </body>
 </html>

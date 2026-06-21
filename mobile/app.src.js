@@ -172,7 +172,7 @@ function api(endpoint, method, body, skipAuthRedirect) {
         currentUser = null;
         safeStorage.removeItem('ot_mobile_user');
         safeStorage.removeItem('ot_login_time');
-        showScreen('screen-login');
+        handleUnauthenticated();
         showToast('Phiên đăng nhập đã hết hạn (sau 5h sáng), vui lòng đăng nhập lại!', 'error');
         return Promise.reject(new Error('Phiên đăng nhập đã hết hạn!'));
     }
@@ -211,7 +211,7 @@ function api(endpoint, method, body, skipAuthRedirect) {
                         currentUser = null;
                         safeStorage.removeItem('ot_mobile_user');
                         safeStorage.removeItem('ot_login_time');
-                        showScreen('screen-login');
+                        handleUnauthenticated();
                         showToast(data.error || 'Tài khoản hoặc liên kết thiết bị của bạn đã bị hủy!', 'error');
                         reject(new Error(data.error || 'Lỗi xác thực!'));
                         return;
@@ -560,6 +560,16 @@ function getGreeting() {
     return 'Chào buổi tối 🌙';
 }
 
+function handleUnauthenticated() {
+    if (window.location.protocol !== 'file:') {
+        const needsOtPrefix = window.location.hostname.includes('github.io');
+        const homepageUrl = needsOtPrefix ? '/OT/' : '/';
+        window.location.replace(homepageUrl);
+    } else {
+        showScreen('screen-login');
+    }
+}
+
 function logout() {
     currentUser = null;
     safeStorage.removeItem('ot_mobile_user');
@@ -567,10 +577,11 @@ function logout() {
     safeStorage.removeItem('ot_current_user');
     safeStorage.removeItem('ot_login_date');
     safeStorage.removeItem('ot_auth_token');
-    showScreen('screen-login');
+    
     const loginForm = document.getElementById('form-login-employee');
     if (loginForm) loginForm.reset();
     showToast('Đã đăng xuất', 'info');
+    handleUnauthenticated();
 }
 
 async function refreshCurrentUserInfo() {
@@ -1308,7 +1319,7 @@ function initApp() {
             safeStorage.removeItem('ot_mobile_user');
             safeStorage.removeItem('ot_login_time');
         }
-        showScreen('screen-login');
+        handleUnauthenticated();
     }, 1200);
 
     // Login forms
@@ -1622,7 +1633,7 @@ function checkConnection() {
         currentUser = null;
         safeStorage.removeItem('ot_mobile_user');
         safeStorage.removeItem('ot_login_time');
-        showScreen('screen-login');
+        handleUnauthenticated();
         showToast('Phiên đăng nhập đã hết hạn (sau 5h sáng), vui lòng đăng nhập lại!', 'error');
         return;
     }
