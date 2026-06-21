@@ -350,6 +350,7 @@ h1, h2, h3, h4, .logo-text, .stat-num, .mini-stat-num {
     border-radius: 10px;
     border: 1px solid transparent;
     transition: var(--transition-fast);
+    cursor: pointer;
 }
 .landing-nav .nav-link:hover {
     color: var(--text-white);
