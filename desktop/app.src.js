@@ -2342,3 +2342,12 @@ async function approveUnlinkDevice(userId, fullname) {
         }}
     ]);
 }
+
+// Expose global methods for inline HTML onclick handlers
+window.editRecordDialog = editRecordDialog;
+window.deleteRecord = deleteRecord;
+window.resetUserDevice = resetUserDevice;
+window.approveUnlinkDevice = approveUnlinkDevice;
+window.editUserDialog = editUserDialog;
+window.deleteUser = deleteUser;
+
