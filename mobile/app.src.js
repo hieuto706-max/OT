@@ -124,6 +124,12 @@ if (!isLocalWeb && savedIp && (savedIp.includes('otms.onrender.com') || savedIp.
 
 async function isPrivateMode() {
     return new Promise((resolve) => {
+        // Native mobile apps running under file:// protocol must bypass this check
+        if (window.location.protocol === 'file:') {
+            resolve(false);
+            return;
+        }
+
         try {
             const testKey = "__private_test__";
             localStorage.setItem(testKey, "1");
@@ -136,27 +142,31 @@ async function isPrivateMode() {
         if (navigator.serviceWorker && typeof navigator.serviceWorker.register === 'function') {
             navigator.serviceWorker.register('nonexistent-sw-test.js').then((reg) => {
                 reg.unregister();
-                runOPFSTimingCheck();
+                detectChromiumOrFallback();
             }).catch((err) => {
                 if (err && err.name === 'SecurityError') {
                     resolve(true);
                 } else {
-                    runOPFSTimingCheck();
+                    detectChromiumOrFallback();
                 }
             });
         } else {
-            runOPFSTimingCheck();
+            detectChromiumOrFallback();
         }
 
-        function runOPFSTimingCheck() {
+        function detectChromiumOrFallback() {
             if (navigator.storage && typeof navigator.storage.getDirectory === 'function' && typeof Worker === 'function') {
                 try {
-                    const src = `(async()=>{try{const r=await navigator.storage.getDirectory(),f=await(await r.getFileHandle('_',{create:true})).createSyncAccessHandle(),b=new Uint8Array(1);let m=1/0;for(let i=0;i<5;i++){f.write(b,{at:0});const s=performance.now();f.flush();const dt=performance.now()-s;if(dt<m)m=dt}f.close();postMessage(m<.1)}catch(e){postMessage(false)}})()`;
+                    const src = `(async()=>{try{const r=await navigator.storage.getDirectory(),f=await(await r.getFileHandle('_',{create:true})).createSyncAccessHandle(),b=new Uint8Array(1);let m=1/0;for(let i=0;i<5;i++){f.write(b,{at:0});const s=performance.now();f.flush();const dt=performance.now()-s;if(dt<m)m=dt}f.close();postMessage(m<.04)}catch(e){postMessage(false)}})()`;
                     const blob = new Blob([src], { type: 'application/javascript' });
                     const w = new Worker(URL.createObjectURL(blob));
                     w.onmessage = (e) => {
                         w.terminate();
-                        resolve(e.data);
+                        if (e.data) {
+                            resolve(true);
+                        } else {
+                            fallbackQuota();
+                        }
                     };
                     w.onerror = () => {
                         w.terminate();
@@ -165,7 +175,7 @@ async function isPrivateMode() {
                     setTimeout(() => {
                         w.terminate();
                         fallbackQuota();
-                    }, 400);
+                    }, 300);
                 } catch (err) {
                     fallbackQuota();
                 }
