@@ -1367,7 +1367,58 @@ async function refreshEmployeeRecords() {
 
         if (records.length === 0) {
             tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Chưa có dữ liệu tăng ca</td></tr>';
-            document.getElementById('emp-table-summary').innerHTML = '';
+            const statsCardsEl = document.getElementById('emp-stats-cards');
+            if (statsCardsEl) {
+                statsCardsEl.innerHTML = `
+                    <div class="stat-card stat-card-purple">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value">0</span>
+                            <span class="stat-label">Số ngày OT</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-orange">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 6v6l4 2"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value">0.0h</span>
+                            <span class="stat-label">OT Trưa</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-blue">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value">0.0h</span>
+                            <span class="stat-label">OT Chiều</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-green">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value">0.0h</span>
+                            <span class="stat-label">Tổng OT</span>
+                        </div>
+                    </div>`;
+            }
             return;
         }
 
@@ -1386,20 +1437,73 @@ async function refreshEmployeeRecords() {
                 <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
                 <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
                 <td><div class="action-buttons">
+                    <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'employee')" title="Sửa" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </button>
                     <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'employee')" title="Xóa">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                         </svg>
                     </button>
                 </div></td>
             </tr>`;
         }).join('');
 
-        document.getElementById('emp-table-summary').innerHTML = `
-            <div class="summary-item"><span class="summary-label">Số ngày OT:</span><span class="summary-value">${records.length}</span></div>
-            <div class="summary-item"><span class="summary-label">OT Trưa:</span><span class="summary-value">${totalLunchOT.toFixed(1)}h</span></div>
-            <div class="summary-item"><span class="summary-label">OT Chiều:</span><span class="summary-value">${totalEveningOT.toFixed(1)}h</span></div>
-            <div class="summary-item"><span class="summary-label">Tổng OT:</span><span class="summary-value">${totalHours.toFixed(1)}h</span></div>`;
+        const statsCardsEl = document.getElementById('emp-stats-cards');
+        if (statsCardsEl) {
+            statsCardsEl.innerHTML = `
+                <div class="stat-card stat-card-purple">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">${records.length}</span>
+                        <span class="stat-label">Số ngày OT</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-orange">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">${totalLunchOT.toFixed(1)}h</span>
+                        <span class="stat-label">OT Trưa</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-blue">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">${totalEveningOT.toFixed(1)}h</span>
+                        <span class="stat-label">OT Chiều</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-green">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">${totalHours.toFixed(1)}h</span>
+                        <span class="stat-label">Tổng OT</span>
+                    </div>
+                </div>`;
+        }
     } catch (e) {}
 }
 
@@ -1408,7 +1512,8 @@ async function initCloudConfig() {
     try {
         const res = await fetch(`${localServerUrl}/api/cloud-url`);
         const data = await res.json();
-        if (data.cloudUrl) {
+        const isLocalhostWeb = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && !isElectron;
+        if (data.cloudUrl && !isLocalhostWeb) {
             API_BASE = data.cloudUrl;
             if (API_BASE.endsWith('/')) {
                 API_BASE = API_BASE.slice(0, -1);
@@ -1839,6 +1944,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.remove('active'));
             tab.classList.add('active');
             document.getElementById(`admin-tab-${tab.dataset.adminTab}`).classList.add('active');
+        });
+    });
+
+    // Employee tabs
+    document.querySelectorAll('.emp-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.emp-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.emp-tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            const targetContent = document.getElementById(`emp-tab-${tab.dataset.empTab}`);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+        });
+    });
+
+    // Employee tabs
+    document.querySelectorAll('.emp-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.emp-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.emp-tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            const targetContent = document.getElementById(`emp-tab-${tab.dataset.empTab}`);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
         });
     });
 

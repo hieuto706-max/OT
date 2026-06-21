@@ -1039,7 +1039,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         btnEnter.className = 'btn btn-purple btn-full';
                     }
                     btnEnter.addEventListener('click', () => {
-                        window.location.replace(getRedirectPrefix() + (user.role === 'admin' ? '/desktop/' : '/mobile/?cleared=1'));
+                        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                        const targetUrl = (user.role === 'admin' || !isMobileDevice) ? '/desktop/' : '/mobile/?cleared=1';
+                        window.location.replace(getRedirectPrefix() + targetUrl);
                     });
                 }
 
@@ -1265,7 +1267,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     showToast('Đăng nhập Nhân viên thành công!', 'success');
                     setTimeout(() => {
-                        window.location.replace(getRedirectPrefix() + '/mobile/?cleared=1');
+                        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                        const targetUrl = isMobileDevice ? '/mobile/?cleared=1' : '/desktop/';
+                        window.location.replace(getRedirectPrefix() + targetUrl);
                     }, 800);
                 })
                 .catch(err => {

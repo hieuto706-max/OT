@@ -1430,3 +1430,58 @@ body.is-web-browser #btn-check-update {
     flex-shrink: 0;
 }
 
+/* ==================== EMPLOYEE TABS ==================== */
+.emp-tabs {
+    display: flex;
+    gap: 6px;
+    background: var(--bg-glass);
+    border-radius: var(--radius-lg);
+    padding: 4px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border-color);
+}
+
+.emp-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-family);
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.emp-tab svg {
+    width: 18px;
+    height: 18px;
+}
+
+.emp-tab.active {
+    background: var(--accent-green);
+    color: var(--text-white);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.emp-tab:hover:not(.active) {
+    color: var(--text-primary);
+    background: var(--bg-glass-hover);
+}
+
+.emp-tab-content {
+    display: none;
+}
+
+.emp-tab-content.active {
+    display: block;
+    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+

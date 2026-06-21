@@ -1695,17 +1695,25 @@ if ('serviceWorker' in navigator) {
 let activeEditRecordId = null;
 
 async function editRecordDialog(id) {
+    console.log('[editRecordDialog] Called with id:', id);
     activeEditRecordId = id;
     try {
-        let record = historyRecordsList.find(r => r.id === id);
-        if (!record) {
-            if (id.startsWith('offline_')) {
-                const offlineRecords = JSON.parse(safeStorage.getItem('ot_offline_records') || '[]');
-                record = offlineRecords.find(r => r.id === id);
-            } else {
-                const month = document.getElementById('filter-month') ? document.getElementById('filter-month').value : getCurrentMonth();
-                const cached = JSON.parse(safeStorage.getItem(`ot_cached_records_${currentUser.id}_${month}`) || '[]');
-                record = cached.find(r => r.id === id);
+        let record = null;
+        if (id.startsWith('offline_')) {
+            const offlineRecords = JSON.parse(safeStorage.getItem('ot_offline_records') || '[]');
+            record = offlineRecords.find(r => r.id === id);
+        } else {
+            const month = document.getElementById('filter-month') ? document.getElementById('filter-month').value : getCurrentMonth();
+            const cached = JSON.parse(safeStorage.getItem(`ot_cached_records_${currentUser.id}_${month}`) || '[]');
+            record = cached.find(r => r.id === id);
+            
+            if (!record && API) {
+                try {
+                    const data = await api(`/api/records?userId=${currentUser.id}&month=${month}`);
+                    record = data.records.find(r => r.id === id);
+                } catch (apiErr) {
+                    console.error('[editRecordDialog] API fallback fetch error:', apiErr);
+                }
             }
         }
 
@@ -1766,6 +1774,7 @@ async function editRecordDialog(id) {
 
         elOverlay.classList.add('active');
     } catch (err) {
+        console.error('[editRecordDialog] ERROR:', err);
         showToast('Lỗi tải dữ liệu: ' + err.message, 'error');
     }
 }
