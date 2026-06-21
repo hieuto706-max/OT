@@ -37,6 +37,34 @@ async function loadTeams() {
         console.error('Lỗi load teams:', e);
         TEAMS = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6', 'Team 7', 'Team 8', 'Team 9', 'Team 10'];
     }
+    populateTeamFilters();
+}
+
+function populateTeamFilters() {
+    const adminFilter = document.getElementById('admin-filter-team');
+    const reportFilter = document.getElementById('report-filter-team');
+    
+    const optionsHtml = `
+        <option value="">Tất cả Team</option>
+        <option value="admin">admin</option>
+        <option value="unassigned">Chưa phân team</option>
+        ${TEAMS.map(t => `<option value="${t}">${t}</option>`).join('')}
+    `;
+    
+    if (adminFilter) {
+        const val = adminFilter.value;
+        adminFilter.innerHTML = optionsHtml;
+        if (val && [...adminFilter.options].some(opt => opt.value === val)) {
+            adminFilter.value = val;
+        }
+    }
+    if (reportFilter) {
+        const val = reportFilter.value;
+        reportFilter.innerHTML = optionsHtml;
+        if (val && [...reportFilter.options].some(opt => opt.value === val)) {
+            reportFilter.value = val;
+        }
+    }
 }
 
 // Add blink-red style rules dynamically
@@ -407,6 +435,13 @@ function logout() {
     localStorage.removeItem('ot_login_time');
     localStorage.removeItem('ot_auth_token');
     
+    sessionStorage.removeItem('ot_current_user');
+    sessionStorage.removeItem('ot_login_date');
+    sessionStorage.removeItem('ot_mobile_user');
+    sessionStorage.removeItem('ot_login_time');
+    sessionStorage.removeItem('ot_auth_token');
+    sessionStorage.removeItem('ot_session_temp');
+    
     if (isElectron) {
         // Trong Electron, reset và hiển thị lại màn hình đăng nhập thay vì chuyển hướng ra Landing Page
         showScreen('screen-login');
@@ -452,6 +487,27 @@ async function initAdminDashboard(user) {
     const currentMonth = getCurrentMonth();
     document.getElementById('admin-filter-month').value = currentMonth;
     document.getElementById('report-filter-month').value = currentMonth;
+    const cleanupMonthInput = document.getElementById('cleanup-month-input');
+    if (cleanupMonthInput) {
+        cleanupMonthInput.value = currentMonth;
+    }
+
+    const isAdmin = user && user.username === 'admin';
+    const adminTeamGroup = document.getElementById('admin-filter-team-group');
+    const reportTeamGroup = document.getElementById('report-filter-team-group');
+    if (adminTeamGroup) {
+        adminTeamGroup.style.display = isAdmin ? 'flex' : 'none';
+    }
+    if (reportTeamGroup) {
+        reportTeamGroup.style.display = isAdmin ? 'flex' : 'none';
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const adminOtDate = document.getElementById('admin-ot-date');
+    if (adminOtDate) {
+        adminOtDate.value = todayStr;
+        adminOtDate.max = todayStr;
+    }
 
     await loadTeams();
     await populateUserFilter();
@@ -474,7 +530,7 @@ function openTeamSettingsModal() {
             </button>
         </div>
         <div style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
-            <table class="data-table" style="margin: 0; width: 100%;">
+            <table class="data-table" style="margin: 0; width: 100%; min-width: auto;">
                 <thead>
                     <tr>
                         <th style="width: 60px; text-align: center;">STT</th>
@@ -503,17 +559,19 @@ function renderModalTeamsRows() {
             <td style="text-align:center;">${index + 1}</td>
             <td><strong>${teamName}</strong></td>
             <td style="text-align:center;">
-                <button class="btn-icon-only edit" onclick="renameTeamFromModal('${teamName}')" title="Đổi tên" style="margin-right: 4px; padding: 4px; border: 1px solid rgba(255, 255, 255, 0.05); background: rgba(255, 255, 255, 0.02); border-radius: 6px; cursor: pointer;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                    </svg>
-                </button>
-                <button class="btn-icon-only delete" onclick="deleteTeamFromModal('${teamName}')" title="Xóa" style="padding: 4px; border: 1px solid rgba(255, 255, 255, 0.05); background: rgba(255, 255, 255, 0.02); border-radius: 6px; cursor: pointer;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
-                    </svg>
-                </button>
+                <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                    <button class="btn-icon-only edit" onclick="renameTeamFromModal('${teamName}')" title="Đổi tên">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </button>
+                    <button class="btn-icon-only delete" onclick="deleteTeamFromModal('${teamName}')" title="Xóa">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -550,29 +608,57 @@ async function addTeamFromModal() {
 }
 
 async function renameTeamFromModal(oldName) {
-    const newName = prompt('Nhập tên team mới:', oldName);
-    if (newName === null) return;
-    const trimmedNewName = newName.trim();
-    if (!trimmedNewName) return showToast('Tên team không được để trống!', 'error');
-    if (trimmedNewName === oldName) return;
+    const body = `
+    <div style="text-align: left; padding: 10px 0;">
+        <div style="margin-bottom: 12px; font-weight: 500;">Nhập tên team mới cho <strong>${oldName}</strong>:</div>
+        <input type="text" id="modal-rename-team-input" class="input-sm" value="${oldName}" style="width: 100%; box-sizing: border-box; height: 36px; padding: 0 12px; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;">
+    </div>`;
 
-    if (TEAMS.includes(trimmedNewName)) {
-        return showToast('Tên team này đã tồn tại!', 'error');
-    }
-
-    const updatedTeams = TEAMS.map(t => t === oldName ? trimmedNewName : t);
-    try {
-        await api('/api/teams', 'POST', { teams: updatedTeams, oldName, newName: trimmedNewName });
-        TEAMS = updatedTeams;
-        showToast('Đổi tên team thành công!');
-        refreshModalTeamsView();
-        await Promise.all([
-            populateUserFilter(),
-            refreshAdminUsers()
-        ]);
-    } catch (e) {
-        showToast(e.message, 'error');
-    }
+    showModal('Đổi tên Team', body, [
+        {
+            text: 'Hủy',
+            class: 'btn-ghost',
+            action: () => {
+                setTimeout(() => openTeamSettingsModal(), 50);
+            }
+        },
+        {
+            text: 'Lưu',
+            class: 'btn-primary btn-sm',
+            action: async () => {
+                const input = document.getElementById('modal-rename-team-input');
+                if (!input) return;
+                const newName = input.value.trim();
+                if (!newName) {
+                    showToast('Tên team không được để trống!', 'error');
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                    return;
+                }
+                if (newName === oldName) {
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                    return;
+                }
+                if (TEAMS.includes(newName)) {
+                    showToast('Tên team này đã tồn tại!', 'error');
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                    return;
+                }
+                const updatedTeams = TEAMS.map(t => t === oldName ? newName : t);
+                try {
+                    await api('/api/teams', 'POST', { teams: updatedTeams, oldName, newName });
+                    TEAMS = updatedTeams;
+                    showToast('Đổi tên team thành công!');
+                    await Promise.all([
+                        populateUserFilter(),
+                        refreshAdminUsers()
+                    ]);
+                } catch (e) {
+                    showToast(e.message, 'error');
+                }
+                setTimeout(() => openTeamSettingsModal(), 50);
+            }
+        }
+    ]);
 }
 
 async function deleteTeamFromModal(teamName) {
@@ -582,27 +668,40 @@ async function deleteTeamFromModal(teamName) {
         
         let confirmMsg = `Bạn có chắc muốn xóa team "${teamName}"?`;
         if (userCount > 0) {
-            confirmMsg += `\n\nCảnh báo: Hiện có ${userCount} nhân viên thuộc team này. Họ sẽ bị đưa về trạng thái "Chưa phân team".`;
+            confirmMsg += `<br><br><span style="color: var(--status-rejected-text); font-weight: bold;">Cảnh báo: Hiện có ${userCount} nhân viên thuộc team này. Họ sẽ bị đưa về trạng thái "Chưa phân team".</span>`;
         }
 
-        const ok = confirm(confirmMsg);
-        if (!ok) return;
-
-        const updatedTeams = TEAMS.filter(t => t !== teamName);
-        try {
-            await api('/api/teams', 'POST', { teams: updatedTeams, deletedTeam: teamName });
-            TEAMS = updatedTeams;
-            showToast('Đã xóa team!');
-            refreshModalTeamsView();
-            await Promise.all([
-                populateUserFilter(),
-                refreshAdminUsers()
-            ]);
-        } catch (e) {
-            showToast(e.message, 'error');
-        }
+        showModal('Xóa Team', confirmMsg, [
+            {
+                text: 'Hủy',
+                class: 'btn-ghost',
+                action: () => {
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                }
+            },
+            {
+                text: 'Xóa',
+                class: 'btn-danger btn-sm',
+                action: async () => {
+                    const updatedTeams = TEAMS.filter(t => t !== teamName);
+                    try {
+                        await api('/api/teams', 'POST', { teams: updatedTeams, deletedTeam: teamName });
+                        TEAMS = updatedTeams;
+                        showToast('Đã xóa team!');
+                        await Promise.all([
+                            populateUserFilter(),
+                            refreshAdminUsers()
+                        ]);
+                    } catch (e) {
+                        showToast(e.message, 'error');
+                    }
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                }
+            }
+        ]);
     } catch (e) {
         showToast('Lỗi khi lấy thông tin nhân viên', 'error');
+        setTimeout(() => openTeamSettingsModal(), 50);
     }
 }
 
@@ -662,17 +761,33 @@ async function populateUserFilter() {
         const data = await api('/api/users');
         const users = data.users;
         users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
+
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isSuperAdmin = currentUser && currentUser.username === 'admin';
+        const managerTeam = currentUser ? (currentUser.team || '') : '';
+
         if (select) {
             select.innerHTML = '<option value="">Tất cả</option>';
             users.forEach(u => {
-                const suffix = u.role === 'admin' ? ' (Admin)' : '';
-                select.innerHTML += `<option value="${u.id}">${u.fullname}${suffix}</option>`;
+                if (isSuperAdmin) {
+                    select.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                } else {
+                    if ((u.role === 'employee' && u.team === managerTeam) || (currentUser && u.id === currentUser.id)) {
+                        select.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                    }
+                }
             });
         }
         if (adminOtUser) {
             adminOtUser.innerHTML = '<option value="">-- Chọn nhân viên --</option>';
             users.filter(u => u.role === 'employee').forEach(u => {
-                adminOtUser.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                if (isSuperAdmin) {
+                    adminOtUser.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                } else {
+                    if (u.team === managerTeam) {
+                        adminOtUser.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                    }
+                }
             });
         }
     } catch (e) {}
@@ -689,10 +804,16 @@ async function refreshAdminStats() {
 }
 
 async function refreshAdminRecords() {
-    const month = document.getElementById('admin-filter-month').value;
+    let month = document.getElementById('admin-filter-month').value;
+    const dateFilter = document.getElementById('admin-filter-date') ? document.getElementById('admin-filter-date').value : '';
     const userId = document.getElementById('admin-filter-user').value;
     const searchUser = document.getElementById('admin-search-user').value.toLowerCase().trim();
     const searchNote = document.getElementById('admin-search-note').value.toLowerCase().trim();
+    const filterTeam = document.getElementById('admin-filter-team') ? document.getElementById('admin-filter-team').value : '';
+
+    if (dateFilter) {
+        month = dateFilter.substring(0, 7);
+    }
 
     try {
         let url = '/api/records?';
@@ -703,6 +824,8 @@ async function refreshAdminRecords() {
         const records = data.records;
         const usersData = await api('/api/users');
         const users = usersData.users;
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isAdmin = currentUser && currentUser.username === 'admin';
 
         const filteredRecords = records.filter(r => {
             const user = users.find(u => u.id === r.userId);
@@ -711,53 +834,170 @@ async function refreshAdminRecords() {
                 user.username.toLowerCase().includes(searchUser)
             ));
             const matchesNote = !searchNote || (r.note && r.note.toLowerCase().includes(searchNote));
-            return matchesUser && matchesNote;
+            
+            // Filter by Team
+            let matchesTeam = true;
+            if (isAdmin) {
+                if (filterTeam) {
+                    const userTeam = user ? (user.team || '') : '';
+                    if (filterTeam === 'unassigned') {
+                        matchesTeam = (userTeam === '' || userTeam === 'unassigned');
+                    } else {
+                        matchesTeam = (userTeam === filterTeam);
+                    }
+                }
+            } else {
+                // Manager: only see members of their own team (and themselves)
+                const managerTeam = currentUser ? (currentUser.team || '') : '';
+                const userTeam = user ? (user.team || '') : '';
+                matchesTeam = (user && user.id === currentUser.id) || (userTeam && userTeam === managerTeam);
+            }
+
+            // Filter by Date
+            const matchesDate = !dateFilter || r.date === dateFilter;
+
+            return matchesUser && matchesNote && matchesTeam && matchesDate;
         });
 
-        const tbody = document.getElementById('admin-records-body');
+        const approvedTbody = document.getElementById('admin-records-approved-body');
+        const pendingTbody = document.getElementById('admin-records-pending-body');
+        const rejectedTbody = document.getElementById('admin-records-rejected-body');
 
-        if (filteredRecords.length === 0) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="9">Không tìm thấy dữ liệu tăng ca phù hợp bộ lọc</td></tr>';
-            document.getElementById('admin-table-summary').innerHTML = '';
-            return;
+        const approved = filteredRecords.filter(r => r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
+        const pending = filteredRecords.filter(r => r.status === 'pending');
+        const rejected = filteredRecords.filter(r => r.status === 'rejected');
+
+        // Render Approved
+        if (approved.length === 0) {
+            approvedTbody.innerHTML = '<tr class="empty-row"><td colspan="11">Không có dữ liệu tăng ca đã duyệt</td></tr>';
+        } else {
+            approvedTbody.innerHTML = approved.map(r => {
+                const user = users.find(u => u.id === r.userId);
+                const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
+                const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+                return `<tr>
+                    <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
+                    <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
+                    <td>${formatDate(r.date)}</td>
+                    <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
+                    <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
+                    <td>${r.otStart || '—'}</td>
+                    <td>${r.otEnd || '—'}</td>
+                    <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
+                    <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                    <td>${isBackfill ? '<span class="tag tag-yes" style="background:rgba(16,185,129,0.1); color:#10b981;">Bù tăng ca</span>' : '<span class="tag tag-no" style="background:rgba(99,102,241,0.1); color:#6366f1;">Thường</span>'}</td>
+                    <td><div class="action-buttons">
+                        <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'admin')" title="Sửa" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="Xóa">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    </div></td>
+                </tr>`;
+            }).join('');
         }
 
-        let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0;
+        // Render Pending
+        if (pending.length === 0) {
+            pendingTbody.innerHTML = '<tr class="empty-row"><td colspan="10">Không có yêu cầu chờ duyệt</td></tr>';
+        } else {
+            pendingTbody.innerHTML = pending.map(r => {
+                const user = users.find(u => u.id === r.userId);
+                const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
+                return `<tr>
+                    <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
+                    <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
+                    <td>${formatDate(r.date)}</td>
+                    <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
+                    <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
+                    <td>${r.otStart || '—'}</td>
+                    <td>${r.otEnd || '—'}</td>
+                    <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
+                    <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                    <td><div class="action-buttons">
+                        <button class="btn btn-success btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
+                            ✓ Duyệt
+                        </button>
+                        <button class="btn btn-danger btn-xs" onclick="rejectRecord('${r.id}')" title="Từ chối" style="padding: 4px 8px; font-size: 11px;">
+                            ✕ Từ chối
+                        </button>
+                    </div></td>
+                </tr>`;
+            }).join('');
+        }
 
-        tbody.innerHTML = filteredRecords.map(r => {
-            const user = users.find(u => u.id === r.userId);
-            const lunchHours = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
-            totalLunchOT += lunchHours;
+        // Render Rejected
+        if (rejected.length === 0) {
+            rejectedTbody.innerHTML = '<tr class="empty-row"><td colspan="10">Không có bản ghi bị từ chối</td></tr>';
+        } else {
+            rejectedTbody.innerHTML = rejected.map(r => {
+                const user = users.find(u => u.id === r.userId);
+                const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
+                return `<tr>
+                    <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
+                    <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
+                    <td>${formatDate(r.date)}</td>
+                    <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
+                    <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
+                    <td>${r.otStart || '—'}</td>
+                    <td>${r.otEnd || '—'}</td>
+                    <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
+                    <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                    <td><div class="action-buttons">
+                        <button class="btn btn-primary btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt lại" style="padding: 4px 8px; font-size: 11px;">
+                            ✓ Duyệt lại
+                        </button>
+                    </div></td>
+                </tr>`;
+            }).join('');
+        }
+
+        // Stats & Badges
+        let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0;
+        approved.forEach(r => {
+            totalLunchOT += r.hasLunchOT ? OT_LUNCH_HOURS : 0;
             totalEveningOT += r.eveningOTHours;
             totalHours += r.totalHours;
+        });
 
-            return `<tr>
-                <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
-                <td>${formatDate(r.date)}</td>
-                <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
-                <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
-                <td>${r.otStart || '—'}</td>
-                <td>${r.otEnd || '—'}</td>
-                <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
-                <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
-                <td><div class="action-buttons">
-                    <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'admin')" title="Sửa" style="margin-right: 4px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                    </button>
-                    <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="Xóa">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                    </button>
-                </div></td>
-            </tr>`;
-        }).join('');
+        const badgePendingRecords = document.getElementById('badge-pending-records');
+        if (badgePendingRecords) {
+            if (pending.length > 0) {
+                badgePendingRecords.textContent = pending.length;
+                badgePendingRecords.style.display = 'inline-block';
+            } else {
+                badgePendingRecords.style.display = 'none';
+            }
+        }
+
+        const badgeSubPending = document.getElementById('badge-sub-pending');
+        if (badgeSubPending) {
+            if (pending.length > 0) {
+                badgeSubPending.textContent = pending.length;
+                badgeSubPending.style.display = 'inline-block';
+            } else {
+                badgeSubPending.style.display = 'none';
+            }
+        }
+
+        const badgeSubRejected = document.getElementById('badge-sub-rejected');
+        if (badgeSubRejected) {
+            if (rejected.length > 0) {
+                badgeSubRejected.textContent = rejected.length;
+                badgeSubRejected.style.display = 'inline-block';
+            } else {
+                badgeSubRejected.style.display = 'none';
+            }
+        }
 
         document.getElementById('admin-table-summary').innerHTML = `
-            <div class="summary-item"><span class="summary-label">Tổng bản ghi:</span><span class="summary-value">${records.length}</span></div>
+            <div class="summary-item"><span class="summary-label">Tổng bản ghi:</span><span class="summary-value">${approved.length}</span></div>
             <div class="summary-item"><span class="summary-label">OT Trưa:</span><span class="summary-value">${totalLunchOT.toFixed(1)}h</span></div>
             <div class="summary-item"><span class="summary-label">OT Chiều:</span><span class="summary-value">${totalEveningOT.toFixed(1)}h</span></div>
             <div class="summary-item"><span class="summary-label">Tổng OT:</span><span class="summary-value">${totalHours.toFixed(1)}h</span></div>`;
@@ -768,6 +1008,9 @@ async function refreshAdminRecords() {
 
 async function refreshAdminUsers() {
     try {
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin');
+
         const usersData = await api('/api/users');
         const users = usersData.users;
         const currentMonth = getCurrentMonth();
@@ -839,17 +1082,21 @@ async function refreshAdminUsers() {
                     ${approveBtn}
                     ${deviceUnlinkBtn}
                     ${browserUnlinkBtn}
+                    ${(!u.team || u.team !== 'admin' || isBelongToAdminTeam || (currentUser && currentUser.id === u.id)) ? `
                     <button class="btn-icon-only edit" onclick="editUserDialog('${u.id}')" title="Sửa" style="margin-right: 4px;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                             <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                         </svg>
                     </button>
+                    ` : ''}
+                    ${(!u.team || u.team !== 'admin' || isBelongToAdminTeam) ? `
                     <button class="btn-icon-only delete" onclick="deleteUser('${u.id}')" title="Xóa">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                             <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                         </svg>
                     </button>
+                    ` : ''}
                 </div></td>
             </tr>`;
         }).join('') || '<tr class="empty-row"><td colspan="7">Không có nhân viên</td></tr>';
@@ -861,40 +1108,168 @@ async function refreshAdminUsers() {
                 <td>${i + 1}</td>
                 <td><strong>${u.fullname}</strong></td>
                 <td>${u.username}</td>
-                <td><span style="font-weight:600; color:var(--text-secondary);">${u.team || 'Chưa phân team'}</span></td>
+                <td><span style="font-weight:600; color:var(--text-secondary);">${u.team === 'admin' ? 'admin' : (u.team || 'admin')}</span></td>
                 <td><span class="tag tag-admin">Quản lý</span></td>
                 <td><div class="action-buttons">
-                    ${u.username !== 'admin' ? `
+                    ${(u.team !== 'admin' || isBelongToAdminTeam || (currentUser && currentUser.id === u.id)) ? `
+                    <button class="btn-icon-only edit" onclick="editUserDialog('${u.id}')" title="Sửa" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </button>
+                    ` : ''}
+                    ${(u.username !== 'admin' && (u.team !== 'admin' || isBelongToAdminTeam)) ? `
+                        <button class="btn-icon-only delete" onclick="deleteUser('${u.id}')" title="Xóa">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    ` : ''}
+                </div></td>
+            </tr>`;
+        }).join('') || '<tr class="empty-row"><td colspan="6">Không có quản lý</td></tr>';
+
+        // Render unassigned employees
+        const tbodyUnassigned = document.getElementById('admin-users-unassigned-body');
+        const unassigned = employees.filter(u => !u.team || u.team === 'unassigned');
+        if (tbodyUnassigned) {
+            tbodyUnassigned.innerHTML = unassigned.map((u, i) => {
+                const userRecords = records.filter(r => r.userId === u.id);
+                const totalOT = userRecords.reduce((sum, r) => sum + r.totalHours, 0);
+
+                let deviceUnlinkBtn = '';
+                if (u.deviceId) {
+                    deviceUnlinkBtn = `
+                        <button class="btn-reset btn-reset-mobile" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'mobile')" title="Xóa liên kết App điện thoại" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                                <line x1="12" y1="18" x2="12.01" y2="18"/>
+                            </svg>
+                            Hủy LK Mobile
+                        </button>
+                    `;
+                }
+                let browserUnlinkBtn = '';
+                if (u.browserDeviceId) {
+                    browserUnlinkBtn = `
+                        <button class="btn-reset btn-reset-browser" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'browser')" title="Xóa liên kết Trình duyệt web" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="2" y1="12" x2="22" y2="12"/>
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                            </svg>
+                            Hủy LK Web
+                        </button>
+                    `;
+                }
+                let approveBtn = '';
+                if (u.pendingUnlink) {
+                    approveBtn = `
+                        <button class="btn-reset btn-reset-approve" onclick="approveUnlinkDevice('${u.id}', '${u.fullname}')" title="Duyệt yêu cầu huỷ liên kết" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Duyệt Huỷ
+                        </button>
+                    `;
+                }
+
+                const unlinkBadge = u.pendingUnlink ? `
+                    <span class="unlink-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approveUnlinkDevice('${u.id}', '${u.fullname}')" title="Bấm vào đây để phê duyệt huỷ liên kết thiết bị">
+                        ⚠️ Xin huỷ liên kết
+                    </span>
+                ` : '';
+
+                return `<tr>
+                    <td>${i + 1}</td>
+                    <td><strong>${u.fullname}</strong>${unlinkBadge}</td>
+                    <td>${u.username}</td>
+                    <td><span style="font-weight:600; color:var(--text-secondary);">${u.team || 'Chưa phân team'}</span></td>
+                    <td><span class="tag tag-employee">Nhân viên</span></td>
+                    <td><span class="text-purple text-bold">${totalOT.toFixed(1)}h</span></td>
+                    <td><div class="action-buttons">
+                        ${approveBtn}
+                        ${deviceUnlinkBtn}
+                        ${browserUnlinkBtn}
+                        ${(!u.team || u.team !== 'admin' || isBelongToAdminTeam || (currentUser && currentUser.id === u.id)) ? `
                         <button class="btn-icon-only edit" onclick="editUserDialog('${u.id}')" title="Sửa" style="margin-right: 4px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                                 <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                             </svg>
                         </button>
+                        ` : ''}
+                        ${(!u.team || u.team !== 'admin' || isBelongToAdminTeam) ? `
                         <button class="btn-icon-only delete" onclick="deleteUser('${u.id}')" title="Xóa">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                             </svg>
                         </button>
-                    ` : '<span class="text-muted" style="font-size:12px">Mặc định</span>'}
-                </div></td>
-            </tr>`;
-        }).join('') || '<tr class="empty-row"><td colspan="6">Không có quản lý</td></tr>';
+                        ` : ''}
+                    </div></td>
+                </tr>`;
+            }).join('') || '<tr class="empty-row"><td colspan="7">Không có nhân viên chưa phân team</td></tr>';
+        }
+
+        // Show/hide unassigned warning alert
+        const warningAlert = document.getElementById('unassigned-warning-alert');
+        if (warningAlert) {
+            if (unassigned.length > 0) {
+                warningAlert.style.display = 'flex';
+            } else {
+                warningAlert.style.display = 'none';
+            }
+        }
+
+        // Update badge for unassigned sub-tab
+        const badgeUnassigned = document.getElementById('badge-sub-unassigned');
+        if (badgeUnassigned) {
+            if (unassigned.length > 0) {
+                badgeUnassigned.textContent = unassigned.length;
+                badgeUnassigned.style.display = 'inline-block';
+            } else {
+                badgeUnassigned.style.display = 'none';
+            }
+        }
 
     } catch (e) {}
 }
 
 async function refreshReport() {
     const month = document.getElementById('report-filter-month').value;
+    const filterTeam = document.getElementById('report-filter-team') ? document.getElementById('report-filter-team').value : '';
     try {
         const usersData = await api('/api/users');
-        const users = usersData.users.filter(u => u.role === 'employee');
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isAdmin = currentUser && currentUser.username === 'admin';
+        
+        let users = usersData.users.filter(u => u.role === 'employee');
+        
+        if (isAdmin) {
+            if (filterTeam) {
+                users = users.filter(u => {
+                    const userTeam = u.team || '';
+                    if (filterTeam === 'unassigned') {
+                        return userTeam === '' || userTeam === 'unassigned';
+                    }
+                    return userTeam === filterTeam;
+                });
+            }
+        } else {
+            const managerTeam = currentUser ? (currentUser.team || '') : '';
+            users = users.filter(u => u.team && u.team === managerTeam);
+        }
+
         const recData = await api(`/api/records?month=${month}`);
-        const records = recData.records;
+        const records = recData.records.filter(r => {
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            return r.status === 'approved' || (!isBackfill && r.status !== 'pending' && r.status !== 'rejected');
+        });
         const tbody = document.getElementById('report-body');
 
         if (users.length === 0) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Chưa có nhân viên</td></tr>';
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Chưa có nhân viên</td></tr>';
             return;
         }
 
@@ -904,9 +1279,11 @@ async function refreshReport() {
             const lunchH = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
             const eveningH = ur.reduce((s, r) => s + r.eveningOTHours, 0);
             const totalH = lunchH + eveningH;
+            const teamName = u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team');
             return `<tr>
                 <td>${i + 1}</td>
                 <td><strong>${u.fullname}</strong></td>
+                <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
                 <td>${days}</td>
                 <td>${lunchH.toFixed(1)}</td>
                 <td>${eveningH.toFixed(1)}</td>
@@ -946,20 +1323,65 @@ function deleteRecord(recordId, source) {
     ]);
 }
 
+async function approveRecord(recordId) {
+    try {
+        await api(`/api/records/${recordId}`, 'PUT', { status: 'approved' });
+        showToast('Đã duyệt bản ghi tăng ca!');
+        await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function rejectRecord(recordId) {
+    showModal('Từ chối bản ghi', 'Bạn có chắc muốn từ chối bản ghi tăng ca này?', [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Từ chối', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                await api(`/api/records/${recordId}`, 'PUT', { status: 'rejected' });
+                await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+                showToast('Đã từ chối bản ghi');
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
 async function exportExcel() {
     const month = document.getElementById('report-filter-month').value;
+    const filterTeam = document.getElementById('report-filter-team') ? document.getElementById('report-filter-team').value : '';
     try {
         const usersData = await api('/api/users');
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isAdmin = currentUser && currentUser.username === 'admin';
+        
         let users = usersData.users;
-        if (currentUser && currentUser.username !== 'admin') {
-            // Lọc chỉ xuất báo cáo của chính Admin đó và nhân viên thuộc team mình quản lý
-            users = users.filter(u => u.id === currentUser.id || (currentUser.team && u.team === currentUser.team));
+        
+        if (isAdmin) {
+            // Filter by selected team
+            if (filterTeam) {
+                users = users.filter(u => {
+                    const userTeam = u.team || '';
+                    if (filterTeam === 'unassigned') {
+                        return userTeam === '' || userTeam === 'unassigned';
+                    }
+                    return userTeam === filterTeam;
+                });
+            }
+        } else {
+            // Manager: only export reports of their team and themselves
+            const managerTeam = currentUser ? (currentUser.team || '') : '';
+            users = users.filter(u => u.id === currentUser.id || (u.team && u.team === managerTeam));
         }
+
         users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
 
         const recData = await api(`/api/records?month=${month}`);
-        const records = recData.records;
+        const records = recData.records.filter(r => {
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            return r.status === 'approved' || (!isBackfill && r.status !== 'pending' && r.status !== 'rejected');
+        });
 
         const now = new Date();
         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -974,7 +1396,7 @@ async function exportExcel() {
         });
 
         // 1. Tiêu đề chính
-        wsSummary.mergeCells('A1:G1');
+        wsSummary.mergeCells('A1:H1');
         const title1 = wsSummary.getCell('A1');
         title1.value = `BÁO CÁO TĂNG CA - THÁNG ${month}`;
         title1.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -983,7 +1405,7 @@ async function exportExcel() {
         wsSummary.getRow(1).height = 40;
 
         // 2. Ngày xuất báo cáo
-        wsSummary.mergeCells('A2:G2');
+        wsSummary.mergeCells('A2:H2');
         const subtitle1 = wsSummary.getCell('A2');
         subtitle1.value = `Ngày xuất báo cáo: ${exportTime}`;
         subtitle1.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF4B5563' } };
@@ -999,12 +1421,12 @@ async function exportExcel() {
         wsSummary.getRow(4).height = 22;
 
         // 5. Headers
-        const headers1 = ["STT", "Họ và tên", "Mã nhân viên", "Số ngày OT", "OT Trưa (giờ)", "OT Chiều (giờ)", "Tổng OT (giờ)"];
+        const headers1 = ["STT", "Họ và tên", "Nhóm", "Mã nhân viên", "Số ngày OT", "OT Trưa (giờ)", "OT Chiều (giờ)", "Tổng OT (giờ)"];
         wsSummary.getRow(5).values = headers1;
         wsSummary.getRow(5).height = 28;
         wsSummary.getRow(5).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
         
-        for (let col = 1; col <= 7; col++) {
+        for (let col = 1; col <= 8; col++) {
             const cell = wsSummary.getCell(5, col);
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } }; // Indigo 600
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -1029,6 +1451,7 @@ async function exportExcel() {
             row.values = [
                 i + 1,
                 u.fullname,
+                u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team'),
                 u.username,
                 days,
                 lh,
@@ -1038,7 +1461,7 @@ async function exportExcel() {
             row.height = 22;
             row.font = { name: 'Arial', size: 10 };
 
-            for (let col = 1; col <= 7; col++) {
+            for (let col = 1; col <= 8; col++) {
                 const cell = row.getCell(col);
                 cell.border = {
                     top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
@@ -1047,15 +1470,15 @@ async function exportExcel() {
                     right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
                 };
 
-                if (col === 2) {
+                if (col === 2 || col === 3) {
                     cell.alignment = { vertical: 'middle', horizontal: 'left' };
                 } else {
                     cell.alignment = { vertical: 'middle', horizontal: 'center' };
                 }
 
-                if (col === 1 || col === 4) {
+                if (col === 1 || col === 5) {
                     cell.numFmt = '0';
-                } else if (col >= 5) {
+                } else if (col >= 6) {
                     cell.numFmt = '#,##0.0';
                 }
             }
@@ -1063,19 +1486,19 @@ async function exportExcel() {
 
         // 7. Dòng Tổng cộng
         const totalRow1Num = summaryStartRow + users.length;
-        wsSummary.mergeCells(`A${totalRow1Num}:C${totalRow1Num}`);
+        wsSummary.mergeCells(`A${totalRow1Num}:D${totalRow1Num}`);
         wsSummary.getCell(`A${totalRow1Num}`).value = "Tổng cộng";
         
-        wsSummary.getCell(`D${totalRow1Num}`).value = { formula: `SUM(D6:D${totalRow1Num - 1})` };
         wsSummary.getCell(`E${totalRow1Num}`).value = { formula: `SUM(E6:E${totalRow1Num - 1})` };
         wsSummary.getCell(`F${totalRow1Num}`).value = { formula: `SUM(F6:F${totalRow1Num - 1})` };
         wsSummary.getCell(`G${totalRow1Num}`).value = { formula: `SUM(G6:G${totalRow1Num - 1})` };
+        wsSummary.getCell(`H${totalRow1Num}`).value = { formula: `SUM(H6:H${totalRow1Num - 1})` };
 
         const rowTotal1 = wsSummary.getRow(totalRow1Num);
         rowTotal1.height = 26;
         rowTotal1.font = { name: 'Arial', size: 10, bold: true };
         
-        for (let col = 1; col <= 7; col++) {
+        for (let col = 1; col <= 8; col++) {
             const cell = rowTotal1.getCell(col);
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E7FF' } }; // Indigo 100
             cell.border = {
@@ -1084,9 +1507,9 @@ async function exportExcel() {
                 bottom: { style: 'double', color: { argb: 'FF9CA3AF' } },
                 right: { style: 'thin', color: { argb: 'FF9CA3AF' } }
             };
-            if (col >= 4) {
+            if (col >= 5) {
                 cell.alignment = { vertical: 'middle', horizontal: 'center' };
-                cell.numFmt = col === 4 ? '0' : '#,##0.0';
+                cell.numFmt = col === 5 ? '0' : '#,##0.0';
             } else if (col === 1) {
                 cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
             }
@@ -1096,6 +1519,7 @@ async function exportExcel() {
         wsSummary.columns = [
             { width: 8 },   // STT
             { width: 28 },  // Họ và tên
+            { width: 18 },  // Nhóm
             { width: 16 },  // Mã nhân viên
             { width: 14 },  // Số ngày OT
             { width: 18 },  // OT Trưa
@@ -1109,7 +1533,7 @@ async function exportExcel() {
         });
 
         // 1. Tiêu đề chính
-        wsDetail.mergeCells('A1:J1');
+        wsDetail.mergeCells('A1:K1');
         const title2 = wsDetail.getCell('A1');
         title2.value = `CHI TIẾT TĂNG CA - THÁNG ${month}`;
         title2.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -1118,7 +1542,7 @@ async function exportExcel() {
         wsDetail.getRow(1).height = 40;
 
         // 2. Ngày xuất báo cáo
-        wsDetail.mergeCells('A2:J2');
+        wsDetail.mergeCells('A2:K2');
         const subtitle2 = wsDetail.getCell('A2');
         subtitle2.value = `Ngày xuất báo cáo: ${exportTime}`;
         subtitle2.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF4B5563' } };
@@ -1134,12 +1558,12 @@ async function exportExcel() {
         wsDetail.getRow(4).height = 22;
 
         // 5. Headers
-        const headers2 = ["STT", "Ngày", "Họ và tên", "Mã nhân viên", "OT Trưa", "OT Chiều", "Giờ bắt đầu", "Giờ kết thúc", "Tổng OT (giờ)", "Ghi chú"];
+        const headers2 = ["STT", "Ngày", "Họ và tên", "Nhóm", "Mã nhân viên", "OT Trưa", "OT Chiều", "Giờ bắt đầu", "Giờ kết thúc", "Tổng OT (giờ)", "Ghi chú"];
         wsDetail.getRow(5).values = headers2;
         wsDetail.getRow(5).height = 28;
         wsDetail.getRow(5).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
         
-        for (let col = 1; col <= 10; col++) {
+        for (let col = 1; col <= 11; col++) {
             const cell = wsDetail.getCell(5, col);
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -1165,7 +1589,7 @@ async function exportExcel() {
             if (!isFirstUser) {
                 wsDetail.addRow([]);
                 wsDetail.getRow(currentDetailRow).height = 12;
-                for (let col = 1; col <= 10; col++) {
+                for (let col = 1; col <= 11; col++) {
                     const cell = wsDetail.getCell(currentDetailRow, col);
                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FAFB' } };
                     cell.border = {
@@ -1186,6 +1610,7 @@ async function exportExcel() {
                     detailedIdx++,
                     formatDate(r.date),
                     u.fullname,
+                    u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team'),
                     u.username,
                     lunchVal,
                     eveningVal,
@@ -1197,7 +1622,7 @@ async function exportExcel() {
                 row.height = 22;
                 row.font = { name: 'Arial', size: 10 };
 
-                for (let col = 1; col <= 10; col++) {
+                for (let col = 1; col <= 11; col++) {
                     const cell = row.getCell(col);
                     cell.border = {
                         top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
@@ -1206,7 +1631,7 @@ async function exportExcel() {
                         right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
                     };
 
-                    if (col === 3 || col === 10) {
+                    if (col === 3 || col === 4 || col === 11) {
                         cell.alignment = { vertical: 'middle', horizontal: 'left' };
                     } else {
                         cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -1214,7 +1639,7 @@ async function exportExcel() {
 
                     if (col === 1) {
                         cell.numFmt = '0';
-                    } else if (col === 5 || col === 6 || col === 9) {
+                    } else if (col === 6 || col === 7 || col === 10) {
                         cell.numFmt = '#,##0.0';
                     }
                 }
@@ -1225,18 +1650,18 @@ async function exportExcel() {
         // 7. Tổng cộng chi tiết
         if (detailedIdx > 1) {
             const totalRow2Num = currentDetailRow;
-            wsDetail.mergeCells(`A${totalRow2Num}:D${totalRow2Num}`);
+            wsDetail.mergeCells(`A${totalRow2Num}:E${totalRow2Num}`);
             wsDetail.getCell(`A${totalRow2Num}`).value = "Tổng cộng";
             
-            wsDetail.getCell(`E${totalRow2Num}`).value = { formula: `SUM(E6:E${totalRow2Num - 1})` };
             wsDetail.getCell(`F${totalRow2Num}`).value = { formula: `SUM(F6:F${totalRow2Num - 1})` };
-            wsDetail.getCell(`I${totalRow2Num}`).value = { formula: `SUM(I6:I${totalRow2Num - 1})` };
+            wsDetail.getCell(`G${totalRow2Num}`).value = { formula: `SUM(G6:G${totalRow2Num - 1})` };
+            wsDetail.getCell(`J${totalRow2Num}`).value = { formula: `SUM(J6:J${totalRow2Num - 1})` };
 
             const rowTotal2 = wsDetail.getRow(totalRow2Num);
             rowTotal2.height = 26;
             rowTotal2.font = { name: 'Arial', size: 10, bold: true };
             
-            for (let col = 1; col <= 10; col++) {
+            for (let col = 1; col <= 11; col++) {
                 const cell = rowTotal2.getCell(col);
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E7FF' } }; // Indigo 100
                 cell.border = {
@@ -1245,7 +1670,7 @@ async function exportExcel() {
                     bottom: { style: 'double', color: { argb: 'FF9CA3AF' } },
                     right: { style: 'thin', color: { argb: 'FF9CA3AF' } }
                 };
-                if (col === 5 || col === 6 || col === 9) {
+                if (col === 6 || col === 7 || col === 10) {
                     cell.alignment = { vertical: 'middle', horizontal: 'center' };
                     cell.numFmt = '#,##0.0';
                 } else if (col === 1) {
@@ -1253,7 +1678,7 @@ async function exportExcel() {
                 }
             }
         } else {
-            wsDetail.mergeCells(`A${currentDetailRow}:J${currentDetailRow}`);
+            wsDetail.mergeCells(`A${currentDetailRow}:K${currentDetailRow}`);
             const emptyCell = wsDetail.getCell(`A${currentDetailRow}`);
             emptyCell.value = "Chưa có dữ liệu chi tiết tăng ca cho tháng này.";
             emptyCell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -1265,6 +1690,7 @@ async function exportExcel() {
             { width: 8 },   // STT
             { width: 14 },  // Ngày
             { width: 28 },  // Họ và tên
+            { width: 18 },  // Nhóm
             { width: 16 },  // Mã nhân viên
             { width: 12 },  // OT Trưa
             { width: 12 },  // OT Chiều
@@ -1317,40 +1743,115 @@ async function handleCloseMonth() {
                 text: 'Đã tải (Tiếp tục dọn dẹp)',
                 class: 'btn-primary',
                 action: () => {
-                    // Bước 2: Cảnh báo xóa dữ liệu vĩnh viễn trên Server
-                    showModal(
-                        'CẢNH BÁO QUAN TRỌNG',
-                        `<p style="font-size: 14px; line-height: 1.6; color: var(--accent-red); font-weight: 600;">
-                            CẢNH BÁO: Tất cả dữ liệu tăng ca của tháng ${month} và các tháng cũ hơn sẽ bị xóa sạch khỏi Server.<br><br>
-                            Hệ thống sẽ tự động tạo file sao lưu trên Server và GitHub Gist, tuy nhiên dữ liệu hiển thị hiện tại sẽ bị xóa vĩnh viễn.<br><br>
-                            Thao tác này KHÔNG THỂ HOÀN TÁC! Bạn vẫn muốn tiếp tục?
-                         </p>`,
-                        [
-                            {
-                                text: 'Hủy bỏ',
-                                class: 'btn-ghost',
-                                action: null
-                            },
-                            {
-                                text: 'Xác nhận xóa dữ liệu',
-                                class: 'btn-danger',
-                                action: async () => {
-                                    try {
-                                        showToast('Đang thực hiện dọn dẹp...');
-                                        const res = await api('/api/records/cleanup', 'POST', { month });
-                                        showToast('Dọn dẹp dữ liệu thành công!');
-                                        await Promise.all([
-                                            refreshAdminRecords(),
-                                            refreshAdminStats(),
-                                            refreshReport()
-                                        ]);
-                                    } catch (err) {
-                                        showToast(err.message, 'error');
+                    setTimeout(() => {
+                        // Bước 2: Cảnh báo xóa dữ liệu vĩnh viễn trên Server
+                        showModal(
+                            'CẢNH BÁO QUAN TRỌNG',
+                            `<p style="font-size: 14px; line-height: 1.6; color: var(--accent-red); font-weight: 600;">
+                                CẢNH BÁO: Tất cả dữ liệu tăng ca của tháng ${month} và các tháng cũ hơn sẽ bị xóa sạch khỏi Server.<br><br>
+                                Hệ thống sẽ tự động tạo file sao lưu trên Server và GitHub Gist, tuy nhiên dữ liệu hiển thị hiện tại sẽ bị xóa vĩnh viễn.<br><br>
+                                Thao tác này KHÔNG THỂ HOÀN TÁC! Bạn vẫn muốn tiếp tục?
+                             </p>`,
+                            [
+                                {
+                                    text: 'Hủy bỏ',
+                                    class: 'btn-ghost',
+                                    action: null
+                                },
+                                {
+                                    text: 'Xác nhận xóa dữ liệu',
+                                    class: 'btn-danger',
+                                    action: async () => {
+                                        try {
+                                            showToast('Đang thực hiện dọn dẹp...');
+                                            const res = await api('/api/records/cleanup', 'POST', { month });
+                                            showToast('Dọn dẹp dữ liệu thành công!');
+                                            await Promise.all([
+                                                refreshAdminRecords(),
+                                                refreshAdminStats(),
+                                                refreshReport()
+                                            ]);
+                                        } catch (err) {
+                                            showToast(err.message, 'error');
+                                        }
                                     }
                                 }
-                            }
-                        ]
-                    );
+                            ]
+                        );
+                    }, 50);
+                }
+            }
+        ]
+    );
+}
+
+async function handleDatabaseCleanup() {
+    const monthInput = document.getElementById('cleanup-month-input');
+    if (!monthInput) return;
+    const month = monthInput.value;
+    if (!month) {
+        showToast('Vui lòng chọn tháng cần dọn dẹp!', 'error');
+        return;
+    }
+
+    // Bước 1: Yêu cầu tải báo cáo Excel trước
+    showModal(
+        'Xác nhận Chốt công & Dọn dẹp',
+        `<p style="font-size: 14px; line-height: 1.6; color: var(--text-primary);">
+            Hệ thống yêu cầu bạn đã xuất báo cáo Excel lưu trữ về máy tính trước khi thực hiện.<br><br>
+            <strong>Bạn đã tải báo cáo Excel tháng ${month} về chưa?</strong>
+         </p>`,
+        [
+            {
+                text: 'Chưa tải (Tải ngay)',
+                class: 'btn-ghost',
+                action: async () => {
+                    const originalFilterVal = document.getElementById('report-filter-month').value;
+                    document.getElementById('report-filter-month').value = month;
+                    await exportExcel();
+                    document.getElementById('report-filter-month').value = originalFilterVal;
+                }
+            },
+            {
+                text: 'Đã tải (Tiếp tục dọn dẹp)',
+                class: 'btn-primary',
+                action: () => {
+                    setTimeout(() => {
+                        // Bước 2: Cảnh báo xóa dữ liệu vĩnh viễn trên Server
+                        showModal(
+                            'CẢNH BÁO QUAN TRỌNG',
+                            `<p style="font-size: 14px; line-height: 1.6; color: var(--accent-red); font-weight: 600;">
+                                CẢNH BÁO: Tất cả dữ liệu tăng ca của tháng ${month} và các tháng cũ hơn sẽ bị xóa sạch khỏi Server.<br><br>
+                                Hệ thống sẽ tự động tạo file sao lưu trên Server và GitHub Gist, tuy nhiên dữ liệu hiển thị hiện tại sẽ bị xóa vĩnh viễn.<br><br>
+                                Thao tác này KHÔNG THỂ HOÀN TÁC! Bạn vẫn muốn tiếp tục?
+                             </p>`,
+                            [
+                                {
+                                    text: 'Hủy bỏ',
+                                    class: 'btn-ghost',
+                                    action: null
+                                },
+                                {
+                                    text: 'Xác nhận xóa dữ liệu',
+                                    class: 'btn-danger',
+                                    action: async () => {
+                                        try {
+                                            showToast('Đang thực hiện dọn dẹp...');
+                                            const res = await api('/api/records/cleanup', 'POST', { month });
+                                            showToast('Dọn dẹp dữ liệu thành công!');
+                                            await Promise.all([
+                                                refreshAdminRecords(),
+                                                refreshAdminStats(),
+                                                refreshReport()
+                                            ]);
+                                        } catch (err) {
+                                            showToast(err.message, 'error');
+                                        }
+                                    }
+                                }
+                            ]
+                        );
+                    }, 50);
                 }
             }
         ]
@@ -1370,24 +1871,35 @@ async function initEmployeeDashboard(user) {
 }
 
 function updateOTPreview() {
-    const hasLunch = document.getElementById('ot-lunch').checked;
-    const otStart = document.getElementById('ot-start').value;
-    const otEnd = document.getElementById('ot-end').value;
+    const otBackfill = document.getElementById('ot-backfill');
+    const isBackfill = otBackfill ? otBackfill.checked : false;
     const previewItems = document.getElementById('preview-items');
     const previewTotal = document.getElementById('preview-total');
     let items = [];
     let total = 0;
 
-    if (hasLunch) {
-        items.push({ label: 'OT Trưa (12:20 - 13:20)', value: `${OT_LUNCH_HOURS} giờ` });
-        total += OT_LUNCH_HOURS;
-    }
+    if (isBackfill) {
+        const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
+        if (hoursVal > 0) {
+            items.push({ label: 'Bù tăng ca', value: `${hoursVal.toFixed(1)} giờ` });
+            total = hoursVal;
+        }
+    } else {
+        const hasLunch = document.getElementById('ot-lunch').checked;
+        const otStart = document.getElementById('ot-start').value;
+        const otEnd = document.getElementById('ot-end').value;
 
-    if (otStart && otEnd) {
-        const eveningHours = calculateEveningOT(otStart, otEnd);
-        if (eveningHours > 0) {
-            items.push({ label: `OT Chiều (${otStart} - ${otEnd})`, value: `${eveningHours.toFixed(1)} giờ` });
-            total += eveningHours;
+        if (hasLunch) {
+            items.push({ label: 'OT Trưa (12:20 - 13:20)', value: `${OT_LUNCH_HOURS} giờ` });
+            total += OT_LUNCH_HOURS;
+        }
+
+        if (otStart && otEnd) {
+            const eveningHours = calculateEveningOT(otStart, otEnd);
+            if (eveningHours > 0) {
+                items.push({ label: `OT Chiều (${otStart} - ${otEnd})`, value: `${eveningHours.toFixed(1)} giờ` });
+                total += eveningHours;
+            }
         }
     }
 
@@ -1403,10 +1915,12 @@ async function handleOTSubmit(e) {
     if (!user) return;
 
     const date = document.getElementById('ot-date').value;
-    const hasLunch = document.getElementById('ot-lunch').checked;
+    const otBackfill = document.getElementById('ot-backfill');
+    const isBackfill = otBackfill ? otBackfill.checked : false;
+    const hasLunch = isBackfill ? false : document.getElementById('ot-lunch').checked;
     const otStart = document.getElementById('ot-start').value;
     const otEnd = document.getElementById('ot-end').value;
-    const note = document.getElementById('ot-note').value.trim();
+    let note = document.getElementById('ot-note').value.trim();
     const errorEl = document.getElementById('ot-error');
     const successEl = document.getElementById('ot-success');
     errorEl.textContent = '';
@@ -1414,23 +1928,42 @@ async function handleOTSubmit(e) {
 
     if (!date) { errorEl.textContent = 'Vui lòng chọn ngày!'; return; }
 
-    const eveningHours = calculateEveningOT(otStart, otEnd);
-    const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
-    const totalHours = lunchHours + eveningHours;
+    let eveningHours = 0;
+    let totalHours = 0;
 
-    if (totalHours <= 0) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT!'; return; }
+    if (isBackfill) {
+        const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
+        if (hoursVal <= 0) { errorEl.textContent = 'Vui lòng nhập số giờ bù hợp lệ!'; return; }
+        totalHours = hoursVal;
+        eveningHours = hoursVal;
+        note = '[BÙ THÁNG TRƯỚC] ' + note;
+    } else {
+        eveningHours = calculateEveningOT(otStart, otEnd);
+        const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
+        totalHours = lunchHours + eveningHours;
+        if (totalHours <= 0) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT!'; return; }
+    }
 
     try {
         const data = await api('/api/records', 'POST', {
-            userId: user.id, date, hasLunchOT: hasLunch,
-            otStart: eveningHours > 0 ? otStart : '',
-            otEnd: eveningHours > 0 ? otEnd : '',
-            eveningOTHours: eveningHours, totalHours, note
+            userId: user.id, date, hasLunchOT: isBackfill ? false : hasLunch,
+            otStart: (!isBackfill && eveningHours > 0) ? otStart : '',
+            otEnd: (!isBackfill && eveningHours > 0) ? otEnd : '',
+            eveningOTHours: eveningHours, totalHours, note, isBackfill,
+            createdMonth: isBackfill ? getCurrentMonth() : date.substring(0, 7)
         });
 
         const action = data.updated ? 'Đã cập nhật' : 'Đã lưu';
         successEl.textContent = `${action} ${totalHours.toFixed(1)} giờ tăng ca!`;
         showToast(`${action} ${totalHours.toFixed(1)} giờ tăng ca`);
+
+        if (otBackfill) otBackfill.checked = false;
+        const normalInputs = document.getElementById('ot-normal-inputs');
+        const backfillGroup = document.getElementById('ot-backfill-hours-group');
+        if (normalInputs) normalInputs.style.display = 'block';
+        if (backfillGroup) backfillGroup.style.display = 'none';
+        const backfillHoursEl = document.getElementById('ot-backfill-hours');
+        if (backfillHoursEl) backfillHoursEl.value = '';
 
         document.getElementById('ot-lunch').checked = false;
         document.getElementById('ot-start').value = '16:30';
@@ -1517,6 +2050,9 @@ async function handleAdminOTSubmit(e) {
         document.getElementById('admin-ot-start').value = '16:30';
         document.getElementById('admin-ot-end').value = '16:30';
         document.getElementById('admin-ot-note').value = '';
+        const todayStr2 = new Date().toISOString().split('T')[0];
+        const adminOtDateEl = document.getElementById('admin-ot-date');
+        if (adminOtDateEl) adminOtDateEl.value = todayStr2;
 
         setTimeout(() => { successEl.textContent = ''; }, 3000);
         await refreshAdminStats();
@@ -1538,7 +2074,7 @@ async function refreshEmployeeRecords() {
         const tbody = document.getElementById('emp-records-body');
 
         if (records.length === 0) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Chưa có dữ liệu tăng ca</td></tr>';
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="9">Chưa có dữ liệu tăng ca</td></tr>';
             const statsCardsEl = document.getElementById('emp-stats-cards');
             if (statsCardsEl) {
                 statsCardsEl.innerHTML = `
@@ -1597,9 +2133,27 @@ async function refreshEmployeeRecords() {
         let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0;
         tbody.innerHTML = records.map(r => {
             const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
-            totalLunchOT += lh;
-            totalEveningOT += r.eveningOTHours;
-            totalHours += r.totalHours;
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            const isApproved = !isBackfill || r.status === 'approved';
+            
+            if (isApproved) {
+                totalLunchOT += lh;
+                totalEveningOT += isBackfill ? 0 : r.eveningOTHours;
+                totalHours += r.totalHours;
+            }
+            
+            let badgeClass = 'status-approved';
+            let badgeText = 'Đã duyệt';
+            if (r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')))) {
+                if (r.status === 'pending') {
+                    badgeClass = 'status-pending';
+                    badgeText = 'Chờ duyệt';
+                } else if (r.status === 'rejected') {
+                    badgeClass = 'status-rejected';
+                    badgeText = 'Từ chối';
+                }
+            }
+
             return `<tr>
                 <td>${formatDate(r.date)}</td>
                 <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
@@ -1607,6 +2161,7 @@ async function refreshEmployeeRecords() {
                 <td>${r.otStart || '—'}</td>
                 <td>${r.otEnd || '—'}</td>
                 <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
+                <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
                 <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
                 <td><div class="action-buttons">
                     <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'employee')" title="Sửa" style="margin-right: 4px;">
@@ -2049,7 +2604,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Lỗi kiểm tra phiên bản:', e);
         const verEl = document.getElementById('login-version');
         if (verEl) {
-            verEl.textContent = 'Phiên bản v1.1.3';
+            verEl.textContent = 'Phiên bản v1.3.6';
         }
     }
 
@@ -2274,17 +2829,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+    const otBackfill = document.getElementById('ot-backfill');
+    if (otBackfill) {
+        otBackfill.addEventListener('change', function() {
+            const normalInputs = document.getElementById('ot-normal-inputs');
+            const backfillGroup = document.getElementById('ot-backfill-hours-group');
+            if (this.checked) {
+                if (normalInputs) normalInputs.style.display = 'none';
+                if (backfillGroup) backfillGroup.style.display = 'block';
+                const lunchEl = document.getElementById('ot-lunch');
+                if (lunchEl) lunchEl.checked = false;
+                const startEl = document.getElementById('ot-start');
+                if (startEl) startEl.value = '16:30';
+                const endEl = document.getElementById('ot-end');
+                if (endEl) endEl.value = '16:30';
+            } else {
+                if (normalInputs) normalInputs.style.display = 'block';
+                if (backfillGroup) backfillGroup.style.display = 'none';
+            }
+            updateOTPreview();
+        });
+    }
+    const otBackfillHours = document.getElementById('ot-backfill-hours');
+    if (otBackfillHours) {
+        otBackfillHours.addEventListener('input', updateOTPreview);
+        otBackfillHours.addEventListener('change', updateOTPreview);
+    }
+
     // Filters
     document.getElementById('admin-filter-month').addEventListener('change', refreshAdminRecords);
+    const adminFilterDate = document.getElementById('admin-filter-date');
+    if (adminFilterDate) {
+        adminFilterDate.addEventListener('change', refreshAdminRecords);
+    }
     document.getElementById('admin-filter-user').addEventListener('change', refreshAdminRecords);
     document.getElementById('admin-search-user').addEventListener('input', refreshAdminRecords);
     document.getElementById('admin-search-note').addEventListener('input', refreshAdminRecords);
     document.getElementById('emp-filter-month').addEventListener('change', refreshEmployeeRecords);
     document.getElementById('report-filter-month').addEventListener('change', refreshReport);
 
+    const adminFilterTeam = document.getElementById('admin-filter-team');
+    if (adminFilterTeam) {
+        adminFilterTeam.addEventListener('change', refreshAdminRecords);
+    }
+    const reportFilterTeam = document.getElementById('report-filter-team');
+    if (reportFilterTeam) {
+        reportFilterTeam.addEventListener('change', refreshReport);
+    }
+
     // Export & Cleanup
     document.getElementById('btn-export').addEventListener('click', exportExcel);
     document.getElementById('btn-close-month').addEventListener('click', handleCloseMonth);
+    const btnCleanupDatabase = document.getElementById('btn-cleanup-database');
+    if (btnCleanupDatabase) {
+        btnCleanupDatabase.addEventListener('click', handleDatabaseCleanup);
+    }
 
     // Modal
     document.getElementById('modal-close').addEventListener('click', closeModal);
@@ -2304,10 +2903,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnTeamSettings.addEventListener('click', openTeamSettingsModal);
     }
 
-    // Expose global methods
-    window.addTeamFromModal = addTeamFromModal;
-    window.renameTeamFromModal = renameTeamFromModal;
-    window.deleteTeamFromModal = deleteTeamFromModal;
 });
 
 // ==================== DYNAMIC DIALOGS (ADD/EDIT) ====================
@@ -2463,6 +3058,7 @@ async function addUserDialog() {
         console.error('Lỗi lấy danh sách admin:', e);
     }
     const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+    const isAdmin = currentUser && currentUser.username === 'admin';
 
     const body = `
     <form id="modal-form-add-user" class="login-form active" style="text-align: left; padding: 0;">
@@ -2489,6 +3085,7 @@ async function addUserDialog() {
             <label style="display:block;margin-bottom:6px;font-weight:600;">Team</label>
             <select id="modal-user-team" class="input-sm" style="width:100%; box-sizing:border-box;">
                 <option value="">-- Chưa phân team --</option>
+                ${isAdmin ? '<option value="admin">admin</option>' : ''}
                 ${TEAMS.map(teamName => `<option value="${teamName}">${teamName}</option>`).join('')}
             </select>
         </div>
@@ -2539,9 +3136,18 @@ async function addUserDialog() {
 
 async function editUserDialog(userId) {
     try {
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin');
+
         const data = await api('/api/users');
         const user = data.users.find(u => u.id === userId);
         if (!user) return showToast('Không tìm thấy nhân viên', 'error');
+
+        // Phân quyền: chỉ có thuộc team admin mới được chỉnh sửa thông tin admin
+        const targetIsAdmin = user.team === 'admin' || user.username === 'admin';
+        if (targetIsAdmin && !isBelongToAdminTeam) {
+            return showToast('Chỉ có tài khoản thuộc team admin mới được chỉnh sửa thông tin của quản trị viên!', 'error');
+        }
 
         const body = `
         <form id="modal-form-edit-user" class="login-form active" style="text-align: left; padding: 0;">
@@ -2549,23 +3155,30 @@ async function editUserDialog(userId) {
                 <label style="display:block;margin-bottom:6px;font-weight:600;">Họ và tên</label>
                 <input type="text" id="modal-user-fullname" value="${user.fullname}" class="input-sm" style="width:100%; box-sizing:border-box;" required>
             </div>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Tên đăng nhập</label>
+                <input type="text" id="modal-user-username" value="${user.username}" class="input-sm" style="width:100%; box-sizing:border-box;" ${user.username === 'admin' ? 'readonly style="background:var(--bg-glass); opacity:0.7; cursor:not-allowed;"' : ''} required>
+            </div>
             <div class="form-group" id="modal-user-password-group" style="margin-bottom: 15px;">
                 <label style="display:block;margin-bottom:6px;font-weight:600;">Mật khẩu mới (Để trống nếu giữ nguyên)</label>
                 <input type="password" id="modal-user-password" placeholder="Nhập mật khẩu mới nếu muốn đổi" class="input-sm" style="width:100%; box-sizing:border-box;">
             </div>
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="display:block;margin-bottom:6px;font-weight:600;">Vai trò</label>
-                <select id="modal-user-role" class="input-sm" style="width:100%; box-sizing:border-box;">
-                    <option value="employee" ${user.role === 'employee' ? 'selected' : ''}>Nhân viên (Điện thoại)</option>
-                    <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Quản lý (Desktop)</option>
-                </select>
-            </div>
-            <div class="form-group" id="modal-edit-user-manager-group" style="margin-bottom: 0;">
-                <label style="display:block;margin-bottom:6px;font-weight:600;">Team</label>
-                <select id="modal-user-team" class="input-sm" style="width:100%; box-sizing:border-box;">
-                    <option value="">-- Chưa phân team --</option>
-                    ${TEAMS.map(teamName => `<option value="${teamName}" ${user.team === teamName ? 'selected' : ''}>${teamName}</option>`).join('')}
-                </select>
+            <div id="modal-edit-user-role-team-group" style="${user.username === 'admin' ? 'display: none;' : ''}">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display:block;margin-bottom:6px;font-weight:600;">Vai trò</label>
+                    <select id="modal-user-role" class="input-sm" style="width:100%; box-sizing:border-box;">
+                        <option value="employee" ${user.role === 'employee' ? 'selected' : ''}>Nhân viên (Điện thoại)</option>
+                        <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Quản lý (Desktop)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="modal-edit-user-manager-group" style="margin-bottom: 0;">
+                    <label style="display:block;margin-bottom:6px;font-weight:600;">Team</label>
+                    <select id="modal-user-team" class="input-sm" style="width:100%; box-sizing:border-box;">
+                        <option value="">-- Chưa phân team --</option>
+                        ${isBelongToAdminTeam ? `<option value="admin" ${user.team === 'admin' ? 'selected' : ''}>admin</option>` : ''}
+                        ${TEAMS.map(teamName => `<option value="${teamName}" ${user.team === teamName ? 'selected' : ''}>${teamName}</option>`).join('')}
+                    </select>
+                </div>
             </div>
         </form>`;
 
@@ -2573,13 +3186,15 @@ async function editUserDialog(userId) {
             { text: 'Hủy', class: 'btn-ghost' },
             { text: 'Lưu', class: 'btn btn-primary btn-sm', action: async () => {
                 const fullname = document.getElementById('modal-user-fullname').value.trim();
+                const username = document.getElementById('modal-user-username').value.trim();
                 const password = document.getElementById('modal-user-password').value;
-                const role = document.getElementById('modal-user-role').value;
-                const team = document.getElementById('modal-user-team') ? document.getElementById('modal-user-team').value : '';
+                const role = document.getElementById('modal-user-role') ? document.getElementById('modal-user-role').value : user.role;
+                const team = document.getElementById('modal-user-team') ? document.getElementById('modal-user-team').value : user.team;
 
-                if (!fullname) return showToast('Vui lòng điền họ tên!', 'error');
+                if (!fullname || !username) return showToast('Vui lòng điền họ tên và tên đăng nhập!', 'error');
+                if (username.length < 3) return showToast('Tên đăng nhập tối thiểu 3 ký tự!', 'error');
 
-                const payload = { fullname, role, team };
+                const payload = { fullname, username, role, team };
                 if (password) {
                     if (password.length < 4) return showToast('Mật khẩu tối thiểu 4 ký tự!', 'error');
                     payload.password = password;
@@ -2649,8 +3264,14 @@ async function approveUnlinkDevice(userId, fullname) {
 // Expose global methods for inline HTML onclick handlers
 window.editRecordDialog = editRecordDialog;
 window.deleteRecord = deleteRecord;
+window.approveRecord = approveRecord;
+window.rejectRecord = rejectRecord;
 window.resetUserDevice = resetUserDevice;
 window.approveUnlinkDevice = approveUnlinkDevice;
 window.editUserDialog = editUserDialog;
 window.deleteUser = deleteUser;
+window.addTeamFromModal = addTeamFromModal;
+window.renameTeamFromModal = renameTeamFromModal;
+window.deleteTeamFromModal = deleteTeamFromModal;
+window.handleDatabaseCleanup = handleDatabaseCleanup;
 

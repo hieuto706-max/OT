@@ -110,7 +110,7 @@ function isSessionExpired(loginTimeMs) {
 }
 
 // Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu chạy web local thì tự động dùng origin
-const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.5';
+const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.6';
 let updateCheckInterval = null;
 const isLocalWeb = window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io') && !window.location.hostname.includes('otmanager.id.vn');
 let API = isLocalWeb ? window.location.origin : (safeStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com');
@@ -1047,6 +1047,20 @@ async function loadHistory() {
     const summary = document.getElementById('history-summary');
 
     try {
+        let closedMonths = [];
+        if (API) {
+            try {
+                const closedData = await api('/api/records/closed-months');
+                closedMonths = closedData.closedMonths || [];
+                safeStorage.setItem('ot_cached_closed_months', JSON.stringify(closedMonths));
+            } catch (err) {
+                console.log('Failed to fetch closed months, loading from cache:', err);
+                closedMonths = JSON.parse(safeStorage.getItem('ot_cached_closed_months') || '[]');
+            }
+        } else {
+            closedMonths = JSON.parse(safeStorage.getItem('ot_cached_closed_months') || '[]');
+        }
+
         let records = [];
         if (API) {
             try {
@@ -1098,13 +1112,26 @@ async function loadHistory() {
             const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
             tLunch += lh;
             tEvening += isBackfill ? 0 : r.eveningOTHours;
-            tTotal += r.totalHours;
+            
+            const isApproved = !isBackfill || r.status === 'approved';
+            tTotal += isApproved ? r.totalHours : 0;
 
             let tags = '';
             if (r.hasLunchOT) tags += '<span class="htag htag-lunch">OT Trưa 1h</span>';
             if (r.eveningOTHours > 0 && !isBackfill) tags += `<span class="htag htag-evening">OT Chiều ${r.eveningOTHours.toFixed(1)}h</span>`;
+            let statusText = 'Đã duyệt';
+            let statusStyle = 'background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3);';
             if (isBackfill) {
-                tags += '<span class="htag htag-backfill" style="background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3);">Bù tăng ca</span>';
+                if (r.status === 'pending') {
+                    statusText = 'Chờ duyệt';
+                    statusStyle = 'background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);';
+                } else if (r.status === 'rejected') {
+                    statusText = 'Từ chối';
+                    statusStyle = 'background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3);';
+                }
+                tags += `<span class="htag htag-backfill" style="${statusStyle}">Bù tăng ca (${statusText})</span>`;
+            } else {
+                tags += `<span class="htag htag-status" style="${statusStyle}">${statusText}</span>`;
             }
             if (r.id.startsWith('offline_')) {
                 tags += '<span class="htag htag-offline" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">Chờ đồng bộ</span>';
@@ -1124,6 +1151,20 @@ async function loadHistory() {
 
             const cleanNote = r.note ? r.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
 
+            const recordMonth = r.date.substring(0, 7);
+            const isClosed = closedMonths.includes(recordMonth);
+
+            let actionHtml = '';
+            if (isClosed) {
+                actionHtml = '<span class="tag-closed" style="background: rgba(100, 116, 139, 0.15); color: #64748b; border: 1px solid rgba(100, 116, 139, 0.3); padding: 2px 6px; border-radius: 4px; font-weight: 500; font-size: 11px;">🔒 Đã chốt</span>';
+            } else {
+                actionHtml = `
+                    <button class="action-link edit-link" onclick="editRecordDialog('${r.id}')">Sửa</button>
+                    <span class="action-sep">•</span>
+                    <button class="action-link delete-link" onclick="deleteRecord('${r.id}')">Xóa</button>
+                `;
+            }
+
             return `
                 <div class="history-item" style="animation-delay:${i * 0.04}s">
                     <div class="history-main-row">
@@ -1135,9 +1176,7 @@ async function loadHistory() {
                         <div class="history-right">
                             <span class="history-total">${r.totalHours.toFixed(1)}h</span>
                             <div class="history-item-actions">
-                                <button class="action-link edit-link" onclick="editRecordDialog('${r.id}')">Sửa</button>
-                                <span class="action-sep">•</span>
-                                <button class="action-link delete-link" onclick="deleteRecord('${r.id}')">Xóa</button>
+                                ${actionHtml}
                             </div>
                         </div>
                     </div>
@@ -1156,6 +1195,28 @@ async function loadHistory() {
 }
 
 async function deleteRecord(id) {
+    let closedMonths = [];
+    try {
+        if (API) {
+            const closedData = await api('/api/records/closed-months');
+            closedMonths = closedData.closedMonths || [];
+            safeStorage.setItem('ot_cached_closed_months', JSON.stringify(closedMonths));
+        } else {
+            closedMonths = JSON.parse(safeStorage.getItem('ot_cached_closed_months') || '[]');
+        }
+    } catch (e) {
+        closedMonths = JSON.parse(safeStorage.getItem('ot_cached_closed_months') || '[]');
+    }
+
+    const record = historyRecordsList.find(r => r.id === id);
+    if (record) {
+        const recordMonth = record.date.substring(0, 7);
+        if (closedMonths.includes(recordMonth)) {
+            showToast('Tháng này đã chốt OT, bạn không thể xóa bản ghi!', 'error');
+            return;
+        }
+    }
+
     const ok = await showConfirm('Bạn có chắc muốn xóa bản ghi này?');
     if (!ok) return;
 
@@ -1225,7 +1286,13 @@ async function loadProfileStats() {
         const days = mergedRecords.length;
         const lunch = mergedRecords.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
         const evening = mergedRecords.reduce((s, r) => s + ((r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')))) ? 0 : r.eveningOTHours), 0);
-        const total = lunch + evening + mergedRecords.reduce((s, r) => s + ((r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')))) ? r.totalHours : 0), 0);
+        const total = lunch + evening + mergedRecords.reduce((s, r) => {
+            const isBF = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            if (isBF) {
+                return s + (r.status === 'approved' ? r.totalHours : 0);
+            }
+            return s;
+        }, 0);
 
         document.getElementById('stat-days').textContent = days;
         document.getElementById('stat-lunch').textContent = lunch.toFixed(1);
@@ -2001,6 +2068,24 @@ async function editRecordDialog(id) {
 
         if (!record) return showToast('Không tìm thấy bản ghi', 'error');
 
+        let closedMonths = [];
+        try {
+            if (API) {
+                const closedData = await api('/api/records/closed-months');
+                closedMonths = closedData.closedMonths || [];
+                safeStorage.setItem('ot_cached_closed_months', JSON.stringify(closedMonths));
+            } else {
+                closedMonths = JSON.parse(safeStorage.getItem('ot_cached_closed_months') || '[]');
+            }
+        } catch (e) {
+            closedMonths = JSON.parse(safeStorage.getItem('ot_cached_closed_months') || '[]');
+        }
+
+        const recordMonth = record.date.substring(0, 7);
+        if (closedMonths.includes(recordMonth)) {
+            return showToast('Tháng này đã chốt OT, bạn không thể chỉnh sửa bản ghi!', 'error');
+        }
+
         console.log('[editRecordDialog] Step 4: Getting elements');
         const elDate = document.getElementById('edit-ot-date');
         const elLunch = document.getElementById('edit-ot-lunch');
@@ -2098,6 +2183,25 @@ async function handleEditOTSubmit(e) {
     const end = elEnd.value;
     const isBackfill = elBackfill ? elBackfill.checked : false;
     let note = elNote.value.trim();
+
+    let closedMonths = [];
+    try {
+        if (API) {
+            const closedData = await api('/api/records/closed-months');
+            closedMonths = closedData.closedMonths || [];
+            safeStorage.setItem('ot_cached_closed_months', JSON.stringify(closedMonths));
+        } else {
+            closedMonths = JSON.parse(safeStorage.getItem('ot_cached_closed_months') || '[]');
+        }
+    } catch (e) {
+        closedMonths = JSON.parse(safeStorage.getItem('ot_cached_closed_months') || '[]');
+    }
+
+    const targetMonth = date.substring(0, 7);
+    if (closedMonths.includes(targetMonth)) {
+        showToast('Tháng này đã chốt OT, bạn không thể chỉnh sửa bản ghi về tháng này!', 'error');
+        return;
+    }
 
     if (!note) {
         showToast('Vui lòng nhập ghi chú!', 'error');

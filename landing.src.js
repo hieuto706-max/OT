@@ -15,18 +15,22 @@ document.addEventListener('keydown', e => {
     }
 });
 
-// Safe localStorage wrapper to prevent crashes on file:// URLs
+// Safe localStorage/sessionStorage wrapper to prevent crashes on file:// URLs
 const safeStorage = {
     getItem(key) {
         try {
-            return localStorage.getItem(key);
+            return localStorage.getItem(key) || sessionStorage.getItem(key);
         } catch (e) {
             return this._data[key] || null;
         }
     },
-    setItem(key, val) {
+    setItem(key, val, persist = true) {
         try {
-            localStorage.setItem(key, val);
+            if (persist) {
+                localStorage.setItem(key, val);
+            } else {
+                sessionStorage.setItem(key, val);
+            }
         } catch (e) {
             this._data[key] = val;
         }
@@ -34,6 +38,7 @@ const safeStorage = {
     removeItem(key) {
         try {
             localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
         } catch (e) {
             delete this._data[key];
         }
@@ -374,8 +379,8 @@ class Interactive8DBackground {
         } else if (tabName === 'login') {
             this.targetPerspective = 220; // Warp zoom-in close
             this.targetSpeedMultiplier = 2.4; // Spin fast
-            this.targetHueStart = 245; // Purple / Indigo
-            this.targetHueRange = 40;
+            this.targetHueStart = 140; // Green
+            this.targetHueRange = 30;
         } else if (tabName === 'download') {
             this.targetPerspective = 600; // Far space
             this.targetSpeedMultiplier = 0.65; // Slow drift
@@ -1272,7 +1277,7 @@ document.addEventListener('DOMContentLoaded', () => {
         desktopBtn.style.cursor = 'pointer';
         desktopBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const downloadUrl = this.getAttribute('data-url') || 'https://github.com/hieuto706-max/OT/releases/download/v1.3.5/ot-manager-Setup-1.3.5.exe';
+            const downloadUrl = this.getAttribute('data-url') || 'https://github.com/hieuto706-max/OT/releases/download/v1.3.6/ot-manager-Setup-1.3.6.exe';
             window.open(downloadUrl, '_blank');
         });
     }
@@ -1281,7 +1286,7 @@ document.addEventListener('DOMContentLoaded', () => {
         iosBtn.style.cursor = 'pointer';
         iosBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            window.open('https://otmanager.id.vn/mobile/', '_blank');
+            window.scrollToLogin();
         });
     }
 
@@ -1438,6 +1443,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const username = document.getElementById('login-user').value.trim();
+            if (!username) {
+                return; // Let browser required validation handle it
+            }
+            const remember = document.getElementById('login-remember-emp') ? document.getElementById('login-remember-emp').checked : true;
+
             submitBtn.disabled = true;
             submitBtn.textContent = 'Đang đăng nhập...';
 
@@ -1446,14 +1456,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.user.role !== 'employee') {
                         throw new Error('Tài khoản này không phải là nhân viên!');
                     }
-                    safeStorage.setItem('ot_mobile_user', JSON.stringify(data.user));
-                    safeStorage.setItem('ot_login_time', Date.now().toString());
+                    safeStorage.setItem('ot_mobile_user', JSON.stringify(data.user), remember);
+                    safeStorage.setItem('ot_login_time', Date.now().toString(), remember);
                     if (data.token) {
-                        safeStorage.setItem('ot_auth_token', data.token);
+                        safeStorage.setItem('ot_auth_token', data.token, remember);
                     }
-                    safeStorage.setItem('ot_current_user', JSON.stringify(data.user));
+                    safeStorage.setItem('ot_current_user', JSON.stringify(data.user), remember);
                     const todayStr = new Date().toISOString().split('T')[0];
-                    safeStorage.setItem('ot_login_date', todayStr);
+                    safeStorage.setItem('ot_login_date', todayStr, remember);
 
                     showToast('Đăng nhập Nhân viên thành công!', 'success');
                     setTimeout(() => {
@@ -1529,6 +1539,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const username = document.getElementById('login-admin-user').value.trim();
             const password = document.getElementById('login-password').value;
+            if (!username || !password) {
+                return; // Let browser required validation handle it
+            }
+            const remember = document.getElementById('login-remember-admin') ? document.getElementById('login-remember-admin').checked : true;
+
             submitBtn.disabled = true;
             submitBtn.textContent = 'Đang đăng nhập...';
 
@@ -1538,10 +1553,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         throw new Error('Tài khoản này không có quyền quản trị!');
                     }
                     // Save desktop admin compatible keys
-                    safeStorage.setItem('ot_mobile_user', JSON.stringify(data.user));
-                    safeStorage.setItem('ot_current_user', JSON.stringify(data.user));
-                    safeStorage.setItem('ot_login_time', Date.now().toString());
-                    safeStorage.setItem('ot_login_date', new Date().toISOString().split('T')[0]);
+                    safeStorage.setItem('ot_mobile_user', JSON.stringify(data.user), remember);
+                    safeStorage.setItem('ot_current_user', JSON.stringify(data.user), remember);
+                    safeStorage.setItem('ot_login_time', Date.now().toString(), remember);
+                    safeStorage.setItem('ot_login_date', new Date().toISOString().split('T')[0], remember);
 
                     showToast('Đăng nhập Quản trị thành công!', 'success');
                     setTimeout(() => {
@@ -1586,6 +1601,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 landingNav.classList.remove('open');
                 toggleBtn.classList.remove('active');
             });
+        });
+    }
+
+    // Show/hide password toggle for Admin portal login
+    const btnTogglePassword = document.getElementById('btn-toggle-password');
+    const inputPassword = document.getElementById('login-password');
+    if (btnTogglePassword && inputPassword) {
+        btnTogglePassword.addEventListener('click', () => {
+            const isPassword = inputPassword.getAttribute('type') === 'password';
+            inputPassword.setAttribute('type', isPassword ? 'text' : 'password');
+            btnTogglePassword.innerHTML = isPassword 
+                ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                   </svg>`
+                : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                   </svg>`;
         });
     }
 });

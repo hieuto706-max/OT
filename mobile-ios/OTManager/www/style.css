@@ -4,9 +4,9 @@
 :root {
     color-scheme: dark;
     /* Deep, Rich Dark Palette */
-    --bg-primary: #020205;
-    --bg-secondary: #050510;
-    --bg-card: rgba(14, 15, 28, 0.72);
+    --bg-primary: #020604;
+    --bg-secondary: #050e0a;
+    --bg-card: rgba(8, 20, 16, 0.72);
     --bg-glass: rgba(255, 255, 255, 0.04);
     --bg-glass-hover: rgba(255, 255, 255, 0.09);
     --bg-input: rgba(255, 255, 255, 0.025);
@@ -75,9 +75,17 @@ html {
     height: 100%;
 }
 
+/* Style native date/time/month pickers in dark mode */
+input[type="date"],
+input[type="time"],
+input[type="month"] {
+    color-scheme: dark !important;
+}
+
+
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #020205;
+    background-color: var(--bg-primary);
     color: var(--text);
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
@@ -93,7 +101,7 @@ body::before {
     position: fixed;
     inset: 0;
     z-index: -3;
-    background: radial-gradient(circle at top left, #04120e 0%, #020205 50%), radial-gradient(circle at bottom right, #070718 0%, #020205 60%);
+    background: radial-gradient(circle at top left, #031c13 0%, var(--bg-primary) 60%), radial-gradient(circle at bottom right, #05141f 0%, var(--bg-primary) 70%);
     pointer-events: none;
 }
 
@@ -123,7 +131,6 @@ body::before {
     width: 70vw;
     height: 70vw;
     background: radial-gradient(circle, rgba(13, 217, 139, 0.15) 0%, rgba(13, 217, 139, 0.08) 25%, rgba(5, 150, 105, 0.02) 55%, transparent 75%);
-    animation: orbDrift1 22s ease-in-out infinite alternate;
 }
 
 .orb-2 {
@@ -131,8 +138,7 @@ body::before {
     right: -15%;
     width: 75vw;
     height: 75vw;
-    background: radial-gradient(circle, rgba(124, 127, 255, 0.12) 0%, rgba(124, 127, 255, 0.06) 30%, rgba(91, 94, 235, 0.02) 60%, transparent 80%);
-    animation: orbDrift2 28s ease-in-out infinite alternate;
+    background: radial-gradient(circle, rgba(13, 217, 139, 0.12) 0%, rgba(13, 217, 139, 0.06) 30%, rgba(5, 150, 105, 0.02) 60%, transparent 80%);
 }
 
 .orb-3 {
@@ -141,7 +147,6 @@ body::before {
     width: 60vw;
     height: 60vw;
     background: radial-gradient(circle, rgba(6, 214, 214, 0.1) 0%, rgba(6, 214, 214, 0.04) 30%, rgba(8, 145, 178, 0.01) 60%, transparent 75%);
-    animation: orbDrift3 25s ease-in-out infinite alternate;
 }
 
 /* Custom Scrollbars */
@@ -371,7 +376,7 @@ body::before {
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgba(2, 2, 5, 0.82);
+    background: rgba(2, 6, 4, 0.82);
 }
 
 .landing-logo {
@@ -418,7 +423,7 @@ body::before {
 
 /* ==================== LOGIN CARD — Double-Border Glass ==================== */
 .login-page-card {
-    background: linear-gradient(145deg, rgba(16, 17, 34, 0.85) 0%, rgba(7, 8, 16, 0.8) 100%);
+    background: linear-gradient(145deg, rgba(8, 20, 16, 0.85) 0%, rgba(2, 6, 4, 0.8) 100%);
     backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -443,7 +448,7 @@ body::before {
     inset: 0;
     border-radius: var(--radius-lg);
     padding: 1px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0%, rgba(6, 214, 214, 0.2) 30%, rgba(13, 217, 139, 0.35) 70%, rgba(124, 127, 255, 0.2) 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0%, rgba(6, 214, 214, 0.2) 30%, rgba(13, 217, 139, 0.35) 70%, rgba(13, 217, 139, 0.2) 100%);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -637,7 +642,6 @@ body::before {
     box-shadow: 0 6px 24px rgba(13, 217, 139, 0.32);
     overflow: hidden;
     z-index: 1;
-    animation: btnGlowPulse 3.5s infinite ease-in-out;
     letter-spacing: 0.2px;
 }
 
@@ -658,7 +662,6 @@ body::before {
         transparent
     );
     transform: skewX(-25deg);
-    animation: shimmerSweep 3.5s infinite ease-in-out;
     z-index: 2;
     pointer-events: none;
 }
@@ -742,7 +745,7 @@ body::before {
     justify-content: space-between;
     padding: 16px 20px;
     padding-top: calc(16px + var(--safe-top));
-    background: rgba(3, 3, 8, 0.82);
+    background: rgba(2, 6, 4, 0.82);
     backdrop-filter: blur(28px) saturate(200%);
     -webkit-backdrop-filter: blur(28px) saturate(200%);
     border-bottom: 1px solid var(--border);
@@ -1421,7 +1424,6 @@ body::before {
     inset: -7px;
     border-radius: 50%;
     border: 1.5px solid rgba(13, 217, 139, 0.2);
-    animation: pulseBorder 3s infinite;
 }
 
 .profile-avatar::after {
@@ -1430,7 +1432,6 @@ body::before {
     inset: -14px;
     border-radius: 50%;
     border: 1px solid rgba(13, 217, 139, 0.08);
-    animation: pulseBorder 3s infinite 0.5s;
 }
 
 .profile-header h2 {
@@ -1665,7 +1666,6 @@ body::before {
     border-radius: 50%;
     background: var(--green-light);
     box-shadow: 0 0 8px rgba(58, 234, 166, 0.6);
-    animation: navGlowBreathe 2s ease-in-out infinite;
     z-index: 3;
 }
 

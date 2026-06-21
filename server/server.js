@@ -402,6 +402,7 @@ async function loadDB() {
                 localDB = JSON.parse(data);
                 if (!localDB.users) localDB.users = [];
                 if (!localDB.records) localDB.records = [];
+                if (!localDB.closedMonths) localDB.closedMonths = [];
                 dbCache = localDB;
                 fileLoaded = true;
                 console.log('[Database] Tải dữ liệu thành công từ file local db.json.');
@@ -431,6 +432,7 @@ async function loadDB() {
             if (gistData) {
                 if (!gistData.users) gistData.users = [];
                 if (!gistData.records) gistData.records = [];
+                if (!gistData.closedMonths) gistData.closedMonths = [];
                 // Đồng bộ ghi vào file local db.json để các lần khởi động sau đọc trực tiếp
                 fs.writeFileSync(dbFile, JSON.stringify(gistData, null, 2), 'utf-8');
                 console.log('[Gist] Khôi phục dữ liệu từ Gist thành công!');
@@ -459,7 +461,8 @@ async function loadDB() {
             role: 'admin',
             createdAt: new Date().toISOString()
         }],
-        records: []
+        records: [],
+        closedMonths: []
     };
     
     if (gistLoaded !== 'failed') {
@@ -765,10 +768,13 @@ async function handleAPI(req, res, urlPath, method) {
         let userTeam = body.team || '';
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
-            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin' && reqUser.team !== 'admin') {
                 // Nếu là sub-admin tạo, mặc định gán nhân viên vào team của sub-admin này
                 userTeam = reqUser.team || '';
             }
+        }
+        if (role === 'admin' && !userTeam) {
+            userTeam = 'admin';
         }
 
         const newUser = {
@@ -791,7 +797,7 @@ async function handleAPI(req, res, urlPath, method) {
         let filteredUsers = db.users;
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
-            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin' && reqUser.team !== 'admin') {
                 const reqUserTeam = reqUser.team || '';
                 // Sub-admin: chỉ xem các quản trị viên, nhân viên thuộc team mình, và nhân viên chưa phân team
                 filteredUsers = db.users.filter(u => u.role === 'admin' || (reqUserTeam && u.team === reqUserTeam) || !u.team);
@@ -818,7 +824,7 @@ async function handleAPI(req, res, urlPath, method) {
         // Phân quyền theo Team
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
-            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin' && reqUser.team !== 'admin') {
                 const reqUserTeam = reqUser.team || '';
                 if (user.team && user.team !== reqUserTeam) {
                     return sendError(res, 403, 'Bạn không có quyền xóa tài khoản của team khác!');
@@ -835,7 +841,7 @@ async function handleAPI(req, res, urlPath, method) {
     if (urlPath.startsWith('/api/users/') && method === 'PUT') {
         const userId = urlPath.split('/api/users/')[1];
         const body = await parseBody(req);
-        const { fullname, password, role, deviceId, browserDeviceId, pendingUnlink, team } = body;
+        const { fullname, username, password, role, deviceId, browserDeviceId, pendingUnlink, team } = body;
         const userIdx = db.users.findIndex(u => u.id === userId);
         if (userIdx < 0) return sendError(res, 404, 'Không tìm thấy người dùng!');
 
@@ -843,7 +849,7 @@ async function handleAPI(req, res, urlPath, method) {
         // Phân quyền theo Team
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
-            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin' && reqUser.team !== 'admin') {
                 const reqUserTeam = reqUser.team || '';
                 if (targetUser.id !== reqUserId && targetUser.team && targetUser.team !== reqUserTeam) {
                     return sendError(res, 403, 'Bạn không có quyền sửa tài khoản của team khác!');
@@ -852,6 +858,20 @@ async function handleAPI(req, res, urlPath, method) {
         }
 
         if (fullname) db.users[userIdx].fullname = fullname;
+        if (username) {
+            const lowercaseUsername = username.toLowerCase().trim();
+            if (lowercaseUsername.length < 3) {
+                return sendError(res, 400, 'Tên đăng nhập phải có ít nhất 3 ký tự!');
+            }
+            const existing = db.users.find(u => u.id !== userId && u.username.toLowerCase() === lowercaseUsername);
+            if (existing) {
+                return sendError(res, 409, 'Tên đăng nhập đã tồn tại!');
+            }
+            if (targetUser.username === 'admin' && lowercaseUsername !== 'admin') {
+                return sendError(res, 403, 'Không thể đổi tên đăng nhập của admin mặc định!');
+            }
+            db.users[userIdx].username = username.trim();
+        }
         if (password) db.users[userIdx].password = password;
         if (deviceId !== undefined) db.users[userIdx].deviceId = deviceId;
         if (browserDeviceId !== undefined) db.users[userIdx].browserDeviceId = browserDeviceId;
@@ -860,7 +880,7 @@ async function handleAPI(req, res, urlPath, method) {
         if (team !== undefined) {
             if (reqUserId) {
                 const reqUser = db.users.find(u => u.id === reqUserId);
-                if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+                if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin' && reqUser.team !== 'admin') {
                     // Sub-admin chỉ được gán về team của mình hoặc để trống
                     const reqUserTeam = reqUser.team || '';
                     if (team && team !== reqUserTeam) {
@@ -882,6 +902,11 @@ async function handleAPI(req, res, urlPath, method) {
             }
             db.users[userIdx].role = role;
         }
+
+        if (db.users[userIdx].role === 'admin' && (!db.users[userIdx].team || db.users[userIdx].team === '')) {
+            db.users[userIdx].team = 'admin';
+        }
+
         db.users[userIdx].updatedAt = new Date().toISOString();
         saveDB(db);
         const { password: _, ...safeUser } = db.users[userIdx];
@@ -898,7 +923,7 @@ async function handleAPI(req, res, urlPath, method) {
         // Lọc records theo team nếu requester là Sub-admin
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
-            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin' && reqUser.team !== 'admin') {
                 const reqUserTeam = reqUser.team || '';
                 const allowedUserIds = db.users
                     .filter(u => u.role === 'admin' || (reqUserTeam && u.team === reqUserTeam) || !u.team)
@@ -932,6 +957,27 @@ async function handleAPI(req, res, urlPath, method) {
 
         // Check for existing record on same date
         const existingIdx = db.records.findIndex(r => r.userId === userId && r.date === date);
+        const recordMonth = date.substring(0, 7);
+        const isMonthClosed = db.closedMonths && db.closedMonths.includes(recordMonth);
+        const isBackfill = !!body.isBackfill || isMonthClosed;
+
+        let resolvedRole = reqUserRole;
+        if (!resolvedRole && reqUserId) {
+            const u = db.users.find(usr => usr.id === reqUserId);
+            if (u) resolvedRole = u.role;
+        }
+
+        let status = 'approved';
+        if (isBackfill) {
+            if (body.status) {
+                status = body.status;
+            } else if (existingIdx >= 0 && db.records[existingIdx].status) {
+                status = db.records[existingIdx].status;
+            } else {
+                status = (resolvedRole === 'admin') ? 'approved' : 'pending';
+            }
+        }
+
         const record = {
             id: existingIdx >= 0 ? db.records[existingIdx].id : generateId(),
             userId,
@@ -943,7 +989,8 @@ async function handleAPI(req, res, urlPath, method) {
             totalHours: totalHours || 0,
             note: note || '',
             createdMonth: body.createdMonth || '',
-            isBackfill: !!body.isBackfill,
+            isBackfill: isBackfill,
+            status: status,
             createdAt: existingIdx >= 0 ? db.records[existingIdx].createdAt : new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -965,6 +1012,20 @@ async function handleAPI(req, res, urlPath, method) {
             if (!userExists) {
                 return sendError(res, 401, 'Tài khoản của bạn đã bị xóa khỏi hệ thống!');
             }
+
+            const recordMonth = record.date.substring(0, 7);
+            const isClosed = db.closedMonths && db.closedMonths.includes(recordMonth);
+
+            let resolvedRole = reqUserRole;
+            if (!resolvedRole && reqUserId) {
+                const u = db.users.find(usr => usr.id === reqUserId);
+                if (u) resolvedRole = u.role;
+            }
+
+            if (isClosed && resolvedRole !== 'admin') {
+                return sendError(res, 403, 'Tháng này đã chốt OT, bạn không thể xóa bản ghi!', req);
+            }
+
             // Phân quyền: Nhân viên chỉ được xóa bản ghi của chính mình
             if (jwtPayload && reqUserRole === 'employee' && record.userId !== reqUserId) {
                 return sendError(res, 403, 'Bạn chỉ được xóa bản ghi của chính mình!', req);
@@ -981,6 +1042,19 @@ async function handleAPI(req, res, urlPath, method) {
         const { date, hasLunchOT, otStart, otEnd, eveningOTHours, totalHours, note } = body;
         const idx = db.records.findIndex(r => r.id === recordId);
         if (idx < 0) return sendError(res, 404, 'Không tìm thấy bản ghi!');
+
+        let resolvedRole = reqUserRole;
+        if (!resolvedRole && reqUserId) {
+            const u = db.users.find(usr => usr.id === reqUserId);
+            if (u) resolvedRole = u.role;
+        }
+
+        // Check if month is closed
+        const recordMonth = db.records[idx].date.substring(0, 7);
+        const isClosed = db.closedMonths && db.closedMonths.includes(recordMonth);
+        if (isClosed && resolvedRole !== 'admin') {
+            return sendError(res, 403, 'Tháng này đã chốt OT, bạn không thể chỉnh sửa bản ghi!', req);
+        }
 
         // Phân quyền: Nhân viên chỉ được sửa bản ghi của chính mình
         if (jwtPayload && reqUserRole === 'employee' && db.records[idx].userId !== reqUserId) {
@@ -1000,7 +1074,30 @@ async function handleAPI(req, res, urlPath, method) {
         db.records[idx].totalHours = totalHours !== undefined ? totalHours : db.records[idx].totalHours;
         db.records[idx].note = note !== undefined ? note : db.records[idx].note;
         if (body.createdMonth !== undefined) db.records[idx].createdMonth = body.createdMonth;
-        if (body.isBackfill !== undefined) db.records[idx].isBackfill = !!body.isBackfill;
+
+        const currentMonth = db.records[idx].date.substring(0, 7);
+        const isMonthClosed = db.closedMonths && db.closedMonths.includes(currentMonth);
+
+        if (isMonthClosed) {
+            db.records[idx].isBackfill = true;
+            if (body.status !== undefined) {
+                db.records[idx].status = body.status;
+            } else if (resolvedRole !== 'admin') {
+                db.records[idx].status = 'pending';
+            }
+        } else {
+            if (body.isBackfill !== undefined) db.records[idx].isBackfill = !!body.isBackfill;
+            if (body.status !== undefined) {
+                db.records[idx].status = body.status;
+            } else if (db.records[idx].isBackfill) {
+                if (resolvedRole !== 'admin') {
+                    db.records[idx].status = 'pending';
+                }
+            } else {
+                db.records[idx].status = 'approved';
+            }
+        }
+
         db.records[idx].updatedAt = new Date().toISOString();
 
         saveDB(db);
@@ -1017,7 +1114,7 @@ async function handleAPI(req, res, urlPath, method) {
 
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
-            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin') {
+            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin' && reqUser.team !== 'admin') {
                 const adminTeam = reqUser.team || '';
                 // Sub-admin: chỉ thống kê nhân viên thuộc team của mình
                 employees = db.users.filter(u => u.role === 'employee' && u.team === adminTeam);
@@ -1026,20 +1123,21 @@ async function handleAPI(req, res, urlPath, method) {
             }
         }
 
-        const monthRecords = db.records.filter(r => r.date.startsWith(currentMonth) && allowedUserIds.includes(r.userId));
-        const todayRecords = db.records.filter(r => r.date === today && allowedUserIds.includes(r.userId));
+        const approvedRecords = db.records.filter(r => r.date.startsWith(currentMonth) && allowedUserIds.includes(r.userId) && (r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected')));
+        const pendingRecords = db.records.filter(r => r.date.startsWith(currentMonth) && allowedUserIds.includes(r.userId) && r.status === 'pending');
+        const pendingUnlinksCount = employees.filter(u => u.pendingUnlink).length;
 
         return sendJSON(res, 200, {
             totalUsers: employees.length,
-            totalOTMonth: monthRecords.reduce((s, r) => s + r.totalHours, 0),
-            todayOT: todayRecords.reduce((s, r) => s + r.totalHours, 0),
-            lunchOTMonth: monthRecords.filter(r => r.hasLunchOT).length
+            pendingOT: pendingRecords.length,
+            pendingUnlinks: pendingUnlinksCount,
+            totalOTMonth: approvedRecords.reduce((s, r) => s + r.totalHours, 0)
         });
     }
 
     // --- TEAMS CONFIG ---
     if (urlPath === '/api/teams' && method === 'GET') {
-        const defaultTeams = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6', 'Team 7', 'Team 8', 'Team 9', 'Team 10'];
+        const defaultTeams = [];
         const teams = db.teams || defaultTeams;
         return sendJSON(res, 200, { teams });
     }
@@ -1187,6 +1285,34 @@ async function handleAPI(req, res, urlPath, method) {
         }
     }
 
+    // --- CLOSED MONTHS ---
+    if (urlPath === '/api/records/closed-months' && method === 'GET') {
+        const closed = db.closedMonths || [];
+        return sendJSON(res, 200, { closedMonths: closed });
+    }
+
+    if (urlPath === '/api/records/close-month' && method === 'POST') {
+        if (reqUserId) {
+            const user = db.users.find(u => u.id === reqUserId);
+            if (!user || user.role !== 'admin') {
+                return sendError(res, 403, 'Bạn không có quyền chốt OT!', req);
+            }
+        }
+        const body = await parseBody(req);
+        const { month } = body;
+        if (!month || !month.match(/^\d{4}-\d{2}$/)) {
+            return sendError(res, 400, 'Tháng không hợp lệ (định dạng đúng: YYYY-MM)!');
+        }
+        if (!db.closedMonths) {
+            db.closedMonths = [];
+        }
+        if (!db.closedMonths.includes(month)) {
+            db.closedMonths.push(month);
+            saveDB(db);
+        }
+        return sendJSON(res, 200, { success: true, closedMonths: db.closedMonths });
+    }
+
     // --- MANUAL CLEANUP & BACKUP ---
     if (urlPath === '/api/records/cleanup' && method === 'POST') {
         const body = await parseBody(req);
@@ -1196,7 +1322,7 @@ async function handleAPI(req, res, urlPath, method) {
         }
         try {
             await performCleanup(month);
-            return sendJSON(res, 200, { success: true, message: `Đã chốt công và dọn dẹp dữ liệu tháng ${month} thành công!` });
+            return sendJSON(res, 200, { success: true, message: `Đã dọn dẹp dữ liệu tháng ${month} thành công!` });
         } catch (err) {
             return sendError(res, 500, `Lỗi dọn dẹp: ${err.message}`);
         }

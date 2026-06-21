@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="landing.css?v=1.3.6.0">
+    <link rel="stylesheet" href="landing.css?v=1.3.6.1">
     <!-- Prevent login portal flashing if already logged in -->
     <style id="anti-flash-style">
       html.user-logged-in #login-welcome-box {
@@ -29,8 +29,8 @@
     <script id="anti-flash-script">
       (function() {
         try {
-          const saved = localStorage.getItem('ot_mobile_user');
-          const loginTime = localStorage.getItem('ot_login_time');
+          const saved = localStorage.getItem('ot_mobile_user') || sessionStorage.getItem('ot_mobile_user');
+          const loginTime = localStorage.getItem('ot_login_time') || sessionStorage.getItem('ot_login_time');
           if (saved && loginTime) {
             const loginDate = new Date(parseInt(loginTime, 10));
             const cutoff = new Date(loginDate.getFullYear(), loginDate.getMonth(), loginDate.getDate() + 1, 5, 0, 0, 0);
@@ -101,7 +101,7 @@
                     </defs>
                 </svg>
                 <span class="logo-text">OT Manager</span>
-                <span class="web-version-badge">v1.3.5</span>
+                <span class="web-version-badge">v1.3.6</span>
             </div>
             <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle navigation">
                 <div class="hamburger-bar"></div>
@@ -154,7 +154,7 @@
                             <div class="hud-ring-1"></div>
                             <div class="hud-ring-2"></div>
                             <div class="device-mockup-wrapper tilt-card vr-corners">
-                                <img src="resources/ot_manager_app_review.png?v=1.3.5-showcase" alt="OT Manager App Mockup" class="review-mockup">
+                                <img src="resources/ot_manager_app_review.png?v=1.3.6-showcase" alt="OT Manager App Mockup" class="review-mockup">
                             </div>
                             <div class="floating-badge badge-1">✅ Đã Duyệt +3.5h</div>
                             <div class="floating-badge badge-2">📊 Báo cáo Excel</div>
@@ -225,11 +225,31 @@
                             <div class="feat-icon-large">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="3" stroke-opacity="0.4"/>
-                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke-linejoin="round"/>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51-1z" stroke-linejoin="round"/>
                                 </svg>
                             </div>
                             <h3>Cấu hình mạng linh hoạt</h3>
                             <p>Tự động phát hiện mạng kết nối cục bộ và hỗ trợ cấu hình máy chủ từ xa, đảm bảo ứng dụng luôn giữ kết nối ổn định.</p>
+                        </div>
+                        <div class="feat-card-large vr-corners">
+                            <div class="feat-icon-large">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" stroke-opacity="0.3"/>
+                                    <path d="M12 8v8M8 12h8" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <h3>Bù tăng ca linh hoạt</h3>
+                            <p>Hỗ trợ ghi nhận bổ sung giờ làm thêm (OT) bị thiếu hoặc quên khai báo của tháng trước trực tiếp trên giao diện cá nhân, được quản lý phê duyệt trực tuyến.</p>
+                        </div>
+                        <div class="feat-card-large vr-corners">
+                            <div class="feat-icon-large">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" stroke-opacity="0.5"/>
+                                    <line x1="1" y1="1" x2="23" y2="23"/>
+                                </svg>
+                            </div>
+                            <h3>Chặn trình duyệt ẩn danh</h3>
+                            <p>Tự động phát hiện và ngăn chặn đăng nhập ở chế độ ẩn danh (Private/Incognito) để tránh mất dữ liệu Local Storage và bảo vệ an toàn ràng buộc thiết bị.</p>
                         </div>
                     </div>
                 </section>
@@ -249,7 +269,7 @@
                             <div class="gallery-grid">
                                 <div class="gallery-card">
                                     <div class="gallery-img-wrapper">
-                                        <img src="resources/mobile_login.png?v=1.3.5-mockup" alt="Cổng đăng nhập di động">
+                                        <img src="resources/mobile_login.png?v=1.3.6-mockup" alt="Cổng đăng nhập di động">
                                     </div>
                                     <div class="gallery-info">
                                         <h4>Cổng đăng nhập di động</h4>
@@ -258,7 +278,7 @@
                                 </div>
                                 <div class="gallery-card">
                                     <div class="gallery-img-wrapper">
-                                        <img src="resources/mobile_records.png?v=1.3.5-mockup" alt="Giao diện báo cáo OT">
+                                        <img src="resources/mobile_records.png?v=1.3.6-mockup" alt="Giao diện báo cáo OT">
                                     </div>
                                     <div class="gallery-info">
                                         <h4>Giao diện báo cáo OT trưa & tối</h4>
@@ -267,7 +287,7 @@
                                 </div>
                                 <div class="gallery-card">
                                     <div class="gallery-img-wrapper">
-                                        <img src="resources/ot_manager_mobile_review.png?v=1.3.5-mockup" alt="Bảng chấm công di động">
+                                        <img src="resources/ot_manager_mobile_review.png?v=1.3.6-mockup" alt="Bảng chấm công di động">
                                     </div>
                                     <div class="gallery-info">
                                         <h4>Trang chấm công di động</h4>
@@ -404,6 +424,10 @@
                                         <input type="text" id="login-user" placeholder="Nhập mã nhân viên..." autocomplete="username" required>
                                     </div>
                                 </div>
+                                <div class="form-group remember-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; justify-content: flex-start; flex-direction: row;">
+                                    <input type="checkbox" id="login-remember-emp" style="accent-color: var(--green); width: 16px; height: 16px; cursor: pointer; margin: 0;">
+                                    <label for="login-remember-emp" style="font-size: 13px; color: var(--text-sub); cursor: pointer; margin-left: 0; display: inline-block;">Ghi nhớ đăng nhập</label>
+                                </div>
                                 <button type="submit" class="btn btn-primary btn-full" id="btn-login-emp">
                                     Đăng nhập Nhân viên
                                 </button>
@@ -419,7 +443,7 @@
                                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                                             <circle cx="12" cy="7" r="4"/>
                                         </svg>
-                                        <input type="text" id="login-admin-user" placeholder="Nhập tên đăng nhập quản trị..." autocomplete="username">
+                                        <input type="text" id="login-admin-user" placeholder="Nhập tên đăng nhập quản trị..." autocomplete="username" required>
                                     </div>
                                 </div>
                                 <div class="form-group">
@@ -429,10 +453,20 @@
                                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                                             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                                         </svg>
-                                        <input type="password" id="login-password" placeholder="Nhập mật khẩu..." autocomplete="current-password">
+                                        <input type="password" id="login-password" placeholder="Nhập mật khẩu..." autocomplete="current-password" required>
+                                        <button type="button" class="btn-toggle-password" id="btn-toggle-password" title="Hiện/Ẩn mật khẩu" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; z-index: 10; transition: var(--transition-fast);">
+                                            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                                <circle cx="12" cy="12" r="3"/>
+                                            </svg>
+                                        </button>
                                     </div>
                                 </div>
-                                <button type="submit" class="btn btn-purple btn-full" id="btn-login-admin">
+                                <div class="form-group remember-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; justify-content: flex-start; flex-direction: row;">
+                                    <input type="checkbox" id="login-remember-admin" style="accent-color: var(--green); width: 16px; height: 16px; cursor: pointer; margin: 0;">
+                                    <label for="login-remember-admin" style="font-size: 13px; color: var(--text-sub); cursor: pointer; margin-left: 0; display: inline-block;">Ghi nhớ đăng nhập</label>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-full" id="btn-login-admin">
                                     Đăng nhập Quản trị
                                 </button>
                                 <p id="login-error-admin" class="form-error"></p>
@@ -501,7 +535,7 @@
                                 <p class="download-desc">Ứng dụng chuyên dụng dành cho Quản trị viên và Quản lý để kiểm soát công việc, phê duyệt tăng ca và kết xuất tệp báo cáo Excel.</p>
                             </div>
                             <div class="download-card-actions">
-                                <a id="desktop-download-btn-landing" class="btn btn-purple btn-full" style="cursor: pointer;">Tải Windows EXE</a>
+                                <a id="desktop-download-btn-landing" class="btn btn-blue btn-full" style="cursor: pointer;">Tải Windows EXE</a>
                             </div>
                         </div>
 
@@ -523,8 +557,8 @@
                                 <p class="download-desc">Dành cho nhân viên sử dụng iPhone. Bạn có thể truy cập trực tiếp qua trình duyệt Safari như Web App để ghi nhận OT tức thời.</p>
                             </div>
                             <div class="download-card-actions">
-                                <a id="ios-download-btn-landing" class="btn btn-ghost btn-full btn-ios-border" style="cursor: pointer;">
-                                    Mở trên Safari (Web App)
+                                <a id="ios-download-btn-landing" class="btn btn-apple btn-full" style="cursor: pointer;">
+                                    Đăng nhập ngay (Web App)
                                 </a>
                                 <p class="ios-development-hint">Bản cài đặt iOS Native đang được phát triển nội bộ</p>
                             </div>
@@ -539,7 +573,29 @@
                     <h2 class="section-title text-center">Nhật ký cập nhật hệ thống</h2>
                     <div class="changelog-timeline">
                         
-                        <!-- Item 1: v1.3.5 -->
+                        <!-- Item 1: v1.3.6 -->
+                        <div class="changelog-item">
+                            <div class="changelog-header-btn">
+                                <span class="changelog-badge">v1.3.6</span>
+                                <span class="changelog-date">22/06/2026</span>
+                                <span class="changelog-chevron">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="changelog-body-expand">
+                                <ul class="changelog-list">
+                                    <li>Tích hợp thêm tùy chọn "Bù tăng ca" trong phần ghi nhận giờ làm thêm dành cho cả nhân viên và quản trị viên.</li>
+                                    <li>Ngăn chặn triệt để hành vi đăng nhập từ chế độ ẩn danh (Incognito/Private mode) trên cả phiên bản Web, Desktop và Mobile nhằm bảo mật định danh thiết bị.</li>
+                                    <li>Cập nhật giao diện đăng nhập của ứng dụng Desktop (Windows EXE) với 2 mô hình thiết bị nghiêng trôi nổi sinh động tương tự như bản di động.</li>
+                                    <li>Đồng bộ tông màu nền xanh lá-đen đậm chất công nghệ của trang chủ sang ứng dụng di động Mobile.</li>
+                                    <li>Sửa các lỗi hiển thị trên trình duyệt Safari, cải tiến cơ chế tự động dọn dẹp các IP kết nối cũ và dọn dẹp dữ liệu tháng cũ kèm sao lưu.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Item 2: v1.3.5 -->
                         <div class="changelog-item">
                             <div class="changelog-header-btn">
                                 <span class="changelog-badge">v1.3.5</span>
@@ -660,6 +716,8 @@
                                 <li>Mỗi tài khoản nhân viên chỉ được đăng ký trên một trình duyệt di động hoặc ứng dụng di động duy nhất để đảm bảo tính minh bạch.</li>
                                 <li>Người dùng chịu trách nhiệm báo cáo trung thực thời gian làm thêm giờ của mình theo quy định công ty.</li>
                                 <li>Nghiêm cấm mọi hành vi can thiệp dữ liệu, đăng nhập hộ hoặc thay đổi cấu trúc mã nguồn ứng dụng.</li>
+                                <li>Để đảm bảo ràng buộc thiết bị (Device Bound) hoạt động ổn định và chính xác, người dùng **không được đăng nhập hệ thống từ chế độ duyệt web ẩn danh (Private/Incognito)**. Chế độ ẩn danh sẽ bị hệ thống chặn truy cập.</li>
+                                <li>Nhân viên có quyền chọn hình thức "Bù tăng ca" để ghi nhận bổ sung số giờ làm thêm (OT) bị thiếu sót của tháng trước, tuân thủ theo chính sách thỏa thuận OT của từng phòng ban.</li>
                             </ul>
                         </div>
                         <div class="terms-section">
@@ -667,7 +725,8 @@
                             <p>Hệ thống tôn trọng và bảo vệ tính riêng tư đối với dữ liệu của bạn:</p>
                             <ul>
                                 <li><strong>Mục đích quyền hệ thống:</strong> Quyền quét mạng nội bộ và lấy mã nhận diện trình duyệt/thiết bị chỉ được sử dụng cho mục đích: (1) Hỗ trợ đồng bộ dữ liệu nhanh với server của công ty; (2) Liên kết tài khoản an toàn để bảo vệ quyền lợi cá nhân. Hệ thống cam kết không thu thập vị trí bên ngoài hay thông tin cuộc gọi khác của nhân viên.</li>
-                                <li><strong>Sử dụng dữ liệu:</strong> Dữ liệu giờ làm thêm (OT) chỉ được sử dụng cho việc quản lý chấm công và đối chiếu dữ liệu tính lương nội bộ của công ty.</li>
+                                <li><strong>Chính sách chặn tab ẩn danh:</strong> Nhằm bảo vệ mã định danh bảo mật thiết bị được lưu trữ trong Local Storage (hoặc OPFS) khỏi việc bị trình duyệt tự động xóa khi đóng tab, đồng thời ngăn chặn các hành vi gian lận đăng nhập chéo thiết bị, hệ thống bắt buộc kiểm tra và chặn tất cả kết nối từ chế độ ẩn danh.</li>
+                                <li><strong>Sử dụng dữ liệu:</strong> Dữ liệu giờ làm thêm (OT) và dữ liệu đăng ký bù tăng ca chỉ được sử dụng cho việc quản lý chấm công, theo dõi đối chiếu dữ liệu tính lương nội bộ của công ty.</li>
                                 <li><strong>Bảo mật:</strong> Dữ liệu lưu trữ được mã hóa an toàn trên server công ty và không chia sẻ cho bất kỳ bên thứ ba nào.</li>
                             </ul>
                         </div>
@@ -677,6 +736,6 @@
         </div>
     </div>
 
-    <script src="landing.js?v=1.3.6.2"></script>
+    <script src="landing.js?v=1.3.6.3"></script>
 </body>
 </html>

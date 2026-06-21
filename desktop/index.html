@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://api.qrserver.com; connect-src 'self' http://localhost:* http://127.0.0.1:* http://192.168.*.* https://ot-manager-server-jbxd.onrender.com https://otmanager.id.vn;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' blob:; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://api.qrserver.com; connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* https://ot-manager-server-jbxd.onrender.com https://otmanager.id.vn http://*.ngrok-free.app https://*.ngrok-free.app http://*.localtunnel.me https://*.localtunnel.me;">
     <title>Quản Lý Tăng Ca | OT Manager</title>
     <meta name="description" content="Ứng dụng quản lý tăng ca cho doanh nghiệp - Theo dõi giờ tăng ca nhân viên">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=1.4.4">
     <!-- Prevent login screen flashing if already logged in -->
     <style id="anti-flash-style">
       html.user-admin-logged-in #screen-login,
@@ -26,6 +26,25 @@
     <script id="anti-flash-script">
       (function() {
         try {
+          // If session is temporary (stored in sessionStorage), sync to localStorage for app access
+          const tempUser = sessionStorage.getItem('ot_current_user');
+          if (tempUser) {
+            sessionStorage.setItem('ot_session_temp', '1');
+            const keys = ['ot_mobile_user', 'ot_current_user', 'ot_login_time', 'ot_login_date', 'ot_auth_token'];
+            keys.forEach(k => {
+              const val = sessionStorage.getItem(k);
+              if (val) localStorage.setItem(k, val);
+            });
+          }
+          
+          // Cleanup temporary session from localStorage on tab close or navigation away
+          window.addEventListener('beforeunload', () => {
+            if (sessionStorage.getItem('ot_session_temp') === '1') {
+              const keys = ['ot_mobile_user', 'ot_current_user', 'ot_login_time', 'ot_login_date', 'ot_auth_token'];
+              keys.forEach(k => localStorage.removeItem(k));
+            }
+          });
+
           const isElectron = navigator.userAgent.toLowerCase().includes('electron');
           const isSessionActive = sessionStorage.getItem('ot_session_active');
           if (isElectron && !isSessionActive) {
@@ -51,6 +70,12 @@
     <!-- ==================== LOGIN SCREEN ==================== -->
     <div id="screen-login" class="screen active">
         <div class="login-bg">
+            <!-- ==================== BACKGROUND TECH GRID & FLOATING GRAPHICS ==================== -->
+            <div class="landing-bg-decorations">
+                <div class="tech-grid"></div>
+                <div class="floating-bg-mockup mockup-left"></div>
+                <div class="floating-bg-mockup mockup-right"></div>
+            </div>
             <div class="login-container">
                 <div class="login-logo">
                     <div class="logo-icon">
@@ -61,8 +86,8 @@
                             <path d="M16 34h16" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
                             <defs>
                                 <linearGradient id="grad1" x1="4" y1="4" x2="44" y2="44">
-                                    <stop stop-color="#6366f1"/>
-                                    <stop offset="1" stop-color="#8b5cf6"/>
+                                    <stop stop-color="#0dd98b"/>
+                                    <stop offset="1" stop-color="#07965f"/>
                                 </linearGradient>
                             </defs>
                         </svg>
@@ -106,7 +131,7 @@
                     </button>
                     <p id="login-error-admin" class="form-error"></p>
                 </form>
-                <div class="login-version" id="login-version">Phiên bản v1.2.0</div>
+                <div class="login-version" id="login-version">Phiên bản v1.3.6</div>
             </div>
         </div>
     </div>
@@ -121,8 +146,8 @@
                         <path d="M16 9v7l5 3" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
                         <defs>
                             <linearGradient id="grad2" x1="2" y1="2" x2="30" y2="30">
-                                <stop stop-color="#6366f1"/>
-                                <stop offset="1" stop-color="#8b5cf6"/>
+                                <stop stop-color="#0dd98b"/>
+                                <stop offset="1" stop-color="#07965f"/>
                             </linearGradient>
                         </defs>
                     </svg>
@@ -150,99 +175,117 @@
             </div>
         </header>
 
-        <main class="main-content">
-            <!-- Stats Cards -->
-            <div class="stats-row">
-                <div class="stat-card stat-card-purple">
-                    <div class="stat-icon">
+        <div class="admin-layout">
+            <aside class="admin-sidebar">
+                <div class="sidebar-logo">
+                    <svg viewBox="0 0 32 32" fill="none">
+                        <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#grad2)"/>
+                        <path d="M16 9v7l5 3" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <h2>OT Manager</h2>
+                </div>
+                <div class="admin-tabs">
+                    <button class="admin-tab active" data-admin-tab="records">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                        <span>Bảng chấm OT</span>
+                        <span class="tab-badge" id="badge-pending-records" style="display:none;"></span>
+                    </button>
+                    <button class="admin-tab" data-admin-tab="users">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                             <circle cx="9" cy="7" r="4"/>
                             <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                             <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                         </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-total-users">0</span>
-                        <span class="stat-label">Tổng nhân viên</span>
-                    </div>
-                </div>
-                <div class="stat-card stat-card-blue">
-                    <div class="stat-icon">
+                        <span>Quản lý nhân viên</span>
+                        <span class="tab-badge" id="badge-pending-unlinks" style="display:none;"></span>
+                    </button>
+                    <button class="admin-tab" data-admin-tab="add-ot">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <polyline points="12 6 12 12 16 14"/>
+                            <path d="M12 5v14M5 12h14"/>
                         </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-total-ot">0</span>
-                        <span class="stat-label">Tổng giờ OT tháng</span>
-                    </div>
-                </div>
-                <div class="stat-card stat-card-green">
-                    <div class="stat-icon">
+                        <span>Ghi tăng ca</span>
+                    </button>
+                    <button class="admin-tab" data-admin-tab="report">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                            <line x1="16" y1="2" x2="16" y2="6"/>
-                            <line x1="8" y1="2" x2="8" y2="6"/>
-                            <line x1="3" y1="10" x2="21" y2="10"/>
+                            <line x1="18" y1="20" x2="18" y2="10"/>
+                            <line x1="12" y1="20" x2="12" y2="4"/>
+                            <line x1="6" y1="20" x2="6" y2="14"/>
                         </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-today-ot">0</span>
-                        <span class="stat-label">OT hôm nay</span>
-                    </div>
-                </div>
-                <div class="stat-card stat-card-orange">
-                    <div class="stat-icon">
+                        <span>Báo cáo tổng hợp</span>
+                    </button>
+                    <button class="admin-tab" data-admin-tab="settings">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51-1z"/>
                         </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value" id="stat-lunch-ot">0</span>
-                        <span class="stat-label">OT trưa tháng</span>
-                    </div>
+                        <span>Thiết lập</span>
+                    </button>
                 </div>
-            </div>
+            </aside>
 
-            <!-- Admin Tabs -->
-            <div class="admin-tabs">
-                <button class="admin-tab active" data-admin-tab="records">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                    </svg>
-                    Bảng chấm OT
-                </button>
-                <button class="admin-tab" data-admin-tab="users">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                    Quản lý nhân viên
-                </button>
-                <button class="admin-tab" data-admin-tab="report">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="20" x2="18" y2="10"/>
-                        <line x1="12" y1="20" x2="12" y2="4"/>
-                        <line x1="6" y1="20" x2="6" y2="14"/>
-                    </svg>
-                    Báo cáo tổng hợp
-                </button>
-                <button class="admin-tab" data-admin-tab="add-ot">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 5v14M5 12h14"/>
-                    </svg>
-                    Ghi tăng ca
-                </button>
-            </div>
+            <main class="admin-workspace">
+                <!-- Stats Cards -->
+                <div class="stats-row">
+                    <div class="stat-card stat-card-purple">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-total-users">0</span>
+                            <span class="stat-label">Tổng nhân viên</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-orange">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-pending-ot">0</span>
+                            <span class="stat-label">Chờ duyệt OT</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-blue">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                                <line x1="12" y1="18" x2="12.01" y2="18"/>
+                                <line x1="8" y1="12" x2="16" y2="12"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-pending-unlinks">0</span>
+                            <span class="stat-label">Chờ huỷ liên kết</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-green">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M8 12.5l3 3 5-6"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-total-ot">0</span>
+                            <span class="stat-label">Tổng giờ OT tháng (Đã duyệt)</span>
+                        </div>
+                    </div>
+                </div>
 
-            <!-- Tab: Records -->
+                <!-- Tab: Records -->
             <div id="admin-tab-records" class="admin-tab-content active">
                 <div class="panel">
                     <div class="panel-header">
@@ -251,6 +294,16 @@
                             <div class="filter-group">
                                 <label>Tháng:</label>
                                 <input type="month" id="admin-filter-month" class="input-sm">
+                            </div>
+                            <div class="filter-group">
+                                <label>Ngày:</label>
+                                <input type="date" id="admin-filter-date" class="input-sm">
+                            </div>
+                            <div class="filter-group" id="admin-filter-team-group" style="display: none;">
+                                <label>Team:</label>
+                                <select id="admin-filter-team" class="input-sm">
+                                    <option value="">Tất cả Team</option>
+                                </select>
                             </div>
                             <div class="filter-group">
                                 <label>Nhân viên:</label>
@@ -268,29 +321,101 @@
                             </div>
                         </div>
                     </div>
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Nhân viên</th>
-                                    <th>Ngày</th>
-                                    <th>OT Trưa</th>
-                                    <th>OT Chiều</th>
-                                    <th>Giờ bắt đầu</th>
-                                    <th>Giờ kết thúc</th>
-                                    <th>Tổng OT (giờ)</th>
-                                    <th>Ghi chú</th>
-                                    <th>Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-records-body">
-                                <tr class="empty-row">
-                                    <td colspan="9">Chưa có dữ liệu tăng ca</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <!-- Sub-tabs within Records -->
+                    <div class="sub-tabs">
+                        <button class="sub-tab active" data-subtab="records-approved">Ghi nhận OT</button>
+                        <button class="sub-tab" data-subtab="records-pending">
+                            Chờ duyệt
+                            <span class="sub-tab-badge" id="badge-sub-pending" style="display:none;">0</span>
+                        </button>
+                        <button class="sub-tab" data-subtab="records-rejected">
+                            Từ chối
+                            <span class="sub-tab-badge" id="badge-sub-rejected" style="display:none;">0</span>
+                        </button>
                     </div>
-                    <div class="table-summary" id="admin-table-summary"></div>
+
+                    <!-- Approved Records Table Container -->
+                    <div id="subtab-content-records-approved" class="sub-tab-content active">
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nhân viên</th>
+                                        <th>Nhóm</th>
+                                        <th>Ngày</th>
+                                        <th>OT Trưa</th>
+                                        <th>OT Chiều</th>
+                                        <th>Giờ bắt đầu</th>
+                                        <th>Giờ kết thúc</th>
+                                        <th>Tổng OT (giờ)</th>
+                                        <th>Ghi chú</th>
+                                        <th>Trạng thái</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-records-approved-body">
+                                    <tr class="empty-row">
+                                        <td colspan="11">Chưa có dữ liệu tăng ca</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-summary" id="admin-table-summary"></div>
+                    </div>
+
+                    <!-- Pending Records Table Container -->
+                    <div id="subtab-content-records-pending" class="sub-tab-content">
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nhân viên</th>
+                                        <th>Nhóm</th>
+                                        <th>Ngày</th>
+                                        <th>OT Trưa</th>
+                                        <th>OT Chiều</th>
+                                        <th>Giờ bắt đầu</th>
+                                        <th>Giờ kết thúc</th>
+                                        <th>Tổng OT (giờ)</th>
+                                        <th>Ghi chú</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-records-pending-body">
+                                    <tr class="empty-row">
+                                        <td colspan="10">Không có yêu cầu chờ duyệt</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Rejected Records Table Container -->
+                    <div id="subtab-content-records-rejected" class="sub-tab-content">
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nhân viên</th>
+                                        <th>Nhóm</th>
+                                        <th>Ngày</th>
+                                        <th>OT Trưa</th>
+                                        <th>OT Chiều</th>
+                                        <th>Giờ bắt đầu</th>
+                                        <th>Giờ kết thúc</th>
+                                        <th>Tổng OT (giờ)</th>
+                                        <th>Ghi chú</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-records-rejected-body">
+                                    <tr class="empty-row">
+                                        <td colspan="10">Không có bản ghi bị từ chối</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -298,7 +423,15 @@
             <div id="admin-tab-users" class="admin-tab-content">
                 <div class="panel">
                     <div class="panel-header">
-                        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:4px;"><path d="M17 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Quản lý tài khoản</h3>
+                        <h3>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:4px; vertical-align:middle;">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                            Quản lý tài khoản
+                        </h3>
                         <div class="panel-actions">
                             <button class="btn btn-primary btn-sm" id="btn-add-user">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
@@ -309,20 +442,37 @@
                                 </svg>
                                 Thêm tài khoản
                             </button>
-                            <button class="btn btn-ghost btn-sm" id="btn-team-settings">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                                    <circle cx="12" cy="12" r="3"/>
-                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                                </svg>
-                                Thiết lập Team
-                            </button>
                         </div>
                     </div>
 
                     <!-- Sub-tabs within User Management -->
                     <div class="sub-tabs">
                         <button class="sub-tab active" data-subtab="employees">Nhân viên</button>
+                        <button class="sub-tab" data-subtab="unassigned">
+                            Chưa phân team
+                            <span class="sub-tab-badge" id="badge-sub-unassigned" style="display:none; background:#ef4444; color:#fff;">0</span>
+                        </button>
                         <button class="sub-tab" data-subtab="admins">Quản trị viên</button>
+                    </div>
+
+                    <!-- Admins Table Container -->
+                    <div id="subtab-content-admins" class="sub-tab-content">
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                     <tr>
+                                         <th>#</th>
+                                         <th>Họ và tên</th>
+                                         <th>Tên đăng nhập</th>
+                                         <th>Team</th>
+                                         <th>Vai trò</th>
+                                         <th>Thao tác</th>
+                                     </tr>
+                                </thead>
+                                <tbody id="admin-managers-body">
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <!-- Employees Table Container -->
@@ -346,8 +496,16 @@
                         </div>
                     </div>
 
-                    <!-- Admins Table Container -->
-                    <div id="subtab-content-admins" class="sub-tab-content">
+                    <!-- Unassigned Employees Table Container -->
+                    <div id="subtab-content-unassigned" class="sub-tab-content">
+                        <div id="unassigned-warning-alert" style="display:none; margin-bottom: 16px; padding: 12px 16px; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); color: #f87171; font-weight: 500; font-size: 14px; align-items: center; gap: 8px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="flex-shrink: 0;">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                            <span id="unassigned-warning-text">Có nhân viên chưa phân team! Vui lòng chỉnh sửa và gán team để họ có thể đăng ký tăng ca.</span>
+                        </div>
                         <div class="table-wrapper">
                             <table class="data-table">
                                 <thead>
@@ -357,10 +515,11 @@
                                          <th>Tên đăng nhập</th>
                                          <th>Team</th>
                                          <th>Vai trò</th>
+                                         <th>Tổng OT tháng này</th>
                                          <th>Thao tác</th>
                                      </tr>
                                 </thead>
-                                <tbody id="admin-managers-body">
+                                <tbody id="admin-users-unassigned-body">
                                 </tbody>
                             </table>
                         </div>
@@ -377,14 +536,20 @@
                         <div class="panel-actions" style="width: 100%; display: flex; justify-content: flex-end; align-items: center; gap: 16px;">
                             <button class="btn btn-warning btn-sm" id="btn-close-month" style="margin-right: auto; background-color: #d97706; border-color: #d97706;">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                                    <path d="M9 11l2 2 4-4"/>
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                                 </svg>
-                                Chốt công & Dọn dẹp
+                                Chốt OT
                             </button>
                             <div class="filter-group">
                                 <label>Tháng:</label>
                                 <input type="month" id="report-filter-month" class="input-sm">
+                            </div>
+                            <div class="filter-group" id="report-filter-team-group" style="display: none;">
+                                <label>Team:</label>
+                                <select id="report-filter-team" class="input-sm">
+                                    <option value="">Tất cả Team</option>
+                                </select>
                             </div>
                             <button class="btn btn-primary btn-sm" id="btn-export">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -402,6 +567,7 @@
                                 <tr>
                                     <th>STT</th>
                                     <th>Họ và tên</th>
+                                    <th>Nhóm</th>
                                     <th>Số ngày OT</th>
                                     <th>OT Trưa (giờ)</th>
                                     <th>OT Chiều (giờ)</th>
@@ -502,7 +668,73 @@
                     </form>
                 </div>
             </div>
+
+            <!-- Tab: Settings -->
+            <div id="admin-tab-settings" class="admin-tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:4px; vertical-align:middle;">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51-1z"/>
+                            </svg>
+                            Thiết lập hệ thống
+                        </h3>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 20px 0;">
+                        <!-- Card 1: Team Settings -->
+                        <div class="card" style="background: var(--bg-glass); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h4 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="color:var(--accent-blue);">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                    </svg>
+                                    Quản lý danh sách Team
+                                </h4>
+                                <p style="font-size: 13px; color: var(--text-secondary); margin: 0 0 20px 0; line-height: 1.5;">
+                                    Cấu hình danh sách các Team trong công ty. Bạn có thể thêm team mới, sửa tên team hiện có hoặc xóa team không còn hoạt động.
+                                </p>
+                            </div>
+                            <button class="btn btn-primary" id="btn-team-settings" style="width: fit-content;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                                Thiết lập Team
+                            </button>
+                        </div>
+                        <!-- Card 2: Memory/Database Cleanup -->
+                        <div class="card" style="background: var(--bg-glass); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h4 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="color:var(--accent-red);">
+                                        <path d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>
+                                    </svg>
+                                    Dọn dẹp bộ nhớ
+                                </h4>
+                                <p style="font-size: 13px; color: var(--text-secondary); margin: 0 0 20px 0; line-height: 1.5;">
+                                    Giải phóng dung lượng database bằng cách sao lưu và xóa bỏ các bản ghi OT cũ từ tháng được chọn trở về trước. File sao lưu sẽ được lưu cục bộ và đồng bộ lên Cloud.
+                                </p>
+                                <div class="filter-group" style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                                    <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin: 0;">Chọn tháng dọn dẹp:</label>
+                                    <input type="month" id="cleanup-month-input" class="input-sm" style="max-width: 150px;">
+                                </div>
+                            </div>
+                            <button class="btn btn-danger" id="btn-cleanup-database" style="width: fit-content; background: #dc2626; border-color: #dc2626;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <path d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v3M4 7h16"/>
+                                </svg>
+                                Dọn dẹp dữ liệu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
+        </div>
     </div>
 
     <!-- ==================== EMPLOYEE DASHBOARD (APP CON) ==================== -->
@@ -515,8 +747,8 @@
                         <path d="M16 9v7l5 3" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
                         <defs>
                             <linearGradient id="grad3" x1="2" y1="2" x2="30" y2="30">
-                                <stop stop-color="#10b981"/>
-                                <stop offset="1" stop-color="#059669"/>
+                                <stop stop-color="#0dd98b"/>
+                                <stop offset="1" stop-color="#07965f"/>
                             </linearGradient>
                         </defs>
                     </svg>
@@ -527,6 +759,10 @@
                 </div>
             </div>
             <div class="header-right">
+                <div class="filter-group" style="background: var(--bg-glass); padding: 6px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px; margin-right: 16px;">
+                    <label style="font-size: 13px; color: var(--text-secondary); font-weight: 600; white-space: nowrap; margin-bottom: 0;">Tháng:</label>
+                    <input type="month" id="emp-filter-month" class="input-sm" style="background: var(--bg-input); border-color: var(--border-color); height: 32px; padding: 0 10px;">
+                </div>
                 <div class="header-date" id="emp-date"></div>
                 <button class="btn btn-ghost" id="btn-logout-emp" title="Đăng xuất" style="color:var(--accent-red)">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
@@ -538,150 +774,179 @@
             </div>
         </header>
 
-        <main class="main-content">
-            <!-- Employee Tabs Navigation -->
-            <div class="emp-tabs-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
-                <div class="emp-tabs" style="margin-bottom: 0; flex: 1; max-width: 600px;">
-                    <button class="emp-tab active" data-emp-tab="register">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:4px; vertical-align:middle;">
+        <div class="admin-layout">
+            <aside class="admin-sidebar">
+                <div class="sidebar-logo">
+                    <svg viewBox="0 0 32 32" fill="none">
+                        <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#grad3)"/>
+                        <path d="M16 9v7l5 3" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <h2>OT Manager</h2>
+                </div>
+                <div class="admin-tabs">
+                    <button class="admin-tab emp-tab active" data-emp-tab="register">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/>
                             <line x1="12" y1="8" x2="12" y2="16"/>
                             <line x1="8" y1="12" x2="16" y2="12"/>
                         </svg>
-                        Ghi nhận tăng ca
+                        <span>Ghi nhận tăng ca</span>
                     </button>
-                    <button class="emp-tab" data-emp-tab="history">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:4px; vertical-align:middle;">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                    <button class="admin-tab emp-tab" data-emp-tab="history">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
                         </svg>
-                        Lịch sử tăng ca
+                        <span>Lịch sử tăng ca</span>
                     </button>
-                    <button class="emp-tab" data-emp-tab="summary">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:4px; vertical-align:middle;">
+                    <button class="admin-tab emp-tab" data-emp-tab="summary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M18 20V10M12 20V4M6 20v-6"/>
                         </svg>
-                        Tổng hợp giờ OT
+                        <span>Tổng hợp giờ OT</span>
                     </button>
                 </div>
-                <div class="filter-group" style="background: var(--bg-glass); padding: 8px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; align-items: center; gap: 8px;">
-                    <label style="font-size: 13px; color: var(--text-secondary); font-weight: 600; white-space: nowrap; margin-bottom: 0;">Tháng:</label>
-                    <input type="month" id="emp-filter-month" class="input-sm" style="background: var(--bg-input); border-color: var(--border-color);">
-                </div>
-            </div>
+            </aside>
 
-            <!-- Tab 1: Ghi nhận tăng ca -->
-            <div id="emp-tab-register" class="emp-tab-content active">
-                <div class="panel ot-form-panel">
-                    <div class="panel-header">
-                        <h3>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="display:inline; margin-right:6px; vertical-align:middle; color:var(--accent-green);">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="12" y1="8" x2="12" y2="16"/>
-                                <line x1="8" y1="12" x2="16" y2="12"/>
-                            </svg>
-                            Ghi nhận tăng ca mới
-                        </h3>
-                    </div>
-                    <form id="form-ot" class="ot-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="ot-date">Ngày tăng ca</label>
-                                <input type="date" id="ot-date" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="ot-lunch">
-                                    <span class="checkbox-custom"></span>
-                                    Tăng ca trưa (12:20 - 13:20)
-                                </label>
-                            </div>
+            <main class="admin-workspace">
+                <!-- Tab 1: Ghi nhận tăng ca -->
+                <div id="emp-tab-register" class="emp-tab-content active">
+                    <div class="panel ot-form-panel">
+                        <div class="panel-header">
+                            <h3>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="display:inline; margin-right:6px; vertical-align:middle; color:var(--accent-green);">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <line x1="12" y1="8" x2="12" y2="16"/>
+                                    <line x1="8" y1="12" x2="16" y2="12"/>
+                                </svg>
+                                Ghi nhận tăng ca mới
+                            </h3>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="ot-start">Giờ bắt đầu OT chiều</label>
-                                <input type="time" id="ot-start" value="16:30">
-                                <small class="form-hint">Sau ca làm chính thức 16:30</small>
+                        <form id="form-ot" class="ot-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ot-date">Ngày tăng ca</label>
+                                    <input type="date" id="ot-date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="ot-backfill">
+                                        <span class="checkbox-custom"></span>
+                                        Bù tăng ca
+                                    </label>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="ot-end">Giờ kết thúc OT chiều</label>
-                                <input type="time" id="ot-end" value="16:30">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="ot-note">Ghi chú</label>
-                            <textarea id="ot-note" placeholder="Lý do tăng ca, phân công công việc..." required></textarea>
-                        </div>
 
-                        <div class="ot-preview" id="ot-preview">
-                            <div class="preview-title">Chi tiết tính toán:</div>
-                            <div class="preview-items" id="preview-items"></div>
-                            <div class="preview-total">
-                                <span>Tổng OT:</span>
-                                <strong><span id="preview-total">0</span> giờ</strong>
+                            <!-- Backfill hours input -->
+                            <div class="form-group" id="ot-backfill-hours-group" style="display: none; margin-bottom: 16px;">
+                                <label for="ot-backfill-hours" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">Số giờ tăng ca cần bù:</label>
+                                <input type="number" id="ot-backfill-hours" step="0.1" min="0.1" max="24" placeholder="Nhập số giờ bù (ví dụ: 8.0)">
                             </div>
-                        </div>
 
-                        <button type="submit" class="btn btn-green btn-full">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                                <polyline points="17 21 17 13 7 13 7 21"/>
-                                <polyline points="7 3 7 8 15 8"/>
-                            </svg>
-                            Lưu tăng ca
-                        </button>
-                        <p id="ot-error" class="form-error"></p>
-                        <p id="ot-success" class="form-success"></p>
-                    </form>
-                </div>
-            </div>
+                            <!-- Normal OT inputs -->
+                            <div id="ot-normal-inputs">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="checkbox-label" style="margin-top: 0;">
+                                            <input type="checkbox" id="ot-lunch">
+                                            <span class="checkbox-custom"></span>
+                                            Tăng ca trưa (12:20 - 13:20)
+                                        </label>
+                                    </div>
+                                    <div class="form-group"></div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="ot-start">Giờ bắt đầu OT chiều</label>
+                                        <input type="time" id="ot-start" value="16:30">
+                                        <small class="form-hint">Sau ca làm chính thức 16:30</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ot-end">Giờ kết thúc OT chiều</label>
+                                        <input type="time" id="ot-end" value="16:30">
+                                    </div>
+                                </div>
+                            </div>
 
-            <!-- Tab 2: Lịch sử tăng ca -->
-            <div id="emp-tab-history" class="emp-tab-content">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:6px; vertical-align:middle;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Lịch sử tăng ca cá nhân</h3>
-                    </div>
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Ngày</th>
-                                    <th>OT Trưa</th>
-                                    <th>OT Chiều</th>
-                                    <th>Giờ BĐ</th>
-                                    <th>Giờ KT</th>
-                                    <th>Tổng (giờ)</th>
-                                    <th>Ghi chú</th>
-                                    <th>Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody id="emp-records-body">
-                                <tr class="empty-row">
-                                    <td colspan="8">Chưa có dữ liệu tăng ca</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                            <div class="form-group">
+                                <label for="ot-note">Ghi chú</label>
+                                <textarea id="ot-note" placeholder="Lý do tăng ca, phân công công việc..." required></textarea>
+                            </div>
+
+                            <div class="ot-preview" id="ot-preview">
+                                <div class="preview-title">Chi tiết tính toán:</div>
+                                <div class="preview-items" id="preview-items"></div>
+                                <div class="preview-total">
+                                    <span>Tổng OT:</span>
+                                    <strong><span id="preview-total">0</span> giờ</strong>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-green btn-full">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                    <polyline points="17 21 17 13 7 13 7 21"/>
+                                    <polyline points="7 3 7 8 15 8"/>
+                                </svg>
+                                Lưu tăng ca
+                            </button>
+                            <p id="ot-error" class="form-error"></p>
+                            <p id="ot-success" class="form-success"></p>
+                        </form>
                     </div>
                 </div>
-            </div>
 
-            <!-- Tab 3: Tổng hợp giờ OT -->
-            <div id="emp-tab-summary" class="emp-tab-content">
-                <div class="panel" style="border-color: rgba(16, 185, 129, 0.15);">
-                    <div class="panel-header">
-                        <h3>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:6px; vertical-align:middle; color:var(--accent-green);">
-                                <path d="M12 20V10M18 20V4M6 20v-6"/>
-                            </svg>
-                            Tổng hợp giờ làm việc tăng ca
-                        </h3>
-                    </div>
-                    <div class="stats-row" id="emp-stats-cards" style="margin-bottom: 0;">
-                        <!-- Will be dynamically populated by JS -->
+                <!-- Tab 2: Lịch sử tăng ca -->
+                <div id="emp-tab-history" class="emp-tab-content">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:6px; vertical-align:middle;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Lịch sử tăng ca cá nhân</h3>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ngày</th>
+                                        <th>OT Trưa</th>
+                                        <th>OT Chiều</th>
+                                        <th>Giờ BĐ</th>
+                                        <th>Giờ KT</th>
+                                        <th>Tổng (giờ)</th>
+                                        <th>Trạng thái</th>
+                                        <th>Ghi chú</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emp-records-body">
+                                    <tr class="empty-row">
+                                        <td colspan="9">Chưa có dữ liệu tăng ca</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </main>
+
+                <!-- Tab 3: Tổng hợp giờ OT -->
+                <div id="emp-tab-summary" class="emp-tab-content">
+                    <div class="panel" style="border-color: rgba(16, 185, 129, 0.15);">
+                        <div class="panel-header">
+                            <h3>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:6px; vertical-align:middle; color:var(--accent-green);">
+                                    <path d="M12 20V10M18 20V4M6 20v-6"/>
+                                </svg>
+                                Tổng hợp giờ làm việc tăng ca
+                            </h3>
+                        </div>
+                        <div class="stats-row" id="emp-stats-cards" style="margin-bottom: 0;">
+                            <!-- Will be dynamically populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
     </div>
 
     <!-- ==================== MODALS ==================== -->
@@ -703,6 +968,6 @@
 
     <script src="exceljs.min.js"></script>
     <script src="xlsx.full.min.js"></script>
-    <script src="app.js?v=1.3.9"></script>
+    <script src="app.js?v=1.4.4"></script>
 </body>
 </html>
