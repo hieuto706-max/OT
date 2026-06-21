@@ -146,6 +146,15 @@ async function isPrivateMode() {
             return;
         }
 
+        // Only run incognito checks in secure contexts (HTTPS or localhost)
+        const isSecureContext = window.location.protocol === 'https:' || 
+                               window.location.hostname === 'localhost' || 
+                               window.location.hostname === '127.0.0.1';
+        if (!isSecureContext) {
+            resolve(false);
+            return;
+        }
+
         try {
             const testKey = "__private_test__";
             localStorage.setItem(testKey, "1");
@@ -191,7 +200,7 @@ async function isPrivateMode() {
                     setTimeout(() => {
                         w.terminate();
                         fallbackQuota();
-                    }, 300);
+                    }, 2000); // 2 seconds timeout for slower mobile worker cold starts
                 } catch (err) {
                     fallbackQuota();
                 }
@@ -215,7 +224,10 @@ async function isPrivateMode() {
                     resolve(false);
                 }
             } else {
-                if (navigator.storage && navigator.storage.estimate) {
+                const isMobile = /android|iphone|ipad|ipod/i.test(ua);
+                if (isMobile) {
+                    resolve(false); // Mobile quota is highly dynamic and unreliable. Avoid blocking.
+                } else if (navigator.storage && navigator.storage.estimate) {
                     navigator.storage.estimate().then((est) => {
                         resolve(est.quota < 120000000);
                     }).catch(() => resolve(false));
