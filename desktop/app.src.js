@@ -125,7 +125,7 @@ async function isPrivateMode() {
         }
 
         if (navigator.serviceWorker && typeof navigator.serviceWorker.register === 'function') {
-            navigator.serviceWorker.register('nonexistent-sw-test.js').then((reg) => {
+            navigator.serviceWorker.register('sw.js').then((reg) => {
                 reg.unregister();
                 detectChromiumOrFallback();
             }).catch((err) => {
