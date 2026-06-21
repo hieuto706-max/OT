@@ -636,7 +636,14 @@ function logout() {
     const loginForm = document.getElementById('form-login-employee');
     if (loginForm) loginForm.reset();
     showToast('Đã đăng xuất', 'info');
-    handleUnauthenticated();
+    
+    // Redirect to main website if running on web browser
+    const isWebBrowser = window.location.protocol !== 'file:';
+    if (isWebBrowser) {
+        window.location.href = '../';
+    } else {
+        handleUnauthenticated();
+    }
 }
 
 async function refreshCurrentUserInfo() {
