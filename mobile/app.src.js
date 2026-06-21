@@ -407,6 +407,11 @@ function updateConnectionStatus(connected, serverUrl, isConnecting) {
 
 // ==================== SCREENS ====================
 function showScreen(id) {
+    if (id === 'screen-login') {
+        document.documentElement.classList.remove('user-logged-in');
+    } else if (id === 'screen-app') {
+        document.documentElement.classList.add('user-logged-in');
+    }
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const el = document.getElementById(id);
     if (el) el.classList.add('active');

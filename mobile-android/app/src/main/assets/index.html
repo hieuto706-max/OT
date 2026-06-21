@@ -27,6 +27,35 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link id="main-theme-style" rel="stylesheet" href="style.css?v=1.3.11">
+    <!-- Prevent login screen flashing if already logged in -->
+    <style id="anti-flash-style">
+      html.user-logged-in #screen-login {
+        display: none !important;
+      }
+      html.user-logged-in #screen-app {
+        display: flex !important;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        height: 100%; height: 100dvh;
+        flex-direction: column;
+        overflow: hidden;
+      }
+    </style>
+    <script id="anti-flash-script">
+      (function() {
+        try {
+          const saved = localStorage.getItem('ot_mobile_user');
+          const loginTime = localStorage.getItem('ot_login_time');
+          if (saved && loginTime) {
+            const loginDate = new Date(parseInt(loginTime, 10));
+            const cutoff = new Date(loginDate.getFullYear(), loginDate.getMonth(), loginDate.getDate() + 1, 5, 0, 0, 0);
+            if (Date.now() < cutoff.getTime()) {
+              document.documentElement.classList.add('user-logged-in');
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
 </head>
 <body>
     <!-- ==================== BACKGROUND GLOWING ORBS ==================== -->

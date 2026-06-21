@@ -142,6 +142,13 @@ function calculateEveningOT(startTime, endTime) {
 
 // ==================== SCREEN MANAGEMENT ====================
 function showScreen(screenId) {
+    if (screenId === 'screen-login') {
+        document.documentElement.classList.remove('user-admin-logged-in', 'user-employee-logged-in');
+    } else if (screenId === 'screen-admin') {
+        document.documentElement.classList.add('user-admin-logged-in');
+    } else if (screenId === 'screen-employee') {
+        document.documentElement.classList.add('user-employee-logged-in');
+    }
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
 }

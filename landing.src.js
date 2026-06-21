@@ -1053,6 +1053,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         safeStorage.removeItem('ot_login_time');
                         safeStorage.removeItem('ot_current_user');
                         safeStorage.removeItem('ot_login_date');
+                        document.documentElement.classList.remove('user-logged-in'); // Dọn dẹp class tránh flash
                         showToast('Đã đăng xuất tài khoản thành công', 'info');
                         
                         // Phục hồi giao diện đăng nhập bình thường

@@ -10,6 +10,42 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- Prevent login screen flashing if already logged in -->
+    <style id="anti-flash-style">
+      html.user-admin-logged-in #screen-login,
+      html.user-employee-logged-in #screen-login {
+        display: none !important;
+      }
+      html.user-admin-logged-in #screen-admin {
+        display: block !important;
+      }
+      html.user-employee-logged-in #screen-employee {
+        display: block !important;
+      }
+    </style>
+    <script id="anti-flash-script">
+      (function() {
+        try {
+          const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+          const isSessionActive = sessionStorage.getItem('ot_session_active');
+          if (isElectron && !isSessionActive) {
+            return;
+          }
+          const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+          if (currentUser) {
+            const loginDate = localStorage.getItem('ot_login_date');
+            const todayStr = new Date().toISOString().split('T')[0];
+            if (loginDate && loginDate === todayStr) {
+              if (currentUser.role === 'admin') {
+                document.documentElement.classList.add('user-admin-logged-in');
+              } else {
+                document.documentElement.classList.add('user-employee-logged-in');
+              }
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
 </head>
 <body>
     <!-- ==================== LOGIN SCREEN ==================== -->
