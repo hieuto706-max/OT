@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://otmanager.id.vn/sitemap.xml
