@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="landing.css?v=1.3.6.1">
+    <link rel="stylesheet" href="landing.css?v=1.3.7">
     <!-- Prevent login portal flashing if already logged in -->
     <style id="anti-flash-style">
       html.user-logged-in #login-welcome-box {
@@ -101,7 +101,7 @@
                     </defs>
                 </svg>
                 <span class="logo-text">OT Manager</span>
-                <span class="web-version-badge">v1.3.6</span>
+                <span class="web-version-badge">v1.3.7</span>
             </div>
             <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle navigation">
                 <div class="hamburger-bar"></div>
@@ -154,7 +154,7 @@
                             <div class="hud-ring-1"></div>
                             <div class="hud-ring-2"></div>
                             <div class="device-mockup-wrapper tilt-card vr-corners">
-                                <img src="resources/ot_manager_app_review.png?v=1.3.6-showcase" alt="OT Manager App Mockup" class="review-mockup">
+                                <img src="resources/ot_manager_app_review.png?v=1.3.7-showcase" alt="OT Manager App Mockup" class="review-mockup">
                             </div>
                             <div class="floating-badge badge-1">✅ Đã Duyệt +3.5h</div>
                             <div class="floating-badge badge-2">📊 Báo cáo Excel</div>
@@ -573,6 +573,27 @@
                     <h2 class="section-title text-center">Nhật ký cập nhật hệ thống</h2>
                     <div class="changelog-timeline">
                         
+                        <!-- Item 0: v1.3.7 -->
+                        <div class="changelog-item">
+                            <div class="changelog-header-btn">
+                                <span class="changelog-badge">v1.3.7</span>
+                                <span class="changelog-date">23/06/2026</span>
+                                <span class="changelog-chevron">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="changelog-body-expand">
+                                <ul class="changelog-list">
+                                    <li>Nâng cấp phiên bản Android tối thiểu của ứng dụng APK lên Android 10.0 (API 29) để tăng độ mượt và tối ưu hóa hệ thống.</li>
+                                    <li>Kích hoạt tăng tốc đồ họa phần cứng GPU hoàn chỉnh cấp độ Window và WebView trên Android, giảm thiểu giật lag tối đa.</li>
+                                    <li>Loại bỏ hoàn toàn các yêu cầu phân quyền thừa (ACCESS_FINE_LOCATION, READ_PHONE_STATE) không sử dụng trên ứng dụng di động để tránh phiền toái cho người dùng.</li>
+                                    <li>Khắc phục triệt để lỗi tự động xóa localStorage/sessionStorage trên trình duyệt web khi truy cập trang di động (/mobile), giúp duy trì trạng thái đăng nhập ổn định.</li>
+                                </ul>
+                            </div>
+                        </div>
+
                         <!-- Item 1: v1.3.6 -->
                         <div class="changelog-item">
                             <div class="changelog-header-btn">
@@ -736,6 +757,6 @@
         </div>
     </div>
 
-    <script src="landing.js?v=1.3.6.3"></script>
+    <script src="landing.js?v=1.3.7"></script>
 </body>
 </html>
