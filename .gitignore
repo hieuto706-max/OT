@@ -12,3 +12,9 @@ node-portable/
 android-sdk/
 db.json
 .env
+
+# Scratch & temp files
+scratch/
+*_log.txt
+*.log
+subagent_logs.txt
