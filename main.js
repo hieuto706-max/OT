@@ -53,7 +53,7 @@ async function createWindow() {
     let cloudUrl = '';
 
     // Đọc file config.json: Ưu tiên kế bên file exe khi đóng gói, sau đó mới đến file trong asar/dev
-    let configPath = path.join(__dirname, 'config.json');
+    let configPath = path.join(__dirname, 'server', 'config.json');
     if (app.isPackaged) {
         const exeConfig = path.join(path.dirname(process.execPath), 'config.json');
         if (fs.existsSync(exeConfig)) {
