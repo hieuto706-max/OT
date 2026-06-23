@@ -48,50 +48,9 @@ const safeStorage = {
 
 // Tạo vân tay trình duyệt để giữ cố định Device ID trên Web ngay cả khi xóa lịch sử
 function getBrowserFingerprint() {
-    try {
-        const ua = navigator.userAgent;
-        // Detect OS
-        let os = "unknown_os";
-        if (ua.indexOf("Windows") !== -1) os = "Windows";
-        else if (ua.indexOf("Macintosh") !== -1) os = "Mac";
-        else if (ua.indexOf("Linux") !== -1) os = "Linux";
-        else if (ua.indexOf("Android") !== -1) os = "Android";
-        else if (ua.indexOf("iPhone") !== -1 || ua.indexOf("iPad") !== -1) os = "iOS";
-
-        // Detect Browser
-        let browser = "unknown_browser";
-        if (ua.indexOf("Firefox") !== -1) browser = "Firefox";
-        else if (ua.indexOf("Edge") !== -1 || ua.indexOf("Edg") !== -1) browser = "Edge";
-        else if (ua.indexOf("OPR") !== -1 || ua.indexOf("Opera") !== -1) browser = "Opera";
-        else if (ua.indexOf("Chrome") !== -1) browser = "Chrome";
-        else if (ua.indexOf("Safari") !== -1) browser = "Safari";
-
-        // System specs
-        const screenSpecs = Math.max(screen.width, screen.height) + 'x' + Math.min(screen.width, screen.height) + 'x' + screen.colorDepth;
-        const tz = new Date().getTimezoneOffset();
-        const cores = navigator.hardwareConcurrency || '';
-        const platform = navigator.platform || '';
-        const lang = navigator.language || '';
-
-        const str = os + '_' + browser + '_' + screenSpecs + '_' + tz + '_' + platform + '_' + cores + '_' + lang;
-        
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return 'web_' + Math.abs(hash).toString(36);
-    } catch (e) {
-        let hash = 0;
-        const str = navigator.userAgent + (navigator.language || '') + screen.width + 'x' + screen.height;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return 'web_fallback_' + Math.abs(hash).toString(36);
-    }
+    // Để tránh trùng lặp Device ID (Fingerprint Collision) giữa các thiết bị có cùng cấu hình trên trình duyệt web (đặc biệt là Safari/iOS),
+    // chúng ta sử dụng cơ chế tạo ID ngẫu nhiên duy nhất (UUID) và lưu trữ cố định trong localStorage.
+    return 'web_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
 }
 
 function getDeviceId() {
@@ -115,7 +74,7 @@ function getDeviceId() {
         }
     } else {
         // Web Browser
-        if (!id) {
+        if (!id || (id.startsWith('web_') && id.length < 25)) {
             id = getBrowserFingerprint();
             safeStorage.setItem('ot_device_id', id);
         }

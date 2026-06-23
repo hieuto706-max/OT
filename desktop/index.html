@@ -583,89 +583,158 @@
 
             <!-- Tab: Admin Add OT -->
             <div id="admin-tab-add-ot" class="admin-tab-content">
-                <div class="panel">
-                    <div class="panel-header">
-                        <h3>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:4px; vertical-align:middle;">
-                                <path d="M12 5v14M5 12h14"/>
-                            </svg>
-                            Ghi tăng ca cho nhân viên
-                        </h3>
-                    </div>
-                    <form id="admin-form-ot" class="ot-form" style="max-width: 600px; margin: 20px auto;">
-                        <div class="form-row" style="display:flex; gap:16px; margin-bottom: 16px;">
-                            <div class="form-group" style="flex:1; display:flex; align-items:center;">
-                                <label class="checkbox-label" style="margin-top: 0px; height: 38px; padding: 0 16px; width:100%; display:flex; align-items:center; gap:8px;">
-                                    <input type="radio" id="admin-ot-target-self" name="admin-ot-target" value="self" checked style="cursor:pointer; width:16px; height:16px; margin:0;">
-                                    Cá nhân
-                                </label>
-                            </div>
-                            <div class="form-group" style="flex:1; display:flex; align-items:center;">
-                                <label class="checkbox-label" style="margin-top: 0px; height: 38px; padding: 0 16px; width:100%; display:flex; align-items:center; gap:8px;">
-                                    <input type="radio" id="admin-ot-target-emp" name="admin-ot-target" value="employee" style="cursor:pointer; width:16px; height:16px; margin:0;">
-                                    Nhân viên
-                                </label>
-                            </div>
+                <div class="split-layout">
+                    <!-- Left Column: Form -->
+                    <div class="panel form-panel" style="margin-bottom: 0;">
+                        <div class="panel-header">
+                            <h3>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:6px; vertical-align:middle; color:var(--accent-green);">
+                                    <path d="M12 5v14M5 12h14"/>
+                                </svg>
+                                Ghi tăng ca cho nhân viên
+                            </h3>
                         </div>
-                        <div class="form-group" id="admin-ot-user-group" style="margin-bottom: 16px; display: none;">
-                            <label for="admin-ot-user" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">Nhân viên:</label>
-                            <select id="admin-ot-user" class="input-sm" style="width:100%; height:38px; padding:0 12px; box-sizing:border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;">
-                                <option value="">-- Chọn nhân viên --</option>
-                            </select>
-                        </div>
-                        <div class="form-row" style="display:flex; gap:16px; margin-bottom: 16px;">
-                            <div class="form-group" style="flex:1;">
-                                <label for="admin-ot-date" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">Ngày tăng ca:</label>
-                                <input type="date" id="admin-ot-date" style="width:100%; height:38px; padding:0 12px; box-sizing:border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;" required>
-                            </div>
-                            <div class="form-group" style="flex:1;">
-                                <label class="checkbox-label" style="margin-top: 24px; height: 38px; padding: 0 16px;">
-                                    <input type="checkbox" id="admin-ot-backfill">
-                                    <span class="checkbox-custom"></span>
-                                    Bù tăng ca
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Backfill hours input -->
-                        <div class="form-group" id="admin-ot-backfill-hours-group" style="display: none; margin-bottom: 16px;">
-                            <label for="admin-ot-backfill-hours" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">Số giờ tăng ca cần bù:</label>
-                            <input type="number" id="admin-ot-backfill-hours" step="0.1" min="0.1" max="24" placeholder="Nhập số giờ bù (ví dụ: 8.0)" style="width:100%; height:38px; padding:0 12px; box-sizing:border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;">
-                        </div>
-
-                        <!-- Normal OT inputs -->
-                        <div id="admin-ot-normal-inputs">
-                            <div class="form-row" style="display:flex; gap:16px; margin-bottom: 16px;">
-                                <div class="form-group" style="flex:1;">
-                                    <label class="checkbox-label" style="margin-top: 0px; height: 38px; padding: 0 16px;">
-                                        <input type="checkbox" id="admin-ot-lunch">
-                                        <span class="checkbox-custom"></span>
-                                        Tăng ca trưa (12:20 - 13:20)
+                        <form id="admin-form-ot" class="ot-form">
+                            <!-- Custom Radio Segmented Control -->
+                            <div class="form-group">
+                                <label class="field-label">Đối tượng ghi nhận</label>
+                                <div class="segmented-control">
+                                    <input type="radio" id="admin-ot-target-self" name="admin-ot-target" value="self" checked>
+                                    <label for="admin-ot-target-self" class="segment-item">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                        Ghi cho cá nhân
+                                    </label>
+                                    
+                                    <input type="radio" id="admin-ot-target-emp" name="admin-ot-target" value="employee">
+                                    <label for="admin-ot-target-emp" class="segment-item">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                        Ghi cho nhân viên khác
                                     </label>
                                 </div>
-                                <div class="form-group" style="flex:1;"></div>
                             </div>
-                            <div class="form-row" style="display:flex; gap:16px; margin-bottom: 16px;">
-                                <div class="form-group" style="flex:1;">
-                                    <label for="admin-ot-start" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">Giờ bắt đầu OT chiều:</label>
-                                    <input type="time" id="admin-ot-start" value="16:30" style="width:100%; height:38px; padding:0 12px; box-sizing:border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;">
+
+                            <!-- Employee Select Group -->
+                            <div class="form-group" id="admin-ot-user-group" style="display: none;">
+                                <label for="admin-ot-user" class="field-label">Chọn nhân viên</label>
+                                <div class="input-wrapper">
+                                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    <select id="admin-ot-user" class="input-sm" style="padding-left: 42px; height: 42px; border-radius: 8px;">
+                                        <option value="">-- Chọn nhân viên --</option>
+                                    </select>
                                 </div>
-                                <div class="form-group" style="flex:1;">
-                                    <label for="admin-ot-end" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">Giờ kết thúc OT chiều:</label>
-                                    <input type="time" id="admin-ot-end" value="16:30" style="width:100%; height:38px; padding:0 12px; box-sizing:border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;">
+                            </div>
+
+                            <!-- Date and Backfill Group -->
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="admin-ot-date" class="field-label">Ngày tăng ca</label>
+                                    <div class="input-wrapper">
+                                        <input type="date" id="admin-ot-date" class="input-sm" style="height: 42px; border-radius: 8px;" required>
+                                    </div>
                                 </div>
+                                <div class="form-group justify-center">
+                                    <label class="switch-label">
+                                        <input type="checkbox" id="admin-ot-backfill">
+                                        <span class="switch-slider"></span>
+                                        <span class="switch-text">Bù tăng ca</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Backfill hours input -->
+                            <div class="form-group" id="admin-ot-backfill-hours-group" style="display: none;">
+                                <label for="admin-ot-backfill-hours" class="field-label">Số giờ tăng ca cần bù</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="admin-ot-backfill-hours" step="0.1" min="0.1" max="24" placeholder="Nhập số giờ bù (ví dụ: 8.0)" class="input-sm" style="height: 42px; border-radius: 8px;">
+                                </div>
+                            </div>
+
+                            <!-- Normal OT inputs -->
+                            <div id="admin-ot-normal-inputs">
+                                <div class="form-group" style="margin-bottom: 20px;">
+                                    <label class="switch-label">
+                                        <input type="checkbox" id="admin-ot-lunch">
+                                        <span class="switch-slider"></span>
+                                        <span class="switch-text">Tăng ca trưa (12:20 - 13:20)</span>
+                                    </label>
+                                </div>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="admin-ot-start" class="field-label">Bắt đầu OT chiều</label>
+                                        <div class="input-wrapper">
+                                            <input type="time" id="admin-ot-start" value="16:30" class="input-sm" style="height: 42px; border-radius: 8px;">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-ot-end" class="field-label">Kết thúc OT chiều</label>
+                                        <div class="input-wrapper">
+                                            <input type="time" id="admin-ot-end" value="16:30" class="input-sm" style="height: 42px; border-radius: 8px;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Note -->
+                            <div class="form-group">
+                                <label for="admin-ot-note" class="field-label">Ghi chú công việc</label>
+                                <textarea id="admin-ot-note" placeholder="Lý do tăng ca, phân công công việc..." style="width:100%; min-height:80px; padding:10px 12px; box-sizing:border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px; resize:vertical;" required></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-full btn-shimmer" style="height: 48px; font-size: 15px; font-weight: 700; border-radius: 8px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                <span>Lưu tăng ca</span>
+                            </button>
+                            <p id="admin-ot-error" class="form-error" style="color:#ef4444; font-size:13px; margin-top:10px;"></p>
+                            <p id="admin-ot-success" class="form-success" style="color:#10b981; font-size:13px; margin-top:10px;"></p>
+                        </form>
+                    </div>
+
+                    <!-- Right Column: Live Preview Ticket -->
+                    <div class="preview-panel">
+                        <div class="ticket-wrapper">
+                            <div class="ticket-header">
+                                <div class="ticket-logo">
+                                    <svg viewBox="0 0 32 32" fill="none" width="22" height="22">
+                                        <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#grad2)"/>
+                                        <path d="M16 9v7l5 3" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                    <span>PHIẾU TĂNG CA</span>
+                                </div>
+                                <span class="ticket-status-badge">XEM TRƯỚC</span>
+                            </div>
+                            <div class="ticket-body">
+                                <div class="ticket-field">
+                                    <div class="ticket-label">Đối tượng</div>
+                                    <div class="ticket-value" id="preview-ticket-target">Cá nhân</div>
+                                </div>
+                                <div class="ticket-field">
+                                    <div class="ticket-label">Ngày tăng ca</div>
+                                    <div class="ticket-value" id="preview-ticket-date">-</div>
+                                </div>
+                                <div class="ticket-divider"></div>
+                                <div class="ticket-field">
+                                    <div class="ticket-label">OT trưa</div>
+                                    <div class="ticket-value" id="preview-ticket-lunch">Không đăng ký</div>
+                                </div>
+                                <div class="ticket-field">
+                                    <div class="ticket-label">OT chiều</div>
+                                    <div class="ticket-value" id="preview-ticket-evening">Không đăng ký</div>
+                                </div>
+                                <div class="ticket-divider"></div>
+                                <div class="ticket-field total-field">
+                                    <div class="ticket-label">Tổng giờ tăng ca</div>
+                                    <div class="ticket-value-total" id="preview-ticket-total">0.0 giờ</div>
+                                </div>
+                                <div class="ticket-field" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                                    <div class="ticket-label">Ghi chú</div>
+                                    <div class="ticket-value note-value" id="preview-ticket-note" style="max-width: 100%; text-align: left; font-style: italic; color: var(--text-secondary); width: 100%;">Chưa có ghi chú...</div>
+                                </div>
+                            </div>
+                            <div class="ticket-footer">
+                                <span class="ticket-footer-text">Hệ thống OT Manager</span>
                             </div>
                         </div>
-                        <div class="form-group" style="margin-bottom: 16px;">
-                            <label for="admin-ot-note" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">Ghi chú:</label>
-                            <textarea id="admin-ot-note" placeholder="Lý do tăng ca, phân công công việc..." style="width:100%; min-height:80px; padding:10px 12px; box-sizing:border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px; resize:vertical;" required></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-full" style="width:100%; height:42px; font-size:14px; font-weight:600; border-radius:8px;">
-                            Lưu tăng ca
-                        </button>
-                        <p id="admin-ot-error" class="form-error" style="color:#ef4444; font-size:13px; margin-top:10px;"></p>
-                        <p id="admin-ot-success" class="form-success" style="color:#10b981; font-size:13px; margin-top:10px;"></p>
-                    </form>
+                    </div>
                 </div>
             </div>
 

@@ -9,6 +9,8 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.JavascriptInterface;
+import android.view.View;
+import android.view.WindowManager;
 import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
@@ -41,8 +43,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Ép tăng tốc phần cứng cho cửa sổ (Window) ứng dụng
+        getWindow().setFlags(
+            WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+            WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
+        );
+
         webView = new WebView(this);
         setContentView(webView);
+
+        // Bật lớp phần cứng dựng hình GPU cho WebView
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -57,12 +68,18 @@ public class MainActivity extends AppCompatActivity {
             // Bỏ qua
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        }
+        // Mixed content và database luôn hoạt động từ API 21/29
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
         try {
             settings.setDatabaseEnabled(true);
+        } catch (Exception e) {
+            // Bỏ qua
+        }
+        
+        // Cấu hình ưu tiên vẽ cao và tối ưu cache
+        try {
+            settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
         } catch (Exception e) {
             // Bỏ qua
         }
@@ -127,7 +144,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        checkAndRequestPermissions();
         webView.loadUrl("file:///android_asset/index.html");
     }
 
@@ -257,11 +273,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void executeJS(String jsCode) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            webView.evaluateJavascript(jsCode, null);
-        } else {
-            webView.loadUrl("javascript:" + jsCode);
-        }
+        webView.evaluateJavascript(jsCode, null);
     }
 
     private String getLocalIpAddress() {
@@ -396,25 +408,18 @@ public class MainActivity extends AppCompatActivity {
                     });
 
                     Intent intent = new Intent(Intent.ACTION_VIEW);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        Uri apkUri = FileProvider.getUriForFile(MainActivity.this, 
-                                "com.hieuto.otmanager.fileprovider", apkFile);
-                        intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
-                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    } else {
-                        intent.setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive");
-                    }
+                    Uri apkUri = FileProvider.getUriForFile(MainActivity.this, 
+                            "com.hieuto.otmanager.fileprovider", apkFile);
+                    intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    
-                    // Kiểm tra quyền cài đặt ứng dụng từ nguồn không xác định đối với Android 8.0+
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        if (!getPackageManager().canRequestPackageInstalls()) {
-                            showToastOnUI("Vui lòng cấp quyền cài đặt ứng dụng từ nguồn ngoài để thực hiện cập nhật!");
-                            Intent settingsIntent = new Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
-                                    .setData(Uri.parse("package:" + getPackageName()));
-                            startActivity(settingsIntent);
-                            return;
-                        }
+
+                    if (!getPackageManager().canRequestPackageInstalls()) {
+                        showToastOnUI("Vui lòng cấp quyền cài đặt ứng dụng từ nguồn ngoài để thực hiện cập nhật!");
+                        Intent settingsIntent = new Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                                .setData(Uri.parse("package:" + getPackageName()));
+                        startActivity(settingsIntent);
+                        return;
                     }
 
                     startActivity(intent);
@@ -442,26 +447,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private static final int PERMISSION_REQUEST_CODE = 1001;
 
-    private void checkAndRequestPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            java.util.List<String> permissionsNeeded = new java.util.ArrayList<>();
-            
-            if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                permissionsNeeded.add(android.Manifest.permission.ACCESS_FINE_LOCATION);
-                permissionsNeeded.add(android.Manifest.permission.ACCESS_COARSE_LOCATION);
-            }
-            
-            if (checkSelfPermission(android.Manifest.permission.READ_PHONE_STATE) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                permissionsNeeded.add(android.Manifest.permission.READ_PHONE_STATE);
-            }
-            
-            if (!permissionsNeeded.isEmpty()) {
-                requestPermissions(permissionsNeeded.toArray(new String[0]), PERMISSION_REQUEST_CODE);
-            }
-        }
-    }
 
     public static class WebAppInterface {
         private final MainActivity activity;

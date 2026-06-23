@@ -3,11 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const { startServer, stopServer, getLocalIP, PORT } = require('./server/server');
 
-// Vô hiệu hóa tăng tốc phần cứng và sandbox để tránh lỗi crash tiến trình renderer/GPU
-app.disableHardwareAcceleration();
-app.commandLine.appendSwitch('disable-gpu');
-app.commandLine.appendSwitch('disable-software-rasterizer');
-app.commandLine.appendSwitch('disable-gpu-sandbox');
+// Kích hoạt tăng tốc phần cứng (GPU Acceleration) giúp giao diện mượt mà, không bị giật lag trên các máy văn phòng yếu.
+// Chỉ vô hiệu hóa sandbox để tránh một số lỗi phân quyền hệ thống.
 app.commandLine.appendSwitch('no-sandbox');
 
 // Ngăn chạy nhiều phiên bản của ứng dụng cùng lúc
@@ -86,7 +83,7 @@ async function createWindow() {
         minWidth: 900,
         minHeight: 600,
         title: 'OT Manager - Quản Lý Tăng Ca (Admin)',
-        backgroundColor: '#0f0f1a',
+        backgroundColor: '#020604',
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,

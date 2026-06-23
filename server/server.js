@@ -663,7 +663,20 @@ async function handleAPI(req, res, urlPath, method) {
         }
         if (user.role === 'employee') {
             const matchesNative = user.deviceId && user.deviceId === reqDeviceId;
-            const matchesBrowser = user.browserDeviceId && user.browserDeviceId === reqDeviceId;
+            let matchesBrowser = user.browserDeviceId && user.browserDeviceId === reqDeviceId;
+            
+            // Tự động chuyển đổi ID cũ sang ID mới (Silent Migration) nếu thiết bị gửi lên ID hợp lệ
+            const isLegacyBrowserId = user.browserDeviceId && user.browserDeviceId.startsWith('web_') && user.browserDeviceId.length < 25;
+            if (isLegacyBrowserId && !matchesNative && !matchesBrowser && reqDeviceId) {
+                // Kiểm tra xem ID mới này đã bị liên kết bởi tài khoản khác hay chưa
+                const otherOwner = db.users.find(u => u.role === 'employee' && u.id !== user.id && u.browserDeviceId === reqDeviceId);
+                if (!otherOwner) {
+                    user.browserDeviceId = reqDeviceId;
+                    saveDB(db);
+                    matchesBrowser = true;
+                }
+            }
+
             if (!matchesNative && !matchesBrowser) {
                 return sendError(res, 403, 'Thiết bị hoặc trình duyệt này đã bị hủy liên kết khỏi tài khoản!', req);
             }
@@ -693,7 +706,8 @@ async function handleAPI(req, res, urlPath, method) {
             if (deviceId) {
                 if (isBrowser) {
                     // Đăng nhập từ trình duyệt web
-                    if (!user.browserDeviceId) {
+                    const isLegacyBrowserId = user.browserDeviceId && user.browserDeviceId.startsWith('web_') && user.browserDeviceId.length < 25;
+                    if (!user.browserDeviceId || isLegacyBrowserId) {
                         // Kiểm tra xem trình duyệt này đã liên kết với tài khoản khác chưa
                         const otherOwner = db.users.find(u => u.role === 'employee' && u.id !== user.id && u.browserDeviceId === deviceId);
                         if (otherOwner) {

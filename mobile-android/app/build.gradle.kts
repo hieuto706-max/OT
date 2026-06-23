@@ -8,7 +8,7 @@ android {
     compileSdk = 36
     defaultConfig {
         applicationId = "com.hieuto.otmanager"
-        minSdk = 21
+        minSdk = 29
         targetSdk = 36
         versionCode = 19
         versionName = "1.3.6"

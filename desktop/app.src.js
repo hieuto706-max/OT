@@ -1909,6 +1909,93 @@ function updateOTPreview() {
     previewTotal.textContent = total.toFixed(1);
 }
 
+function updateAdminOTPreview() {
+    const targetSelf = document.getElementById('admin-ot-target-self');
+    const targetEmp = document.getElementById('admin-ot-target-emp');
+    const userSelect = document.getElementById('admin-ot-user');
+    const otDate = document.getElementById('admin-ot-date');
+    const otBackfill = document.getElementById('admin-ot-backfill');
+    const backfillHours = document.getElementById('admin-ot-backfill-hours');
+    const otLunch = document.getElementById('admin-ot-lunch');
+    const otStart = document.getElementById('admin-ot-start');
+    const otEnd = document.getElementById('admin-ot-end');
+    const otNote = document.getElementById('admin-ot-note');
+
+    // Element bindings
+    const ticketTarget = document.getElementById('preview-ticket-target');
+    const ticketDate = document.getElementById('preview-ticket-date');
+    const ticketLunch = document.getElementById('preview-ticket-lunch');
+    const ticketEvening = document.getElementById('preview-ticket-evening');
+    const ticketTotal = document.getElementById('preview-ticket-total');
+    const ticketNote = document.getElementById('preview-ticket-note');
+
+    if (!ticketTarget) return; // not rendered yet
+
+    // 1. Target
+    if (targetSelf && targetSelf.checked) {
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || '{}');
+        ticketTarget.innerHTML = `<span class="badge badge-admin" style="font-size: 10px;">Cá nhân</span> <strong>${currentUser.fullname || 'Quản lý'}</strong>`;
+    } else if (targetEmp && targetEmp.checked && userSelect) {
+        const selectedText = userSelect.options[userSelect.selectedIndex]?.text || '';
+        ticketTarget.innerHTML = `<span class="badge badge-employee" style="font-size: 10px;">Nhân viên</span> <strong>${selectedText.replace(/^[^-]+-\s*/, '') || 'Chưa chọn'}</strong>`;
+    }
+
+    // 2. Date
+    if (otDate && otDate.value) {
+        const d = new Date(otDate.value);
+        if (!isNaN(d.getTime())) {
+            const formatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            ticketDate.textContent = formatted;
+        } else {
+            ticketDate.textContent = '-';
+        }
+    } else {
+        ticketDate.textContent = 'Chưa chọn ngày';
+    }
+
+    // 3. Lunch, Evening and Total Hours
+    let total = 0;
+    const isBackfill = otBackfill && otBackfill.checked;
+
+    if (isBackfill) {
+        const hours = parseFloat(backfillHours?.value) || 0;
+        ticketLunch.textContent = '-';
+        ticketEvening.textContent = `Bù tăng ca: ${hours.toFixed(1)} giờ`;
+        total = hours;
+    } else {
+        // Lunch
+        if (otLunch && otLunch.checked) {
+            ticketLunch.innerHTML = `<span class="preview-active-badge">✓ Đăng ký</span> (${OT_LUNCH_HOURS} giờ)`;
+            total += OT_LUNCH_HOURS;
+        } else {
+            ticketLunch.textContent = 'Không đăng ký';
+        }
+
+        // Evening
+        if (otStart && otEnd && otStart.value && otEnd.value) {
+            const eveningHours = calculateEveningOT(otStart.value, otEnd.value);
+            if (eveningHours > 0) {
+                ticketEvening.innerHTML = `<span class="preview-active-badge">✓ ${otStart.value} - ${otEnd.value}</span> (${eveningHours.toFixed(1)} giờ)`;
+                total += eveningHours;
+            } else {
+                ticketEvening.textContent = 'Không đăng ký';
+            }
+        } else {
+            ticketEvening.textContent = 'Không đăng ký';
+        }
+    }
+
+    // Total
+    ticketTotal.textContent = `${total.toFixed(1)} giờ`;
+
+    // Note
+    if (otNote && otNote.value.trim()) {
+        ticketNote.textContent = otNote.value.trim();
+    } else {
+        ticketNote.textContent = 'Chưa có ghi chú...';
+    }
+}
+
 async function handleOTSubmit(e) {
     e.preventDefault();
     const user = JSON.parse(localStorage.getItem('ot_current_user'));
@@ -2801,6 +2888,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
+
+        // Live preview listeners
+        const previewTriggerEls = [
+            'admin-ot-target-self', 'admin-ot-target-emp', 'admin-ot-user',
+            'admin-ot-date', 'admin-ot-backfill', 'admin-ot-backfill-hours',
+            'admin-ot-lunch', 'admin-ot-start', 'admin-ot-end', 'admin-ot-note'
+        ];
+        previewTriggerEls.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                const eventType = (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) || el.tagName === 'TEXTAREA' ? 'input' : 'change';
+                el.addEventListener(eventType, updateAdminOTPreview);
+            }
+        });
+        
+        // Initial preview render call
+        setTimeout(updateAdminOTPreview, 100);
     }
 
     // Logout
