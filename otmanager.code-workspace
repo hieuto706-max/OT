@@ -18,7 +18,7 @@
 		}
 	],
 	"settings": {
-		"java.configuration.updateBuildConfiguration": "interactive",
+		"java.configuration.updateBuildConfiguration": "automatic",
 		"java.import.gradle.java.home": "C:/Users/hieut/OneDrive/MYTNH~1/OTMANA~1/temp_jdk/JDK-17~1.19_",
 		"gradle.java.home": "C:/Users/hieut/OneDrive/MYTNH~1/OTMANA~1/temp_jdk/JDK-17~1.19_",
 		"java.jdt.ls.java.home": "C:/Users/hieut/OneDrive/MYTNH~1/OTMANA~1/temp_jdk/JDK-17~1.19_",
