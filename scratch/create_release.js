@@ -1,41 +1,29 @@
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
 
 const OWNER = 'hieuto706-max';
 const REPO = 'OT';
-const TAG = 'v1.3.6';
-const ASSET_PATH = path.join(__dirname, '..', 'dist', 'ot-manager-Setup-1.3.6.exe');
+const TAG = 'v1.3.7';
+
+const ASSETS = [
+    {
+        name: 'ot-manager-Setup-1.3.7.exe',
+        path: path.join(__dirname, '..', 'dist', 'ot-manager-Setup-1.3.7.exe'),
+        mime: 'application/octet-stream'
+    },
+    {
+        name: 'OT-Manager-mobile.apk',
+        path: path.join(__dirname, '..', 'mobile', 'OT-Manager-mobile.apk'),
+        mime: 'application/vnd.android.package-archive'
+    }
+];
 
 async function main() {
-    let token = process.env.GITHUB_TOKEN;
-    if (!token || token.includes('dummy')) {
-        console.log('No valid GITHUB_TOKEN found in environment variables.');
-        token = await new Promise((resolve) => {
-            const rl = readline.createInterface({
-                input: process.stdin,
-                output: process.stdout
-            });
-            rl.question('Please enter your GitHub Personal Access Token (PAT) with repo scope: ', (answer) => {
-                rl.close();
-                resolve(answer.trim());
-            });
-        });
-    }
-
+    const token = process.env.GITHUB_TOKEN;
     if (!token) {
-        console.error('Error: GitHub token is required.');
+        console.error('Error: GITHUB_TOKEN environment variable is required.');
         process.exit(1);
     }
-
-    if (!fs.existsSync(ASSET_PATH)) {
-        console.error(`Error: Asset file not found at ${ASSET_PATH}`);
-        process.exit(1);
-    }
-
-    const stats = fs.statSync(ASSET_PATH);
-    const fileSize = stats.size;
-    console.log(`Asset found: ${ASSET_PATH} (${(fileSize / 1024 / 1024).toFixed(2)} MB)`);
 
     console.log(`Checking if release ${TAG} already exists...`);
     let releaseId = null;
@@ -69,7 +57,7 @@ async function main() {
                     tag_name: TAG,
                     target_commitish: 'main',
                     name: TAG,
-                    body: `Automated release for version ${TAG}`,
+                    body: `Automated release for version ${TAG}\n\nOptimized WebView settings, removed unused permissions, and resolved session bug.`,
                     draft: false,
                     prerelease: false
                 })
@@ -89,32 +77,71 @@ async function main() {
             throw new Error(`Failed to check existing release: ${checkRes.statusText}. Details: ${errorText}`);
         }
 
-        // Clean up template from uploadUrl: e.g. "https://uploads.github.com/repos/.../assets{?name,label}"
         const cleanUploadUrl = uploadUrl.replace(/\{\?name,label\}/, '');
 
-        console.log(`Uploading asset to release ${TAG}...`);
-        const fileStream = fs.createReadStream(ASSET_PATH);
+        for (const asset of ASSETS) {
+            if (!fs.existsSync(asset.path)) {
+                console.warn(`[Warning] Asset file not found: ${asset.path}. Skipping...`);
+                continue;
+            }
 
-        const uploadRes = await fetch(`${cleanUploadUrl}?name=${path.basename(ASSET_PATH)}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/octet-stream',
-                'Content-Length': fileSize,
-                'User-Agent': 'Node.js-Fetch'
-            },
-            body: fileStream,
-            duplex: 'half' // Required for streaming request bodies in modern fetch
-        });
+            const stats = fs.statSync(asset.path);
+            const fileSize = stats.size;
+            console.log(`\nUploading asset: ${asset.name} (${(fileSize / 1024 / 1024).toFixed(2)} MB)...`);
 
-        if (!uploadRes.ok) {
-            const errorData = await uploadRes.text();
-            throw new Error(`Failed to upload asset: ${uploadRes.statusText}. Details: ${errorData}`);
+            // Check if asset already exists in the release and delete it first if it does
+            const assetsRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/releases/${releaseId}/assets`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github+json',
+                    'User-Agent': 'Node.js-Fetch'
+                }
+            });
+
+            if (assetsRes.ok) {
+                const existingAssets = await assetsRes.json();
+                const duplicate = existingAssets.find(a => a.name === asset.name);
+                if (duplicate) {
+                    console.log(`Asset ${asset.name} already exists in release. Deleting existing asset...`);
+                    const deleteRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/releases/assets/${duplicate.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'User-Agent': 'Node.js-Fetch'
+                        }
+                    });
+                    if (deleteRes.ok) {
+                        console.log(`Deleted existing asset ${asset.name}.`);
+                    } else {
+                        console.warn(`Failed to delete existing asset ${asset.name}: ${deleteRes.statusText}`);
+                    }
+                }
+            }
+
+            const fileStream = fs.createReadStream(asset.path);
+            const uploadRes = await fetch(`${cleanUploadUrl}?name=${asset.name}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': asset.mime,
+                    'Content-Length': fileSize,
+                    'User-Agent': 'Node.js-Fetch'
+                },
+                body: fileStream,
+                duplex: 'half'
+            });
+
+            if (!uploadRes.ok) {
+                const errorData = await uploadRes.text();
+                throw new Error(`Failed to upload asset ${asset.name}: ${uploadRes.statusText}. Details: ${errorData}`);
+            }
+
+            const assetData = await uploadRes.json();
+            console.log(`Asset ${asset.name} uploaded successfully!`);
+            console.log(`Download URL: ${assetData.browser_download_url}`);
         }
 
-        const assetData = await uploadRes.json();
-        console.log(`Asset uploaded successfully! Download URL: ${assetData.browser_download_url}`);
-        console.log('GitHub Release Process COMPLETED.');
+        console.log('\nGitHub Release Process COMPLETED.');
 
     } catch (err) {
         console.error('An error occurred during the GitHub Release process:', err.message);
