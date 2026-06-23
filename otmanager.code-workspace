@@ -19,6 +19,9 @@
 	],
 	"settings": {
 		"java.configuration.updateBuildConfiguration": "automatic",
+		"java.import.gradle.wrapper.enabled": true,
+		"java.import.gradle.version": "9.1.0",
+		"gradle.useRelease": "wrapper",
 		"java.import.gradle.java.home": "C:/Users/hieut/OneDrive/MYTNH~1/OTMANA~1/temp_jdk/JDK-17~1.19_",
 		"gradle.java.home": "C:/Users/hieut/OneDrive/MYTNH~1/OTMANA~1/temp_jdk/JDK-17~1.19_",
 		"java.jdt.ls.java.home": "C:/Users/hieut/OneDrive/MYTNH~1/OTMANA~1/temp_jdk/JDK-17~1.19_",
