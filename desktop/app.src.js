@@ -1399,8 +1399,8 @@ async function exportExcel() {
         wsSummary.mergeCells('A1:H1');
         const title1 = wsSummary.getCell('A1');
         title1.value = `BÁO CÁO TĂNG CA - THÁNG ${month}`;
-        title1.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
-        title1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF312E81' } }; // Indigo 900
+        title1.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+        title1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } }; // Navy Blue đậm
         title1.alignment = { vertical: 'middle', horizontal: 'center' };
         wsSummary.getRow(1).height = 40;
 
@@ -1408,7 +1408,7 @@ async function exportExcel() {
         wsSummary.mergeCells('A2:H2');
         const subtitle1 = wsSummary.getCell('A2');
         subtitle1.value = `Ngày xuất báo cáo: ${exportTime}`;
-        subtitle1.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF4B5563' } };
+        subtitle1.font = { name: 'Segoe UI', size: 10, italic: true, color: { argb: 'FF4B5563' } };
         subtitle1.alignment = { vertical: 'middle', horizontal: 'center' };
         wsSummary.getRow(2).height = 20;
 
@@ -1417,24 +1417,24 @@ async function exportExcel() {
 
         // 4. Tiêu đề bảng
         wsSummary.getCell('A4').value = "I. BẢNG TỔNG HỢP GIỜ TĂNG CA";
-        wsSummary.getCell('A4').font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF111827' } };
+        wsSummary.getCell('A4').font = { name: 'Segoe UI', size: 12, bold: true, color: { argb: 'FF1F2937' } };
         wsSummary.getRow(4).height = 22;
 
         // 5. Headers
         const headers1 = ["STT", "Họ và tên", "Nhóm", "Mã nhân viên", "Số ngày OT", "OT Trưa (giờ)", "OT Chiều (giờ)", "Tổng OT (giờ)"];
         wsSummary.getRow(5).values = headers1;
         wsSummary.getRow(5).height = 28;
-        wsSummary.getRow(5).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+        wsSummary.getRow(5).font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
         
         for (let col = 1; col <= 8; col++) {
             const cell = wsSummary.getCell(5, col);
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } }; // Indigo 600
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B6CB0' } }; // Medium Navy/Blue
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
             cell.border = {
-                top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
-                left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
-                bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
-                right: { style: 'thin', color: { argb: 'FFCCCCCC' } }
+                top: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                left: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                bottom: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                right: { style: 'thin', color: { argb: 'FF9CA3AF' } }
             };
         }
 
@@ -1459,15 +1459,15 @@ async function exportExcel() {
                 lh + eh
             ];
             row.height = 22;
-            row.font = { name: 'Arial', size: 10 };
+            row.font = { name: 'Segoe UI', size: 10 };
 
             for (let col = 1; col <= 8; col++) {
                 const cell = row.getCell(col);
                 cell.border = {
-                    top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-                    left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-                    bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-                    right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+                    top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
                 };
 
                 if (col === 2 || col === 3) {
@@ -1484,6 +1484,9 @@ async function exportExcel() {
             }
         });
 
+        // Thiết lập bộ lọc tự động cho Summary Sheet
+        wsSummary.autoFilter = 'A5:H' + (summaryStartRow + users.length - 1);
+
         // 7. Dòng Tổng cộng
         const totalRow1Num = summaryStartRow + users.length;
         wsSummary.mergeCells(`A${totalRow1Num}:D${totalRow1Num}`);
@@ -1496,11 +1499,11 @@ async function exportExcel() {
 
         const rowTotal1 = wsSummary.getRow(totalRow1Num);
         rowTotal1.height = 26;
-        rowTotal1.font = { name: 'Arial', size: 10, bold: true };
+        rowTotal1.font = { name: 'Segoe UI', size: 10, bold: true };
         
         for (let col = 1; col <= 8; col++) {
             const cell = rowTotal1.getCell(col);
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E7FF' } }; // Indigo 100
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEBF8FF' } }; // Soft Blue
             cell.border = {
                 top: { style: 'thin', color: { argb: 'FF9CA3AF' } },
                 left: { style: 'thin', color: { argb: 'FF9CA3AF' } },
@@ -1536,8 +1539,8 @@ async function exportExcel() {
         wsDetail.mergeCells('A1:K1');
         const title2 = wsDetail.getCell('A1');
         title2.value = `CHI TIẾT TĂNG CA - THÁNG ${month}`;
-        title2.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
-        title2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF312E81' } };
+        title2.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+        title2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } }; // Navy Blue đậm
         title2.alignment = { vertical: 'middle', horizontal: 'center' };
         wsDetail.getRow(1).height = 40;
 
@@ -1545,7 +1548,7 @@ async function exportExcel() {
         wsDetail.mergeCells('A2:K2');
         const subtitle2 = wsDetail.getCell('A2');
         subtitle2.value = `Ngày xuất báo cáo: ${exportTime}`;
-        subtitle2.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF4B5563' } };
+        subtitle2.font = { name: 'Segoe UI', size: 10, italic: true, color: { argb: 'FF4B5563' } };
         subtitle2.alignment = { vertical: 'middle', horizontal: 'center' };
         wsDetail.getRow(2).height = 20;
 
@@ -1554,24 +1557,24 @@ async function exportExcel() {
 
         // 4. Tiêu đề bảng
         wsDetail.getCell('A4').value = "II. BẢNG CHI TIẾT TĂNG CA TỪNG NGÀY";
-        wsDetail.getCell('A4').font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF111827' } };
+        wsDetail.getCell('A4').font = { name: 'Segoe UI', size: 12, bold: true, color: { argb: 'FF1F2937' } };
         wsDetail.getRow(4).height = 22;
 
         // 5. Headers
         const headers2 = ["STT", "Ngày", "Họ và tên", "Nhóm", "Mã nhân viên", "OT Trưa", "OT Chiều", "Giờ bắt đầu", "Giờ kết thúc", "Tổng OT (giờ)", "Ghi chú"];
         wsDetail.getRow(5).values = headers2;
         wsDetail.getRow(5).height = 28;
-        wsDetail.getRow(5).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+        wsDetail.getRow(5).font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
         
         for (let col = 1; col <= 11; col++) {
             const cell = wsDetail.getCell(5, col);
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B6CB0' } }; // Medium Navy/Blue
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
             cell.border = {
-                top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
-                left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
-                bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
-                right: { style: 'thin', color: { argb: 'FFCCCCCC' } }
+                top: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                left: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                bottom: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                right: { style: 'thin', color: { argb: 'FF9CA3AF' } }
             };
         }
 
@@ -1588,13 +1591,15 @@ async function exportExcel() {
             // Thêm dòng trống ngăn cách giữa các nhân viên
             if (!isFirstUser) {
                 wsDetail.addRow([]);
-                wsDetail.getRow(currentDetailRow).height = 12;
+                wsDetail.getRow(currentDetailRow).height = 14;
                 for (let col = 1; col <= 11; col++) {
                     const cell = wsDetail.getCell(currentDetailRow, col);
-                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FAFB' } };
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } }; // Slate 100
                     cell.border = {
-                        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-                        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+                        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
                     };
                 }
                 currentDetailRow++;
@@ -1620,15 +1625,15 @@ async function exportExcel() {
                     r.note || '—'
                 ];
                 row.height = 22;
-                row.font = { name: 'Arial', size: 10 };
+                row.font = { name: 'Segoe UI', size: 10 };
 
                 for (let col = 1; col <= 11; col++) {
                     const cell = row.getCell(col);
                     cell.border = {
-                        top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-                        left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-                        bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-                        right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+                        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
                     };
 
                     if (col === 3 || col === 4 || col === 11) {
@@ -1649,6 +1654,9 @@ async function exportExcel() {
 
         // 7. Tổng cộng chi tiết
         if (detailedIdx > 1) {
+            // Áp dụng bộ lọc cho toàn bộ vùng dữ liệu chi tiết (từ dòng 5 đến dòng cuối cùng trước dòng tổng cộng)
+            wsDetail.autoFilter = 'A5:K' + (currentDetailRow - 1);
+
             const totalRow2Num = currentDetailRow;
             wsDetail.mergeCells(`A${totalRow2Num}:E${totalRow2Num}`);
             wsDetail.getCell(`A${totalRow2Num}`).value = "Tổng cộng";
@@ -1659,11 +1667,11 @@ async function exportExcel() {
 
             const rowTotal2 = wsDetail.getRow(totalRow2Num);
             rowTotal2.height = 26;
-            rowTotal2.font = { name: 'Arial', size: 10, bold: true };
+            rowTotal2.font = { name: 'Segoe UI', size: 10, bold: true };
             
             for (let col = 1; col <= 11; col++) {
                 const cell = rowTotal2.getCell(col);
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E7FF' } }; // Indigo 100
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEBF8FF' } }; // Soft Blue
                 cell.border = {
                     top: { style: 'thin', color: { argb: 'FF9CA3AF' } },
                     left: { style: 'thin', color: { argb: 'FF9CA3AF' } },
