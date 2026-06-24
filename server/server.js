@@ -12,6 +12,14 @@ const os = require('os');
 const crypto = require('crypto');
 const { startTunnel, stopTunnel, updateRentry } = require('./tunnel');
 
+let updatesDir = null;
+try {
+    const { app } = require('electron');
+    if (app) {
+        updatesDir = path.join(app.getPath('userData'), 'hotfixes');
+    }
+} catch (e) {}
+
 // ==================== ENVIRONMENT VARIABLES ====================
 function loadEnv() {
     const envPath = path.join(__dirname, '..', '.env');
@@ -701,36 +709,43 @@ async function handleAPI(req, res, urlPath, method) {
         const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
         if (!user) return sendError(res, 401, 'Sai tên đăng nhập!', req);
 
-        // Nếu là nhân viên, cho phép đăng nhập không cần mật khẩu và liên kết thiết bị
+        // Nếu là nhân viên, cho phép đăng nhập không cần mật khẩu khi thiết bị khớp, ngược lại yêu cầu nhập mật khẩu xác nhận
         if (user.role === 'employee') {
             if (deviceId) {
-                if (isBrowser) {
-                    // Đăng nhập từ trình duyệt web
-                    const isLegacyBrowserId = user.browserDeviceId && user.browserDeviceId.startsWith('web_') && user.browserDeviceId.length < 25;
-                    if (!user.browserDeviceId || isLegacyBrowserId) {
-                        // Kiểm tra xem trình duyệt này đã liên kết với tài khoản khác chưa
-                        const otherOwner = db.users.find(u => u.role === 'employee' && u.id !== user.id && u.browserDeviceId === deviceId);
-                        if (otherOwner) {
-                            return sendError(res, 403, 'Trình duyệt này đã được liên kết với một tài khoản khác!', req);
-                        }
-                        user.browserDeviceId = deviceId;
-                        saveDB(db);
-                    } else if (user.browserDeviceId !== deviceId) {
-                        return sendError(res, 403, 'Tài khoản này đã được đăng nhập trên một trình duyệt khác!', req);
+                const targetDeviceField = isBrowser ? 'browserDeviceId' : 'deviceId';
+                const currentBoundId = user[targetDeviceField];
+                
+                const isLegacyBrowserId = isBrowser && currentBoundId && currentBoundId.startsWith('web_') && currentBoundId.length < 25;
+                const hasNoBinding = !currentBoundId || isLegacyBrowserId;
+
+                if (hasNoBinding) {
+                    // Chưa liên kết thiết bị/trình duyệt
+                    const otherOwner = db.users.find(u => u.role === 'employee' && u.id !== user.id && u[targetDeviceField] === deviceId);
+                    if (otherOwner) {
+                        return sendError(res, 403, isBrowser ? 'Trình duyệt này đã được liên kết với một tài khoản khác!' : 'Thiết bị này đã được liên kết với một tài khoản khác!', req);
                     }
-                } else {
-                    // Đăng nhập từ ứng dụng điện thoại (native app)
-                    if (!user.deviceId) {
-                        // Kiểm tra xem thiết bị này đã liên kết với tài khoản khác chưa
-                        const otherOwner = db.users.find(u => u.role === 'employee' && u.id !== user.id && u.deviceId === deviceId);
-                        if (otherOwner) {
-                            return sendError(res, 403, 'Thiết bị này đã được liên kết với một tài khoản khác!', req);
-                        }
-                        user.deviceId = deviceId;
-                        saveDB(db);
-                    } else if (user.deviceId !== deviceId) {
-                        return sendError(res, 403, 'Tài khoản này đã được đăng nhập trên một thiết bị khác!', req);
+                    user[targetDeviceField] = deviceId;
+                    saveDB(db);
+                } else if (currentBoundId !== deviceId) {
+                    // Thiết bị không trùng khớp ➡️ Yêu cầu nhập mật khẩu xác nhận
+                    if (!password) {
+                        const errMsg = isBrowser ? 'Tài khoản này đã được liên kết với trình duyệt khác. Vui lòng nhập mật khẩu/mã PIN (mặc định: 123) để xác nhận chuyển thiết bị.' : 'Tài khoản này đã được liên kết với thiết bị khác. Vui lòng nhập mật khẩu/mã PIN (mặc định: 123) để xác nhận chuyển thiết bị.';
+                        res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+                        return res.end(JSON.stringify({ error: errMsg, code: 'device_mismatch' }));
                     }
+
+                    // Nếu có mật khẩu gửi lên, xác thực nó
+                    if (!verifyPassword(password, user.password)) {
+                        return sendError(res, 401, 'Mật khẩu/mã PIN xác nhận thiết bị không chính xác!', req);
+                    }
+
+                    // Mật khẩu đúng ➡️ Cho phép chuyển thiết bị
+                    const otherOwner = db.users.find(u => u.role === 'employee' && u.id !== user.id && u[targetDeviceField] === deviceId);
+                    if (otherOwner) {
+                        return sendError(res, 403, isBrowser ? 'Trình duyệt này đã được liên kết với một tài khoản khác!' : 'Thiết bị này đã được liên kết với một tài khoản khác!', req);
+                    }
+                    user[targetDeviceField] = deviceId;
+                    saveDB(db);
                 }
             }
             const { password: _, ...safeUser } = user;
@@ -1238,12 +1253,34 @@ async function handleAPI(req, res, urlPath, method) {
         } catch (e) {
             console.error('[Version API] Lỗi đọc phiên bản:', e.message);
         }
+
+        let buildTime = 0;
+        try {
+            // Ưu tiên đọc buildTime từ thư mục hotfixes trước
+            let buildPath = updatesDir ? path.join(updatesDir, 'build.json') : null;
+            if (!buildPath || !fs.existsSync(buildPath)) {
+                buildPath = path.join(__dirname, 'build.json');
+            }
+            if (fs.existsSync(buildPath)) {
+                const buildInfo = JSON.parse(fs.readFileSync(buildPath, 'utf-8'));
+                buildTime = buildInfo.buildTime || 0;
+            }
+        } catch (e) {
+            // Fallback: Sử dụng mtime của server.js nếu không có build.json
+            try {
+                const serverPath = path.join(__dirname, 'server.js');
+                if (fs.existsSync(serverPath)) {
+                    buildTime = fs.statSync(serverPath).mtime.getTime();
+                }
+            } catch (fsErr) {}
+        }
+
         // Luôn tự sinh URL tải từ phiên bản hiện tại (không đọc từ config.json để tránh lỗi hardcode phiên bản cũ)
         const proto = req.headers['x-forwarded-proto'] || 'http';
         const baseUrl = `${proto}://${req.headers.host}`;
         const desktopDownloadUrl = `${baseUrl}/download/desktop`;
         const mobileDownloadUrl = `${baseUrl}/OT-Manager-mobile.apk`;
-        return sendJSON(res, 200, { version, desktopDownloadUrl, mobileDownloadUrl });
+        return sendJSON(res, 200, { version, buildTime, desktopDownloadUrl, mobileDownloadUrl });
     }
 
     // --- SERVER INFO ---
@@ -1327,6 +1364,73 @@ async function handleAPI(req, res, urlPath, method) {
         return sendJSON(res, 200, { success: true, closedMonths: db.closedMonths });
     }
 
+    // --- APPLY HOTFIX ONLINE ---
+    if (urlPath === '/api/apply-hotfix' && method === 'POST') {
+        if (!updatesDir) {
+            return sendJSON(res, 500, { success: false, message: 'Ứng dụng không chạy trong môi trường Electron' });
+        }
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+            try {
+                const data = JSON.parse(body || '{}');
+                const cloudUrl = data.cloudUrl;
+                const buildTime = data.buildTime;
+                if (!cloudUrl) {
+                    return sendJSON(res, 400, { success: false, message: 'Thiếu cloudUrl' });
+                }
+                
+                // Đảm bảo thư mục hotfixes tồn tại
+                if (!fs.existsSync(updatesDir)) {
+                    fs.mkdirSync(updatesDir, { recursive: true });
+                }
+
+                // Tải các tệp từ cloud server
+                const filesToDownload = ['index.html', 'app.js', 'style.css'];
+                const downloadPromises = filesToDownload.map(file => {
+                    return new Promise((resolve, reject) => {
+                        const fileUrl = `${cloudUrl}/desktop/${file}`;
+                        const destPath = path.join(updatesDir, file);
+                        const fileStream = fs.createWriteStream(destPath);
+                        
+                        const client = cloudUrl.startsWith('https') ? https : http;
+                        client.get(fileUrl, (response) => {
+                            if (response.statusCode !== 200) {
+                                fileStream.close();
+                                return reject(new Error(`Tải file ${file} thất bại: HTTP ${response.statusCode}`));
+                            }
+                            response.pipe(fileStream);
+                            fileStream.on('finish', () => {
+                                fileStream.close();
+                                resolve();
+                            });
+                        }).on('error', (err) => {
+                            fileStream.close();
+                            fs.unlink(destPath, () => {});
+                            reject(err);
+                        });
+                    });
+                });
+
+                await Promise.all(downloadPromises);
+
+                // Ghi lại tệp build.json mới vào thư mục hotfixes
+                fs.writeFileSync(
+                    path.join(updatesDir, 'build.json'),
+                    JSON.stringify({ buildTime: buildTime || Date.now() }, null, 2),
+                    'utf8'
+                );
+
+                console.log(`[Hotfix] Đã áp dụng thành công bản vá mới tại timestamp: ${buildTime}`);
+                return sendJSON(res, 200, { success: true });
+            } catch (err) {
+                console.error('[Hotfix] Lỗi khi áp dụng bản vá:', err.message);
+                return sendJSON(res, 500, { success: false, message: err.message });
+            }
+        });
+        return;
+    }
+
     // --- MANUAL CLEANUP & BACKUP ---
     if (urlPath === '/api/records/cleanup' && method === 'POST') {
         const body = await parseBody(req);
@@ -1347,8 +1451,29 @@ async function handleAPI(req, res, urlPath, method) {
 
 // ==================== STATIC FILE SERVING ====================
 function serveStatic(req, res, basePath, urlPath) {
-    let filePath = urlPath === '/' ? '/index.html' : urlPath;
-    filePath = path.join(basePath, filePath);
+    let subFilePath = urlPath === '/' ? '/index.html' : urlPath;
+    
+    // Nếu là thư mục desktop, kiểm tra xem có bản vá lỗi (hotfix) cục bộ trong userData không
+    if (basePath.endsWith('desktop') && updatesDir) {
+        const hotfixPath = path.join(updatesDir, subFilePath);
+        if (fs.existsSync(hotfixPath)) {
+            const ext = path.extname(hotfixPath).toLowerCase();
+            const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+            fs.readFile(hotfixPath, (err, data) => {
+                if (!err) {
+                    res.writeHead(200, {
+                        'Content-Type': contentType,
+                        'Access-Control-Allow-Origin': '*',
+                        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
+                    });
+                    return res.end(data);
+                }
+            });
+            return;
+        }
+    }
+
+    let filePath = path.join(basePath, subFilePath);
 
     // Security: prevent directory traversal
     if (!filePath.startsWith(basePath)) {

@@ -96,4 +96,16 @@ if (fs.existsSync(resourcesSrc)) {
     });
 }
 
+// Ghi tệp build.json chứa timestamp bản dựng mới để hỗ trợ cập nhật vá lỗi (hotfix) không đổi số phiên bản
+try {
+    const buildPath = path.join(__dirname, '..', 'server', 'build.json');
+    const buildData = {
+        buildTime: Date.now()
+    };
+    fs.writeFileSync(buildPath, JSON.stringify(buildData, null, 2), 'utf8');
+    console.log(`Generated build.json with buildTime: ${buildData.buildTime}`);
+} catch (e) {
+    console.error('Lỗi khi ghi build.json:', e.message);
+}
+
 console.log('Sync and obfuscation completed successfully!');

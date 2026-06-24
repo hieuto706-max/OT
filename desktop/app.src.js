@@ -7,6 +7,34 @@
  * Sử dụng Server API để đồng bộ dữ liệu với mobile
  */
 
+// Safe localStorage wrapper to support sessionStorage fallback seamlessly
+const localStorage = {
+    getItem(key) {
+        try {
+            return window.localStorage.getItem(key) || window.sessionStorage.getItem(key);
+        } catch (e) {
+            return this._data[key] || null;
+        }
+    },
+    setItem(key, val) {
+        try {
+            window.localStorage.setItem(key, val);
+            window.sessionStorage.setItem(key, val);
+        } catch (e) {
+            this._data[key] = val;
+        }
+    },
+    removeItem(key) {
+        try {
+            window.localStorage.removeItem(key);
+            window.sessionStorage.removeItem(key);
+        } catch (e) {
+            delete this._data[key];
+        }
+    },
+    _data: {}
+};
+
 // Prevent developer tools and right click
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('keydown', e => {
@@ -2471,20 +2499,32 @@ async function checkUpdateManual() {
         const localRes = await fetch(`${localServerUrl}/api/version`);
         const localData = await localRes.json();
         const localVer = localData.version || '1.0.0';
+        const localBuildTime = localData.buildTime || 0;
 
         // 3. Lấy version mới nhất trên Cloud Server
         const cloudRes = await fetch(`${cloudUrl}/api/version`);
         const cloudData = await cloudRes.json();
         const cloudVer = cloudData.version || '1.0.0';
+        const cloudBuildTime = cloudData.buildTime || 0;
 
         const cmp = compareVersions(localVer, cloudVer);
-        if (cmp < 0) {
-            const checkRes = await fetch(`${localServerUrl}/download/desktop?check=true`);
+        const hasHotfix = cmp === 0 && localBuildTime > 0 && cloudBuildTime > (localBuildTime + 60000); // Có bản vá lỗi mới hơn ít nhất 1 phút
+
+        if (cmp < 0 || hasHotfix) {
+            const checkRes = await fetch(`${cloudUrl}/download/desktop?check=true`);
             const checkData = await checkRes.json();
 
             if (checkData.ready) {
-                showModal(
-                    'Có phiên bản mới!',
+                const title = hasHotfix ? 'Có bản vá lỗi mới!' : 'Có phiên bản mới!';
+                const bodyText = hasHotfix ?
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        Phát hiện bản vá lỗi (hotfix) mới cho phiên bản hiện tại:<br>
+                        • Phiên bản: <strong style="color: var(--accent-green-light);">v${localVer}</strong><br>
+                        • Bản vá mới hơn bản đang cài trên máy.
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        Bạn có muốn tải về và cập nhật bản vá lỗi này ngay không?
+                    </p>` :
                     `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
                         Phát hiện phiên bản mới của ứng dụng trên hệ thống Cloud:<br>
                         • Phiên bản hiện tại: <strong style="color: var(--accent-orange);">v${localVer}</strong><br>
@@ -2492,23 +2532,50 @@ async function checkUpdateManual() {
                     </p>
                     <p style="color: var(--text-muted); font-size: 13px;">
                         Bạn có muốn tải xuống phiên bản mới nhất ngay trong ứng dụng không?
-                    </p>`,
+                    </p>`;
+
+                showModal(
+                    title,
+                    bodyText,
                     [
                         { text: 'Để sau', class: 'btn-ghost' },
                         { 
-                            text: 'Tải về ngay', 
+                            text: hasHotfix ? 'Vá lỗi ngay' : 'Tải về ngay', 
                             class: 'btn btn-primary btn-sm', 
                             action: async () => {
-                                const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
-                                try {
-                                    await fetch(`${localServerUrl}/api/trigger-update`, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ downloadUrl, version: cloudVer })
-                                    });
-                                } catch (e) {
-                                    console.error('Lỗi khi kích hoạt cập nhật:', e);
-                                    window.open(downloadUrl, '_blank');
+                                if (hasHotfix) {
+                                    showToast('Đang tải và áp dụng bản vá nhanh...', 'info');
+                                    try {
+                                        const res = await fetch(`${localServerUrl}/api/apply-hotfix`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ cloudUrl, buildTime: cloudBuildTime })
+                                        });
+                                        const result = await res.json();
+                                        if (result.success) {
+                                            showToast('Đã áp dụng bản vá thành công! Đang tự khởi động lại...', 'success');
+                                            setTimeout(() => {
+                                                window.location.reload();
+                                            }, 1500);
+                                        } else {
+                                            throw new Error(result.message || 'Lỗi không xác định');
+                                        }
+                                    } catch (err) {
+                                        showToast(`Lỗi khi vá: ${err.message}. Đang mở link tải thủ công...`, 'error');
+                                        window.open(`${cloudUrl}/desktop/app.js`, '_blank');
+                                    }
+                                } else {
+                                    const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
+                                    try {
+                                        await fetch(`${localServerUrl}/api/trigger-update`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ downloadUrl, version: cloudVer })
+                                        });
+                                    } catch (e) {
+                                        console.error('Lỗi khi kích hoạt cập nhật:', e);
+                                        window.open(downloadUrl, '_blank');
+                                    }
                                 }
                             } 
                         }
@@ -2566,19 +2633,31 @@ async function checkUpdateSilent() {
         const localRes = await fetch(`${localServerUrl}/api/version`);
         const localData = await localRes.json();
         const localVer = localData.version || '1.0.0';
+        const localBuildTime = localData.buildTime || 0;
 
         const cloudRes = await fetch(`${cloudUrl}/api/version`);
         const cloudData = await cloudRes.json();
         const cloudVer = cloudData.version || '1.0.0';
+        const cloudBuildTime = cloudData.buildTime || 0;
 
         const cmp = compareVersions(localVer, cloudVer);
-        if (cmp < 0) {
-            const checkRes = await fetch(`${localServerUrl}/download/desktop?check=true`);
+        const hasHotfix = cmp === 0 && localBuildTime > 0 && cloudBuildTime > (localBuildTime + 60000); // Có bản vá lỗi mới hơn ít nhất 1 phút
+
+        if (cmp < 0 || hasHotfix) {
+            const checkRes = await fetch(`${cloudUrl}/download/desktop?check=true`);
             const checkData = await checkRes.json();
 
             if (checkData.ready) {
-                showModal(
-                    'Có phiên bản mới!',
+                const title = hasHotfix ? 'Có bản vá lỗi mới!' : 'Có phiên bản mới!';
+                const bodyText = hasHotfix ?
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        Phát hiện bản vá lỗi (hotfix) mới cho phiên bản hiện tại:<br>
+                        • Phiên bản: <strong style="color: var(--accent-green-light);">v${localVer}</strong><br>
+                        • Bản vá mới hơn bản đang cài trên máy.
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        Bạn có muốn tải về và cập nhật bản vá lỗi này ngay không?
+                    </p>` :
                     `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
                         Phát hiện phiên bản mới của ứng dụng trên hệ thống Cloud:<br>
                         • Phiên bản hiện tại: <strong style="color: var(--accent-orange);">v${localVer}</strong><br>
@@ -2586,23 +2665,50 @@ async function checkUpdateSilent() {
                     </p>
                     <p style="color: var(--text-muted); font-size: 13px;">
                         Bạn có muốn tải xuống phiên bản mới nhất ngay trong ứng dụng không?
-                    </p>`,
+                    </p>`;
+
+                showModal(
+                    title,
+                    bodyText,
                     [
                         { text: 'Để sau', class: 'btn-ghost' },
                         { 
-                            text: 'Tải về ngay', 
+                            text: hasHotfix ? 'Vá lỗi ngay' : 'Tải về ngay', 
                             class: 'btn btn-primary btn-sm', 
                             action: async () => {
-                                const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
-                                try {
-                                    await fetch(`${localServerUrl}/api/trigger-update`, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ downloadUrl, version: cloudVer })
-                                    });
-                                } catch (e) {
-                                    console.error('Lỗi khi kích hoạt cập nhật:', e);
-                                    window.open(downloadUrl, '_blank');
+                                if (hasHotfix) {
+                                    showToast('Đang tải và áp dụng bản vá nhanh...', 'info');
+                                    try {
+                                        const res = await fetch(`${localServerUrl}/api/apply-hotfix`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ cloudUrl, buildTime: cloudBuildTime })
+                                        });
+                                        const result = await res.json();
+                                        if (result.success) {
+                                            showToast('Đã áp dụng bản vá thành công! Đang tự khởi động lại...', 'success');
+                                            setTimeout(() => {
+                                                window.location.reload();
+                                            }, 1500);
+                                        } else {
+                                            throw new Error(result.message || 'Lỗi không xác định');
+                                        }
+                                    } catch (err) {
+                                        showToast(`Lỗi khi vá: ${err.message}. Đang mở link tải thủ công...`, 'error');
+                                        window.open(`${cloudUrl}/desktop/app.js`, '_blank');
+                                    }
+                                } else {
+                                    const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
+                                    try {
+                                        await fetch(`${localServerUrl}/api/trigger-update`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ downloadUrl, version: cloudVer })
+                                        });
+                                    } catch (e) {
+                                        console.error('Lỗi khi kích hoạt cập nhật:', e);
+                                        window.open(downloadUrl, '_blank');
+                                    }
                                 }
                             } 
                         }

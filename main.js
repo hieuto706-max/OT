@@ -29,6 +29,16 @@ let mainWindow = null;
 let tray = null;
 let isQuitting = false;
 
+// Hàm kiểm tra IP hoặc hostname có thuộc dải mạng nội bộ (mạng LAN/Wifi Hotspot) không
+function isLocalHostOrIP(hostname) {
+    return hostname === 'localhost' ||
+           hostname === '127.0.0.1' ||
+           /^192\.168\./.test(hostname) ||
+           /^10\./.test(hostname) ||
+           /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
+           /^169\.254\./.test(hostname);
+}
+
 async function createWindow() {
     // Khởi động server local (Luôn chạy để load giao diện nhanh và hỗ trợ API)
     try {
@@ -110,8 +120,8 @@ async function createWindow() {
         console.log(`║   🖥️  App Quản Lý (Desktop):         ║`);
         console.log(`╚══════════════════════════════════════╝\n`);
         
-        // Kích hoạt kiểm tra cập nhật trên startup khi online
-        checkUpdates(cloudUrl);
+        // Kích hoạt kiểm tra cập nhật trên startup khi online (Đã chuyển sang dùng checkUpdateSilent ở frontend để hiển thị giao diện đẹp hơn)
+        // checkUpdates(cloudUrl);
     });
 
     // Bảo mật: Tắt DevTools trong môi trường production
@@ -125,13 +135,13 @@ async function createWindow() {
         });
     }
 
-    // Bảo mật: Chặn navigation ra ngoài whitelist
+    // Bảo mật: Chặn navigation ra ngoài whitelist (Mạng LAN, Hotspot, Domain hệ thống)
     const allowedHosts = ['localhost', '127.0.0.1', 'otmanager.id.vn', 'ot-manager-server-jbxd.onrender.com'];
     mainWindow.webContents.on('will-navigate', (event, url) => {
         try {
             const parsed = new URL(url);
             const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith('.' + h)) ||
-                              parsed.hostname.match(/^192\.168\./) ||
+                              isLocalHostOrIP(parsed.hostname) ||
                               parsed.protocol === 'data:';
             if (!isAllowed) {
                 console.warn(`[Security] Chặn chuyển hướng tới: ${url}`);
@@ -147,7 +157,7 @@ async function createWindow() {
         try {
             const parsed = new URL(url);
             const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith('.' + h)) ||
-                              parsed.hostname.match(/^192\.168\./);
+                              isLocalHostOrIP(parsed.hostname);
             if (!isAllowed) {
                 console.warn(`[Security] Chặn mở cửa sổ mới tới: ${url}`);
                 // Mở link ngoài bằng trình duyệt mặc định thay vì trong app

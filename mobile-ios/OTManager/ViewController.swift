@@ -347,15 +347,26 @@ extension ViewController: WKNavigationDelegate {
             if navigationAction.navigationType == .linkActivated {
                 // Chỉ mở bằng Safari nếu là link do người dùng click
                 // và không phải API call
-                let isExternalLink = !urlString.contains("onrender.com") &&
-                                     !urlString.contains("otmanager.id.vn") &&
-                                     !urlString.contains("localhost") &&
-                                     !urlString.contains("192.168.")
-                if isExternalLink {
-                    UIApplication.shared.open(url)
-                    decisionHandler(.cancel)
-                    return
-                }
+                 var isInternal = urlString.contains("onrender.com") ||
+                                  urlString.contains("otmanager.id.vn") ||
+                                  urlString.contains("localhost") ||
+                                  urlString.contains("127.0.0.1") ||
+                                  urlString.contains("192.168.") ||
+                                  urlString.contains("10.") ||
+                                  urlString.contains("169.254.")
+                 
+                 if !isInternal {
+                     if urlString.range(of: "172\\.(1[6-9]|2[0-9]|3[0-1])\\.", options: .regularExpression) != nil {
+                         isInternal = true
+                     }
+                 }
+                 
+                 let isExternalLink = !isInternal
+                 if isExternalLink {
+                     UIApplication.shared.open(url)
+                     decisionHandler(.cancel)
+                     return
+                 }
             }
         }
 

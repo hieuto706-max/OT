@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="landing.css?v=1.3.7">
+    <link rel="stylesheet" href="landing.css?v=1.3.7.1">
     <!-- Prevent login portal flashing if already logged in -->
     <style id="anti-flash-style">
       html.user-logged-in #login-welcome-box {
@@ -101,7 +101,7 @@
                     </defs>
                 </svg>
                 <span class="logo-text">OT Manager</span>
-                <span class="web-version-badge">v1.3.7</span>
+                <span class="web-version-badge">v1.3.7.1</span>
             </div>
             <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle navigation">
                 <div class="hamburger-bar"></div>
@@ -154,7 +154,7 @@
                             <div class="hud-ring-1"></div>
                             <div class="hud-ring-2"></div>
                             <div class="device-mockup-wrapper tilt-card vr-corners">
-                                <img src="resources/ot_manager_app_review.png?v=1.3.7-showcase" alt="OT Manager App Mockup" class="review-mockup">
+                                <img src="resources/ot_manager_app_review.png?v=1.3.7.1-showcase" alt="OT Manager App Mockup" class="review-mockup">
                             </div>
                             <div class="floating-badge badge-1">✅ Đã Duyệt +3.5h</div>
                             <div class="floating-badge badge-2">📊 Báo cáo Excel</div>
@@ -269,7 +269,7 @@
                             <div class="gallery-grid">
                                 <div class="gallery-card">
                                     <div class="gallery-img-wrapper">
-                                        <img src="resources/mobile_login.png?v=1.3.7-mockup" alt="Cổng đăng nhập di động">
+                                        <img src="resources/mobile_login.png?v=1.3.7.1-mockup" alt="Cổng đăng nhập di động">
                                     </div>
                                     <div class="gallery-info">
                                         <h4>Cổng đăng nhập di động</h4>
@@ -278,7 +278,7 @@
                                 </div>
                                 <div class="gallery-card">
                                     <div class="gallery-img-wrapper">
-                                        <img src="resources/mobile_records.png?v=1.3.7-mockup" alt="Giao diện báo cáo OT">
+                                        <img src="resources/mobile_records.png?v=1.3.7.1-mockup" alt="Giao diện báo cáo OT">
                                     </div>
                                     <div class="gallery-info">
                                         <h4>Giao diện báo cáo OT trưa & tối</h4>
@@ -287,7 +287,7 @@
                                 </div>
                                 <div class="gallery-card">
                                     <div class="gallery-img-wrapper">
-                                        <img src="resources/ot_manager_mobile_review.png?v=1.3.7-mockup" alt="Bảng chấm công di động">
+                                        <img src="resources/ot_manager_mobile_review.png?v=1.3.7.1-mockup" alt="Bảng chấm công di động">
                                     </div>
                                     <div class="gallery-info">
                                         <h4>Trang chấm công di động</h4>
@@ -425,7 +425,7 @@
                                     </div>
                                 </div>
                                 <div class="form-group remember-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; justify-content: flex-start; flex-direction: row;">
-                                    <input type="checkbox" id="login-remember-emp" style="accent-color: var(--green); width: 16px; height: 16px; cursor: pointer; margin: 0;">
+                                    <input type="checkbox" id="login-remember-emp" style="accent-color: var(--green); width: 16px; height: 16px; cursor: pointer; margin: 0;" checked>
                                     <label for="login-remember-emp" style="font-size: 13px; color: var(--text-sub); cursor: pointer; margin-left: 0; display: inline-block;">Ghi nhớ đăng nhập</label>
                                 </div>
                                 <button type="submit" class="btn btn-primary btn-full" id="btn-login-emp">
@@ -463,7 +463,7 @@
                                     </div>
                                 </div>
                                 <div class="form-group remember-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px; justify-content: flex-start; flex-direction: row;">
-                                    <input type="checkbox" id="login-remember-admin" style="accent-color: var(--green); width: 16px; height: 16px; cursor: pointer; margin: 0;">
+                                    <input type="checkbox" id="login-remember-admin" style="accent-color: var(--green); width: 16px; height: 16px; cursor: pointer; margin: 0;" checked>
                                     <label for="login-remember-admin" style="font-size: 13px; color: var(--text-sub); cursor: pointer; margin-left: 0; display: inline-block;">Ghi nhớ đăng nhập</label>
                                 </div>
                                 <button type="submit" class="btn btn-primary btn-full" id="btn-login-admin">
@@ -573,6 +573,26 @@
                     <h2 class="section-title text-center">Nhật ký cập nhật hệ thống</h2>
                     <div class="changelog-timeline">
                         
+                        <!-- Item 0: v1.3.7.1 -->
+                        <div class="changelog-item">
+                            <div class="changelog-header-btn">
+                                <span class="changelog-badge">v1.3.7.1</span>
+                                <span class="changelog-date">24/06/2026</span>
+                                <span class="changelog-chevron">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="changelog-body-expand">
+                                <ul class="changelog-list">
+                                    <li>Khắc phục triệt để lỗi lặp tải trang (reload loop) khi đăng nhập tài khoản nhân viên từ trình duyệt Chrome và Safari trên thiết bị di động.</li>
+                                    <li>Mặc định bật sẵn lựa chọn "Ghi nhớ đăng nhập" tại cổng portal để tối ưu hóa khả năng duy trì trạng thái đăng nhập.</li>
+                                    <li>Tự động ẩn hoàn toàn màn hình đăng nhập di động (mobile) trên phiên bản trình duyệt Web và tự động chuyển hướng về trang chủ để nâng cao tính bảo mật.</li>
+                                </ul>
+                            </div>
+                        </div>
+
                         <!-- Item 0: v1.3.7 -->
                         <div class="changelog-item">
                             <div class="changelog-header-btn">
@@ -757,6 +777,6 @@
         </div>
     </div>
 
-    <script src="landing.js?v=1.3.7"></script>
+    <script src="landing.js?v=1.3.7.1"></script>
 </body>
 </html>
