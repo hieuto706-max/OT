@@ -343,7 +343,8 @@ class Interactive8DBackground {
         if (!this.canvas) return;
         this.ctx = this.canvas.getContext('2d');
         this.particles = [];
-        this.maxParticles = 65;
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+        this.maxParticles = this.isMobile ? 20 : 65;
         this.mouse = { x: null, y: null, radius: 150 };
         this.angleX = 0.0008;
         this.angleY = 0.001;
@@ -964,19 +965,21 @@ class Interactive8DBackground {
         this.bulgeVelocity *= 0.82;
         this.currentBulge += this.bulgeVelocity;
 
-        // Vẽ cấu trúc không gian 3D tương ứng theo tab đang active
-        if (this.currentScene === 'home') {
-            this.drawHologlobe();
-        } else if (this.currentScene === 'login') {
-            this.drawTechTunnel();
-        } else if (this.currentScene === 'download') {
-            this.drawRadarGrid();
-        } else if (this.currentScene === 'release') {
-            this.drawDataMatrix();
-        } else if (this.currentScene === 'terms') {
-            this.drawTechShield();
-        } else {
-            this.drawHologlobe();
+        // Vẽ cấu trúc không gian 3D tương ứng theo tab đang active (Bỏ qua trên Mobile để giảm tải CPU/GPU tránh nóng máy)
+        if (!this.isMobile) {
+            if (this.currentScene === 'home') {
+                this.drawHologlobe();
+            } else if (this.currentScene === 'login') {
+                this.drawTechTunnel();
+            } else if (this.currentScene === 'download') {
+                this.drawRadarGrid();
+            } else if (this.currentScene === 'release') {
+                this.drawDataMatrix();
+            } else if (this.currentScene === 'terms') {
+                this.drawTechShield();
+            } else {
+                this.drawHologlobe();
+            }
         }
 
         // Cập nhật và chiếu 3D các hạt
@@ -1035,55 +1038,57 @@ class Interactive8DBackground {
             p.color = `hsl(${hue}, 75%, 60%)`;
         });
 
-        // Vẽ liên kết mạng lưới (Constellation Lines)
-        for (let i = 0; i < this.particles.length; i++) {
-            const p1 = this.particles[i];
-            if (!p1.visible) continue;
+        // Vẽ liên kết mạng lưới (Constellation Lines - Bỏ qua trên Mobile để giảm tải CPU/GPU tránh nóng máy)
+        if (!this.isMobile) {
+            for (let i = 0; i < this.particles.length; i++) {
+                const p1 = this.particles[i];
+                if (!p1.visible) continue;
 
-            for (let j = i + 1; j < this.particles.length; j++) {
-                const p2 = this.particles[j];
-                if (!p2.visible) continue;
+                for (let j = i + 1; j < this.particles.length; j++) {
+                    const p2 = this.particles[j];
+                    if (!p2.visible) continue;
 
-                // Tính khoảng cách Euclidean trong không gian 3D
-                const dx = p1.x - p2.x;
-                const dy = p1.y - p2.y;
-                const dz = p1.z - p2.z;
-                const dist3D = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    // Tính khoảng cách Euclidean trong không gian 3D
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const dz = p1.z - p2.z;
+                    const dist3D = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-                // 7D: Khoảng cách kết nối động co giãn theo pha U
-                const connectionThreshold = 140 + Math.sin(this.time * 2 + p1.u + p2.u) * 35;
+                    // 7D: Khoảng cách kết nối động co giãn theo pha U
+                    const connectionThreshold = 140 + Math.sin(this.time * 2 + p1.u + p2.u) * 35;
 
-                if (dist3D < connectionThreshold) {
-                    // Tính opacity theo khoảng cách
-                    let alpha = (connectionThreshold - dist3D) / connectionThreshold;
-                    alpha *= (p1.scale + p2.scale) / 4; // Giảm sáng các hạt quá xa về chiều sâu Z
+                    if (dist3D < connectionThreshold) {
+                        // Tính opacity theo khoảng cách
+                        let alpha = (connectionThreshold - dist3D) / connectionThreshold;
+                        alpha *= (p1.scale + p2.scale) / 4; // Giảm sáng các hạt quá xa về chiều sâu Z
 
-                    // Tương tác chuột làm nổi bật liên kết
-                    if (this.mouse.x !== null) {
-                        const mouseDist1 = Math.sqrt((p1.px - this.mouse.x) ** 2 + (p1.py - this.mouse.y) ** 2);
-                        const mouseDist2 = Math.sqrt((p2.px - this.mouse.x) ** 2 + (p2.py - this.mouse.y) ** 2);
-                        if (mouseDist1 < this.mouse.radius || mouseDist2 < this.mouse.radius) {
-                            alpha = Math.min(alpha * 2, 0.7); // Tăng sáng rực liên kết khi gần chuột
+                        // Tương tác chuột làm nổi bật liên kết
+                        if (this.mouse.x !== null) {
+                            const mouseDist1 = Math.sqrt((p1.px - this.mouse.x) ** 2 + (p1.py - this.mouse.y) ** 2);
+                            const mouseDist2 = Math.sqrt((p2.px - this.mouse.x) ** 2 + (p2.py - this.mouse.y) ** 2);
+                            if (mouseDist1 < this.mouse.radius || mouseDist2 < this.mouse.radius) {
+                                alpha = Math.min(alpha * 2, 0.7); // Tăng sáng rực liên kết khi gần chuột
+                            }
                         }
-                    }
 
-                    // Giới hạn alpha để tránh NaN/Infinity hoặc màu CSS không hợp lệ
-                    alpha = Math.min(Math.max(0, alpha), 1);
-                    if (isNaN(alpha) || !isFinite(alpha)) alpha = 0;
+                        // Giới hạn alpha để tránh NaN/Infinity hoặc màu CSS không hợp lệ
+                        alpha = Math.min(Math.max(0, alpha), 1);
+                        if (isNaN(alpha) || !isFinite(alpha)) alpha = 0;
 
-                    // Đảm bảo tọa độ hợp lệ trước khi vẽ đường nối
-                    if (isFinite(p1.px) && isFinite(p1.py) && isFinite(p2.px) && isFinite(p2.py)) {
-                        // Tạo màu Gradient cho liên kết
-                        const grad = this.ctx.createLinearGradient(p1.px, p1.py, p2.px, p2.py);
-                        grad.addColorStop(0, p1.color.replace(')', `, ${alpha * 0.45})`).replace('hsl', 'hsla'));
-                        grad.addColorStop(1, p2.color.replace(')', `, ${alpha * 0.45})`).replace('hsl', 'hsla'));
+                        // Đảm bảo tọa độ hợp lệ trước khi vẽ đường nối
+                        if (isFinite(p1.px) && isFinite(p1.py) && isFinite(p2.px) && isFinite(p2.py)) {
+                            // Tạo màu Gradient cho liên kết
+                            const grad = this.ctx.createLinearGradient(p1.px, p1.py, p2.px, p2.py);
+                            grad.addColorStop(0, p1.color.replace(')', `, ${alpha * 0.45})`).replace('hsl', 'hsla'));
+                            grad.addColorStop(1, p2.color.replace(')', `, ${alpha * 0.45})`).replace('hsl', 'hsla'));
 
-                        this.ctx.beginPath();
-                        this.ctx.strokeStyle = grad;
-                        this.ctx.lineWidth = 0.8 * alpha * (p1.scale + p2.scale) / 2;
-                        this.ctx.moveTo(p1.px, p1.py);
-                        this.ctx.lineTo(p2.px, p2.py);
-                        this.ctx.stroke();
+                            this.ctx.beginPath();
+                            this.ctx.strokeStyle = grad;
+                            this.ctx.lineWidth = 0.8 * alpha * (p1.scale + p2.scale) / 2;
+                            this.ctx.moveTo(p1.px, p1.py);
+                            this.ctx.lineTo(p2.px, p2.py);
+                            this.ctx.stroke();
+                        }
                     }
                 }
             }
@@ -1097,14 +1102,16 @@ class Interactive8DBackground {
             const coreRad = p.radius * p.scale * 0.8;
             const glowRad = p.radius * 3.5;
             if (isFinite(p.px) && isFinite(p.py) && isFinite(coreRad) && isFinite(glowRad) && coreRad > 0 && glowRad > 0) {
-                // Vẽ quầng sáng (glow) nền hạt chính
-                this.ctx.beginPath();
-                const glow = this.ctx.createRadialGradient(p.px, p.py, 0, p.px, p.py, glowRad);
-                glow.addColorStop(0, p.color.replace(')', ', 0.35)').replace('hsl', 'hsla'));
-                glow.addColorStop(1, 'rgba(0,0,0,0)');
-                this.ctx.fillStyle = glow;
-                this.ctx.arc(p.px, p.py, glowRad, 0, Math.PI * 2);
-                this.ctx.fill();
+                // Vẽ quầng sáng (glow) nền hạt chính (Bỏ qua trên Mobile để giảm tải GPU)
+                if (!this.isMobile) {
+                    this.ctx.beginPath();
+                    const glow = this.ctx.createRadialGradient(p.px, p.py, 0, p.px, p.py, glowRad);
+                    glow.addColorStop(0, p.color.replace(')', ', 0.35)').replace('hsl', 'hsla'));
+                    glow.addColorStop(1, 'rgba(0,0,0,0)');
+                    this.ctx.fillStyle = glow;
+                    this.ctx.arc(p.px, p.py, glowRad, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
 
                 // Vẽ lõi hạt chính
                 this.ctx.beginPath();
@@ -1113,42 +1120,44 @@ class Interactive8DBackground {
                 this.ctx.fill();
             }
 
-            // 8D: Vẽ vệ tinh siêu đối xứng (Sub-orbit Satellites) quay quanh hạt chính
-            p.v.phase = (p.v.phase + p.v.speed) % (Math.PI * 2);
-            
-            for (let s = 0; s < p.v.count; s++) {
-                const phaseOffset = s * Math.PI; // Đối xứng 180 độ nếu có 2 vệ tinh
-                const currentPhase = p.v.phase + phaseOffset;
+            // 8D: Vẽ vệ tinh siêu đối xứng (Sub-orbit Satellites) quay quanh hạt chính (Bỏ qua trên Mobile để giảm tải CPU)
+            if (!this.isMobile) {
+                p.v.phase = (p.v.phase + p.v.speed) % (Math.PI * 2);
+                
+                for (let s = 0; s < p.v.count; s++) {
+                    const phaseOffset = s * Math.PI; // Đối xứng 180 độ nếu có 2 vệ tinh
+                    const currentPhase = p.v.phase + phaseOffset;
 
-                // Tính toán quỹ đạo vệ tinh trong mặt phẳng nghiêng 3D
-                const satX_local = Math.cos(currentPhase) * p.v.radiusX;
-                const satY_local = Math.sin(currentPhase) * p.v.radiusY;
+                    // Tính toán quỹ đạo vệ tinh trong mặt phẳng nghiêng 3D
+                    const satX_local = Math.cos(currentPhase) * p.v.radiusX;
+                    const satY_local = Math.sin(currentPhase) * p.v.radiusY;
 
-                // Xoay elip quỹ đạo vệ tinh theo góc nghiêng inclination
-                const satX = p.px + (satX_local * Math.cos(p.v.inclination) - satY_local * Math.sin(p.v.inclination)) * p.scale;
-                const satY = p.py + (satX_local * Math.sin(p.v.inclination) + satY_local * Math.cos(p.v.inclination)) * p.scale;
-                const satRadius = 1.2 * p.scale;
-                const orbitRadius = p.v.radiusX * p.scale;
+                    // Xoay elip quỹ đạo vệ tinh theo góc nghiêng inclination
+                    const satX = p.px + (satX_local * Math.cos(p.v.inclination) - satY_local * Math.sin(p.v.inclination)) * p.scale;
+                    const satY = p.py + (satX_local * Math.sin(p.v.inclination) + satY_local * Math.cos(p.v.inclination)) * p.scale;
+                    const satRadius = 1.2 * p.scale;
+                    const orbitRadius = p.v.radiusX * p.scale;
 
-                // Kiểm tra tính hợp lệ trước khi vẽ
-                if (isFinite(satX) && isFinite(satY) && isFinite(satRadius) && isFinite(orbitRadius) && satRadius > 0 && orbitRadius > 0 && isFinite(p.px) && isFinite(p.py)) {
-                    // Vẽ vệ tinh nhỏ
-                    this.ctx.beginPath();
-                    this.ctx.fillStyle = p.color.replace(')', ', 0.75)').replace('hsl', 'hsla');
-                    this.ctx.arc(satX, satY, satRadius, 0, Math.PI * 2);
-                    this.ctx.fill();
+                    // Kiểm tra tính hợp lệ trước khi vẽ
+                    if (isFinite(satX) && isFinite(satY) && isFinite(satRadius) && isFinite(orbitRadius) && satRadius > 0 && orbitRadius > 0 && isFinite(p.px) && isFinite(p.py)) {
+                        // Vẽ vệ tinh nhỏ
+                        this.ctx.beginPath();
+                        this.ctx.fillStyle = p.color.replace(')', ', 0.75)').replace('hsl', 'hsla');
+                        this.ctx.arc(satX, satY, satRadius, 0, Math.PI * 2);
+                        this.ctx.fill();
 
-                    // Vẽ vòng quỹ đạo vệ tinh mỏng, mờ ảo
-                    this.ctx.beginPath();
-                    this.ctx.strokeStyle = p.color.replace(')', ', 0.07)').replace('hsl', 'hsla');
-                    this.ctx.lineWidth = 0.5 * p.scale;
-                    this.ctx.save();
-                    this.ctx.translate(p.px, p.py);
-                    this.ctx.rotate(p.v.inclination);
-                    this.ctx.scale(1, p.v.radiusY / p.v.radiusX);
-                    this.ctx.arc(0, 0, p.v.radiusX * p.scale, 0, Math.PI * 2);
-                    this.ctx.restore();
-                    this.ctx.stroke();
+                        // Vẽ vòng quỹ đạo vệ tinh mỏng, mờ ảo
+                        this.ctx.beginPath();
+                        this.ctx.strokeStyle = p.color.replace(')', ', 0.07)').replace('hsl', 'hsla');
+                        this.ctx.lineWidth = 0.5 * p.scale;
+                        this.ctx.save();
+                        this.ctx.translate(p.px, p.py);
+                        this.ctx.rotate(p.v.inclination);
+                        this.ctx.scale(1, p.v.radiusY / p.v.radiusX);
+                        this.ctx.arc(0, 0, p.v.radiusX * p.scale, 0, Math.PI * 2);
+                        this.ctx.restore();
+                        this.ctx.stroke();
+                    }
                 }
             }
         });
@@ -1171,11 +1180,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Khởi tạo hình nền cấu trúc 8D
     bgInstance = new Interactive8DBackground();
 
-    // Khởi tạo mô hình thiết bị 3D Hologram ở Hero
-    try {
-        new Device3DModelViewer();
-    } catch (e) {
-        console.error('Không thể khởi tạo mô hình 3D:', e);
+    // Khởi tạo mô hình thiết bị 3D Hologram ở Hero (Chỉ chạy trên Desktop để tránh nóng máy trên điện thoại di động)
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+    if (!isMobileDevice) {
+        try {
+            new Device3DModelViewer();
+        } catch (e) {
+            console.error('Không thể khởi tạo mô hình 3D:', e);
+        }
     }
 
     // Kiểm tra session hiện có để hiển thị Welcome Box
