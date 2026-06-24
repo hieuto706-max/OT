@@ -114,11 +114,42 @@ function isSessionExpired(loginTimeMs) {
     return Date.now() >= cutoff.getTime();
 }
 
+function isLocalNetworkUrl(urlStr) {
+    if (!urlStr) return false;
+    try {
+        let tempUrl = urlStr;
+        if (!urlStr.startsWith('http://') && !urlStr.startsWith('https://')) {
+            tempUrl = 'http://' + urlStr;
+        }
+        const parsed = new URL(tempUrl);
+        const hostname = parsed.hostname;
+        return hostname === 'localhost' ||
+               hostname === '127.0.0.1' ||
+               /^192\.168\./.test(hostname) ||
+               /^10\./.test(hostname) ||
+               /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
+               /^169\.254\./.test(hostname);
+    } catch (e) {
+        return false;
+    }
+}
+
 // Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu chạy web local thì tự động dùng origin
 const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.8';
 let updateCheckInterval = null;
 const isLocalWeb = window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io') && !window.location.hostname.includes('otmanager.id.vn');
-let API = isLocalWeb ? window.location.origin : (safeStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com');
+let savedServerIp = safeStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com';
+
+// Nếu chạy trên điện thoại (bản Web) hoặc HTTPS công cộng, lọc và bỏ qua các IP nội bộ tư nhân (như 192.168, localhost, v.v.)
+const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const isPublicHttps = window.location.protocol === 'https:' || window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
+const isNativeApp = window.location.protocol === 'file:' || !!window.AndroidBridge;
+if ((isMobileDevice || isPublicHttps) && !isNativeApp && isLocalNetworkUrl(savedServerIp)) {
+    console.log('[Connection] Bỏ qua IP nội bộ tư nhân trên phiên bản Web di động:', savedServerIp);
+    savedServerIp = 'https://ot-manager-server-jbxd.onrender.com';
+}
+
+let API = isLocalWeb ? window.location.origin : savedServerIp;
 
 // Nếu chạy trên HTTPS công cộng, không cho phép kết nối tới HTTP local IP (tránh lỗi Mixed Content hoặc Failed to fetch)
 if (window.location.protocol === 'https:' && API.startsWith('http://')) {

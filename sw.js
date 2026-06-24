@@ -36,22 +36,25 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // For static assets: Network-First (Falling back to Cache)
+    // For static assets: Stale-While-Revalidate (SWR)
     event.respondWith(
-        fetch(event.request).then(networkResponse => {
-            if (networkResponse && networkResponse.status === 200) {
-                const clone = networkResponse.clone();
-                caches.open(CACHE_NAME).then(cache => {
-                    cache.put(event.request, clone).catch(() => {});
-                });
-            }
-            return networkResponse;
-        }).catch(err => {
-            // If network fails, try to return cached response
-            return caches.match(event.request).then(cachedResponse => {
+        caches.match(event.request).then(cachedResponse => {
+            const fetchPromise = fetch(event.request).then(networkResponse => {
+                if (networkResponse && networkResponse.status === 200) {
+                    const clone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, clone).catch(() => {});
+                    });
+                }
+                return networkResponse;
+            }).catch(err => {
+                // If network fails, try to return cached response
                 if (cachedResponse) return cachedResponse;
                 throw err;
             });
+
+            // Return cached response instantly if available, otherwise wait for network
+            return cachedResponse || fetchPromise;
         })
     );
 });

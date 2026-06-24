@@ -1257,8 +1257,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function isLocalNetworkUrl(urlStr) {
+        if (!urlStr) return false;
+        try {
+            let tempUrl = urlStr;
+            if (!urlStr.startsWith('http://') && !urlStr.startsWith('https://')) {
+                tempUrl = 'http://' + urlStr;
+            }
+            const parsed = new URL(tempUrl);
+            const hostname = parsed.hostname;
+            return hostname === 'localhost' ||
+                   hostname === '127.0.0.1' ||
+                   /^192\.168\./.test(hostname) ||
+                   /^10\./.test(hostname) ||
+                   /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
+                   /^169\.254\./.test(hostname);
+        } catch (e) {
+            return false;
+        }
+    }
+
     const host = window.location.origin;
-    const savedServerIp = localStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com';
+    let savedServerIp = localStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com';
+    
+    // Nếu chạy trên điện thoại hoặc HTTPS công cộng, lọc và bỏ qua các IP nội bộ tư nhân (như 192.168, localhost, v.v.)
+    const isPublicHttps = window.location.protocol === 'https:' || window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
+    if ((isMobileDevice || isPublicHttps) && isLocalNetworkUrl(savedServerIp)) {
+        console.log('[Connection] Bỏ qua IP nội bộ tư nhân trên thiết bị di động/HTTPS:', savedServerIp);
+        savedServerIp = 'https://ot-manager-server-jbxd.onrender.com';
+    }
+
     let checkUrl = (window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io') && !window.location.hostname.includes('otmanager.id.vn')) ? host : savedServerIp;
     
     // Nếu chạy trên HTTPS công cộng, không cho phép kết nối tới HTTP local IP (tránh lỗi Mixed Content hoặc Failed to fetch)
@@ -1266,34 +1294,138 @@ document.addEventListener('DOMContentLoaded', () => {
         checkUrl = 'https://ot-manager-server-jbxd.onrender.com';
     }
 
-    // 1. Fetch version info dynamically from server
-    fetch(checkUrl + '/api/version')
-        .then(res => res.json())
-        .then(data => {
-            if (data.version) {
-                // Update version text elements
-                document.querySelectorAll('.web-version-badge, .login-ver-val').forEach(el => {
-                    el.textContent = 'v' + data.version;
+    const statusEl = document.getElementById('connection-status');
+
+    function updateServerData(url) {
+        // 1. Fetch version info dynamically from server
+        fetch(url + '/api/version')
+            .then(res => res.json())
+            .then(data => {
+                if (data.version) {
+                    // Update version text elements
+                    document.querySelectorAll('.web-version-badge, .login-ver-val').forEach(el => {
+                        el.textContent = 'v' + data.version;
+                    });
+
+                    // Update Windows EXE release link
+                    const desktopBtn = document.getElementById('desktop-download-btn-landing');
+                    if (desktopBtn && data.desktopDownloadUrl) {
+                        desktopBtn.setAttribute('data-url', data.desktopDownloadUrl);
+                    }
+
+                    // Update Android APK link & QR Code
+                    const apkBtn = document.getElementById('apk-download-btn-landing');
+                    if (apkBtn && data.mobileDownloadUrl) {
+                        apkBtn.setAttribute('data-url', data.mobileDownloadUrl);
+                    }
+                    const apkQr = document.getElementById('apk-qr-code-landing');
+                    if (apkQr && data.mobileDownloadUrl) {
+                        apkQr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=' + encodeURIComponent(data.mobileDownloadUrl);
+                    }
+                }
+            })
+            .catch(err => console.warn('Lỗi đồng bộ thông tin phiên bản từ server:', err));
+    }
+
+    function checkServerConnection(url, timeoutMs) {
+        return new Promise((resolve) => {
+            if (typeof AbortController === 'undefined') {
+                // Hỗ trợ trình duyệt cũ
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', url + '/api/server-info', true);
+                xhr.timeout = timeoutMs || 3000;
+                xhr.onload = function() { resolve(xhr.status === 200); };
+                xhr.onerror = function() { resolve(false); };
+                xhr.ontimeout = function() { resolve(false); };
+                xhr.send();
+                return;
+            }
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs || 3000);
+
+            fetch(url + '/api/server-info', { signal: controller.signal })
+                .then(res => {
+                    clearTimeout(timeoutId);
+                    if (res.ok) {
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
+                })
+                .catch(() => {
+                    clearTimeout(timeoutId);
+                    resolve(false);
                 });
+        });
+    }
 
-                // Update Windows EXE release link
-                const desktopBtn = document.getElementById('desktop-download-btn-landing');
-                if (desktopBtn && data.desktopDownloadUrl) {
-                    desktopBtn.setAttribute('data-url', data.desktopDownloadUrl);
-                }
+    function autoResolveRentryUrl() {
+        return new Promise((resolve) => {
+            fetch('https://rentry.co/otmanager-hieutm-3456?t=' + Date.now())
+                .then(res => {
+                    if (!res.ok) throw new Error();
+                    return res.text();
+                })
+                .then(html => {
+                    const match = html.match(/href="([^"]+)" class="external"/);
+                    if (match) {
+                        let url = match[1];
+                        if (url && url.endsWith('/')) {
+                            url = url.slice(0, -1);
+                        }
+                        resolve(url);
+                    } else {
+                        resolve(null);
+                    }
+                })
+                .catch(() => {
+                    resolve(null);
+                });
+        });
+    }
 
-                // Update Android APK link & QR Code
-                const apkBtn = document.getElementById('apk-download-btn-landing');
-                if (apkBtn && data.mobileDownloadUrl) {
-                    apkBtn.setAttribute('data-url', data.mobileDownloadUrl);
-                }
-                const apkQr = document.getElementById('apk-qr-code-landing');
-                if (apkQr && data.mobileDownloadUrl) {
-                    apkQr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0f0f1a&data=' + encodeURIComponent(data.mobileDownloadUrl);
+    async function initConnection() {
+        if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.innerHTML = `<span style="color:#f59e0b; animation: pulse 1.5s infinite; display: inline-block;">● Đang kết nối Server...</span>`;
+        }
+
+        // Thử kết nối URL hiện tại
+        let isConnected = await checkServerConnection(checkUrl, 3000);
+        
+        if (!isConnected && (window.location.protocol === 'https:' || window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn'))) {
+            if (statusEl) {
+                statusEl.innerHTML = `<span style="color:#f59e0b; animation: pulse 1.5s infinite; display: inline-block;">● Tìm kiếm Server trên Cloud...</span>`;
+            }
+            // Thử lấy URL mới từ Rentry
+            const rentryUrl = await autoResolveRentryUrl();
+            if (rentryUrl && rentryUrl !== checkUrl) {
+                // Thử kết nối URL mới lấy từ Rentry
+                let isRentryConnected = await checkServerConnection(rentryUrl, 4000);
+                if (isRentryConnected) {
+                    checkUrl = rentryUrl;
+                    localStorage.setItem('ot_server_ip', rentryUrl);
+                    isConnected = true;
+                    console.log('Tự động chuyển server sang Rentry URL:', rentryUrl);
                 }
             }
-        })
-        .catch(err => console.warn('Lỗi đồng bộ thông tin phiên bản từ server:', err));
+        }
+
+        if (isConnected) {
+            if (statusEl) {
+                statusEl.style.display = 'none'; // Ẩn khi kết nối thành công
+            }
+            updateServerData(checkUrl);
+        } else {
+            if (statusEl) {
+                statusEl.innerHTML = `<span style="color:#ef4444;">● Ngoại tuyến (Offline)</span>`;
+            }
+            // Vẫn nạp dữ liệu từ server cũ / mặc định đề phòng
+            updateServerData(checkUrl);
+        }
+    }
+
+    initConnection();
 
     // Dynamic download event handlers to prevent showing raw link URLs in browser status bars on hover
     const apkBtn = document.getElementById('apk-download-btn-landing');
@@ -1322,27 +1454,6 @@ document.addEventListener('DOMContentLoaded', () => {
             window.scrollToLogin();
         });
     }
-
-    // 2. Connection Status check
-    const statusEl = document.getElementById('connection-status');
-    if (statusEl) {
-        statusEl.style.display = 'block';
-        statusEl.innerHTML = `<span style="color:#f59e0b; animation: pulse 1.5s infinite; display: inline-block;">● Đang kết nối Cloud...</span>`;
-    }
-
-    fetch(checkUrl + '/api/server-info')
-        .then(res => res.json())
-        .then(info => {
-            if (statusEl) {
-                // Đã kết nối thành công, ẩn trạng thái để giao diện sạch sẽ
-                statusEl.style.display = 'none';
-            }
-        })
-        .catch(err => {
-            if (statusEl) {
-                statusEl.innerHTML = `<span style="color:#ef4444;">● Ngoại tuyến (Offline)</span>`;
-            }
-        });
 
     // 3. Tab switching logic
     document.querySelectorAll('.landing-nav .nav-link').forEach(link => {

@@ -2743,16 +2743,13 @@ async function checkUpdateSilent() {
 }
 
 // ==================== EVENT LISTENERS ====================
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
     if (!isElectron) {
         document.body.classList.add('is-web-browser');
     }
     const otDateEl = document.getElementById('ot-date');
     if (otDateEl) otDateEl.max = new Date().toISOString().split('T')[0];
 
-    // 1. Cấu hình và đồng bộ hóa Cloud Server trước khi tải trang dashboard
-    await initCloudConfig();
-    
     // Hide check update button on Web (non-Electron)
     const btnCheckUpdate = document.getElementById('btn-check-update');
     if (btnCheckUpdate) {
@@ -2770,46 +2767,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         setInterval(checkUpdateSilent, 30 * 60 * 1000);
     }
 
-    // 2. Kiểm tra phiên bản và trạng thái session để quyết định tự động đăng nhập
-    try {
-        const versionRes = await fetch(`${localServerUrl}/api/version`);
-        const versionData = await versionRes.json();
-        const currentVersion = versionData.version || '1.0.0';
-
-        const verEl = document.getElementById('login-version');
-        if (verEl) {
-            verEl.textContent = 'Phiên bản v' + currentVersion;
-        }
-
-        const storedVersion = localStorage.getItem('ot_app_version');
-        const isSessionActive = sessionStorage.getItem('ot_session_active');
-
-        // Nếu là phiên làm việc mới (app bị tắt hoàn toàn và bật lại)
-        if (isElectron && !isSessionActive) {
-            // Nếu không phải là cập nhật (phiên bản cũ và mới giống nhau)
-            if (storedVersion === currentVersion) {
-                // Tắt app hoàn toàn và bật lại bản cũ -> bắt đăng nhập lại
-                localStorage.removeItem('ot_current_user');
-                localStorage.removeItem('ot_login_date');
-            } else {
-                // Đây là cập nhật phiên bản -> giữ nguyên login, chỉ cập nhật version lưu trữ
-                localStorage.setItem('ot_app_version', currentVersion);
-            }
-            // Đánh dấu session hiện tại là active
-            sessionStorage.setItem('ot_session_active', 'true');
-        } else if (!isElectron) {
-            // Trên web, chỉ cần cập nhật version lưu trữ, không log out
-            localStorage.setItem('ot_app_version', currentVersion);
-        }
-    } catch (e) {
-        console.error('Lỗi kiểm tra phiên bản:', e);
-        const verEl = document.getElementById('login-version');
-        if (verEl) {
-            verEl.textContent = 'Phiên bản v1.3.6';
-        }
-    }
-
-    // 3. Kiểm tra qua 00h (đăng nhập ngày mới)
+    // Kiểm tra qua 00h (đăng nhập ngày mới)
     checkMidnightLogout();
 
     // Thêm lắng nghe sự kiện focus cửa sổ để kiểm tra qua 00h
@@ -2820,20 +2778,70 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Auto-login check
+    // Auto-login check (cần chạy trước khi fetch dữ liệu để tránh flash hoặc lỗi giao diện)
     const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
-    if (currentUser) {
-        if (currentUser.role === 'admin') {
-            initAdminDashboard(currentUser);
-            showScreen('screen-admin');
-        } else {
-            initEmployeeDashboard(currentUser);
-            showScreen('screen-employee');
+
+    // Hàm khởi chạy bất đồng bộ để cấu hình Cloud, check version và tải dữ liệu dashboard
+    async function runAsyncInit() {
+        // 1. Cấu hình và đồng bộ hóa Cloud Server trước khi tải trang dashboard
+        await initCloudConfig();
+
+        // 2. Kiểm tra phiên bản và trạng thái session để quyết định tự động đăng nhập
+        try {
+            const versionRes = await fetch(`${localServerUrl}/api/version`);
+            const versionData = await versionRes.json();
+            const currentVersion = versionData.version || '1.0.0';
+
+            const verEl = document.getElementById('login-version');
+            if (verEl) {
+                verEl.textContent = 'Phiên bản v' + currentVersion;
+            }
+
+            const storedVersion = localStorage.getItem('ot_app_version');
+            const isSessionActive = sessionStorage.getItem('ot_session_active');
+
+            // Nếu là phiên làm việc mới (app bị tắt hoàn toàn và bật lại)
+            if (isElectron && !isSessionActive) {
+                // Nếu không phải là cập nhật (phiên bản cũ và mới giống nhau)
+                if (storedVersion === currentVersion) {
+                    // Tắt app hoàn toàn và bật lại bản cũ -> bắt đăng nhập lại
+                    localStorage.removeItem('ot_current_user');
+                    localStorage.removeItem('ot_login_date');
+                } else {
+                    // Đây là cập nhật phiên bản -> giữ nguyên login, chỉ cập nhật version lưu trữ
+                    localStorage.setItem('ot_app_version', currentVersion);
+                }
+                // Đánh dấu session hiện tại là active
+                sessionStorage.setItem('ot_session_active', 'true');
+            } else if (!isElectron) {
+                // Trên web, chỉ cần cập nhật version lưu trữ, không log out
+                localStorage.setItem('ot_app_version', currentVersion);
+            }
+        } catch (e) {
+            console.error('Lỗi kiểm tra phiên bản:', e);
+            const verEl = document.getElementById('login-version');
+            if (verEl) {
+                verEl.textContent = 'Phiên bản v1.3.6';
+            }
         }
+
+        // Tải dữ liệu dashboard nếu có user đã đăng nhập
+        if (currentUser) {
+            if (currentUser.role === 'admin') {
+                await initAdminDashboard(currentUser);
+                showScreen('screen-admin');
+            } else {
+                await initEmployeeDashboard(currentUser);
+                showScreen('screen-employee');
+            }
+        }
+
+        // Kết nối SSE để nhận sự kiện thời gian thực
+        initSseConnection();
     }
 
-    // Kết nối SSE để nhận sự kiện thời gian thực
-    initSseConnection();
+    // Chạy các tác vụ Cloud & Data ngầm không làm block giao diện đăng nhập
+    runAsyncInit();
 
     // Click events for stat cards
     const cardPendingOt = document.getElementById('stat-card-pending-ot');

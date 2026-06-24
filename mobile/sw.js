@@ -31,20 +31,25 @@ self.addEventListener('fetch', event => {
       if (url.pathname.indexOf('/api/') !== -1) {
               return;
       }
+      // For static assets: Stale-While-Revalidate (SWR)
       event.respondWith(
-              fetch(event.request).then(networkResponse => {
-                        if (networkResponse && networkResponse.status === 200) {
-                                    const clone = networkResponse.clone();
-                                    caches.open(CACHE_NAME).then(cache => {
-                                                  cache.put(event.request, clone).catch(() => {});
-                                    });
-                        }
-                        return networkResponse;
+          caches.match(event.request).then(cachedResponse => {
+              const fetchPromise = fetch(event.request).then(networkResponse => {
+                  if (networkResponse && networkResponse.status === 200) {
+                      const clone = networkResponse.clone();
+                      caches.open(CACHE_NAME).then(cache => {
+                          cache.put(event.request, clone).catch(() => {});
+                      });
+                  }
+                  return networkResponse;
               }).catch(err => {
-                        return caches.match(event.request).then(cachedResponse => {
-                                    if (cachedResponse) return cachedResponse;
-                                    throw err;
-                        });
-              })
-            );
+                  // If network fails, try to return cached response
+                  if (cachedResponse) return cachedResponse;
+                  throw err;
+              });
+
+              // Return cached response instantly if available, otherwise wait for network
+              return cachedResponse || fetchPromise;
+          })
+      );
 });
