@@ -118,7 +118,6 @@ body::before {
     position: absolute;
     border-radius: 50%;
     opacity: 0.85; /* Increased opacity to compensate for lack of blend-mode */
-    will-change: transform;
     pointer-events: none;
     /* Soft fallback blur that is light on GPU - radial-gradient is naturally soft so we do not need CPU-heavy blur filters */
     transform: translate3d(0, 0, 0);
@@ -371,12 +370,10 @@ body::before {
     justify-content: space-between;
     padding: 16px 24px;
     border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
     position: sticky;
     top: 0;
     z-index: 100;
-    background: rgba(2, 6, 4, 0.82);
+    background: #020604;
 }
 
 .landing-logo {
@@ -423,9 +420,7 @@ body::before {
 
 /* ==================== LOGIN CARD — Double-Border Glass ==================== */
 .login-page-card {
-    background: linear-gradient(145deg, rgba(8, 20, 16, 0.85) 0%, rgba(2, 6, 4, 0.8) 100%);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background: linear-gradient(145deg, rgba(8, 20, 16, 0.98) 0%, rgba(2, 6, 4, 0.96) 100%);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-lg);
     padding: 32px 20px;
@@ -745,9 +740,7 @@ body::before {
     justify-content: space-between;
     padding: 16px 20px;
     padding-top: calc(16px + var(--safe-top));
-    background: rgba(2, 6, 4, 0.82);
-    backdrop-filter: blur(28px) saturate(200%);
-    -webkit-backdrop-filter: blur(28px) saturate(200%);
+    background: #020604;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
     z-index: 50;
@@ -878,9 +871,7 @@ body::before {
 }
 
 .info-card {
-    background: linear-gradient(145deg, rgba(22, 24, 48, 0.75) 0%, rgba(10, 11, 22, 0.7) 100%);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: linear-gradient(145deg, rgba(22, 24, 48, 0.95) 0%, rgba(10, 11, 22, 0.93) 100%);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius);
     padding: 18px 16px;
@@ -966,9 +957,7 @@ body::before {
 
 /* ==================== PREMIUM CARD PANELS — Double-Border Glass ==================== */
 .card {
-    background: linear-gradient(145deg, rgba(22, 24, 48, 0.75) 0%, rgba(10, 11, 22, 0.7) 100%);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background: linear-gradient(145deg, rgba(22, 24, 48, 0.95) 0%, rgba(10, 11, 22, 0.93) 100%);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius);
     padding: 26px;
@@ -1577,9 +1566,7 @@ body::before {
     right: 16px;
     height: 66px;
     border-radius: 22px;
-    background: rgba(7, 8, 16, 0.75);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(7, 8, 16, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     z-index: 100;
@@ -3518,70 +3505,7 @@ body.landing-page #screen-login {
     opacity: 0.8;
 }
 
-.floating-bg-mockup {
-    position: absolute;
-    border-radius: var(--radius);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    background: rgba(5, 5, 12, 0.45);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    opacity: 0.18; /* Soft background blend */
-    transition: opacity 0.5s ease, transform 0.5s ease;
-    will-change: transform, opacity;
-}
-
-/* Mobile phone mockup on the left */
-.mockup-left {
-    width: 250px;
-    height: 512px;
-    left: -60px;
-    top: 22%;
-    transform: rotate(15deg);
-    animation: driftLeft 24s ease-in-out infinite alternate;
-    background-image: url('resources/ot_manager_app_review.png');
-    background-size: cover;
-    background-position: center;
-}
-
-/* Desktop dashboard mockup on the right */
-.mockup-right {
-    width: 580px;
-    height: 340px;
-    right: -140px;
-    bottom: 12%;
-    transform: rotate(-10deg);
-    animation: driftRight 30s ease-in-out infinite alternate;
-    background-image: url('resources/ot_manager_desktop_mockup.png');
-    background-size: cover;
-    background-position: center;
-}
-
-/* Animations for floating assets */
-@keyframes driftLeft {
-    0% {
-        transform: rotate(15deg) translate(0, 0);
-    }
-    100% {
-        transform: rotate(18deg) translate(15px, 30px);
-    }
-}
-
-@keyframes driftRight {
-    0% {
-        transform: rotate(-10deg) translate(0, 0);
-    }
-    100% {
-        transform: rotate(-7deg) translate(-25px, -20px);
-    }
-}
-
-/* Hide background mockups on small screens to prevent visual clutter */
-@media (max-width: 768px) {
-    .floating-bg-mockup {
-        display: none;
-    }
-}
+/* Floating mockups removed on mobile app style to prevent background processing and battery drain */
 
 select option {
     background-color: #050510 !important;
