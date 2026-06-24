@@ -287,7 +287,7 @@ function getDbPath() {
 }
 
 function getConfigPath() {
-    let configPath = path.join(__dirname, '..', 'config.json');
+    let configPath = path.join(__dirname, 'config.json');
     try {
         const { app } = require('electron');
         if (app) {
@@ -296,7 +296,7 @@ function getConfigPath() {
             if (fs.existsSync(exeConfig)) {
                 configPath = exeConfig;
             } else if (app.isPackaged) {
-                const asarConfig = path.join(__dirname, '..', 'config.json');
+                const asarConfig = path.join(__dirname, 'config.json');
                 if (fs.existsSync(asarConfig)) {
                     configPath = asarConfig;
                 }
