@@ -147,6 +147,11 @@ let deviceId = getDeviceId();
 const isLocalWeb = window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io') && !window.location.hostname.includes('otmanager.id.vn');
 let API = isLocalWeb ? window.location.origin : (safeStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com');
 
+// Nếu chạy trên HTTPS công cộng, không cho phép kết nối tới HTTP local IP (tránh lỗi Mixed Content hoặc Failed to fetch)
+if (window.location.protocol === 'https:' && API.startsWith('http://')) {
+    API = 'https://ot-manager-server-jbxd.onrender.com';
+}
+
 // Clean deprecated IP addresses
 let savedIp = safeStorage.getItem('ot_server_ip');
 if (!isLocalWeb && savedIp && (savedIp.includes('otms.onrender.com') || savedIp.includes('ot-manager-server.onrender.com') || savedIp.includes('otm.app.vn') || savedIp.includes('new-folder-6471') || savedIp.includes('lhr.life'))) {
@@ -1254,7 +1259,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const host = window.location.origin;
     const savedServerIp = localStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com';
-    const checkUrl = (window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io') && !window.location.hostname.includes('otmanager.id.vn')) ? host : savedServerIp;
+    let checkUrl = (window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io') && !window.location.hostname.includes('otmanager.id.vn')) ? host : savedServerIp;
+    
+    // Nếu chạy trên HTTPS công cộng, không cho phép kết nối tới HTTP local IP (tránh lỗi Mixed Content hoặc Failed to fetch)
+    if (window.location.protocol === 'https:' && checkUrl.startsWith('http://')) {
+        checkUrl = 'https://ot-manager-server-jbxd.onrender.com';
+    }
 
     // 1. Fetch version info dynamically from server
     fetch(checkUrl + '/api/version')
