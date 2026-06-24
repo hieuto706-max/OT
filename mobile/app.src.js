@@ -115,7 +115,7 @@ function isSessionExpired(loginTimeMs) {
 }
 
 // Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu chạy web local thì tự động dùng origin
-const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.7.1';
+const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.8';
 let updateCheckInterval = null;
 const isLocalWeb = window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io') && !window.location.hostname.includes('otmanager.id.vn');
 let API = isLocalWeb ? window.location.origin : (safeStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com');
