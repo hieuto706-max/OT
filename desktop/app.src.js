@@ -825,9 +825,9 @@ async function refreshAdminStats() {
     try {
         const stats = await api('/api/stats');
         document.getElementById('stat-total-users').textContent = stats.totalUsers;
+        document.getElementById('stat-pending-ot').textContent = stats.pendingOT;
+        document.getElementById('stat-pending-unlinks').textContent = stats.pendingUnlinks;
         document.getElementById('stat-total-ot').textContent = stats.totalOTMonth.toFixed(1);
-        document.getElementById('stat-today-ot').textContent = stats.todayOT.toFixed(1);
-        document.getElementById('stat-lunch-ot').textContent = stats.lunchOTMonth;
     } catch (e) {}
 }
 
@@ -2834,6 +2834,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Kết nối SSE để nhận sự kiện thời gian thực
     initSseConnection();
+
+    // Click events for stat cards
+    const cardPendingOt = document.getElementById('stat-card-pending-ot');
+    if (cardPendingOt) {
+        cardPendingOt.addEventListener('click', () => {
+            const recordsTab = document.querySelector('.admin-tab[data-admin-tab="records"]');
+            if (recordsTab) recordsTab.click();
+            const pendingSubTab = document.querySelector('.sub-tab[data-subtab="subtab-content-records-pending"]');
+            if (pendingSubTab) pendingSubTab.click();
+        });
+    }
+
+    const cardPendingUnlinks = document.getElementById('stat-card-pending-unlinks');
+    if (cardPendingUnlinks) {
+        cardPendingUnlinks.addEventListener('click', () => {
+            const usersTab = document.querySelector('.admin-tab[data-admin-tab="users"]');
+            if (usersTab) usersTab.click();
+            const employeesSubTab = document.querySelector('.sub-tab[data-subtab="subtab-content-employees"]');
+            if (employeesSubTab) employeesSubTab.click();
+        });
+    }
 
     // Login tabs (Nhân viên / Quản lý)
     const tabEmployeeBtn = document.getElementById('btn-tab-employee');
