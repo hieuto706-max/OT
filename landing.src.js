@@ -202,7 +202,7 @@ async function isPrivateMode() {
         } else {
             if (navigator.serviceWorker && typeof navigator.serviceWorker.register === 'function') {
                 navigator.serviceWorker.register('sw.js').then((reg) => {
-                    reg.unregister();
+                    // Giữ Service Worker đã đăng ký để duy trì hoạt động của bộ nhớ cache PWA cho tải trang nhanh
                     detectChromiumOrFallback();
                 }).catch((err) => {
                     if (err && err.name === 'SecurityError') {

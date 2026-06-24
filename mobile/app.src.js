@@ -2068,7 +2068,6 @@ function startAutoDiscovery() {
     });
 }
 
-/*
 // Register Service Worker for PWA and handle auto-update detection
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(reg => {
@@ -2087,7 +2086,6 @@ if ('serviceWorker' in navigator) {
         });
     }).catch(() => {});
 }
-*/
 
 // ==================== EDIT DYNAMIC OVERLAY ====================
 let activeEditRecordId = null;
