@@ -2821,7 +2821,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Lỗi kiểm tra phiên bản:', e);
             const verEl = document.getElementById('login-version');
             if (verEl) {
-                verEl.textContent = 'Phiên bản v1.3.6';
+                verEl.textContent = 'Phiên bản v1.3.8';
             }
         }
 
