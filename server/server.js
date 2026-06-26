@@ -718,8 +718,7 @@ async function handleAPI(req, res, urlPath, method) {
                 } else if (currentBoundId !== deviceId) {
                     // Thiết bị không trùng khớp ➡️ Khóa và yêu cầu liên hệ Quản lý để hủy liên kết
                     const errMsg = isBrowser ? 'Tài khoản này đã được liên kết với trình duyệt khác. Vui lòng liên hệ Quản lý để hủy liên kết thiết bị cũ.' : 'Tài khoản này đã được liên kết với thiết bị khác. Vui lòng liên hệ Quản lý để hủy liên kết thiết bị cũ.';
-                    res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
-                    return res.end(JSON.stringify({ error: errMsg, code: 'device_locked' }));
+                    return sendJSON(res, 403, { error: errMsg, code: 'device_locked' }, req);
                 }
             }
             const { password: _, ...safeUser } = user;
