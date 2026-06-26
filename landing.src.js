@@ -136,6 +136,15 @@ function getDeviceId(username) {
     return id;
 }
 
+function getFriendlyErrorMessage(err) {
+    if (!err) return 'Đã xảy ra lỗi không xác định. Vui lòng thử lại!';
+    const msg = (err.message || String(err)).toLowerCase();
+    if (msg.includes('failed to fetch') || msg.includes('fetch failed') || msg.includes('network error') || msg.includes('networkerror') || msg.includes('load failed')) {
+        return 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại sau!';
+    }
+    return err.message || String(err);
+}
+
 // Device ID
 let deviceId = getDeviceId();
 
@@ -1560,6 +1569,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
             return res.json();
+        }).catch(err => {
+            throw new Error(getFriendlyErrorMessage(err));
         });
     }
 
@@ -1644,7 +1655,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     errEl.innerHTML = `<span style="color:#10b981; font-weight: 700; display: block; margin-top: 8px;">✅ ${data.message || 'Đã gửi yêu cầu huỷ liên kết đến Quản trị viên!'}</span>`;
                                 })
                                 .catch(unlinkErr => {
-                                    showToast(unlinkErr.message, 'error');
+                                    showToast(getFriendlyErrorMessage(unlinkErr), 'error');
                                     unlinkBtn.disabled = false;
                                     unlinkBtn.textContent = 'Xin Quản lý huỷ liên kết';
                                 });
@@ -1700,7 +1711,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }, 800);
                 })
                 .catch(err => {
-                    errEl.textContent = err.message;
+                    errEl.textContent = getFriendlyErrorMessage(err);
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Đăng nhập Quản trị';
                 });
