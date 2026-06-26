@@ -136,7 +136,7 @@ async function createWindow() {
     }
 
     // Bảo mật: Chặn navigation ra ngoài whitelist (Mạng LAN, Hotspot, Domain hệ thống)
-    const allowedHosts = ['localhost', '127.0.0.1', 'otmanager.id.vn', 'ot-manager-server-jbxd.onrender.com'];
+    const allowedHosts = ['localhost', '127.0.0.1', 'otmanager.id.vn', 'api.otmanager.id.vn', 'ot-manager-server-jbxd.onrender.com'];
     mainWindow.webContents.on('will-navigate', (event, url) => {
         try {
             const parsed = new URL(url);
