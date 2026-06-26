@@ -2055,27 +2055,26 @@ async function renewSSL(domain) {
         return false;
     }
     
-    try {
-        const acme = require('acme-client');
-        
-        const eabKid = process.env.ZEROSSL_EAB_KID || '2WmkpWu0d2mE8x5kq-Xk6A';
-        const eabHmac = process.env.ZEROSSL_EAB_HMAC || 'dg7anWVfRmu_xw-6JlIGhPGSFerqQ-4DiUMVV51zumcp2U36muU2W1DNhVFlRG39uw19uac92cc9JSXRkrKfGQ';
-        
-        let directoryUrl = process.env.SSL_USE_STAGING === 'true' 
-            ? acme.directory.letsencrypt.staging 
-            : acme.directory.letsencrypt.production;
-            
+    const acme = require('acme-client');
+    const eabKid = process.env.ZEROSSL_EAB_KID || '2WmkpWu0d2mE8x5kq-Xk6A';
+    const eabHmac = process.env.ZEROSSL_EAB_HMAC || 'dg7anWVfRmu_xw-6JlIGhPGSFerqQ-4DiUMVV51zumcp2U36muU2W1DNhVFlRG39uw19uac92cc9JSXRkrKfGQ';
+    
+    async function requestCertFromProvider(isZeroSSL) {
+        let directoryUrl;
         let externalAccountBinding = undefined;
         
-        if (eabKid && eabHmac) {
+        if (isZeroSSL) {
             directoryUrl = 'https://acme.zerossl.com/v2/DV90';
             externalAccountBinding = {
                 kid: eabKid,
                 hmacKey: eabHmac
             };
-            console.log(`[SSL Auto-Renew] Bắt đầu yêu cầu cấp chứng chỉ ZeroSSL cho tên miền: ${domain}`);
+            console.log(`[SSL Auto-Renew] Đang thử xin chứng chỉ từ ZeroSSL cho tên miền: ${domain}`);
         } else {
-            console.log(`[SSL Auto-Renew] Bắt đầu yêu cầu cấp chứng chỉ Let's Encrypt cho tên miền: ${domain}`);
+            directoryUrl = process.env.SSL_USE_STAGING === 'true' 
+                ? acme.directory.letsencrypt.staging 
+                : acme.directory.letsencrypt.production;
+            console.log(`[SSL Auto-Renew] Đang thử xin chứng chỉ từ Let's Encrypt cho tên miền: ${domain}`);
         }
         
         console.log(`[SSL Auto-Renew] Đang kết nối tới ACME Directory: ${directoryUrl}`);
@@ -2091,16 +2090,13 @@ async function renewSSL(domain) {
         
         const client = new acme.Client(clientOptions);
         
-        // 2. Tạo khóa và CSR
         console.log('[SSL Auto-Renew] Đang tạo khóa riêng tư và CSR...');
         const [key, csr] = await acme.crypto.createCsr({
             commonName: domain,
         });
         
-        // 3. Khởi tạo map thử thách trên global để route HTTP-01 phục vụ
         global.activeAcmeChallenges = global.activeAcmeChallenges || {};
         
-        // 4. Gia hạn tự động thông qua phương thức acme-client auto()
         const cert = await client.auto({
             csr: csr,
             email: process.env.SSL_EMAIL || `admin@${domain}`,
@@ -2118,7 +2114,34 @@ async function renewSSL(domain) {
             }
         });
         
-        // 5. Ghi đè chứng chỉ mới
+        return { cert, key };
+    }
+    
+    let result = null;
+    let successProvider = '';
+    
+    if (eabKid && eabHmac) {
+        try {
+            result = await requestCertFromProvider(true);
+            successProvider = 'ZeroSSL';
+        } catch (zeroErr) {
+            console.error(`[SSL Auto-Renew] Yêu cầu cấp chứng chỉ qua ZeroSSL thất bại:`, zeroErr.message || zeroErr);
+            console.log(`[SSL Auto-Renew] Đang tự động chuyển hướng sang Let's Encrypt làm phương án dự phòng...`);
+        }
+    }
+    
+    if (!result) {
+        try {
+            result = await requestCertFromProvider(false);
+            successProvider = "Let's Encrypt";
+        } catch (leErr) {
+            console.error(`[SSL Auto-Renew] Yêu cầu cấp chứng chỉ qua Let's Encrypt thất bại:`, leErr.message || leErr);
+            return false;
+        }
+    }
+    
+    try {
+        const { cert, key } = result;
         const sslPaths = getSSLPaths();
         const certPath = sslPaths.cert;
         const keyPath = sslPaths.key;
@@ -2130,10 +2153,10 @@ async function renewSSL(domain) {
             fs.writeFileSync(chainPath, cert, 'utf8');
         }
         
-        console.log(`[SSL Auto-Renew] Tự động cấp mới chứng chỉ thành công cho tên miền: ${domain}`);
+        console.log(`[SSL Auto-Renew] Tự động cấp mới chứng chỉ thành công bằng [${successProvider}] cho tên miền: ${domain}`);
         return true;
     } catch (err) {
-        console.error(`[SSL Auto-Renew] Lỗi nghiêm trọng trong quá trình tự động xin cấp chứng chỉ:`, err.message || err);
+        console.error(`[SSL Auto-Renew] Lỗi ghi chứng chỉ ra tệp tin:`, err.message || err);
         return false;
     }
 }
