@@ -1405,7 +1405,7 @@ document.addEventListener('DOMContentLoaded', () => {
         desktopBtn.style.cursor = 'pointer';
         desktopBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const downloadUrl = this.getAttribute('data-url') || 'https://github.com/hieuto706-max/OT/releases/download/v1.3.6/ot-manager-Setup-1.3.6.exe';
+            const downloadUrl = this.getAttribute('data-url') || 'https://github.com/hieuto706-max/OT/releases/download/v1.3.8/ot-manager-Setup-1.3.8.exe';
             window.open(downloadUrl, '_blank');
         });
     }
