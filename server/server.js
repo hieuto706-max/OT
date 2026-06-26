@@ -2054,22 +2054,42 @@ async function renewSSL(domain) {
         console.log('[SSL Auto-Renew] Bỏ qua gia hạn: Không phát hiện tên miền hợp lệ.');
         return false;
     }
-    console.log(`[SSL Auto-Renew] Bắt đầu yêu cầu cấp chứng chỉ Let's Encrypt cho tên miền: ${domain}`);
     
     try {
         const acme = require('acme-client');
         
-        // 1. Khởi tạo ACME client (Sử dụng Staging nếu cấu hình để tránh rate limit khi test)
-        const directoryUrl = process.env.SSL_USE_STAGING === 'true' 
+        const eabKid = process.env.ZEROSSL_EAB_KID || '2WmkpWu0d2mE8x5kq-Xk6A';
+        const eabHmac = process.env.ZEROSSL_EAB_HMAC || 'dg7anWVfRmu_xw-6JlIGhPGSFerqQ-4DiUMVV51zumcp2U36muU2W1DNhVFlRG39uw19uac92cc9JSXRkrKfGQ';
+        
+        let directoryUrl = process.env.SSL_USE_STAGING === 'true' 
             ? acme.directory.letsencrypt.staging 
             : acme.directory.letsencrypt.production;
             
+        let externalAccountBinding = undefined;
+        
+        if (eabKid && eabHmac) {
+            directoryUrl = 'https://acme.zerossl.com/v2/DV90';
+            externalAccountBinding = {
+                kid: eabKid,
+                hmacKey: eabHmac
+            };
+            console.log(`[SSL Auto-Renew] Bắt đầu yêu cầu cấp chứng chỉ ZeroSSL cho tên miền: ${domain}`);
+        } else {
+            console.log(`[SSL Auto-Renew] Bắt đầu yêu cầu cấp chứng chỉ Let's Encrypt cho tên miền: ${domain}`);
+        }
+        
         console.log(`[SSL Auto-Renew] Đang kết nối tới ACME Directory: ${directoryUrl}`);
         
-        const client = new acme.Client({
+        const clientOptions = {
             directoryUrl: directoryUrl,
             accountKey: await acme.crypto.createPrivateKey()
-        });
+        };
+        
+        if (externalAccountBinding) {
+            clientOptions.externalAccountBinding = externalAccountBinding;
+        }
+        
+        const client = new acme.Client(clientOptions);
         
         // 2. Tạo khóa và CSR
         console.log('[SSL Auto-Renew] Đang tạo khóa riêng tư và CSR...');
