@@ -1367,7 +1367,8 @@ async function handleAPI(req, res, urlPath, method) {
                         const fileStream = fs.createWriteStream(destPath);
                         
                         const client = cloudUrl.startsWith('https') ? https : http;
-                        client.get(fileUrl, (response) => {
+                        const options = cloudUrl.startsWith('https') ? { rejectUnauthorized: false } : {};
+                        client.get(fileUrl, options, (response) => {
                             if (response.statusCode !== 200) {
                                 fileStream.close();
                                 return reject(new Error(`Tải file ${file} thất bại: HTTP ${response.statusCode}`));
