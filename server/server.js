@@ -402,7 +402,28 @@ async function loadDB() {
     let fileLoaded = false;
     let localDB = null;
 
-    // 1. Thử tải dữ liệu từ file local trước (Đặc biệt tối ưu khi có Persistent Disk)
+    // 1. Nếu có cấu hình Gist, luôn ưu tiên đồng bộ tải dữ liệu mới nhất từ Gist về trước (tránh bị ghi đè bởi db.json mặc định từ Git)
+    if (process.env.GIST_ID && process.env.GITHUB_TOKEN) {
+        try {
+            console.log('[Gist] Đang kết nối tải cơ sở dữ liệu từ GitHub Gist...');
+            const gistData = await fetchGist();
+            if (gistData) {
+                if (!gistData.users) gistData.users = [];
+                if (!gistData.records) gistData.records = [];
+                if (!gistData.closedMonths) gistData.closedMonths = [];
+                
+                // Ghi đè vào file local làm cache
+                fs.writeFileSync(dbFile, JSON.stringify(gistData, null, 2), 'utf-8');
+                console.log('[Gist] Tải dữ liệu từ Gist thành công!');
+                dbCache = gistData;
+                return gistData;
+            }
+        } catch (e) {
+            console.error('[Gist] Lỗi khi tải dữ liệu khởi động từ Gist (sẽ dùng file local):', e.message);
+        }
+    }
+
+    // 2. Thử tải dữ liệu từ file local (Đặc biệt tối ưu khi có Persistent Disk hoặc chạy local offline)
     try {
         if (fs.existsSync(dbFile)) {
             const data = fs.readFileSync(dbFile, 'utf-8').trim();
@@ -420,7 +441,7 @@ async function loadDB() {
         console.error('[Database] Lỗi khi đọc file local db.json:', e.message);
     }
 
-    // 2. Nếu file local đã tồn tại và tải thành công, ta tin tưởng nó là bản mới nhất
+    // 3. Nếu file local đã tồn tại và tải thành công, ta tin tưởng nó là bản mới nhất
     if (fileLoaded && localDB) {
         // Tự động băm mật khẩu plaintext cũ
         const migrated = await migratePasswords(localDB);
@@ -429,34 +450,6 @@ async function loadDB() {
             console.log('[Migration] Đã tự động băm mật khẩu plaintext.');
         }
         return localDB;
-    }
-
-    // 3. Nếu file local chưa tồn tại (lần đầu deploy hoặc ổ đĩa bị reset), ta tải dữ liệu từ GitHub Gist để khôi phục
-    let gistLoaded = false;
-    if (process.env.GIST_ID && process.env.GITHUB_TOKEN) {
-        try {
-            console.log('[Gist] Không có file local. Đang khôi phục dữ liệu từ GitHub Gist...');
-            const gistData = await fetchGist();
-            if (gistData) {
-                if (!gistData.users) gistData.users = [];
-                if (!gistData.records) gistData.records = [];
-                if (!gistData.closedMonths) gistData.closedMonths = [];
-                // Đồng bộ ghi vào file local db.json để các lần khởi động sau đọc trực tiếp
-                fs.writeFileSync(dbFile, JSON.stringify(gistData, null, 2), 'utf-8');
-                console.log('[Gist] Khôi phục dữ liệu từ Gist thành công!');
-                dbCache = gistData;
-                return gistData;
-            }
-        } catch (e) {
-            console.error('[Gist] Lỗi tải từ Gist để khôi phục:', e.message);
-            // Nếu là lỗi 404 hoặc không có db.json thì coi như Gist mới/chưa có database
-            if (e.message.includes('404') || e.message.includes('not found')) {
-                gistLoaded = false;
-            } else {
-                // Lỗi mạng hoặc lỗi kết nối, KHÔNG được ghi đè dữ liệu mặc định lên Gist!
-                gistLoaded = 'failed';
-            }
-        }
     }
 
     // 4. Nếu cả local và Gist đều không có dữ liệu, khởi tạo database mặc định
@@ -473,12 +466,7 @@ async function loadDB() {
         closedMonths: []
     };
     
-    if (gistLoaded !== 'failed') {
-        saveDB(defaultDB);
-    } else {
-        console.warn('[Gist] Cảnh báo: Gist lỗi kết nối. Khởi tạo DB tạm thời trong RAM.');
-    }
-    dbCache = defaultDB;
+    saveDB(defaultDB);
     return defaultDB;
 }
 
