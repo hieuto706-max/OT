@@ -1421,7 +1421,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // Kích hoạt tải về profile kèm theo deviceId để lưu thông tin định danh ổn định
             const curDeviceId = getDeviceId();
-            window.location.href = '/download/ios-profile?d=' + encodeURIComponent(curDeviceId);
+            window.location.href = checkUrl + '/download/ios-profile?d=' + encodeURIComponent(curDeviceId);
         });
     }
 
