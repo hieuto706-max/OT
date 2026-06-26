@@ -554,13 +554,13 @@
                                         <span class="platform-badge-large text-ios">iOS (iPhone)</span>
                                     </div>
                                 </div>
-                                <p class="download-desc">Dành cho nhân viên sử dụng iPhone. Bạn có thể truy cập trực tiếp qua trình duyệt Safari như Web App để ghi nhận OT tức thời.</p>
+                                <p class="download-desc">Dành cho nhân viên sử dụng iPhone. Tải cấu hình cài đặt để thêm biểu tượng ứng dụng OT Manager lên màn hình chính tự động.</p>
                             </div>
                             <div class="download-card-actions">
                                 <a id="ios-download-btn-landing" class="btn btn-apple btn-full" style="cursor: pointer;">
-                                    Đăng nhập ngay (Web App)
+                                    Cài đặt App lên màn hình chính
                                 </a>
-                                <p class="ios-development-hint">Bản cài đặt iOS Native đang được phát triển nội bộ</p>
+                                <p class="ios-development-hint">Yêu cầu xác nhận trong ứng dụng Cài đặt (Settings)</p>
                             </div>
                         </div>
                     </div>
@@ -773,6 +773,57 @@
                         </div>
                     </div>
                 </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== IOS INSTALLATION GUIDE MODAL ==================== -->
+    <div id="ios-guide-modal" class="modal-overlay">
+        <div class="modal-container vr-corners">
+            <div class="modal-header">
+                <h3>📲 Hướng dẫn cài đặt ứng dụng iOS</h3>
+                <button type="button" class="modal-close-btn" id="ios-modal-close-btn" aria-label="Đóng">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-intro">Bạn vừa tải xuống tệp cấu hình ứng dụng <strong>OT Manager</strong>. Vui lòng thực hiện các bước sau để đưa ứng dụng ra màn hình chính:</p>
+                
+                <div class="install-steps">
+                    <div class="step-item">
+                        <div class="step-num">1</div>
+                        <div class="step-detail">
+                            <h4>Cho phép tải xuống</h4>
+                            <p>Nếu iPhone hiển thị thông báo hỏi ý kiến tải hồ sơ cấu hình, vui lòng chọn <strong>"Cho phép" (Allow)</strong>.</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-num">2</div>
+                        <div class="step-detail">
+                            <h4>Mở Cài đặt hệ thống</h4>
+                            <p>Mở ứng dụng <strong>Cài đặt (Settings)</strong> trên màn hình chính của iPhone.</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-num">3</div>
+                        <div class="step-detail">
+                            <h4>Chọn "Đã tải hồ sơ về"</h4>
+                            <p>Nhấp vào mục <strong>"Đã tải hồ sơ về" (Profile Downloaded)</strong> xuất hiện ngay ở phía đầu trang Cài đặt (dưới tên tài khoản iCloud).</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-num">4</div>
+                        <div class="step-detail">
+                            <h4>Cài đặt hồ sơ</h4>
+                            <p>Bấm nút <strong>"Cài đặt" (Install)</strong> ở góc trên bên phải, nhập mật mã máy của bạn, sau đó tiếp tục bấm <strong>"Cài đặt"</strong> lần nữa để xác nhận.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-success-hint">
+                    🎉 Hoàn thành! Biểu tượng app <strong>OT Manager</strong> sẽ xuất hiện trực tiếp trên màn hình chính của bạn. Mở app lên để đăng nhập ngay mà không cần mật khẩu.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="ios-modal-confirm-btn" style="width: 100%;">Tôi đã hiểu</button>
             </div>
         </div>
     </div>

@@ -35,9 +35,8 @@ function obfuscateAndSave(srcPath, destPath) {
             console.error(`[Error] Source file not found: ${srcPath}`);
             return false;
         }
-        console.log(`Obfuscating: ${srcPath} -> ${destPath}`);
+        
         const code = fs.readFileSync(srcPath, 'utf8');
-        const obfuscationResult = JavaScriptObfuscator.obfuscate(code, obfuscateConfig);
         
         // Đảm bảo thư mục đích tồn tại
         const destDir = path.dirname(destPath);
@@ -45,10 +44,19 @@ function obfuscateAndSave(srcPath, destPath) {
             fs.mkdirSync(destDir, { recursive: true });
         }
         
+        const disableObfuscation = process.env.DISABLE_OBFUSCATION === 'true' || srcPath.includes('mobile');
+        if (disableObfuscation) {
+            console.log(`Copying raw code (No obfuscation): ${srcPath} -> ${destPath}`);
+            fs.writeFileSync(destPath, code, 'utf8');
+            return true;
+        }
+        
+        console.log(`Obfuscating: ${srcPath} -> ${destPath}`);
+        const obfuscationResult = JavaScriptObfuscator.obfuscate(code, obfuscateConfig);
         fs.writeFileSync(destPath, obfuscationResult.getObfuscatedCode(), 'utf8');
         return true;
     } catch (e) {
-        console.error(`[Error] Obfuscation failed for ${srcPath}:`, e.message);
+        console.error(`[Error] Processing failed for ${srcPath}:`, e.message);
         return false;
     }
 }

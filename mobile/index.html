@@ -44,7 +44,8 @@
               document.documentElement.classList.add('user-logged-in');
             }
           }
-          if (window.location.protocol !== 'file:') {
+          const isStandaloneWeb = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+          if (window.location.protocol !== 'file:' && !isStandaloneWeb) {
             document.documentElement.classList.add('is-web-browser');
           }
         } catch(e) {}

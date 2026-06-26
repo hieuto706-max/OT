@@ -65,10 +65,10 @@ function getBrowserFingerprint(username) {
 
         // Detect Browser
         let browser = "unknown_browser";
-        if (ua.indexOf("Firefox") !== -1) browser = "Firefox";
+        if (ua.indexOf("Firefox") !== -1 || ua.indexOf("FxiOS") !== -1) browser = "Firefox";
         else if (ua.indexOf("Edge") !== -1 || ua.indexOf("Edg") !== -1) browser = "Edge";
         else if (ua.indexOf("OPR") !== -1 || ua.indexOf("Opera") !== -1) browser = "Opera";
-        else if (ua.indexOf("Chrome") !== -1) browser = "Chrome";
+        else if (ua.indexOf("Chrome") !== -1 || ua.indexOf("CriOS") !== -1) browser = "Chrome";
         else if (ua.indexOf("Safari") !== -1) browser = "Safari";
 
         // System specs
@@ -120,15 +120,11 @@ function getDeviceId(username) {
             }
         }
     } else {
-        // Web Browser
-        if (username) {
-            id = getBrowserFingerprint(username);
+        // Web Browser - Sử dụng mã ngẫu nhiên duy nhất cho trình duyệt (PWA-friendly)
+        const isValidRandomId = id && id.startsWith('web_') && id.length >= 25;
+        if (!isValidRandomId) {
+            id = 'web_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
             safeStorage.setItem('ot_device_id', id);
-            deviceId = id;
-        } else if (!id || (id.startsWith('web_') && id.length < 25)) {
-            id = getBrowserFingerprint();
-            safeStorage.setItem('ot_device_id', id);
-            deviceId = id;
         }
     }
     
@@ -1180,6 +1176,14 @@ function isSessionExpired(loginTimeMs) {
 }
 
 // ==================== LANDING LOGIC & AUTOPING ====================
+function isSessionExpired(loginTimeMs) {
+    if (!loginTimeMs) return true;
+    const loginDate = new Date(parseInt(loginTimeMs, 10));
+    // Tạo mốc 5:00 AM ngày tiếp theo
+    const cutoff = new Date(loginDate.getFullYear(), loginDate.getMonth(), loginDate.getDate() + 1, 5, 0, 0, 0);
+    return Date.now() >= cutoff.getTime();
+}
+
 let bgInstance = null;
 document.addEventListener('DOMContentLoaded', () => {
     // Khởi tạo hình nền cấu trúc 8D
@@ -1206,54 +1210,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saved && loginTime && !isSessionExpired(loginTime)) {
         try {
             const user = JSON.parse(saved);
-            if (welcomeBox && loginTabs && formEmp && formAdmin) {
-                const descEl = document.getElementById('welcome-user-desc');
-                if (descEl) {
-                    descEl.innerHTML = `Bạn đã đăng nhập dưới tên <strong style="color:var(--green-light); font-weight:700;">${user.fullname}</strong> (${user.role === 'admin' ? 'Quản trị viên' : 'Nhân viên'}).`;
-                }
-
-                // Hiển thị welcome box, ẩn các form đăng nhập
-                welcomeBox.style.display = 'block';
-                loginTabs.style.display = 'none';
-                formEmp.style.display = 'none';
-                formEmp.classList.remove('active');
-                formAdmin.style.display = 'none';
-                formAdmin.classList.remove('active');
-
-                // Bắt sự kiện nút Vào ứng dụng
-                const btnEnter = document.getElementById('btn-enter-app');
-                if (btnEnter) {
-                    if (user.role === 'admin') {
-                        btnEnter.className = 'btn btn-purple btn-full';
-                    }
-                    btnEnter.addEventListener('click', () => {
-                        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                        const targetUrl = (user.role === 'admin' || !isMobileDevice) ? '/desktop/' : '/mobile/?cleared=1';
-                        window.location.replace(getRedirectPrefix() + targetUrl);
-                    });
-                }
-
-                // Bắt sự kiện nút Đăng xuất trên cổng portal
-                const btnLogoutPortal = document.getElementById('btn-logout-portal');
-                if (btnLogoutPortal) {
-                    btnLogoutPortal.addEventListener('click', () => {
-                        safeStorage.removeItem('ot_mobile_user');
-                        safeStorage.removeItem('ot_login_time');
-                        safeStorage.removeItem('ot_current_user');
-                        safeStorage.removeItem('ot_login_date');
-                        document.documentElement.classList.remove('user-logged-in'); // Dọn dẹp class tránh flash
-                        showToast('Đã đăng xuất tài khoản thành công', 'info');
-                        
-                        // Phục hồi giao diện đăng nhập bình thường
-                        welcomeBox.style.display = 'none';
-                        loginTabs.style.display = 'flex';
-                        const btnTabEmp = document.getElementById('btn-tab-employee');
-                        if (btnTabEmp) btnTabEmp.click();
-                    });
-                }
-            }
+            // Tự động chuyển hướng thẳng vào ứng dụng nếu đã đăng nhập từ trước
+            const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const targetUrl = (user.role === 'admin' || !isMobileDevice) ? '/desktop/' : '/mobile/?cleared=1';
+            window.location.replace(getRedirectPrefix() + targetUrl);
+            return;
         } catch (e) {
-            console.error('Lỗi khởi tạo Welcome Box:', e);
+            console.error('Lỗi phân tích user đã lưu:', e);
         }
     }
 
@@ -1451,7 +1414,35 @@ document.addEventListener('DOMContentLoaded', () => {
         iosBtn.style.cursor = 'pointer';
         iosBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            window.scrollToLogin();
+            // Mở modal hướng dẫn
+            const modal = document.getElementById('ios-guide-modal');
+            if (modal) {
+                modal.classList.add('active');
+            }
+            // Kích hoạt tải về profile kèm theo deviceId để lưu thông tin định danh ổn định
+            const curDeviceId = getDeviceId();
+            window.location.href = '/download/ios-profile?d=' + encodeURIComponent(curDeviceId);
+        });
+    }
+
+    // Đóng modal hướng dẫn iOS
+    const iosModal = document.getElementById('ios-guide-modal');
+    if (iosModal) {
+        const closeBtn = document.getElementById('ios-modal-close-btn');
+        const confirmBtn = document.getElementById('ios-modal-confirm-btn');
+        
+        const closeModal = () => {
+            iosModal.classList.remove('active');
+        };
+
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (confirmBtn) confirmBtn.addEventListener('click', closeModal);
+
+        // Đóng khi click ngoài vùng modal
+        iosModal.addEventListener('click', function(e) {
+            if (e.target === iosModal) {
+                closeModal();
+            }
         });
     }
 

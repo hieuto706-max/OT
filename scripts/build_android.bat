@@ -4,8 +4,9 @@ echo   OT Manager - Android App Build Script (v1.3.5)
 echo ==================================================
 echo.
 
-set ROOT=%~dp0
-if "%ROOT:~-1%"=="\" set ROOT=%ROOT:~0,-1%
+set SCRIPT_DIR=%~dp0
+if "%SCRIPT_DIR:~-1%"=="\" set SCRIPT_DIR=%SCRIPT_DIR:~0,-1%
+for %%i in ("%SCRIPT_DIR%\..") do set ROOT=%%~fi
 
 set MOBILE_DIR=%ROOT%\mobile
 set ANDROID_ASSETS=%ROOT%\mobile-android\app\src\main\assets
@@ -24,7 +25,7 @@ echo.
 echo [2/3] Bien dich ung dung Android (Building APK)...
 set JAVA_HOME=%ROOT%\temp_jdk\jdk-17.0.19+10
 cd /d "%ROOT%\mobile-android"
-call gradlew.bat assembleRelease --no-daemon --no-configuration-cache
+call gradlew.bat clean assembleRelease --no-daemon --no-configuration-cache
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [ERROR] Loi bien dich Android app!

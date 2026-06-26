@@ -18,3 +18,4 @@ scratch/
 *_log.txt
 *.log
 subagent_logs.txt
+*.pem

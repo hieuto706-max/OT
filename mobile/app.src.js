@@ -340,10 +340,10 @@ function getBrowserFingerprint(username) {
 
         // Detect Browser
         let browser = "unknown_browser";
-        if (ua.indexOf("Firefox") !== -1) browser = "Firefox";
+        if (ua.indexOf("Firefox") !== -1 || ua.indexOf("FxiOS") !== -1) browser = "Firefox";
         else if (ua.indexOf("Edge") !== -1 || ua.indexOf("Edg") !== -1) browser = "Edge";
         else if (ua.indexOf("OPR") !== -1 || ua.indexOf("Opera") !== -1) browser = "Opera";
-        else if (ua.indexOf("Chrome") !== -1) browser = "Chrome";
+        else if (ua.indexOf("Chrome") !== -1 || ua.indexOf("CriOS") !== -1) browser = "Chrome";
         else if (ua.indexOf("Safari") !== -1) browser = "Safari";
 
         // System specs
@@ -382,32 +382,43 @@ function getDeviceId(username) {
     let id = safeStorage.getItem('ot_device_id') || '';
     const isWebBrowser = window.location.protocol !== 'file:';
     
+    // Đối với trình duyệt Web (hoặc Web Clip), kiểm tra xem có tham số device_id trên URL không
+    if (isWebBrowser) {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryDeviceId = urlParams.get('device_id');
+            if (queryDeviceId && queryDeviceId.startsWith('web_') && queryDeviceId.length >= 25) {
+                id = queryDeviceId;
+                safeStorage.setItem('ot_device_id', id);
+            }
+        } catch (e) {
+            console.error('Lỗi phân tích device_id từ URL:', e);
+        }
+    }
+    
     if (!isWebBrowser) {
-        // Android App
+        // Native App (Android / iOS)
         if (!id || id.startsWith('dev_')) {
             try {
                 if (window.AndroidBridge && typeof window.AndroidBridge.getAndroidId === 'function') {
                     const nativeId = window.AndroidBridge.getAndroidId();
                     if (nativeId) {
-                        id = 'android_' + nativeId;
+                        const prefix = window.__IS_IOS_APP__ ? 'ios_' : 'android_';
+                        id = prefix + nativeId;
                         safeStorage.setItem('ot_device_id', id);
                         deviceId = id;
                     }
                 }
             } catch (err) {
-                console.error("Lỗi lấy Android ID từ native bridge:", err);
+                console.error("Lỗi lấy Device ID từ native bridge:", err);
             }
         }
     } else {
-        // Web Browser
-        if (username) {
-            id = getBrowserFingerprint(username);
+        // Web Browser - Sử dụng mã ngẫu nhiên duy nhất cho trình duyệt (PWA-friendly)
+        const isValidRandomId = id && id.startsWith('web_') && id.length >= 25;
+        if (!isValidRandomId) {
+            id = 'web_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
             safeStorage.setItem('ot_device_id', id);
-            deviceId = id;
-        } else if (!id || (id.startsWith('web_') && id.length < 25)) {
-            id = getBrowserFingerprint();
-            safeStorage.setItem('ot_device_id', id);
-            deviceId = id;
         }
     }
     
@@ -843,9 +854,14 @@ function getGreeting() {
     return 'Chào buổi tối 🌙';
 }
 
+function isStandaloneOrNative() {
+    const isStandaloneWeb = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+    const isNativeApp = window.location.protocol === 'file:' || !!window.AndroidBridge;
+    return isStandaloneWeb || isNativeApp;
+}
+
 function handleUnauthenticated() {
-    const isBrowser = window.location.protocol !== 'file:';
-    if (isBrowser) {
+    if (!isStandaloneOrNative()) {
         window.location.replace('../');
     } else {
         showScreen('screen-login');
@@ -864,9 +880,8 @@ function logout() {
     if (loginForm) loginForm.reset();
     showToast('Đã đăng xuất', 'info');
     
-    // Redirect to main website if running on web browser
-    const isWebBrowser = window.location.protocol !== 'file:';
-    if (isWebBrowser) {
+    // Redirect to main website if running on standard web browser
+    if (!isStandaloneOrNative()) {
         window.location.href = '../';
     } else {
         handleUnauthenticated();

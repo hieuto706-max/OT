@@ -587,6 +587,7 @@ const MIME_TYPES = {
     '.svg': 'image/svg+xml',
     '.ico': 'image/x-icon',
     '.webmanifest': 'application/manifest+json',
+    '.mobileconfig': 'application/x-apple-aspen-config',
 };
 
 // ==================== HELPERS ====================
@@ -727,25 +728,10 @@ async function handleAPI(req, res, urlPath, method) {
                     user[targetDeviceField] = deviceId;
                     saveDB(db);
                 } else if (currentBoundId !== deviceId) {
-                    // Thiết bị không trùng khớp ➡️ Yêu cầu nhập mật khẩu xác nhận
-                    if (!password) {
-                        const errMsg = isBrowser ? 'Tài khoản này đã được liên kết với trình duyệt khác. Vui lòng nhập mật khẩu/mã PIN (mặc định: 123) để xác nhận chuyển thiết bị.' : 'Tài khoản này đã được liên kết với thiết bị khác. Vui lòng nhập mật khẩu/mã PIN (mặc định: 123) để xác nhận chuyển thiết bị.';
-                        res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
-                        return res.end(JSON.stringify({ error: errMsg, code: 'device_mismatch' }));
-                    }
-
-                    // Nếu có mật khẩu gửi lên, xác thực nó
-                    if (!verifyPassword(password, user.password)) {
-                        return sendError(res, 401, 'Mật khẩu/mã PIN xác nhận thiết bị không chính xác!', req);
-                    }
-
-                    // Mật khẩu đúng ➡️ Cho phép chuyển thiết bị
-                    const otherOwner = db.users.find(u => u.role === 'employee' && u.id !== user.id && u[targetDeviceField] === deviceId);
-                    if (otherOwner) {
-                        return sendError(res, 403, isBrowser ? 'Trình duyệt này đã được liên kết với một tài khoản khác!' : 'Thiết bị này đã được liên kết với một tài khoản khác!', req);
-                    }
-                    user[targetDeviceField] = deviceId;
-                    saveDB(db);
+                    // Thiết bị không trùng khớp ➡️ Khóa và yêu cầu liên hệ Quản lý để hủy liên kết
+                    const errMsg = isBrowser ? 'Tài khoản này đã được liên kết với trình duyệt khác. Vui lòng liên hệ Quản lý để hủy liên kết thiết bị cũ.' : 'Tài khoản này đã được liên kết với thiết bị khác. Vui lòng liên hệ Quản lý để hủy liên kết thiết bị cũ.';
+                    res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+                    return res.end(JSON.stringify({ error: errMsg, code: 'device_locked' }));
                 }
             }
             const { password: _, ...safeUser } = user;
@@ -1517,6 +1503,19 @@ const server = http.createServer(async (req, res) => {
         return res.end();
     }
 
+    // ACME HTTP-01 challenge response handler
+    if (urlPath.startsWith('/.well-known/acme-challenge/')) {
+        const token = urlPath.replace('/.well-known/acme-challenge/', '');
+        const keyAuth = global.activeAcmeChallenges ? global.activeAcmeChallenges[token] : null;
+        if (keyAuth) {
+            res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+            return res.end(keyAuth);
+        } else {
+            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+            return res.end('Challenge not found');
+        }
+    }
+
     // SSE endpoint
     if (urlPath === '/api/events' && method === 'GET') {
         res.writeHead(200, {
@@ -1541,6 +1540,152 @@ const server = http.createServer(async (req, res) => {
             console.error('API Error:', e);
             return sendError(res, 500, 'Lỗi server: ' + e.message);
         }
+    }
+
+    // Helper function to sign configuration profile using OpenSSL if cert/key are provided
+    // HƯỚNG DẪN CẤU HÌNH KÝ SỐ PROFILE (.mobileconfig) CHO IOS:
+    // 1. Sao chép chứng chỉ SSL của tên miền server vào thư mục "server/" dưới tên:
+    //    - cert.pem      : File chứng chỉ chính (SSL Certificate)
+    //    - key.pem       : File khóa riêng tư (Private Key) không mật khẩu bảo vệ
+    //    - fullchain.pem : File chuỗi chứng chỉ trung gian (CA Chain / Bundle) - Tùy chọn
+    // 2. Hoặc cấu hình các biến môi trường: IOS_CERT_PATH, IOS_KEY_PATH, IOS_CHAIN_PATH
+    // 3. Yêu cầu hệ thống đã cài đặt OpenSSL (trên Windows mặc định sẽ thử tìm OpenSSL của Git).
+    function signProfile(unsignedXml) {
+        const sslPaths = getSSLPaths();
+        const certPath = sslPaths.cert;
+        const keyPath = sslPaths.key;
+        const chainPath = sslPaths.chain;
+
+        if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
+            // No custom certificates configured, return unsigned XML directly
+            return Buffer.from(unsignedXml);
+        }
+
+        try {
+            const { execSync } = require('child_process');
+            const tempUnsigned = path.join(os.tmpdir(), `unsigned_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.mobileconfig`);
+            const tempSigned = path.join(os.tmpdir(), `signed_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.mobileconfig`);
+            
+            fs.writeFileSync(tempUnsigned, unsignedXml, 'utf-8');
+
+            let cmd = `openssl smime -sign -in "${tempUnsigned}" -out "${tempSigned}" -signer "${certPath}" -inkey "${keyPath}"`;
+            if (fs.existsSync(chainPath)) {
+                cmd += ` -certfile "${chainPath}"`;
+            }
+            cmd += ` -outform der -nodetach`;
+
+            try {
+                execSync(cmd, { stdio: 'ignore' });
+            } catch (err) {
+                // Windows fallback (Git's OpenSSL)
+                const gitOpenSsl = 'C:\\Program Files\\Git\\usr\\bin\\openssl.exe';
+                if (process.platform === 'win32' && fs.existsSync(gitOpenSsl)) {
+                    const winCmd = `"${gitOpenSsl}" smime -sign -in "${tempUnsigned}" -out "${tempSigned}" -signer "${certPath}" -inkey "${keyPath}"` + (fs.existsSync(chainPath) ? ` -certfile "${chainPath}"` : '') + ` -outform der -nodetach`;
+                    execSync(winCmd, { stdio: 'ignore' });
+                } else {
+                    throw err;
+                }
+            }
+
+            const signedData = fs.readFileSync(tempSigned);
+
+            try { fs.unlinkSync(tempUnsigned); } catch (e) {}
+            try { fs.unlinkSync(tempSigned); } catch (e) {}
+
+            return signedData;
+        } catch (e) {
+            console.error('[iOS Profile] Ký số thất bại, trả về tệp cấu hình chưa ký:', e.message);
+            return Buffer.from(unsignedXml);
+        }
+    }
+
+    // Direct route for iOS Configuration Profile (.mobileconfig) Web Clip
+    if (urlPath === '/download/ios-profile') {
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        const clientDeviceId = url.searchParams.get('d') || '';
+
+        const protocol = req.headers['x-forwarded-proto'] || (req.socket.encrypted ? 'https' : 'http');
+        let targetUrl = `${protocol}://${req.headers.host}/mobile/`;
+        if (clientDeviceId) {
+            targetUrl += `?device_id=${encodeURIComponent(clientDeviceId)}`;
+        }
+        
+        let iconBase64 = '';
+        try {
+            const iconPath = path.join(__dirname, '..', 'mobile', 'icon-120.png');
+            if (fs.existsSync(iconPath)) {
+                iconBase64 = fs.readFileSync(iconPath).toString('base64');
+            }
+        } catch (err) {
+            console.error('[iOS Profile] Lỗi đọc file icon:', err.message);
+        }
+
+        const plistXml = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>ConsentText</key>
+    <dict>
+        <key>default</key>
+        <string>Cài đặt ứng dụng OT Manager lên màn hình chính thiết bị của bạn.</string>
+    </dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>FullScreen</key>
+            <true/>
+            <key>Icon</key>
+            <data>${iconBase64}</data>
+            <key>IsRemovable</key>
+            <true/>
+            <key>Label</key>
+            <string>OT Manager</string>
+            <key>PayloadDescription</key>
+            <string>Cấu hình ứng dụng quản lý tăng ca OT Manager</string>
+            <key>PayloadDisplayName</key>
+            <string>OT Manager</string>
+            <key>PayloadIdentifier</key>
+            <string>com.otmanager.webclip</string>
+            <key>PayloadType</key>
+            <string>com.apple.webClip.managed</string>
+            <key>PayloadUUID</key>
+            <string>E71ADF2F-9A52-4752-9A2E-8FA3C56EF010</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>Precomposed</key>
+            <true/>
+            <key>URL</key>
+            <string>${targetUrl}</string>
+        </dict>
+    </array>
+    <key>PayloadDescription</key>
+    <string>Cài đặt ứng dụng OT Manager lên màn hình chính</string>
+    <key>PayloadDisplayName</key>
+    <string>OT Manager</string>
+    <key>PayloadIdentifier</key>
+    <string>com.otmanager.profile</string>
+    <key>PayloadOrganization</key>
+    <string>OT Manager</string>
+    <key>PayloadRemovalDisallowed</key>
+    <false/>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>C0F8E3C5-B9A6-4F8E-9D6C-7B4A5F2E1D3C</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+</dict>
+</plist>`.trim();
+
+        const finalData = signProfile(plistXml);
+
+        res.writeHead(200, {
+            'Content-Type': 'application/x-apple-aspen-config',
+            'Content-Disposition': 'attachment; filename="OT-Manager.mobileconfig"',
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            'Access-Control-Allow-Origin': '*'
+        });
+        return res.end(finalData);
     }
 
     // Short download routes (e.g. /dl, /tai, /app)
@@ -1784,7 +1929,10 @@ const server = http.createServer(async (req, res) => {
 
 function getCloudUrl() {
     try {
-        const configPath = path.join(__dirname, '..', 'config.json');
+        let configPath = path.join(__dirname, 'config.json');
+        if (!fs.existsSync(configPath)) {
+            configPath = path.join(__dirname, '..', 'config.json');
+        }
         if (fs.existsSync(configPath)) {
             const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
             if (config.serverUrl) {
@@ -1799,6 +1947,233 @@ function getCloudUrl() {
         console.error('[Server] Lỗi đọc config.json:', e.message);
     }
     return null;
+}
+
+// ==================== SSL AUTO-RENEWAL SYSTEM (LET'S ENCRYPT) ====================
+function getSSLPaths() {
+    // 1. Nếu có dữ liệu chứng chỉ truyền qua biến môi trường dạng text (tiện lợi cho Cloud như Render), ghi ra file trước
+    const localCert = path.join(__dirname, 'cert.pem');
+    const localKey = path.join(__dirname, 'key.pem');
+    const localChain = path.join(__dirname, 'fullchain.pem');
+
+    if (process.env.SSL_CERT_CONTENT && process.env.SSL_KEY_CONTENT) {
+        try {
+            if (!fs.existsSync(localCert) || fs.readFileSync(localCert, 'utf8') !== process.env.SSL_CERT_CONTENT) {
+                fs.writeFileSync(localCert, process.env.SSL_CERT_CONTENT, 'utf8');
+                console.log('[SSL Setup] Đã cập nhật cert.pem từ biến môi trường SSL_CERT_CONTENT');
+            }
+            if (!fs.existsSync(localKey) || fs.readFileSync(localKey, 'utf8') !== process.env.SSL_KEY_CONTENT) {
+                fs.writeFileSync(localKey, process.env.SSL_KEY_CONTENT, 'utf8');
+                console.log('[SSL Setup] Đã cập nhật key.pem từ biến môi trường SSL_KEY_CONTENT');
+            }
+            if (process.env.SSL_CHAIN_CONTENT) {
+                if (!fs.existsSync(localChain) || fs.readFileSync(localChain, 'utf8') !== process.env.SSL_CHAIN_CONTENT) {
+                    fs.writeFileSync(localChain, process.env.SSL_CHAIN_CONTENT, 'utf8');
+                    console.log('[SSL Setup] Đã cập nhật fullchain.pem từ biến môi trường SSL_CHAIN_CONTENT');
+                }
+            }
+        } catch (e) {
+            console.error('[SSL Setup] Lỗi khi ghi chứng chỉ từ biến môi trường:', e.message);
+        }
+    }
+
+    // Nếu có biến môi trường cấu hình đường dẫn cụ thể, ưu tiên dùng
+    if (process.env.IOS_CERT_PATH && process.env.IOS_KEY_PATH) {
+        return {
+            cert: process.env.IOS_CERT_PATH,
+            key: process.env.IOS_KEY_PATH,
+            chain: process.env.IOS_CHAIN_PATH || ''
+        };
+    }
+    
+    // Kiểm tra xem thư mục persistent /data của Render Starter có tồn tại không
+    const persistentDir = '/data/certs';
+    if (fs.existsSync('/data')) {
+        if (!fs.existsSync(persistentDir)) {
+            try {
+                fs.mkdirSync(persistentDir, { recursive: true });
+            } catch (e) {
+                console.error('[SSL Auto-Renew] Lỗi tạo thư mục /data/certs:', e.message);
+            }
+        }
+        
+        const persistentCert = path.join(persistentDir, 'cert.pem');
+        const persistentKey = path.join(persistentDir, 'key.pem');
+        const persistentChain = path.join(persistentDir, 'fullchain.pem');
+
+        // Đồng bộ dữ liệu chứng chỉ từ môi trường vào persistent disk nếu có
+        if (process.env.SSL_CERT_CONTENT && process.env.SSL_KEY_CONTENT) {
+            try {
+                if (!fs.existsSync(persistentCert) || fs.readFileSync(persistentCert, 'utf8') !== process.env.SSL_CERT_CONTENT) {
+                    fs.writeFileSync(persistentCert, process.env.SSL_CERT_CONTENT, 'utf8');
+                }
+                if (!fs.existsSync(persistentKey) || fs.readFileSync(persistentKey, 'utf8') !== process.env.SSL_KEY_CONTENT) {
+                    fs.writeFileSync(persistentKey, process.env.SSL_KEY_CONTENT, 'utf8');
+                }
+                if (process.env.SSL_CHAIN_CONTENT) {
+                    if (!fs.existsSync(persistentChain) || fs.readFileSync(persistentChain, 'utf8') !== process.env.SSL_CHAIN_CONTENT) {
+                        fs.writeFileSync(persistentChain, process.env.SSL_CHAIN_CONTENT, 'utf8');
+                    }
+                }
+            } catch (e) {
+                console.error('[SSL Setup] Lỗi ghi chứng chỉ môi trường vào /data/certs:', e.message);
+            }
+        }
+        
+        // Đồng bộ chứng chỉ hiện tại sang lưu trữ vĩnh viễn nếu chưa tồn tại
+        if (!fs.existsSync(persistentCert) && fs.existsSync(localCert) && fs.existsSync(localKey)) {
+            try {
+                fs.copyFileSync(localCert, persistentCert);
+                fs.copyFileSync(localKey, persistentKey);
+                if (fs.existsSync(localChain)) {
+                    fs.copyFileSync(localChain, persistentChain);
+                }
+                console.log('[SSL Auto-Renew] Đã đồng bộ chứng chỉ hiện có sang lưu trữ vĩnh viễn /data/certs');
+            } catch (err) {
+                console.error('[SSL Auto-Renew] Lỗi đồng bộ chứng chỉ sang /data/certs:', err.message);
+            }
+        }
+        
+        return {
+            cert: persistentCert,
+            key: persistentKey,
+            chain: persistentChain
+        };
+    }
+    
+    // Mặc định chạy local hoặc không có disk persistent
+    return {
+        cert: localCert,
+        key: localKey,
+        chain: localChain
+    };
+}
+
+function getCertExpiry(certPath) {
+    try {
+        if (!fs.existsSync(certPath)) return 0;
+        const certData = fs.readFileSync(certPath);
+        const cert = new crypto.X509Certificate(certData);
+        return new Date(cert.validTo).getTime();
+    } catch (err) {
+        console.error('[SSL Auto-Renew] Lỗi khi đọc ngày hết hạn chứng chỉ:', err.message);
+        return 0;
+    }
+}
+
+async function renewSSL(domain) {
+    if (!domain) {
+        console.log('[SSL Auto-Renew] Bỏ qua gia hạn: Không phát hiện tên miền hợp lệ.');
+        return false;
+    }
+    console.log(`[SSL Auto-Renew] Bắt đầu yêu cầu cấp chứng chỉ Let's Encrypt cho tên miền: ${domain}`);
+    
+    try {
+        const acme = require('acme-client');
+        
+        // 1. Khởi tạo ACME client (Sử dụng Staging nếu cấu hình để tránh rate limit khi test)
+        const directoryUrl = process.env.SSL_USE_STAGING === 'true' 
+            ? acme.directory.letsencrypt.staging 
+            : acme.directory.letsencrypt.production;
+            
+        console.log(`[SSL Auto-Renew] Đang kết nối tới ACME Directory: ${directoryUrl}`);
+        
+        const client = new acme.Client({
+            directoryUrl: directoryUrl,
+            accountKey: await acme.crypto.createPrivateKey()
+        });
+        
+        // 2. Tạo khóa và CSR
+        console.log('[SSL Auto-Renew] Đang tạo khóa riêng tư và CSR...');
+        const [key, csr] = await acme.crypto.createCsr({
+            commonName: domain,
+        });
+        
+        // 3. Khởi tạo map thử thách trên global để route HTTP-01 phục vụ
+        global.activeAcmeChallenges = global.activeAcmeChallenges || {};
+        
+        // 4. Gia hạn tự động thông qua phương thức acme-client auto()
+        const cert = await client.auto({
+            csr: csr,
+            email: process.env.SSL_EMAIL || `admin@${domain}`,
+            termsOfServiceAgreed: true,
+            challengePriority: ['http-01'],
+            challengeCreateFn: async (authz, challenge, keyAuthorization) => {
+                const token = challenge.token;
+                global.activeAcmeChallenges[token] = keyAuthorization;
+                console.log(`[SSL Auto-Renew] Đang lưu trữ token thử thách HTTP-01: ${token}`);
+            },
+            challengeRemoveFn: async (authz, challenge, keyAuthorization) => {
+                const token = challenge.token;
+                delete global.activeAcmeChallenges[token];
+                console.log(`[SSL Auto-Renew] Đã dọn dẹp token thử thách HTTP-01: ${token}`);
+            }
+        });
+        
+        // 5. Ghi đè chứng chỉ mới
+        const sslPaths = getSSLPaths();
+        const certPath = sslPaths.cert;
+        const keyPath = sslPaths.key;
+        const chainPath = sslPaths.chain;
+        
+        fs.writeFileSync(certPath, cert, 'utf8');
+        fs.writeFileSync(keyPath, key.toString(), 'utf8');
+        if (chainPath) {
+            fs.writeFileSync(chainPath, cert, 'utf8');
+        }
+        
+        console.log(`[SSL Auto-Renew] Tự động cấp mới chứng chỉ thành công cho tên miền: ${domain}`);
+        return true;
+    } catch (err) {
+        console.error(`[SSL Auto-Renew] Lỗi nghiêm trọng trong quá trình tự động xin cấp chứng chỉ:`, err.message || err);
+        return false;
+    }
+}
+
+async function checkAndRenewCertificates() {
+    const sslPaths = getSSLPaths();
+    const certPath = sslPaths.cert;
+    
+    // 1. Tự động xác định tên miền của ứng dụng
+    let domain = process.env.SSL_DOMAIN || '';
+    if (!domain) {
+        const cloudUrl = getCloudUrl() || process.env.SERVER_URL || '';
+        if (cloudUrl && !cloudUrl.includes('localhost') && !cloudUrl.includes('127.0.0.1')) {
+            try {
+                domain = new URL(cloudUrl).hostname;
+            } catch (e) {}
+        }
+    }
+    
+    if (!domain) {
+        console.log('[SSL Auto-Renew] Bỏ qua kiểm tra: Không tìm thấy tên miền công khai hợp lệ trong cấu hình.');
+        return;
+    }
+    
+    if (domain.endsWith('.onrender.com')) {
+        console.log(`[SSL Auto-Renew] Tên miền con mặc định của Render (${domain}) không được Let's Encrypt hỗ trợ tự cấp SSL trực tiếp. Bỏ qua tự động gia hạn.`);
+        return;
+    }
+    
+    console.log(`[SSL Auto-Renew] Đang kiểm tra thời hạn chứng chỉ cho tên miền: ${domain}`);
+    
+    let needsRenew = false;
+    const expiry = getCertExpiry(certPath);
+    if (expiry === 0) {
+        console.log('[SSL Auto-Renew] Không tìm thấy chứng chỉ hiện tại hoặc chứng chỉ không hợp lệ.');
+        needsRenew = true;
+    } else {
+        const daysRemaining = Math.floor((expiry - Date.now()) / (1000 * 60 * 60 * 24));
+        console.log(`[SSL Auto-Renew] Chứng chỉ hiện tại sẽ hết hạn sau ${daysRemaining} ngày.`);
+        if (daysRemaining < 30) {
+            console.log('[SSL Auto-Renew] Chứng chỉ sắp hết hạn (dưới 30 ngày). Kích hoạt tự động gia hạn...');
+            needsRenew = true;
+        }
+    }
+    
+    if (needsRenew) {
+        await renewSSL(domain);
+    }
 }
 
 function startServer() {
@@ -1847,6 +2222,20 @@ function startServer() {
                 }
             }
 
+
+            // Tự động kiểm tra gia hạn SSL Let's Encrypt sau khi khởi động 5 giây
+            setTimeout(() => {
+                checkAndRenewCertificates().catch(err => {
+                    console.error('[SSL Auto-Renew] Lỗi chạy tự động gia hạn SSL:', err.message || err);
+                });
+            }, 5000);
+
+            // Thiết lập chu kỳ kiểm tra gia hạn hàng ngày (24 giờ)
+            setInterval(() => {
+                checkAndRenewCertificates().catch(err => {
+                    console.error('[SSL Auto-Renew] Lỗi chạy chu kỳ gia hạn SSL định kỳ:', err.message || err);
+                });
+            }, 24 * 60 * 60 * 1000);
 
             resolve({ ip, port: PORT });
         });
