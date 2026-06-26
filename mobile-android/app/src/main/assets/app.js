@@ -138,7 +138,7 @@ function isLocalNetworkUrl(urlStr) {
 const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.8';
 let updateCheckInterval = null;
 const isLocalWeb = window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io') && !window.location.hostname.includes('otmanager.id.vn');
-let savedServerIp = safeStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com';
+let savedServerIp = safeStorage.getItem('ot_server_ip') || 'https://api.otmanager.id.vn';
 
 // Nếu chạy trên điện thoại (bản Web) hoặc HTTPS công cộng, lọc và bỏ qua các IP nội bộ tư nhân (như 192.168, localhost, v.v.)
 const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -146,21 +146,21 @@ const isPublicHttps = window.location.protocol === 'https:' || window.location.h
 const isNativeApp = window.location.protocol === 'file:' || !!window.AndroidBridge;
 if ((isMobileDevice || isPublicHttps) && !isNativeApp && isLocalNetworkUrl(savedServerIp)) {
     console.log('[Connection] Bỏ qua IP nội bộ tư nhân trên phiên bản Web di động:', savedServerIp);
-    savedServerIp = 'https://ot-manager-server-jbxd.onrender.com';
+    savedServerIp = 'https://api.otmanager.id.vn';
 }
 
 let API = isLocalWeb ? window.location.origin : savedServerIp;
 
 // Nếu chạy trên HTTPS công cộng, không cho phép kết nối tới HTTP local IP (tránh lỗi Mixed Content hoặc Failed to fetch)
 if (window.location.protocol === 'https:' && API.startsWith('http://')) {
-    API = 'https://ot-manager-server-jbxd.onrender.com';
+    API = 'https://api.otmanager.id.vn';
 }
 
 // Tự động dọn dẹp các địa chỉ IP cũ từ các phiên bản trước
 let savedIp = safeStorage.getItem('ot_server_ip');
 if (!isLocalWeb && savedIp && (savedIp.includes('otms.onrender.com') || savedIp.includes('ot-manager-server.onrender.com') || savedIp.includes('otm.app.vn') || savedIp.includes('new-folder-6471') || savedIp.includes('lhr.life'))) {
     safeStorage.removeItem('ot_server_ip');
-    API = 'https://ot-manager-server-jbxd.onrender.com';
+    API = 'https://api.otmanager.id.vn';
 }
 
 async function isPrivateMode() {

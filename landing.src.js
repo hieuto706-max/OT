@@ -141,18 +141,18 @@ let deviceId = getDeviceId();
 
 // Server API URL
 const isLocalWeb = window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io') && !window.location.hostname.includes('otmanager.id.vn');
-let API = isLocalWeb ? window.location.origin : (safeStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com');
+let API = isLocalWeb ? window.location.origin : (safeStorage.getItem('ot_server_ip') || 'https://api.otmanager.id.vn');
 
 // Nếu chạy trên HTTPS công cộng, không cho phép kết nối tới HTTP local IP (tránh lỗi Mixed Content hoặc Failed to fetch)
 if (window.location.protocol === 'https:' && API.startsWith('http://')) {
-    API = 'https://ot-manager-server-jbxd.onrender.com';
+    API = 'https://api.otmanager.id.vn';
 }
 
 // Clean deprecated IP addresses
 let savedIp = safeStorage.getItem('ot_server_ip');
 if (!isLocalWeb && savedIp && (savedIp.includes('otms.onrender.com') || savedIp.includes('ot-manager-server.onrender.com') || savedIp.includes('otm.app.vn') || savedIp.includes('new-folder-6471') || savedIp.includes('lhr.life'))) {
     safeStorage.removeItem('ot_server_ip');
-    API = 'https://ot-manager-server-jbxd.onrender.com';
+    API = 'https://api.otmanager.id.vn';
 }
 
 async function isPrivateMode() {
@@ -1241,20 +1241,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const host = window.location.origin;
-    let savedServerIp = localStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com';
+    let savedServerIp = localStorage.getItem('ot_server_ip') || 'https://api.otmanager.id.vn';
     
     // Nếu chạy trên điện thoại hoặc HTTPS công cộng, lọc và bỏ qua các IP nội bộ tư nhân (như 192.168, localhost, v.v.)
     const isPublicHttps = window.location.protocol === 'https:' || window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
     if ((isMobileDevice || isPublicHttps) && isLocalNetworkUrl(savedServerIp)) {
         console.log('[Connection] Bỏ qua IP nội bộ tư nhân trên thiết bị di động/HTTPS:', savedServerIp);
-        savedServerIp = 'https://ot-manager-server-jbxd.onrender.com';
+        savedServerIp = 'https://api.otmanager.id.vn';
     }
 
     let checkUrl = (window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io') && !window.location.hostname.includes('otmanager.id.vn')) ? host : savedServerIp;
     
     // Nếu chạy trên HTTPS công cộng, không cho phép kết nối tới HTTP local IP (tránh lỗi Mixed Content hoặc Failed to fetch)
     if (window.location.protocol === 'https:' && checkUrl.startsWith('http://')) {
-        checkUrl = 'https://ot-manager-server-jbxd.onrender.com';
+        checkUrl = 'https://api.otmanager.id.vn';
     }
 
     const statusEl = document.getElementById('connection-status');
@@ -1396,7 +1396,7 @@ document.addEventListener('DOMContentLoaded', () => {
         apkBtn.style.cursor = 'pointer';
         apkBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const downloadUrl = this.getAttribute('data-url') || 'https://ot-manager-server-jbxd.onrender.com/OT-Manager-mobile.apk';
+            const downloadUrl = this.getAttribute('data-url') || 'https://api.otmanager.id.vn/OT-Manager-mobile.apk';
             window.location.href = downloadUrl;
         });
     }
