@@ -220,23 +220,6 @@ public class MainActivity extends AppCompatActivity {
                                 sendServerDiscovered(rentryUrl);
                             }
                         });
-                        return;
-                    }
-                }
-
-                // 2. Quét dải IP subnet WiFi nội bộ để tìm server trên port 3456
-                final int port = 3456;
-                String localIp = getLocalIpAddress();
-                if (localIp != null) {
-                    final String serverIp = discoverServerIP(localIp, port);
-                    if (serverIp != null) {
-                        final String serverUrl = "http://" + serverIp + ":" + port;
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                sendServerDiscovered(serverUrl);
-                            }
-                        });
                     }
                 }
             }
@@ -274,91 +257,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void executeJS(String jsCode) {
         webView.evaluateJavascript(jsCode, null);
-    }
-
-    private String getLocalIpAddress() {
-        // Cách 1: Sử dụng WifiManager (Độ tin cậy cao nhất cho WiFi trên điện thoại)
-        try {
-            android.net.wifi.WifiManager wifiManager = (android.net.wifi.WifiManager) getApplicationContext().getSystemService(WIFI_SERVICE);
-            if (wifiManager != null) {
-                int ipAddress = wifiManager.getConnectionInfo().getIpAddress();
-                if (ipAddress != 0) {
-                    @SuppressWarnings("deprecation")
-                    String ip = android.text.format.Formatter.formatIpAddress(ipAddress);
-                    if (ip != null && !ip.equals("0.0.0.0")) {
-                        return ip;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        // Cách 2: Quét Network Interfaces (Fallback)
-        try {
-            List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
-            for (NetworkInterface intf : interfaces) {
-                List<java.net.InetAddress> addrs = Collections.list(intf.getInetAddresses());
-                for (java.net.InetAddress addr : addrs) {
-                    if (!addr.isLoopbackAddress()) {
-                        String sAddr = addr.getHostAddress();
-                        if (sAddr != null && sAddr.indexOf(':') < 0) {
-                            return sAddr;
-                        }
-                    }
-                }
-            }
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    private String discoverServerIP(String localIp, int port) {
-        int idx = localIp.lastIndexOf('.');
-        if (idx <= 0) return null;
-        final String subnet = localIp.substring(0, idx + 1);
-
-        // Quét song song tối đa 20 luồng để tránh nghẽn hàng đợi WiFi của điện thoại
-        ExecutorService scanExecutor = Executors.newFixedThreadPool(20);
-        final String[] foundIp = {null};
-
-        for (int host = 1; host <= 254; host++) {
-            final int h = host;
-            scanExecutor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    if (foundIp[0] != null) return;
-                    String ip = subnet + h;
-                    Socket socket = null;
-                    try {
-                        socket = new Socket();
-                        // Tăng timeout lên 1000ms để đảm bảo kết nối WiFi không bị rớt gói tin
-                        socket.connect(new InetSocketAddress(ip, port), 1000);
-                        foundIp[0] = ip;
-                    } catch (IOException e) {
-                        // Bỏ qua
-                    } finally {
-                        if (socket != null) {
-                            try {
-                                socket.close();
-                            } catch (IOException e) {
-                                // Bỏ qua
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        scanExecutor.shutdown();
-        try {
-            scanExecutor.awaitTermination(10, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        return foundIp[0];
     }
 
     private void downloadAndInstallApk(final String urlString) {
