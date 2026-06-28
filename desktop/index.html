@@ -950,6 +950,31 @@
                                 <input type="number" id="ot-backfill-hours" step="0.1" min="0.1" max="24" placeholder="Nhập số giờ bù (ví dụ: 8.0)">
                             </div>
 
+                            <!-- Normal OT inputs -->
+                            <div id="ot-normal-inputs" style="margin-bottom: 15px;">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="checkbox-label" style="margin-top: 0;">
+                                            <input type="checkbox" id="ot-lunch">
+                                            <span class="checkbox-custom"></span>
+                                            Tăng ca trưa (12:20 - 13:20)
+                                        </label>
+                                    </div>
+                                    <div class="form-group"></div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="ot-start">Giờ bắt đầu OT chiều</label>
+                                        <input type="time" id="ot-start" value="16:30">
+                                        <small class="form-hint">Sau ca làm chính thức 16:30</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ot-end">Giờ kết thúc OT chiều</label>
+                                        <input type="time" id="ot-end" value="16:30">
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Trip inputs -->
                             <div class="form-group" style="margin-bottom: 12px; text-align: left;">
                                 <label class="checkbox-label" style="margin-top: 0; display: inline-flex; align-items: center; gap: 8px;">
