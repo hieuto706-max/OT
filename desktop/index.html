@@ -283,6 +283,19 @@
                             <span class="stat-label">Tổng giờ OT tháng (Đã duyệt)</span>
                         </div>
                     </div>
+                    <div class="stat-card stat-card-orange">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1 .4-1 1v10c0 .6.4 1 1 1h2"/>
+                                <circle cx="7" cy="17" r="2"/>
+                                <circle cx="17" cy="17" r="2"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-total-trips">0</span>
+                            <span class="stat-label">Tổng chuyến xe (Đã duyệt)</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Tab: Records -->
@@ -321,6 +334,11 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Record Type Selector for Admin -->
+                    <div style="margin: 0 20px 15px 20px; display: flex; align-items: center; gap: 8px;">
+                        <button class="btn btn-sm btn-primary" id="btn-admin-rec-type-ot" style="border-radius: 6px; padding: 6px 16px; font-weight:600;">1. Bản ghi Tăng ca (OT)</button>
+                        <button class="btn btn-sm btn-ghost" id="btn-admin-rec-type-trips" style="border-radius: 6px; padding: 6px 16px; font-weight:600;">2. Bản ghi Đi xe tăng cường</button>
+                    </div>
                     <!-- Sub-tabs within Records -->
                     <div class="sub-tabs">
                         <button class="sub-tab active" data-subtab="records-approved">Ghi nhận OT</button>
@@ -348,6 +366,7 @@
                                         <th>Giờ bắt đầu</th>
                                         <th>Giờ kết thúc</th>
                                         <th>Tổng OT (giờ)</th>
+                                        <th>Đi xe (Tỉnh)</th>
                                         <th>Ghi chú</th>
                                         <th>Trạng thái</th>
                                         <th>Thao tác</th>
@@ -355,7 +374,7 @@
                                 </thead>
                                 <tbody id="admin-records-approved-body">
                                     <tr class="empty-row">
-                                        <td colspan="11">Chưa có dữ liệu tăng ca</td>
+                                        <td colspan="12">Chưa có dữ liệu tăng ca</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -377,13 +396,14 @@
                                         <th>Giờ bắt đầu</th>
                                         <th>Giờ kết thúc</th>
                                         <th>Tổng OT (giờ)</th>
+                                        <th>Đi xe (Tỉnh)</th>
                                         <th>Ghi chú</th>
                                         <th>Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody id="admin-records-pending-body">
                                     <tr class="empty-row">
-                                        <td colspan="10">Không có yêu cầu chờ duyệt</td>
+                                        <td colspan="11">Không có yêu cầu chờ duyệt</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -404,13 +424,14 @@
                                         <th>Giờ bắt đầu</th>
                                         <th>Giờ kết thúc</th>
                                         <th>Tổng OT (giờ)</th>
+                                        <th>Đi xe (Tỉnh)</th>
                                         <th>Ghi chú</th>
                                         <th>Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody id="admin-records-rejected-body">
                                     <tr class="empty-row">
-                                        <td colspan="10">Không có bản ghi bị từ chối</td>
+                                        <td colspan="11">Không có bản ghi bị từ chối</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -674,6 +695,21 @@
                                 </div>
                             </div>
 
+                            <!-- Trip inputs -->
+                            <div class="form-group" style="margin-bottom: 15px; text-align: left;">
+                                <label class="switch-label">
+                                    <input type="checkbox" id="admin-ot-has-trip">
+                                    <span class="switch-slider"></span>
+                                    <span class="switch-text">Đi xe tăng cường</span>
+                                </label>
+                            </div>
+                            <div class="form-group" id="admin-ot-province-group" style="display: none; margin-bottom: 20px;">
+                                <label for="admin-ot-province" class="field-label">Tỉnh đi xe</label>
+                                <div class="input-wrapper">
+                                    <input type="text" id="admin-ot-province" list="provinces-datalist" placeholder="Nhập để tìm kiếm tỉnh..." class="input-sm" style="height: 42px; border-radius: 8px; box-sizing: border-box; padding-left: 12px; width: 100%;">
+                                </div>
+                            </div>
+
                             <!-- Note -->
                             <div class="form-group">
                                 <label for="admin-ot-note" class="field-label">Ghi chú công việc</label>
@@ -914,29 +950,17 @@
                                 <input type="number" id="ot-backfill-hours" step="0.1" min="0.1" max="24" placeholder="Nhập số giờ bù (ví dụ: 8.0)">
                             </div>
 
-                            <!-- Normal OT inputs -->
-                            <div id="ot-normal-inputs">
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label class="checkbox-label" style="margin-top: 0;">
-                                            <input type="checkbox" id="ot-lunch">
-                                            <span class="checkbox-custom"></span>
-                                            Tăng ca trưa (12:20 - 13:20)
-                                        </label>
-                                    </div>
-                                    <div class="form-group"></div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="ot-start">Giờ bắt đầu OT chiều</label>
-                                        <input type="time" id="ot-start" value="16:30">
-                                        <small class="form-hint">Sau ca làm chính thức 16:30</small>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="ot-end">Giờ kết thúc OT chiều</label>
-                                        <input type="time" id="ot-end" value="16:30">
-                                    </div>
-                                </div>
+                            <!-- Trip inputs -->
+                            <div class="form-group" style="margin-bottom: 12px; text-align: left;">
+                                <label class="checkbox-label" style="margin-top: 0; display: inline-flex; align-items: center; gap: 8px;">
+                                    <input type="checkbox" id="ot-has-trip">
+                                    <span class="checkbox-custom"></span>
+                                    Đi xe tăng cường
+                                </label>
+                            </div>
+                            <div class="form-group" id="ot-province-group" style="display: none; margin-bottom: 16px;">
+                                <label for="ot-province" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary); text-align: left;">Tỉnh đi xe:</label>
+                                <input type="text" id="ot-province" list="provinces-datalist" placeholder="Nhập để tìm kiếm tỉnh..." style="width: 100%; box-sizing: border-box; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-input); color: var(--text-primary);">
                             </div>
 
                             <div class="form-group">
@@ -973,6 +997,11 @@
                         <div class="panel-header">
                             <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:6px; vertical-align:middle;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Lịch sử tăng ca cá nhân</h3>
                         </div>
+                        <!-- Record Type Selector for Employee -->
+                        <div style="margin: 0 20px 15px 20px; display: flex; align-items: center; gap: 8px;">
+                            <button class="btn btn-sm btn-primary" id="btn-emp-rec-type-ot" style="border-radius: 6px; padding: 6px 16px; font-weight:600;">1. Bản ghi Tăng ca (OT)</button>
+                            <button class="btn btn-sm btn-ghost" id="btn-emp-rec-type-trips" style="border-radius: 6px; padding: 6px 16px; font-weight:600;">2. Bản ghi Đi xe tăng cường</button>
+                        </div>
                         <div class="table-wrapper">
                             <table class="data-table">
                                 <thead>
@@ -984,13 +1013,14 @@
                                         <th>Giờ KT</th>
                                         <th>Tổng (giờ)</th>
                                         <th>Trạng thái</th>
+                                        <th>Đi xe (Tỉnh)</th>
                                         <th>Ghi chú</th>
                                         <th>Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody id="emp-records-body">
                                     <tr class="empty-row">
-                                        <td colspan="9">Chưa có dữ liệu tăng ca</td>
+                                        <td colspan="10">Chưa có dữ liệu tăng ca</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1033,7 +1063,8 @@
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
 
-
+    <!-- Provinces datalist for autocomplete search -->
+    <datalist id="provinces-datalist"></datalist>
 
     <script src="exceljs.min.js"></script>
     <script src="xlsx.full.min.js"></script>

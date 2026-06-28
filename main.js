@@ -146,6 +146,7 @@ async function createWindow() {
             if (!isAllowed) {
                 console.warn(`[Security] Chặn chuyển hướng tới: ${url}`);
                 event.preventDefault();
+                shell.openExternal(url);
             }
         } catch (e) {
             event.preventDefault();

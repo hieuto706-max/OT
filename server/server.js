@@ -944,7 +944,7 @@ async function handleAPI(req, res, urlPath, method) {
 
     if (urlPath === '/api/records' && method === 'POST') {
         const body = await parseBody(req);
-        const { userId, date, hasLunchOT, otStart, otEnd, eveningOTHours, totalHours, note } = body;
+        const { userId, date, hasLunchOT, otStart, otEnd, eveningOTHours, totalHours, note, deliveryProvince } = body;
         if (!userId || !date) return sendError(res, 400, 'Thiếu thông tin!');
 
         // Phân quyền: Nhân viên chỉ được tạo bản ghi cho chính mình
@@ -989,6 +989,7 @@ async function handleAPI(req, res, urlPath, method) {
             otEnd: otEnd || '',
             eveningOTHours: eveningOTHours || 0,
             totalHours: totalHours || 0,
+            deliveryProvince: deliveryProvince || '',
             note: note || '',
             createdMonth: body.createdMonth || '',
             isBackfill: isBackfill,
@@ -1041,7 +1042,7 @@ async function handleAPI(req, res, urlPath, method) {
     if (urlPath.startsWith('/api/records/') && method === 'PUT') {
         const recordId = urlPath.split('/api/records/')[1];
         const body = await parseBody(req);
-        const { date, hasLunchOT, otStart, otEnd, eveningOTHours, totalHours, note } = body;
+        const { date, hasLunchOT, otStart, otEnd, eveningOTHours, totalHours, note, deliveryProvince } = body;
         const idx = db.records.findIndex(r => r.id === recordId);
         if (idx < 0) return sendError(res, 404, 'Không tìm thấy bản ghi!');
 
@@ -1074,6 +1075,7 @@ async function handleAPI(req, res, urlPath, method) {
         db.records[idx].otEnd = otEnd !== undefined ? otEnd : db.records[idx].otEnd;
         db.records[idx].eveningOTHours = eveningOTHours !== undefined ? eveningOTHours : db.records[idx].eveningOTHours;
         db.records[idx].totalHours = totalHours !== undefined ? totalHours : db.records[idx].totalHours;
+        db.records[idx].deliveryProvince = deliveryProvince !== undefined ? deliveryProvince : (db.records[idx].deliveryProvince || '');
         db.records[idx].note = note !== undefined ? note : db.records[idx].note;
         if (body.createdMonth !== undefined) db.records[idx].createdMonth = body.createdMonth;
 
@@ -1133,7 +1135,8 @@ async function handleAPI(req, res, urlPath, method) {
             totalUsers: employees.length,
             pendingOT: pendingRecords.length,
             pendingUnlinks: pendingUnlinksCount,
-            totalOTMonth: approvedRecords.reduce((s, r) => s + r.totalHours, 0)
+            totalOTMonth: approvedRecords.reduce((s, r) => s + r.totalHours, 0),
+            totalTripsMonth: approvedRecords.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '').length
         });
     }
 

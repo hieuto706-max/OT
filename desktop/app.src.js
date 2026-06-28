@@ -56,6 +56,12 @@ let API_BASE = localServerUrl;
 const OT_LUNCH_HOURS = 1;
 const WORK_END = '16:30';
 let TEAMS = [];
+const PROVINCES = [
+    "An Giang", "Bà Rịa – Vũng Tàu", "Bạc Liêu", "Bắc Giang", "Bắc Kạn", "Bắc Ninh", "Bến Tre", "Bình Dương", "Bình Định", "Bình Phước", "Bình Thuận", "Cà Mau", "Cần Thơ", "Cao Bằng", "Đà Nẵng", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp", "Gia Lai", "Hà Giang", "Hà Nam", "Hà Nội", "Hà Tĩnh", "Hải Dương", "Hải Phòng", "Hậu Giang", "Hòa Bình", "Hưng Yên", "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu", "Lạng Sơn", "Lào Cai", "Lâm Đồng", "Long An", "Nam Định", "Nghệ An", "Ninh Bình", "Ninh Thuận", "Phú Thọ", "Phú Yên", "Quảng Bình", "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sóc Trăng", "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang", "TP. Hồ Chí Minh", "Trà Vinh", "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
+];
+
+let currentAdminRecType = 'ot';
+let currentEmpRecType = 'ot';
 
 async function loadTeams() {
     try {
@@ -828,6 +834,8 @@ async function refreshAdminStats() {
         document.getElementById('stat-pending-ot').textContent = stats.pendingOT;
         document.getElementById('stat-pending-unlinks').textContent = stats.pendingUnlinks;
         document.getElementById('stat-total-ot').textContent = stats.totalOTMonth.toFixed(1);
+        const tripsEl = document.getElementById('stat-total-trips');
+        if (tripsEl) tripsEl.textContent = stats.totalTripsMonth || 0;
     } catch (e) {}
 }
 
@@ -891,107 +899,256 @@ async function refreshAdminRecords() {
         const pendingTbody = document.getElementById('admin-records-pending-body');
         const rejectedTbody = document.getElementById('admin-records-rejected-body');
 
-        const approved = filteredRecords.filter(r => r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
-        const pending = filteredRecords.filter(r => r.status === 'pending');
-        const rejected = filteredRecords.filter(r => r.status === 'rejected');
+        // Apply Record Type Filter
+        let recordsFiltered = [];
+        if (currentAdminRecType === 'ot') {
+            recordsFiltered = filteredRecords.filter(r => r.totalHours > 0 || r.isBackfill);
+        } else {
+            recordsFiltered = filteredRecords.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '');
+        }
+
+        // Set Table Headers dynamically
+        if (approvedTbody && approvedTbody.previousElementSibling) {
+            if (currentAdminRecType === 'ot') {
+                approvedTbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Nhân viên</th>
+                    <th>Nhóm</th>
+                    <th>Ngày</th>
+                    <th>OT Trưa</th>
+                    <th>OT Chiều</th>
+                    <th>Giờ bắt đầu</th>
+                    <th>Giờ kết thúc</th>
+                    <th>Tổng OT (giờ)</th>
+                    <th>Ghi chú</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            } else {
+                approvedTbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Nhân viên</th>
+                    <th>Nhóm</th>
+                    <th>Ngày</th>
+                    <th>Đi xe (Tỉnh)</th>
+                    <th>Ghi chú</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            }
+        }
+        if (pendingTbody && pendingTbody.previousElementSibling) {
+            if (currentAdminRecType === 'ot') {
+                pendingTbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Nhân viên</th>
+                    <th>Nhóm</th>
+                    <th>Ngày</th>
+                    <th>OT Trưa</th>
+                    <th>OT Chiều</th>
+                    <th>Giờ bắt đầu</th>
+                    <th>Giờ kết thúc</th>
+                    <th>Tổng OT (giờ)</th>
+                    <th>Ghi chú</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            } else {
+                pendingTbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Nhân viên</th>
+                    <th>Nhóm</th>
+                    <th>Ngày</th>
+                    <th>Đi xe (Tỉnh)</th>
+                    <th>Ghi chú</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            }
+        }
+        if (rejectedTbody && rejectedTbody.previousElementSibling) {
+            if (currentAdminRecType === 'ot') {
+                rejectedTbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Nhân viên</th>
+                    <th>Nhóm</th>
+                    <th>Ngày</th>
+                    <th>OT Trưa</th>
+                    <th>OT Chiều</th>
+                    <th>Giờ bắt đầu</th>
+                    <th>Giờ kết thúc</th>
+                    <th>Tổng OT (giờ)</th>
+                    <th>Ghi chú</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            } else {
+                rejectedTbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Nhân viên</th>
+                    <th>Nhóm</th>
+                    <th>Ngày</th>
+                    <th>Đi xe (Tỉnh)</th>
+                    <th>Ghi chú</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            }
+        }
+
+        const approved = recordsFiltered.filter(r => r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
+        const pending = recordsFiltered.filter(r => r.status === 'pending');
+        const rejected = recordsFiltered.filter(r => r.status === 'rejected');
 
         // Render Approved
         if (approved.length === 0) {
-            approvedTbody.innerHTML = '<tr class="empty-row"><td colspan="11">Không có dữ liệu tăng ca đã duyệt</td></tr>';
+            const cols = (currentAdminRecType === 'ot') ? 11 : 6;
+            approvedTbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Không có dữ liệu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} đã duyệt</td></tr>`;
         } else {
             approvedTbody.innerHTML = approved.map(r => {
                 const user = users.find(u => u.id === r.userId);
                 const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
                 const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
-                return `<tr>
-                    <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
-                    <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
-                    <td>${formatDate(r.date)}</td>
-                    <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
-                    <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
-                    <td>${r.otStart || '—'}</td>
-                    <td>${r.otEnd || '—'}</td>
-                    <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
-                    <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
-                    <td>${isBackfill ? '<span class="tag tag-yes" style="background:rgba(16,185,129,0.1); color:#10b981;">Bù tăng ca</span>' : '<span class="tag tag-no" style="background:rgba(99,102,241,0.1); color:#6366f1;">Thường</span>'}</td>
-                    <td><div class="action-buttons">
-                        <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'admin')" title="Sửa" style="margin-right: 4px;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                        </button>
-                        <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="Xóa">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                            </svg>
-                        </button>
-                    </div></td>
-                </tr>`;
+                if (currentAdminRecType === 'ot') {
+                    return `<tr>
+                        <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
+                        <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
+                        <td>${formatDate(r.date)}</td>
+                        <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
+                        <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
+                        <td>${r.otStart || '—'}</td>
+                        <td>${r.otEnd || '—'}</td>
+                        <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
+                        <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td>${isBackfill ? '<span class="tag tag-yes" style="background:rgba(16,185,129,0.1); color:#10b981;">Bù tăng ca</span>' : '<span class="tag tag-no" style="background:rgba(99,102,241,0.1); color:#6366f1;">Thường</span>'}</td>
+                        <td><div class="action-buttons">
+                            <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'admin')" title="Sửa" style="margin-right: 4px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                            <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="Xóa">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div></td>
+                    </tr>`;
+                } else {
+                    return `<tr>
+                        <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
+                        <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
+                        <td>${formatDate(r.date)}</td>
+                        <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
+                        <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td><div class="action-buttons">
+                            <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'admin')" title="Sửa" style="margin-right: 4px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                            <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="Xóa">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div></td>
+                    </tr>`;
+                }
             }).join('');
         }
 
         // Render Pending
         if (pending.length === 0) {
-            pendingTbody.innerHTML = '<tr class="empty-row"><td colspan="10">Không có yêu cầu chờ duyệt</td></tr>';
+            const cols = (currentAdminRecType === 'ot') ? 10 : 6;
+            pendingTbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Không có yêu cầu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} chờ duyệt</td></tr>`;
         } else {
             pendingTbody.innerHTML = pending.map(r => {
                 const user = users.find(u => u.id === r.userId);
                 const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
-                return `<tr>
-                    <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
-                    <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
-                    <td>${formatDate(r.date)}</td>
-                    <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
-                    <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
-                    <td>${r.otStart || '—'}</td>
-                    <td>${r.otEnd || '—'}</td>
-                    <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
-                    <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
-                    <td><div class="action-buttons">
-                        <button class="btn btn-success btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
-                            ✓ Duyệt
-                        </button>
-                        <button class="btn btn-danger btn-xs" onclick="rejectRecord('${r.id}')" title="Từ chối" style="padding: 4px 8px; font-size: 11px;">
-                            ✕ Từ chối
-                        </button>
-                    </div></td>
-                </tr>`;
+                if (currentAdminRecType === 'ot') {
+                    return `<tr>
+                        <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
+                        <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
+                        <td>${formatDate(r.date)}</td>
+                        <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
+                        <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
+                        <td>${r.otStart || '—'}</td>
+                        <td>${r.otEnd || '—'}</td>
+                        <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
+                        <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td><div class="action-buttons">
+                            <button class="btn btn-success btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
+                                ✓ Duyệt
+                            </button>
+                            <button class="btn btn-danger btn-xs" onclick="rejectRecord('${r.id}')" title="Từ chối" style="padding: 4px 8px; font-size: 11px;">
+                                ✕ Từ chối
+                            </button>
+                        </div></td>
+                    </tr>`;
+                } else {
+                    return `<tr>
+                        <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
+                        <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
+                        <td>${formatDate(r.date)}</td>
+                        <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
+                        <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td><div class="action-buttons">
+                            <button class="btn btn-success btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
+                                ✓ Duyệt
+                            </button>
+                            <button class="btn btn-danger btn-xs" onclick="rejectRecord('${r.id}')" title="Từ chối" style="padding: 4px 8px; font-size: 11px;">
+                                ✕ Từ chối
+                            </button>
+                        </div></td>
+                    </tr>`;
+                }
             }).join('');
         }
 
         // Render Rejected
         if (rejected.length === 0) {
-            rejectedTbody.innerHTML = '<tr class="empty-row"><td colspan="10">Không có bản ghi bị từ chối</td></tr>';
+            const cols = (currentAdminRecType === 'ot') ? 10 : 6;
+            rejectedTbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Không có bản ghi ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} bị từ chối</td></tr>`;
         } else {
             rejectedTbody.innerHTML = rejected.map(r => {
                 const user = users.find(u => u.id === r.userId);
                 const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
-                return `<tr>
-                    <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
-                    <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
-                    <td>${formatDate(r.date)}</td>
-                    <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
-                    <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
-                    <td>${r.otStart || '—'}</td>
-                    <td>${r.otEnd || '—'}</td>
-                    <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
-                    <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
-                    <td><div class="action-buttons">
-                        <button class="btn btn-primary btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt lại" style="padding: 4px 8px; font-size: 11px;">
-                            ✓ Duyệt lại
-                        </button>
-                    </div></td>
-                </tr>`;
+                if (currentAdminRecType === 'ot') {
+                    return `<tr>
+                        <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
+                        <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
+                        <td>${formatDate(r.date)}</td>
+                        <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
+                        <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
+                        <td>${r.otStart || '—'}</td>
+                        <td>${r.otEnd || '—'}</td>
+                        <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
+                        <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td><div class="action-buttons">
+                            <button class="btn btn-primary btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt lại" style="padding: 4px 8px; font-size: 11px;">
+                                ✓ Duyệt lại
+                            </button>
+                        </div></td>
+                    </tr>`;
+                } else {
+                    return `<tr>
+                        <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
+                        <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
+                        <td>${formatDate(r.date)}</td>
+                        <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
+                        <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td><div class="action-buttons">
+                            <button class="btn btn-primary btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt lại" style="padding: 4px 8px; font-size: 11px;">
+                                ✓ Duyệt lại
+                            </button>
+                        </div></td>
+                    </tr>`;
+                }
             }).join('');
         }
 
         // Stats & Badges
-        let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0;
-        approved.forEach(r => {
+        const approvedAll = filteredRecords.filter(r => r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
+        let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0, totalTrips = 0;
+        approvedAll.forEach(r => {
             totalLunchOT += r.hasLunchOT ? OT_LUNCH_HOURS : 0;
             totalEveningOT += r.eveningOTHours;
             totalHours += r.totalHours;
+            if (r.deliveryProvince && r.deliveryProvince.trim() !== '') {
+                totalTrips++;
+            }
         });
 
         const badgePendingRecords = document.getElementById('badge-pending-records');
@@ -1025,10 +1182,11 @@ async function refreshAdminRecords() {
         }
 
         document.getElementById('admin-table-summary').innerHTML = `
-            <div class="summary-item"><span class="summary-label">Tổng bản ghi:</span><span class="summary-value">${approved.length}</span></div>
+            <div class="summary-item"><span class="summary-label">Tổng bản ghi:</span><span class="summary-value">${approvedAll.length}</span></div>
             <div class="summary-item"><span class="summary-label">OT Trưa:</span><span class="summary-value">${totalLunchOT.toFixed(1)}h</span></div>
             <div class="summary-item"><span class="summary-label">OT Chiều:</span><span class="summary-value">${totalEveningOT.toFixed(1)}h</span></div>
-            <div class="summary-item"><span class="summary-label">Tổng OT:</span><span class="summary-value">${totalHours.toFixed(1)}h</span></div>`;
+            <div class="summary-item"><span class="summary-label">Tổng OT:</span><span class="summary-value">${totalHours.toFixed(1)}h</span></div>
+            <div class="summary-item"><span class="summary-label">Tổng chuyến xe:</span><span class="summary-value">${totalTrips}</span></div>`;
     } catch (e) {
         console.error(e);
     }
@@ -1424,7 +1582,7 @@ async function exportExcel() {
         });
 
         // 1. Tiêu đề chính
-        wsSummary.mergeCells('A1:H1');
+        wsSummary.mergeCells('A1:I1');
         const title1 = wsSummary.getCell('A1');
         title1.value = `BÁO CÁO TĂNG CA - THÁNG ${month}`;
         title1.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -1433,7 +1591,7 @@ async function exportExcel() {
         wsSummary.getRow(1).height = 40;
 
         // 2. Ngày xuất báo cáo
-        wsSummary.mergeCells('A2:H2');
+        wsSummary.mergeCells('A2:I2');
         const subtitle1 = wsSummary.getCell('A2');
         subtitle1.value = `Ngày xuất báo cáo: ${exportTime}`;
         subtitle1.font = { name: 'Segoe UI', size: 10, italic: true, color: { argb: 'FF4B5563' } };
@@ -1444,17 +1602,17 @@ async function exportExcel() {
         wsSummary.getRow(3).height = 15;
 
         // 4. Tiêu đề bảng
-        wsSummary.getCell('A4').value = "I. BẢNG TỔNG HỢP GIỜ TĂNG CA";
+        wsSummary.getCell('A4').value = "I. BẢNG TỔNG HỢP GIỜ TĂNG CA & CHUYẾN ĐI XE";
         wsSummary.getCell('A4').font = { name: 'Segoe UI', size: 12, bold: true, color: { argb: 'FF1F2937' } };
         wsSummary.getRow(4).height = 22;
 
         // 5. Headers
-        const headers1 = ["STT", "Họ và tên", "Nhóm", "Mã nhân viên", "Số ngày OT", "OT Trưa (giờ)", "OT Chiều (giờ)", "Tổng OT (giờ)"];
+        const headers1 = ["STT", "Họ và tên", "Nhóm", "Mã nhân viên", "Số ngày OT", "OT Trưa (giờ)", "OT Chiều (giờ)", "Tổng OT (giờ)", "Tổng chuyến xe"];
         wsSummary.getRow(5).values = headers1;
         wsSummary.getRow(5).height = 28;
         wsSummary.getRow(5).font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
         
-        for (let col = 1; col <= 8; col++) {
+        for (let col = 1; col <= 9; col++) {
             const cell = wsSummary.getCell(5, col);
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B6CB0' } }; // Medium Navy/Blue
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -1473,6 +1631,7 @@ async function exportExcel() {
             const days = ur.length;
             const lh = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
             const eh = ur.reduce((s, r) => s + r.eveningOTHours, 0);
+            const trips = ur.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '').length;
 
             const rowNum = summaryStartRow + i;
             const row = wsSummary.getRow(rowNum);
@@ -1484,12 +1643,13 @@ async function exportExcel() {
                 days,
                 lh,
                 eh,
-                lh + eh
+                lh + eh,
+                trips
             ];
             row.height = 22;
             row.font = { name: 'Segoe UI', size: 10 };
 
-            for (let col = 1; col <= 8; col++) {
+            for (let col = 1; col <= 9; col++) {
                 const cell = row.getCell(col);
                 cell.border = {
                     top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
@@ -1504,7 +1664,7 @@ async function exportExcel() {
                     cell.alignment = { vertical: 'middle', horizontal: 'center' };
                 }
 
-                if (col === 1 || col === 5) {
+                if (col === 1 || col === 5 || col === 9) {
                     cell.numFmt = '0';
                 } else if (col >= 6) {
                     cell.numFmt = '#,##0.0';
@@ -1513,7 +1673,7 @@ async function exportExcel() {
         });
 
         // Thiết lập bộ lọc tự động cho Summary Sheet
-        wsSummary.autoFilter = 'A5:H' + (summaryStartRow + users.length - 1);
+        wsSummary.autoFilter = 'A5:I' + (summaryStartRow + users.length - 1);
 
         // 7. Dòng Tổng cộng
         const totalRow1Num = summaryStartRow + users.length;
@@ -1524,12 +1684,13 @@ async function exportExcel() {
         wsSummary.getCell(`F${totalRow1Num}`).value = { formula: `SUM(F6:F${totalRow1Num - 1})` };
         wsSummary.getCell(`G${totalRow1Num}`).value = { formula: `SUM(G6:G${totalRow1Num - 1})` };
         wsSummary.getCell(`H${totalRow1Num}`).value = { formula: `SUM(H6:H${totalRow1Num - 1})` };
+        wsSummary.getCell(`I${totalRow1Num}`).value = { formula: `SUM(I6:I${totalRow1Num - 1})` };
 
         const rowTotal1 = wsSummary.getRow(totalRow1Num);
         rowTotal1.height = 26;
         rowTotal1.font = { name: 'Segoe UI', size: 10, bold: true };
         
-        for (let col = 1; col <= 8; col++) {
+        for (let col = 1; col <= 9; col++) {
             const cell = rowTotal1.getCell(col);
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEBF8FF' } }; // Soft Blue
             cell.border = {
@@ -1540,7 +1701,7 @@ async function exportExcel() {
             };
             if (col >= 5) {
                 cell.alignment = { vertical: 'middle', horizontal: 'center' };
-                cell.numFmt = col === 5 ? '0' : '#,##0.0';
+                cell.numFmt = (col === 5 || col === 9) ? '0' : '#,##0.0';
             } else if (col === 1) {
                 cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
             }
@@ -1555,7 +1716,8 @@ async function exportExcel() {
             { width: 14 },  // Số ngày OT
             { width: 18 },  // OT Trưa
             { width: 18 },  // OT Chiều
-            { width: 18 }   // Tổng OT
+            { width: 18 },  // Tổng OT
+            { width: 18 }   // Tổng chuyến xe
         ];
 
         // ------------------ SHEET 2: CHI TIẾT ------------------
@@ -1564,7 +1726,7 @@ async function exportExcel() {
         });
 
         // 1. Tiêu đề chính
-        wsDetail.mergeCells('A1:K1');
+        wsDetail.mergeCells('A1:L1');
         const title2 = wsDetail.getCell('A1');
         title2.value = `CHI TIẾT TĂNG CA - THÁNG ${month}`;
         title2.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -1573,7 +1735,7 @@ async function exportExcel() {
         wsDetail.getRow(1).height = 40;
 
         // 2. Ngày xuất báo cáo
-        wsDetail.mergeCells('A2:K2');
+        wsDetail.mergeCells('A2:L2');
         const subtitle2 = wsDetail.getCell('A2');
         subtitle2.value = `Ngày xuất báo cáo: ${exportTime}`;
         subtitle2.font = { name: 'Segoe UI', size: 10, italic: true, color: { argb: 'FF4B5563' } };
@@ -1589,12 +1751,12 @@ async function exportExcel() {
         wsDetail.getRow(4).height = 22;
 
         // 5. Headers
-        const headers2 = ["STT", "Ngày", "Họ và tên", "Nhóm", "Mã nhân viên", "OT Trưa", "OT Chiều", "Giờ bắt đầu", "Giờ kết thúc", "Tổng OT (giờ)", "Ghi chú"];
+        const headers2 = ["STT", "Ngày", "Họ và tên", "Nhóm", "Mã nhân viên", "OT Trưa", "OT Chiều", "Giờ bắt đầu", "Giờ kết thúc", "Tổng OT (giờ)", "Đi xe (Tỉnh)", "Ghi chú"];
         wsDetail.getRow(5).values = headers2;
         wsDetail.getRow(5).height = 28;
         wsDetail.getRow(5).font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
         
-        for (let col = 1; col <= 11; col++) {
+        for (let col = 1; col <= 12; col++) {
             const cell = wsDetail.getCell(5, col);
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B6CB0' } }; // Medium Navy/Blue
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -1620,7 +1782,7 @@ async function exportExcel() {
             if (!isFirstUser) {
                 wsDetail.addRow([]);
                 wsDetail.getRow(currentDetailRow).height = 14;
-                for (let col = 1; col <= 11; col++) {
+                for (let col = 1; col <= 12; col++) {
                     const cell = wsDetail.getCell(currentDetailRow, col);
                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } }; // Slate 100
                     cell.border = {
@@ -1650,12 +1812,13 @@ async function exportExcel() {
                     r.otStart || '—',
                     r.otEnd || '—',
                     r.totalHours,
+                    r.deliveryProvince || '—',
                     r.note || '—'
                 ];
                 row.height = 22;
                 row.font = { name: 'Segoe UI', size: 10 };
 
-                for (let col = 1; col <= 11; col++) {
+                for (let col = 1; col <= 12; col++) {
                     const cell = row.getCell(col);
                     cell.border = {
                         top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
@@ -1664,7 +1827,7 @@ async function exportExcel() {
                         right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
                     };
 
-                    if (col === 3 || col === 4 || col === 11) {
+                    if (col === 3 || col === 4 || col === 12) {
                         cell.alignment = { vertical: 'middle', horizontal: 'left' };
                     } else {
                         cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -1683,7 +1846,7 @@ async function exportExcel() {
         // 7. Tổng cộng chi tiết
         if (detailedIdx > 1) {
             // Áp dụng bộ lọc cho toàn bộ vùng dữ liệu chi tiết (từ dòng 5 đến dòng cuối cùng trước dòng tổng cộng)
-            wsDetail.autoFilter = 'A5:K' + (currentDetailRow - 1);
+            wsDetail.autoFilter = 'A5:L' + (currentDetailRow - 1);
 
             const totalRow2Num = currentDetailRow;
             wsDetail.mergeCells(`A${totalRow2Num}:E${totalRow2Num}`);
@@ -1692,12 +1855,13 @@ async function exportExcel() {
             wsDetail.getCell(`F${totalRow2Num}`).value = { formula: `SUM(F6:F${totalRow2Num - 1})` };
             wsDetail.getCell(`G${totalRow2Num}`).value = { formula: `SUM(G6:G${totalRow2Num - 1})` };
             wsDetail.getCell(`J${totalRow2Num}`).value = { formula: `SUM(J6:J${totalRow2Num - 1})` };
+            wsDetail.getCell(`K${totalRow2Num}`).value = { formula: `COUNTA(K6:K${totalRow2Num - 1}) - COUNTIF(K6:K${totalRow2Num - 1}, "—")` };
 
             const rowTotal2 = wsDetail.getRow(totalRow2Num);
             rowTotal2.height = 26;
             rowTotal2.font = { name: 'Segoe UI', size: 10, bold: true };
             
-            for (let col = 1; col <= 11; col++) {
+            for (let col = 1; col <= 12; col++) {
                 const cell = rowTotal2.getCell(col);
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEBF8FF' } }; // Soft Blue
                 cell.border = {
@@ -1709,12 +1873,15 @@ async function exportExcel() {
                 if (col === 6 || col === 7 || col === 10) {
                     cell.alignment = { vertical: 'middle', horizontal: 'center' };
                     cell.numFmt = '#,##0.0';
+                } else if (col === 11) {
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                    cell.numFmt = '0';
                 } else if (col === 1) {
                     cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
                 }
             }
         } else {
-            wsDetail.mergeCells(`A${currentDetailRow}:K${currentDetailRow}`);
+            wsDetail.mergeCells(`A${currentDetailRow}:L${currentDetailRow}`);
             const emptyCell = wsDetail.getCell(`A${currentDetailRow}`);
             emptyCell.value = "Chưa có dữ liệu chi tiết tăng ca cho tháng này.";
             emptyCell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -1733,6 +1900,7 @@ async function exportExcel() {
             { width: 14 },  // Giờ bắt đầu
             { width: 14 },  // Giờ kết thúc
             { width: 16 },  // Tổng OT (giờ)
+            { width: 20 },  // Đi xe (Tỉnh)
             { width: 35 }   // Ghi chú
         ];
 
@@ -1914,6 +2082,9 @@ function updateOTPreview() {
     let items = [];
     let total = 0;
 
+    const hasTrip = document.getElementById('ot-has-trip')?.checked;
+    const province = document.getElementById('ot-province')?.value || '';
+
     if (isBackfill) {
         const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
         if (hoursVal > 0) {
@@ -1939,10 +2110,26 @@ function updateOTPreview() {
         }
     }
 
+    if (hasTrip && province) {
+        items.push({ label: 'Đi xe tăng cường', value: province });
+    }
+
     previewItems.innerHTML = items.length === 0
         ? '<div class="preview-item"><span>Chưa có OT nào được chọn</span></div>'
         : items.map(i => `<div class="preview-item"><span>${i.label}</span><span class="preview-item-value">${i.value}</span></div>`).join('');
     previewTotal.textContent = total.toFixed(1);
+
+    // Cập nhật tính bắt buộc của ghi chú
+    const noteEl = document.getElementById('ot-note');
+    if (noteEl) {
+        if (hasTrip && total === 0) {
+            noteEl.required = false;
+            noteEl.placeholder = "Mặc định: Đi xe tăng cường " + province;
+        } else {
+            noteEl.required = true;
+            noteEl.placeholder = "Lý do tăng ca, phân công công việc...";
+        }
+    }
 }
 
 function updateAdminOTPreview() {
@@ -1992,6 +2179,8 @@ function updateAdminOTPreview() {
     // 3. Lunch, Evening and Total Hours
     let total = 0;
     const isBackfill = otBackfill && otBackfill.checked;
+    const hasTrip = document.getElementById('admin-ot-has-trip')?.checked;
+    const province = document.getElementById('admin-ot-province')?.value || '';
 
     if (isBackfill) {
         const hours = parseFloat(backfillHours?.value) || 0;
@@ -2024,9 +2213,22 @@ function updateAdminOTPreview() {
     // Total
     ticketTotal.textContent = `${total.toFixed(1)} giờ`;
 
+    // Cập nhật tính bắt buộc của ghi chú cho Admin
+    if (otNote) {
+        if (hasTrip && total === 0) {
+            otNote.required = false;
+            otNote.placeholder = "Mặc định: Đi xe tăng cường " + province;
+        } else {
+            otNote.required = true;
+            otNote.placeholder = "Lý do tăng ca, phân công công việc...";
+        }
+    }
+
     // Note
     if (otNote && otNote.value.trim()) {
         ticketNote.textContent = otNote.value.trim();
+    } else if (hasTrip && total === 0) {
+        ticketNote.textContent = "Mặc định: Đi xe tăng cường " + province;
     } else {
         ticketNote.textContent = 'Chưa có ghi chú...';
     }
@@ -2051,6 +2253,11 @@ async function handleOTSubmit(e) {
 
     if (!date) { errorEl.textContent = 'Vui lòng chọn ngày!'; return; }
 
+    const hasTrip = document.getElementById('ot-has-trip')?.checked;
+    const province = document.getElementById('ot-province')?.value.trim() || '';
+
+    if (hasTrip && !province) { errorEl.textContent = 'Vui lòng chọn hoặc nhập tỉnh đi xe!'; return; }
+
     let eveningHours = 0;
     let totalHours = 0;
 
@@ -2064,7 +2271,14 @@ async function handleOTSubmit(e) {
         eveningHours = calculateEveningOT(otStart, otEnd);
         const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
         totalHours = lunchHours + eveningHours;
-        if (totalHours <= 0) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT!'; return; }
+        if (totalHours <= 0 && !hasTrip) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT hoặc đi xe tăng cường!'; return; }
+    }
+
+    if (hasTrip && totalHours === 0 && !note) {
+        note = 'Đi xe tăng cường ' + province;
+    } else if (!note) {
+        errorEl.textContent = 'Vui lòng nhập ghi chú!';
+        return;
     }
 
     try {
@@ -2073,6 +2287,7 @@ async function handleOTSubmit(e) {
             otStart: (!isBackfill && eveningHours > 0) ? otStart : '',
             otEnd: (!isBackfill && eveningHours > 0) ? otEnd : '',
             eveningOTHours: eveningHours, totalHours, note, isBackfill,
+            deliveryProvince: hasTrip ? province : '',
             createdMonth: isBackfill ? getCurrentMonth() : date.substring(0, 7)
         });
 
@@ -2092,6 +2307,14 @@ async function handleOTSubmit(e) {
         document.getElementById('ot-start').value = '16:30';
         document.getElementById('ot-end').value = '16:30';
         document.getElementById('ot-note').value = '';
+        
+        const otHasTrip = document.getElementById('ot-has-trip');
+        if (otHasTrip) otHasTrip.checked = false;
+        const otProvGroup = document.getElementById('ot-province-group');
+        if (otProvGroup) otProvGroup.style.display = 'none';
+        const otProvInput = document.getElementById('ot-province');
+        if (otProvInput) otProvInput.value = '';
+
         updateOTPreview();
         await refreshEmployeeRecords();
         setTimeout(() => { successEl.textContent = ''; }, 3000);
@@ -2124,7 +2347,11 @@ async function handleAdminOTSubmit(e) {
 
     if (!userId) { errorEl.textContent = 'Vui lòng chọn nhân viên!'; return; }
     if (!date) { errorEl.textContent = 'Vui lòng chọn ngày!'; return; }
-    if (!note) { errorEl.textContent = 'Vui lòng nhập ghi chú!'; return; }
+
+    const hasTrip = document.getElementById('admin-ot-has-trip')?.checked;
+    const province = document.getElementById('admin-ot-province')?.value.trim() || '';
+
+    if (hasTrip && !province) { errorEl.textContent = 'Vui lòng chọn hoặc nhập tỉnh đi xe!'; return; }
 
     let eveningHours = 0;
     let totalHours = 0;
@@ -2139,7 +2366,14 @@ async function handleAdminOTSubmit(e) {
         eveningHours = calculateEveningOT(otStart, otEnd);
         const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
         totalHours = lunchHours + eveningHours;
-        if (totalHours <= 0) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT!'; return; }
+        if (totalHours <= 0 && !hasTrip) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT hoặc đi xe tăng cường!'; return; }
+    }
+
+    if (hasTrip && totalHours === 0 && !note) {
+        note = 'Đi xe tăng cường ' + province;
+    } else if (!note) {
+        errorEl.textContent = 'Vui lòng nhập ghi chú!';
+        return;
     }
 
     try {
@@ -2148,6 +2382,7 @@ async function handleAdminOTSubmit(e) {
             otStart: (!isBackfill && eveningHours > 0) ? otStart : '',
             otEnd: (!isBackfill && eveningHours > 0) ? otEnd : '',
             eveningOTHours: eveningHours, totalHours, note, isBackfill,
+            deliveryProvince: hasTrip ? province : '',
             createdMonth: isBackfill ? getCurrentMonth() : date.substring(0, 7)
         });
 
@@ -2173,10 +2408,19 @@ async function handleAdminOTSubmit(e) {
         document.getElementById('admin-ot-start').value = '16:30';
         document.getElementById('admin-ot-end').value = '16:30';
         document.getElementById('admin-ot-note').value = '';
+        
+        const adminOtHasTrip = document.getElementById('admin-ot-has-trip');
+        if (adminOtHasTrip) adminOtHasTrip.checked = false;
+        const adminOtProvGroup = document.getElementById('admin-ot-province-group');
+        if (adminOtProvGroup) adminOtProvGroup.style.display = 'none';
+        const adminOtProvInput = document.getElementById('admin-ot-province');
+        if (adminOtProvInput) adminOtProvInput.value = '';
+
         const todayStr2 = new Date().toISOString().split('T')[0];
         const adminOtDateEl = document.getElementById('admin-ot-date');
         if (adminOtDateEl) adminOtDateEl.value = todayStr2;
 
+        updateAdminOTPreview();
         setTimeout(() => { successEl.textContent = ''; }, 3000);
         await refreshAdminStats();
         await refreshAdminRecords();
@@ -2185,8 +2429,7 @@ async function handleAdminOTSubmit(e) {
         errorEl.textContent = err.message;
     }
 }
-
-async function refreshEmployeeRecords() {
+ async function refreshEmployeeRecords() {
     const user = JSON.parse(localStorage.getItem('ot_current_user'));
     if (!user) return;
 
@@ -2196,8 +2439,60 @@ async function refreshEmployeeRecords() {
         const records = data.records;
         const tbody = document.getElementById('emp-records-body');
 
-        if (records.length === 0) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="9">Chưa có dữ liệu tăng ca</td></tr>';
+        // Stats calculation (based on all records of this month)
+        let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0;
+        let totalTrips = 0;
+        records.forEach(r => {
+            const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            const isApproved = !isBackfill || r.status === 'approved';
+            
+            if (isApproved) {
+                totalLunchOT += lh;
+                totalEveningOT += isBackfill ? 0 : r.eveningOTHours;
+                totalHours += r.totalHours;
+                if (r.deliveryProvince && r.deliveryProvince.trim() !== '') {
+                    totalTrips += 1;
+                }
+            }
+        });
+
+        // Apply Record Type Filter
+        let recordsFiltered = [];
+        if (currentEmpRecType === 'ot') {
+            recordsFiltered = records.filter(r => r.totalHours > 0 || r.isBackfill);
+        } else {
+            recordsFiltered = records.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '');
+        }
+
+        // Set Table Headers dynamically
+        if (tbody && tbody.previousElementSibling) {
+            if (currentEmpRecType === 'ot') {
+                tbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Ngày</th>
+                    <th>OT Trưa</th>
+                    <th>OT Chiều</th>
+                    <th>Giờ BĐ</th>
+                    <th>Giờ KT</th>
+                    <th>Tổng (giờ)</th>
+                    <th>Trạng thái</th>
+                    <th>Ghi chú</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            } else {
+                tbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Ngày</th>
+                    <th>Đi xe (Tỉnh)</th>
+                    <th>Trạng thái</th>
+                    <th>Ghi chú</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            }
+        }
+
+        if (recordsFiltered.length === 0) {
+            const cols = (currentEmpRecType === 'ot') ? 9 : 5;
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Chưa có dữ liệu ${currentEmpRecType === 'ot' ? 'tăng ca' : 'đi xe'}</td></tr>`;
             const statsCardsEl = document.getElementById('emp-stats-cards');
             if (statsCardsEl) {
                 statsCardsEl.innerHTML = `
@@ -2211,7 +2506,7 @@ async function refreshEmployeeRecords() {
                             </svg>
                         </div>
                         <div class="stat-info">
-                            <span class="stat-value">0</span>
+                            <span class="stat-value">${records.length}</span>
                             <span class="stat-label">Số ngày OT</span>
                         </div>
                     </div>
@@ -2223,7 +2518,7 @@ async function refreshEmployeeRecords() {
                             </svg>
                         </div>
                         <div class="stat-info">
-                            <span class="stat-value">0.0h</span>
+                            <span class="stat-value">${totalLunchOT.toFixed(1)}h</span>
                             <span class="stat-label">OT Trưa</span>
                         </div>
                     </div>
@@ -2234,7 +2529,7 @@ async function refreshEmployeeRecords() {
                             </svg>
                         </div>
                         <div class="stat-info">
-                            <span class="stat-value">0.0h</span>
+                            <span class="stat-value">${totalEveningOT.toFixed(1)}h</span>
                             <span class="stat-label">OT Chiều</span>
                         </div>
                     </div>
@@ -2245,26 +2540,28 @@ async function refreshEmployeeRecords() {
                             </svg>
                         </div>
                         <div class="stat-info">
-                            <span class="stat-value">0.0h</span>
+                            <span class="stat-value">${totalHours.toFixed(1)}h</span>
                             <span class="stat-label">Tổng OT</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-orange" style="border-left-color: var(--accent-orange);">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1 .4-1 1v10c0 .6.4 1 1 1h2"/>
+                                <circle cx="7" cy="17" r="2"/>
+                                <circle cx="17" cy="17" r="2"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value">${totalTrips}</span>
+                            <span class="stat-label">Tổng chuyến xe</span>
                         </div>
                     </div>`;
             }
             return;
         }
 
-        let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0;
-        tbody.innerHTML = records.map(r => {
-            const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
-            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
-            const isApproved = !isBackfill || r.status === 'approved';
-            
-            if (isApproved) {
-                totalLunchOT += lh;
-                totalEveningOT += isBackfill ? 0 : r.eveningOTHours;
-                totalHours += r.totalHours;
-            }
-            
+        tbody.innerHTML = recordsFiltered.map(r => {
             let badgeClass = 'status-approved';
             let badgeText = 'Đã duyệt';
             if (r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')))) {
@@ -2277,29 +2574,51 @@ async function refreshEmployeeRecords() {
                 }
             }
 
-            return `<tr>
-                <td>${formatDate(r.date)}</td>
-                <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
-                <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
-                <td>${r.otStart || '—'}</td>
-                <td>${r.otEnd || '—'}</td>
-                <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
-                <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
-                <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
-                <td><div class="action-buttons">
-                    <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'employee')" title="Sửa" style="margin-right: 4px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                    </button>
-                    <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'employee')" title="Xóa">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                    </button>
-                </div></td>
-            </tr>`;
+            if (currentEmpRecType === 'ot') {
+                return `<tr>
+                    <td>${formatDate(r.date)}</td>
+                    <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
+                    <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+                    <td>${r.otStart || '—'}</td>
+                    <td>${r.otEnd || '—'}</td>
+                    <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
+                    <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
+                    <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                    <td><div class="action-buttons">
+                        <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'employee')" title="Sửa" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'employee')" title="Xóa">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    </div></td>
+                </tr>`;
+            } else {
+                return `<tr>
+                    <td>${formatDate(r.date)}</td>
+                    <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
+                    <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
+                    <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                    <td><div class="action-buttons">
+                        <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'employee')" title="Sửa" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'employee')" title="Xóa">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    </div></td>
+                </tr>`;
+            }
         }).join('');
 
         const statsCardsEl = document.getElementById('emp-stats-cards');
@@ -2351,6 +2670,19 @@ async function refreshEmployeeRecords() {
                     <div class="stat-info">
                         <span class="stat-value">${totalHours.toFixed(1)}h</span>
                         <span class="stat-label">Tổng OT</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-orange" style="border-left-color: var(--accent-orange);">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1 .4-1 1v10c0 .6.4 1 1 1h2"/>
+                            <circle cx="7" cy="17" r="2"/>
+                            <circle cx="17" cy="17" r="2"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">${totalTrips}</span>
+                        <span class="stat-label">Tổng chuyến xe</span>
                     </div>
                 </div>`;
         }
@@ -2747,8 +3079,106 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isElectron) {
         document.body.classList.add('is-web-browser');
     }
+
+    // Admin record type tab selector click handlers
+    const btnAdminRecTypeOt = document.getElementById('btn-admin-rec-type-ot');
+    const btnAdminRecTypeTrips = document.getElementById('btn-admin-rec-type-trips');
+    if (btnAdminRecTypeOt && btnAdminRecTypeTrips) {
+        btnAdminRecTypeOt.addEventListener('click', () => {
+            currentAdminRecType = 'ot';
+            btnAdminRecTypeOt.classList.remove('btn-ghost');
+            btnAdminRecTypeOt.classList.add('btn-primary');
+            btnAdminRecTypeTrips.classList.remove('btn-primary');
+            btnAdminRecTypeTrips.classList.add('btn-ghost');
+            refreshAdminRecords();
+        });
+        btnAdminRecTypeTrips.addEventListener('click', () => {
+            currentAdminRecType = 'trips';
+            btnAdminRecTypeTrips.classList.remove('btn-ghost');
+            btnAdminRecTypeTrips.classList.add('btn-primary');
+            btnAdminRecTypeOt.classList.remove('btn-primary');
+            btnAdminRecTypeOt.classList.add('btn-ghost');
+            refreshAdminRecords();
+        });
+    }
+
+    // Employee record type tab selector click handlers
+    const btnEmpRecTypeOt = document.getElementById('btn-emp-rec-type-ot');
+    const btnEmpRecTypeTrips = document.getElementById('btn-emp-rec-type-trips');
+    if (btnEmpRecTypeOt && btnEmpRecTypeTrips) {
+        btnEmpRecTypeOt.addEventListener('click', () => {
+            currentEmpRecType = 'ot';
+            btnEmpRecTypeOt.classList.remove('btn-ghost');
+            btnEmpRecTypeOt.classList.add('btn-primary');
+            btnEmpRecTypeTrips.classList.remove('btn-primary');
+            btnEmpRecTypeTrips.classList.add('btn-ghost');
+            refreshEmployeeRecords();
+        });
+        btnEmpRecTypeTrips.addEventListener('click', () => {
+            currentEmpRecType = 'trips';
+            btnEmpRecTypeTrips.classList.remove('btn-ghost');
+            btnEmpRecTypeTrips.classList.add('btn-primary');
+            btnEmpRecTypeOt.classList.remove('btn-primary');
+            btnEmpRecTypeOt.classList.add('btn-ghost');
+            refreshEmployeeRecords();
+        });
+    }
     const otDateEl = document.getElementById('ot-date');
     if (otDateEl) otDateEl.max = new Date().toISOString().split('T')[0];
+
+    // Populate provinces-datalist
+    const provincesDatalist = document.getElementById('provinces-datalist');
+    if (provincesDatalist) {
+        provincesDatalist.innerHTML = PROVINCES.map(p => `<option value="${p}"></option>`).join('');
+    }
+
+    // Bind change/input listeners for Employee trip fields
+    const otHasTrip = document.getElementById('ot-has-trip');
+    const otProvinceGroup = document.getElementById('ot-province-group');
+    const otProvinceInput = document.getElementById('ot-province');
+    if (otHasTrip) {
+        otHasTrip.addEventListener('change', function() {
+            if (this.checked) {
+                if (otProvinceGroup) otProvinceGroup.style.display = 'block';
+                if (otProvinceInput) otProvinceInput.required = true;
+            } else {
+                if (otProvinceGroup) otProvinceGroup.style.display = 'none';
+                if (otProvinceInput) {
+                    otProvinceInput.required = false;
+                    otProvinceInput.value = '';
+                }
+            }
+            updateOTPreview();
+        });
+    }
+    if (otProvinceInput) {
+        otProvinceInput.addEventListener('input', updateOTPreview);
+        otProvinceInput.addEventListener('change', updateOTPreview);
+    }
+
+    // Bind change/input listeners for Admin trip fields
+    const adminOtHasTrip = document.getElementById('admin-ot-has-trip');
+    const adminOtProvinceGroup = document.getElementById('admin-ot-province-group');
+    const adminOtProvinceInput = document.getElementById('admin-ot-province');
+    if (adminOtHasTrip) {
+        adminOtHasTrip.addEventListener('change', function() {
+            if (this.checked) {
+                if (adminOtProvinceGroup) adminOtProvinceGroup.style.display = 'block';
+                if (adminOtProvinceInput) adminOtProvinceInput.required = true;
+            } else {
+                if (adminOtProvinceGroup) adminOtProvinceGroup.style.display = 'none';
+                if (adminOtProvinceInput) {
+                    adminOtProvinceInput.required = false;
+                    adminOtProvinceInput.value = '';
+                }
+            }
+            updateAdminOTPreview();
+        });
+    }
+    if (adminOtProvinceInput) {
+        adminOtProvinceInput.addEventListener('input', updateAdminOTPreview);
+        adminOtProvinceInput.addEventListener('change', updateAdminOTPreview);
+    }
 
     // Hide check update button on Web (non-Electron)
     const btnCheckUpdate = document.getElementById('btn-check-update');
@@ -2778,9 +3208,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Auto-login check (cần chạy trước khi fetch dữ liệu để tránh flash hoặc lỗi giao diện)
-    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
-
     // Hàm khởi chạy bất đồng bộ để cấu hình Cloud, check version và tải dữ liệu dashboard
     async function runAsyncInit() {
         // 1. Cấu hình và đồng bộ hóa Cloud Server trước khi tải trang dashboard
@@ -2804,9 +3231,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isElectron && !isSessionActive) {
                 // Nếu không phải là cập nhật (phiên bản cũ và mới giống nhau)
                 if (storedVersion === currentVersion) {
-                    // Tắt app hoàn toàn và bật lại bản cũ -> bắt đăng nhập lại
+                    // Tắt app hoàn toàn và bật lại bản cũ -> bắt đăng nhập lại, dọn sạch session cũ
                     localStorage.removeItem('ot_current_user');
                     localStorage.removeItem('ot_login_date');
+                    localStorage.removeItem('ot_mobile_user');
+                    localStorage.removeItem('ot_login_time');
+                    localStorage.removeItem('ot_auth_token');
                 } else {
                     // Đây là cập nhật phiên bản -> giữ nguyên login, chỉ cập nhật version lưu trữ
                     localStorage.setItem('ot_app_version', currentVersion);
@@ -2825,7 +3255,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Tải dữ liệu dashboard nếu có user đã đăng nhập
+        // Tải dữ liệu dashboard nếu có user đã đăng nhập (Đọc lại sau khi đã dọn dẹp session mới nếu có)
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
         if (currentUser) {
             if (currentUser.role === 'admin') {
                 await initAdminDashboard(currentUser);
@@ -3199,9 +3630,21 @@ async function editRecordDialog(recordId, source) {
                 </div>
             </div>
 
+            <!-- Trip inputs -->
+            <div class="form-group" style="margin-bottom: 15px; text-align: left;">
+                <label style="display:flex; align-items:center; gap:8px; margin-bottom: 0; cursor: pointer; user-select:none; font-weight:600;">
+                    <input type="checkbox" id="modal-rec-has-trip" ${record.deliveryProvince ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;">
+                    Đi xe tăng cường
+                </label>
+            </div>
+            <div class="form-group" id="modal-rec-province-group" style="display: ${record.deliveryProvince ? 'block' : 'none'}; margin-bottom: 15px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Tỉnh đi xe</label>
+                <input type="text" id="modal-rec-province" list="provinces-datalist" value="${record.deliveryProvince || ''}" placeholder="Nhập để tìm kiếm tỉnh..." class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+            </div>
+
             <div class="form-group" style="margin-bottom: 0;">
                 <label style="display:block;margin-bottom:6px;font-weight:600;">Ghi chú</label>
-                <textarea id="modal-rec-note" class="input-sm" style="width:100%; height:60px; resize:none; box-sizing:border-box; padding:10px;">${cleanedNote}</textarea>
+                <textarea id="modal-rec-note" class="input-sm" style="width:100%; height:60px; resize:none; box-sizing:border-box; padding:10px;" ${record.deliveryProvince && record.totalHours === 0 ? '' : 'required'}>${cleanedNote}</textarea>
             </div>
         </form>`;
 
@@ -3217,7 +3660,11 @@ async function editRecordDialog(recordId, source) {
                 let note = document.getElementById('modal-rec-note').value.trim();
 
                 if (!date) return showToast('Vui lòng chọn ngày!', 'error');
-                if (!note) return showToast('Vui lòng nhập ghi chú!', 'error');
+
+                const hasTrip = document.getElementById('modal-rec-has-trip')?.checked;
+                const province = document.getElementById('modal-rec-province')?.value.trim() || '';
+
+                if (hasTrip && !province) return showToast('Vui lòng chọn hoặc nhập tỉnh đi xe!', 'error');
 
                 let eveningHours = 0;
                 let totalHours = 0;
@@ -3232,7 +3679,13 @@ async function editRecordDialog(recordId, source) {
                     eveningHours = calculateEveningOT(otStart, otEnd);
                     const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
                     totalHours = lunchHours + eveningHours;
-                    if (totalHours <= 0) return showToast('Vui lòng chọn ít nhất một loại OT!', 'error');
+                    if (totalHours <= 0 && !hasTrip) return showToast('Vui lòng chọn ít nhất một loại OT hoặc đi xe tăng cường!', 'error');
+                }
+
+                if (hasTrip && totalHours === 0 && !note) {
+                    note = 'Đi xe tăng cường ' + province;
+                } else if (!note) {
+                    return showToast('Vui lòng nhập ghi chú!', 'error');
                 }
 
                 try {
@@ -3243,6 +3696,7 @@ async function editRecordDialog(recordId, source) {
                         otEnd: (!isRecBackfill && eveningHours > 0) ? otEnd : '',
                         eveningOTHours: eveningHours,
                         totalHours,
+                        deliveryProvince: hasTrip ? province : '',
                         note,
                         isBackfill: isRecBackfill,
                         createdMonth: isRecBackfill ? getCurrentMonth() : date.substring(0, 7)
@@ -3288,6 +3742,29 @@ async function editRecordDialog(recordId, source) {
                 const e = timeToMinutes(modalEnd.value);
                 if (e <= s) {
                     modalEnd.value = modalStart.value;
+                }
+            });
+        }
+
+        const modalHasTrip = document.getElementById('modal-rec-has-trip');
+        if (modalHasTrip) {
+            modalHasTrip.addEventListener('change', function() {
+                const provGroup = document.getElementById('modal-rec-province-group');
+                const provInput = document.getElementById('modal-rec-province');
+                const noteEl = document.getElementById('modal-rec-note');
+                if (this.checked) {
+                    if (provGroup) provGroup.style.display = 'block';
+                    if (noteEl) {
+                        noteEl.required = false;
+                        noteEl.placeholder = "Mặc định: Đi xe tăng cường...";
+                    }
+                } else {
+                    if (provGroup) provGroup.style.display = 'none';
+                    if (provInput) provInput.value = '';
+                    if (noteEl) {
+                        noteEl.required = true;
+                        noteEl.placeholder = "Lý do tăng ca, phân công công việc...";
+                    }
                 }
             });
         }

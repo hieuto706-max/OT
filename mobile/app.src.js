@@ -137,7 +137,11 @@ function isLocalNetworkUrl(urlStr) {
 // Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu chạy web local thì tự động dùng origin
 const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.8';
 let updateCheckInterval = null;
+const PROVINCES = [
+    "An Giang", "Bà Rịa – Vũng Tàu", "Bạc Liêu", "Bắc Giang", "Bắc Kạn", "Bắc Ninh", "Bến Tre", "Bình Dương", "Bình Định", "Bình Phước", "Bình Thuận", "Cà Mau", "Cần Thơ", "Cao Bằng", "Đà Nẵng", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp", "Gia Lai", "Hà Giang", "Hà Nam", "Hà Nội", "Hà Tĩnh", "Hải Dương", "Hải Phòng", "Hậu Giang", "Hòa Bình", "Hưng Yên", "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu", "Lạng Sơn", "Lào Cai", "Lâm Đồng", "Long An", "Nam Định", "Nghệ An", "Ninh Bình", "Ninh Thuận", "Phú Thọ", "Phú Yên", "Quảng Bình", "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sóc Trăng", "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang", "TP. Hồ Chí Minh", "Trà Vinh", "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
+];
 const isLocalWeb = window.location.protocol.startsWith('http') && !window.location.hostname.includes('github.io') && !window.location.hostname.includes('otmanager.id.vn');
+let currentMobileHistoryType = 'ot';
 let savedServerIp = safeStorage.getItem('ot_server_ip') || 'https://api.otmanager.id.vn';
 
 // Nếu chạy trên điện thoại (bản Web) hoặc HTTPS công cộng, lọc và bỏ qua các IP nội bộ tư nhân (như 192.168, localhost, v.v.)
@@ -926,6 +930,9 @@ function updatePreview() {
     let items = [];
     let total = 0;
 
+    const hasTrip = document.getElementById('ot-has-trip')?.checked;
+    const province = document.getElementById('ot-province')?.value.trim() || '';
+
     if (isBackfill) {
         const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
         if (hoursVal > 0) {
@@ -951,11 +958,27 @@ function updatePreview() {
         }
     }
 
+    if (hasTrip && province) {
+        items.push({ label: 'Đi xe tăng cường', val: province });
+    }
+
     rows.innerHTML = items.length === 0
         ? '<div class="preview-row"><span style="color:var(--text-muted)">Chưa chọn OT</span></div>'
         : items.map(i => `<div class="preview-row"><span>${i.label}</span><span class="preview-row-val">${i.val}</span></div>`).join('');
 
     totalEl.textContent = total.toFixed(1);
+
+    // Cập nhật tính bắt buộc của ghi chú
+    const noteEl = document.getElementById('ot-note');
+    if (noteEl) {
+        if (hasTrip && total === 0) {
+            noteEl.required = false;
+            noteEl.placeholder = "Mặc định: Đi xe tăng cường " + province;
+        } else {
+            noteEl.required = true;
+            noteEl.placeholder = "Lý do tăng ca, chi tiết công việc...";
+        }
+    }
 }
 
 function saveOfflineRecord(recordData) {
@@ -994,6 +1017,14 @@ function resetForm() {
     }
     const backfillHours = document.getElementById('ot-backfill-hours');
     if (backfillHours) backfillHours.value = '';
+
+    const otHasTrip = document.getElementById('ot-has-trip');
+    if (otHasTrip) otHasTrip.checked = false;
+    const otProvGroup = document.getElementById('ot-province-group');
+    if (otProvGroup) otProvGroup.style.display = 'none';
+    const otProvInput = document.getElementById('ot-province');
+    if (otProvInput) otProvInput.value = '';
+
     updatePreview();
 }
 
@@ -1039,12 +1070,13 @@ async function handleOTSubmit(e) {
     const backfillCheckbox = document.getElementById('ot-backfill');
     const isBackfill = backfillCheckbox ? backfillCheckbox.checked : false;
     let note = document.getElementById('ot-note').value.trim();
-    if (!note) {
-        showToast('Vui lòng nhập ghi chú (lý do tăng ca, chi tiết công việc)!', 'error');
+
+    const hasTrip = document.getElementById('ot-has-trip')?.checked;
+    const province = document.getElementById('ot-province')?.value.trim() || '';
+
+    if (hasTrip && !province) {
+        showToast('Vui lòng chọn hoặc nhập tỉnh đi xe!', 'error');
         return;
-    }
-    if (isBackfill) {
-        note = '[BÙ THÁNG TRƯỚC] ' + note;
     }
 
     let eveningOTHours = 0;
@@ -1058,14 +1090,22 @@ async function handleOTSubmit(e) {
         }
         totalHours = hoursVal;
         eveningOTHours = hoursVal;
+        note = '[BÙ THÁNG TRƯỚC] ' + note;
     } else {
         eveningOTHours = calcEveningOT(start, end);
         totalHours = (lunch ? OT_LUNCH_HOURS : 0) + eveningOTHours;
 
-        if (totalHours <= 0) {
-            showToast('Vui lòng chọn ít nhất một loại OT!', 'error');
+        if (totalHours <= 0 && !hasTrip) {
+            showToast('Vui lòng chọn ít nhất một loại OT hoặc đi xe tăng cường!', 'error');
             return;
         }
+    }
+
+    if (hasTrip && totalHours === 0 && !note) {
+        note = 'Đi xe tăng cường ' + province;
+    } else if (!note) {
+        showToast('Vui lòng nhập ghi chú (lý do tăng ca, chi tiết công việc)!', 'error');
+        return;
     }
 
     const createdMonth = isBackfill ? getCurrentMonth() : date.substring(0, 7);
@@ -1078,6 +1118,7 @@ async function handleOTSubmit(e) {
         otEnd: (!isBackfill && eveningOTHours > 0) ? end : '',
         eveningOTHours,
         totalHours,
+        deliveryProvince: hasTrip ? province : '',
         note,
         createdMonth,
         isBackfill
@@ -1163,22 +1204,29 @@ async function loadHistory() {
         // Lưu vào danh sách bộ nhớ tạm toàn cục để chỉnh sửa dễ dàng
         historyRecordsList = mergedRecords;
 
-        if (mergedRecords.length === 0) {
+        // Apply Record Type Filter
+        let historyFiltered = [];
+        if (currentMobileHistoryType === 'ot') {
+            historyFiltered = mergedRecords.filter(r => r.totalHours > 0 || r.isBackfill);
+        } else {
+            historyFiltered = mergedRecords.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '');
+        }
+
+        if (historyFiltered.length === 0) {
             list.innerHTML = `
                 <div class="empty-state">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
                         <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
                         <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                     </svg>
-                    <p>Chưa có dữ liệu tăng ca</p>
+                    <p>Chưa có dữ liệu ${currentMobileHistoryType === 'ot' ? 'tăng ca' : 'chuyến xe'}</p>
                 </div>`;
             summary.innerHTML = '';
             return;
         }
 
         let tLunch = 0, tEvening = 0, tTotal = 0;
-
-        list.innerHTML = mergedRecords.map((r, i) => {
+        mergedRecords.forEach(r => {
             const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
             const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
             tLunch += lh;
@@ -1186,10 +1234,20 @@ async function loadHistory() {
             
             const isApproved = !isBackfill || r.status === 'approved';
             tTotal += isApproved ? r.totalHours : 0;
+        });
+        const tTrips = mergedRecords.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '').length;
 
+        list.innerHTML = historyFiltered.map((r, i) => {
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            
             let tags = '';
-            if (r.hasLunchOT) tags += '<span class="htag htag-lunch">OT Trưa 1h</span>';
-            if (r.eveningOTHours > 0 && !isBackfill) tags += `<span class="htag htag-evening">OT Chiều ${r.eveningOTHours.toFixed(1)}h</span>`;
+            if (currentMobileHistoryType === 'ot') {
+                if (r.hasLunchOT) tags += '<span class="htag htag-lunch">OT Trưa 1h</span>';
+                if (r.eveningOTHours > 0 && !isBackfill) tags += `<span class="htag htag-evening">OT Chiều ${r.eveningOTHours.toFixed(1)}h</span>`;
+            } else {
+                if (r.deliveryProvince) tags += `<span class="htag" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">🚚 ${r.deliveryProvince}</span>`;
+            }
+
             let statusText = 'Đã duyệt';
             let statusStyle = 'background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3);';
             if (isBackfill) {
@@ -1236,6 +1294,10 @@ async function loadHistory() {
                 `;
             }
 
+            const rightDisplay = currentMobileHistoryType === 'ot'
+                ? `<span class="history-total">${r.totalHours.toFixed(1)}h</span>`
+                : `<span class="history-total" style="color: var(--green);">🚚 Xe</span>`;
+
             return `
                 <div class="history-item" style="animation-delay:${i * 0.04}s">
                     <div class="history-main-row">
@@ -1245,7 +1307,7 @@ async function loadHistory() {
                             ${backfillLine}
                         </div>
                         <div class="history-right">
-                            <span class="history-total">${r.totalHours.toFixed(1)}h</span>
+                            ${rightDisplay}
                             <div class="history-item-actions">
                                 ${actionHtml}
                             </div>
@@ -1259,7 +1321,8 @@ async function loadHistory() {
             <div class="summary-item"><span class="summary-label">Ngày:</span><span class="summary-val">${mergedRecords.length}</span></div>
             <div class="summary-item"><span class="summary-label">Trưa:</span><span class="summary-val">${tLunch.toFixed(1)}h</span></div>
             <div class="summary-item"><span class="summary-label">Chiều:</span><span class="summary-val">${tEvening.toFixed(1)}h</span></div>
-            <div class="summary-item"><span class="summary-label">Tổng:</span><span class="summary-val">${tTotal.toFixed(1)}h</span></div>`;
+            <div class="summary-item"><span class="summary-label">Tổng:</span><span class="summary-val">${tTotal.toFixed(1)}h</span></div>
+            <div class="summary-item"><span class="summary-label">Chuyến xe:</span><span class="summary-val">${tTrips}</span></div>`;
     } catch (err) {
         list.innerHTML = `<div class="empty-state"><p>Lỗi tải dữ liệu</p></div>`;
     }
@@ -1364,11 +1427,14 @@ async function loadProfileStats() {
             }
             return s;
         }, 0);
+        const trips = mergedRecords.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '').length;
 
         document.getElementById('stat-days').textContent = days;
         document.getElementById('stat-lunch').textContent = lunch.toFixed(1);
         document.getElementById('stat-evening').textContent = evening.toFixed(1);
         document.getElementById('stat-total').textContent = total.toFixed(1);
+        const tripsEl = document.getElementById('stat-trips');
+        if (tripsEl) tripsEl.textContent = trips;
     } catch (err) {
         // Silent fail
     }
@@ -1616,6 +1682,64 @@ function initApp() {
     }
     const otDateEl = document.getElementById('ot-date');
     if (otDateEl) otDateEl.max = new Date().toISOString().split('T')[0];
+
+    // Populate provinces-datalist
+    const provincesDatalist = document.getElementById('provinces-datalist');
+    if (provincesDatalist) {
+        provincesDatalist.innerHTML = PROVINCES.map(p => `<option value="${p}"></option>`).join('');
+    }
+
+    // Bind change/input listeners for Employee trip fields
+    const otHasTrip = document.getElementById('ot-has-trip');
+    const otProvinceGroup = document.getElementById('ot-province-group');
+    const otProvinceInput = document.getElementById('ot-province');
+    if (otHasTrip) {
+        otHasTrip.addEventListener('change', function() {
+            if (this.checked) {
+                if (otProvinceGroup) otProvinceGroup.style.display = 'block';
+                if (otProvinceInput) otProvinceInput.required = true;
+            } else {
+                if (otProvinceGroup) otProvinceGroup.style.display = 'none';
+                if (otProvinceInput) {
+                    otProvinceInput.required = false;
+                    otProvinceInput.value = '';
+                }
+            }
+            updatePreview();
+        });
+    }
+    if (otProvinceInput) {
+        otProvinceInput.addEventListener('input', updatePreview);
+        otProvinceInput.addEventListener('change', updatePreview);
+    }
+
+    // Bind change/input listeners for Edit trip fields
+    const editOtHasTrip = document.getElementById('edit-ot-has-trip');
+    const editOtProvinceGroup = document.getElementById('edit-ot-province-group');
+    const editOtProvinceInput = document.getElementById('edit-ot-province');
+    if (editOtHasTrip) {
+        editOtHasTrip.addEventListener('change', function() {
+            const noteEl = document.getElementById('edit-ot-note');
+            if (this.checked) {
+                if (editOtProvinceGroup) editOtProvinceGroup.style.display = 'block';
+                if (editOtProvinceInput) editOtProvinceInput.required = true;
+                if (noteEl) {
+                    noteEl.required = false;
+                    noteEl.placeholder = "Mặc định: Đi xe tăng cường...";
+                }
+            } else {
+                if (editOtProvinceGroup) editOtProvinceGroup.style.display = 'none';
+                if (editOtProvinceInput) {
+                    editOtProvinceInput.required = false;
+                    editOtProvinceInput.value = '';
+                }
+                if (noteEl) {
+                    noteEl.required = true;
+                    noteEl.placeholder = "Lý do...";
+                }
+            }
+        });
+    }
     
     // Hiển thị trạng thái kết nối ban đầu
     if (API && (API.indexOf('onrender.com') !== -1 || API.indexOf('otmanager.id.vn') !== -1)) {
@@ -1794,6 +1918,28 @@ function initApp() {
 
     // Month filter
     document.getElementById('filter-month').addEventListener('change', loadHistory);
+
+    // Segmented history control listeners
+    const btnMobileHistoryOt = document.getElementById('btn-mobile-history-ot');
+    const btnMobileHistoryTrips = document.getElementById('btn-mobile-history-trips');
+    if (btnMobileHistoryOt && btnMobileHistoryTrips) {
+        btnMobileHistoryOt.addEventListener('click', () => {
+            currentMobileHistoryType = 'ot';
+            btnMobileHistoryOt.style.background = 'var(--green, #0dd98b)';
+            btnMobileHistoryOt.style.color = '#020805';
+            btnMobileHistoryTrips.style.background = 'transparent';
+            btnMobileHistoryTrips.style.color = '#94a3b8';
+            loadHistory();
+        });
+        btnMobileHistoryTrips.addEventListener('click', () => {
+            currentMobileHistoryType = 'trips';
+            btnMobileHistoryTrips.style.background = 'var(--green, #0dd98b)';
+            btnMobileHistoryTrips.style.color = '#020805';
+            btnMobileHistoryOt.style.background = 'transparent';
+            btnMobileHistoryOt.style.color = '#94a3b8';
+            loadHistory();
+        });
+    }
 
     // Navigation
     document.querySelectorAll('.nav-item').forEach(btn => {
@@ -2104,7 +2250,6 @@ if ('serviceWorker' in navigator) {
 
 // ==================== EDIT DYNAMIC OVERLAY ====================
 let activeEditRecordId = null;
-
 async function editRecordDialog(id) {
     console.log('[editRecordDialog] Called with id:', id);
     console.log('[editRecordDialog] historyRecordsList length:', historyRecordsList.length);
@@ -2166,6 +2311,11 @@ async function editRecordDialog(id) {
         const elBackfillHours = document.getElementById('edit-ot-backfill-hours');
         const elNote = document.getElementById('edit-ot-note');
         const elOverlay = document.getElementById('edit-overlay');
+
+        const elHasTrip = document.getElementById('edit-ot-has-trip');
+        const elProvinceGroup = document.getElementById('edit-ot-province-group');
+        const elProvince = document.getElementById('edit-ot-province');
+
         console.log('[editRecordDialog] Step 5: Got elements:', { elDate: !!elDate, elLunch: !!elLunch, elStart: !!elStart, elEnd: !!elEnd, elOverlay: !!elOverlay });
 
         if (!elDate || !elLunch || !elStart || !elEnd || !elNote || !elOverlay) {
@@ -2199,6 +2349,22 @@ async function editRecordDialog(id) {
             if (elBackfillHours) elBackfillHours.value = '';
         }
         console.log('[editRecordDialog] Step 13: Backfill layout set');
+
+        // Handle delivery trip editing
+        if (elHasTrip) {
+            elHasTrip.checked = !!record.deliveryProvince;
+            if (record.deliveryProvince) {
+                if (elProvinceGroup) elProvinceGroup.style.display = 'block';
+                if (elProvince) elProvince.value = record.deliveryProvince;
+                elNote.required = false;
+                elNote.placeholder = "Mặc định: Đi xe tăng cường...";
+            } else {
+                if (elProvinceGroup) elProvinceGroup.style.display = 'none';
+                if (elProvince) elProvince.value = '';
+                elNote.required = true;
+                elNote.placeholder = "Lý do...";
+            }
+        }
 
         elNote.value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
         console.log('[editRecordDialog] Step 14: Note set');
@@ -2242,6 +2408,9 @@ async function handleEditOTSubmit(e) {
     const elNote = document.getElementById('edit-ot-note');
     const elOverlay = document.getElementById('edit-overlay');
 
+    const elHasTrip = document.getElementById('edit-ot-has-trip');
+    const elProvince = document.getElementById('edit-ot-province');
+
     if (!elDate || !elLunch || !elStart || !elEnd || !elNote || !elOverlay) {
         return showToast('Lỗi giao diện: Không tìm thấy các trường thông tin chỉnh sửa.', 'error');
     }
@@ -2252,6 +2421,14 @@ async function handleEditOTSubmit(e) {
     const end = elEnd.value;
     const isBackfill = elBackfill ? elBackfill.checked : false;
     let note = elNote.value.trim();
+
+    const hasTrip = elHasTrip?.checked;
+    const province = elProvince?.value.trim() || '';
+
+    if (hasTrip && !province) {
+        showToast('Vui lòng chọn hoặc nhập tỉnh đi xe!', 'error');
+        return;
+    }
 
     let closedMonths = [];
     try {

@@ -4,28 +4,28 @@ const JavaScriptObfuscator = require('javascript-obfuscator');
 
 console.log('Starting sync & obfuscation process...');
 
-// Cấu hình xáo trộn mã nguồn bảo mật cao nhưng tối ưu hiệu năng
+// Cấu hình xáo trộn mã nguồn mức độ nhẹ (giống thu gọn code - minification) để tránh bị Antivirus chặn nhầm
 const obfuscateConfig = {
     compact: true,
     controlFlowFlattening: false,
     deadCodeInjection: false,
     debugProtection: false,
     disableConsoleOutput: false,
-    identifierNamesGenerator: 'hexadecimal',
+    identifierNamesGenerator: 'mangled', // Đổi tên biến dạng ngắn (a, b, c) thay vì dạng hex (_0x1a2b) giống hệt Terser/UglifyJS
     log: false,
     numbersToExpressions: false,
     renameGlobals: false,
     selfDefending: false,
     simplify: true,
     splitStrings: false,
-    stringArray: true,
-    stringArrayCallsTransform: true,
-    stringArrayEncoding: ['base64'],
-    stringArrayIndexShift: true,
-    stringArrayRotate: true,
-    stringArrayShuffle: true,
-    stringArrayThreshold: 0.8,
-    transformObjectKeys: true,
+    stringArray: false, // Tắt mã hóa mảng chuỗi vì các phần mềm diệt virus rất nhạy cảm với chuỗi base64 ẩn
+    stringArrayCallsTransform: false,
+    stringArrayEncoding: [],
+    stringArrayIndexShift: false,
+    stringArrayRotate: false,
+    stringArrayShuffle: false,
+    stringArrayThreshold: 0,
+    transformObjectKeys: false, // Giữ nguyên thuộc tính của object để tránh méo mó cấu trúc bị hiểu lầm là mã độc
     unicodeEscapeSequence: false
 };
 
@@ -51,7 +51,7 @@ function obfuscateAndSave(srcPath, destPath) {
             return true;
         }
         
-        console.log(`Obfuscating: ${srcPath} -> ${destPath}`);
+        console.log(`Obfuscating (Light): ${srcPath} -> ${destPath}`);
         const obfuscationResult = JavaScriptObfuscator.obfuscate(code, obfuscateConfig);
         fs.writeFileSync(destPath, obfuscationResult.getObfuscatedCode(), 'utf8');
         return true;
