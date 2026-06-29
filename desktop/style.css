@@ -866,6 +866,7 @@ html.user-employee-logged-in .admin-layout {
     letter-spacing: -0.5px;
     background: linear-gradient(135deg, var(--text-primary), var(--text-secondary));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -2471,6 +2472,7 @@ html.user-admin-logged-in #screen-admin::before {
     font-size: 14.5px;
     background: linear-gradient(135deg, var(--text-white), var(--text-secondary));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: 0.5px;
 }
