@@ -129,7 +129,14 @@ async function api(endpoint, method = 'GET', body = null) {
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(`${API_BASE}${endpoint}`, opts);
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Lỗi kết nối server');
+    if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem('ot_auth_token');
+            localStorage.removeItem('ot_current_user');
+            window.location.reload();
+        }
+        throw new Error(data.error || 'Lỗi kết nối server');
+    }
     return data;
 }
 
@@ -515,7 +522,29 @@ async function checkGistStatus() {
 
 // ==================== ADMIN DASHBOARD ====================
 async function initAdminDashboard(user) {
-    document.getElementById('admin-welcome').textContent = `Xin chào, ${user.fullname}`;
+    const welcomeEl = document.getElementById('admin-welcome');
+    if (welcomeEl) welcomeEl.textContent = `Xin chào, ${user.fullname}`;
+    
+    // Update top header user profile details dynamically
+    const headerFullnameEl = document.getElementById('header-user-fullname');
+    const headerAvatarEl = document.getElementById('header-user-avatar');
+    const headerRoleEl = document.getElementById('header-user-role');
+    if (headerFullnameEl) headerFullnameEl.textContent = user.fullname;
+    if (headerAvatarEl) headerAvatarEl.textContent = user.fullname.charAt(0).toUpperCase();
+    if (headerRoleEl) headerRoleEl.textContent = user.role === 'admin' ? 'Quản lý' : 'Nhân viên';
+
+    // Setup Notification Bell Click Listener to open pending subtab
+    const bellBtn = document.getElementById('btn-notification-bell');
+    if (bellBtn) {
+        bellBtn.onclick = () => {
+            const tabBtn = document.querySelector('[data-admin-tab="records"]');
+            if (tabBtn) tabBtn.click();
+            
+            const subtabBtn = document.querySelector('[data-subtab="records-pending"]');
+            if (subtabBtn) subtabBtn.click();
+        };
+    }
+
     document.getElementById('admin-date').textContent = formatDateFull(new Date());
 
     const currentMonth = getCurrentMonth();
@@ -831,8 +860,60 @@ async function refreshAdminStats() {
     try {
         const stats = await api('/api/stats');
         document.getElementById('stat-total-users').textContent = stats.totalUsers;
-        document.getElementById('stat-pending-ot').textContent = stats.pendingOT;
-        document.getElementById('stat-pending-unlinks').textContent = stats.pendingUnlinks;
+        
+        // Update Pending OT
+        const pendingOTVal = stats.pendingOT || 0;
+        document.getElementById('stat-pending-ot').textContent = pendingOTVal;
+        const cardPendingOT = document.getElementById('stat-card-pending-ot');
+        const dotPendingOT = document.getElementById('dot-pending-ot');
+        if (cardPendingOT && dotPendingOT) {
+            if (pendingOTVal > 0) {
+                cardPendingOT.classList.add('has-pending');
+                dotPendingOT.style.display = 'inline-block';
+            } else {
+                cardPendingOT.classList.remove('has-pending');
+                dotPendingOT.style.display = 'none';
+            }
+        }
+
+        // Update Pending Unlinks
+        const pendingUnlinksVal = stats.pendingUnlinks || 0;
+        document.getElementById('stat-pending-unlinks').textContent = pendingUnlinksVal;
+        const cardPendingUnlinks = document.getElementById('stat-card-pending-unlinks');
+        const dotPendingUnlinks = document.getElementById('dot-pending-unlinks');
+        if (cardPendingUnlinks && dotPendingUnlinks) {
+            if (pendingUnlinksVal > 0) {
+                cardPendingUnlinks.classList.add('has-pending');
+                dotPendingUnlinks.style.display = 'inline-block';
+            } else {
+                cardPendingUnlinks.classList.remove('has-pending');
+                dotPendingUnlinks.style.display = 'none';
+            }
+        }
+
+        // Update sidebar unlinks badge
+        const badgePendingUnlinks = document.getElementById('badge-pending-unlinks');
+        if (badgePendingUnlinks) {
+            if (pendingUnlinksVal > 0) {
+                badgePendingUnlinks.textContent = pendingUnlinksVal;
+                badgePendingUnlinks.style.display = 'inline-block';
+            } else {
+                badgePendingUnlinks.style.display = 'none';
+            }
+        }
+
+        // Update bell badge count
+        const totalPending = pendingOTVal + pendingUnlinksVal;
+        const bellBadge = document.getElementById('bell-badge-count');
+        if (bellBadge) {
+            if (totalPending > 0) {
+                bellBadge.textContent = totalPending;
+                bellBadge.style.display = 'block';
+            } else {
+                bellBadge.style.display = 'none';
+            }
+        }
+
         document.getElementById('stat-total-ot').textContent = stats.totalOTMonth.toFixed(1);
         const tripsEl = document.getElementById('stat-total-trips');
         if (tripsEl) tripsEl.textContent = stats.totalTripsMonth || 0;
@@ -916,8 +997,7 @@ async function refreshAdminRecords() {
                     <th>Ngày</th>
                     <th>OT Trưa</th>
                     <th>OT Chiều</th>
-                    <th>Giờ bắt đầu</th>
-                    <th>Giờ kết thúc</th>
+                    <th>Khung giờ (Chiều)</th>
                     <th>Tổng OT (giờ)</th>
                     <th>Ghi chú</th>
                     <th>Trạng thái</th>
@@ -942,8 +1022,7 @@ async function refreshAdminRecords() {
                     <th>Ngày</th>
                     <th>OT Trưa</th>
                     <th>OT Chiều</th>
-                    <th>Giờ bắt đầu</th>
-                    <th>Giờ kết thúc</th>
+                    <th>Khung giờ (Chiều)</th>
                     <th>Tổng OT (giờ)</th>
                     <th>Ghi chú</th>
                     <th>Thao tác</th>
@@ -967,8 +1046,7 @@ async function refreshAdminRecords() {
                     <th>Ngày</th>
                     <th>OT Trưa</th>
                     <th>OT Chiều</th>
-                    <th>Giờ bắt đầu</th>
-                    <th>Giờ kết thúc</th>
+                    <th>Khung giờ (Chiều)</th>
                     <th>Tổng OT (giờ)</th>
                     <th>Ghi chú</th>
                     <th>Thao tác</th>
@@ -991,24 +1069,37 @@ async function refreshAdminRecords() {
 
         // Render Approved
         if (approved.length === 0) {
-            const cols = (currentAdminRecType === 'ot') ? 11 : 6;
+            const cols = (currentAdminRecType === 'ot') ? 10 : 5;
             approvedTbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Không có dữ liệu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} đã duyệt</td></tr>`;
         } else {
             approvedTbody.innerHTML = approved.map(r => {
                 const user = users.find(u => u.id === r.userId);
                 const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
                 const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+                const employeeCell = `
+                    <div class="user-profile-cell">
+                        <div class="avatar-mini">${user ? user.fullname.charAt(0).toUpperCase() : 'N'}</div>
+                        <div class="user-details">
+                            <span class="user-fullname">${user ? user.fullname : 'N/A'}</span>
+                            <span class="user-username">@${user ? user.username : 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+                const teamBadge = `<span class="tag-team">${teamName}</span>`;
+                const noteDisplay = r.note ? `<span class="text-note" title="${r.note}">${r.note}</span>` : '<span class="text-muted">—</span>';
+
                 if (currentAdminRecType === 'ot') {
+                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${r.otEnd || '—'}</span>` : '<span class="text-muted">—</span>';
+                    const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
                     return `<tr>
-                        <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
-                        <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
-                        <td>${formatDate(r.date)}</td>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
                         <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
                         <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
-                        <td>${r.otStart || '—'}</td>
-                        <td>${r.otEnd || '—'}</td>
-                        <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
-                        <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td>${timeRange}</td>
+                        <td>${totalOtBadge}</td>
+                        <td>${noteDisplay}</td>
                         <td>${isBackfill ? '<span class="tag tag-yes" style="background:rgba(16,185,129,0.1); color:#10b981;">Bù tăng ca</span>' : '<span class="tag tag-no" style="background:rgba(99,102,241,0.1); color:#6366f1;">Thường</span>'}</td>
                         <td><div class="action-buttons">
                             <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'admin')" title="Sửa" style="margin-right: 4px;">
@@ -1026,11 +1117,11 @@ async function refreshAdminRecords() {
                     </tr>`;
                 } else {
                     return `<tr>
-                        <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
-                        <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
-                        <td>${formatDate(r.date)}</td>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
                         <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
-                        <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td>${noteDisplay}</td>
                         <td><div class="action-buttons">
                             <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'admin')" title="Sửa" style="margin-right: 4px;">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -1040,7 +1131,7 @@ async function refreshAdminRecords() {
                             </button>
                             <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="Xóa">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                                 </svg>
                             </button>
                         </div></td>
@@ -1051,23 +1142,36 @@ async function refreshAdminRecords() {
 
         // Render Pending
         if (pending.length === 0) {
-            const cols = (currentAdminRecType === 'ot') ? 10 : 6;
+            const cols = (currentAdminRecType === 'ot') ? 9 : 5;
             pendingTbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Không có yêu cầu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} chờ duyệt</td></tr>`;
         } else {
             pendingTbody.innerHTML = pending.map(r => {
                 const user = users.find(u => u.id === r.userId);
                 const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
+                const employeeCell = `
+                    <div class="user-profile-cell">
+                        <div class="avatar-mini">${user ? user.fullname.charAt(0).toUpperCase() : 'N'}</div>
+                        <div class="user-details">
+                            <span class="user-fullname">${user ? user.fullname : 'N/A'}</span>
+                            <span class="user-username">@${user ? user.username : 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+                const teamBadge = `<span class="tag-team">${teamName}</span>`;
+                const noteDisplay = r.note ? `<span class="text-note" title="${r.note}">${r.note}</span>` : '<span class="text-muted">—</span>';
+
                 if (currentAdminRecType === 'ot') {
+                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${r.otEnd || '—'}</span>` : '<span class="text-muted">—</span>';
+                    const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
                     return `<tr>
-                        <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
-                        <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
-                        <td>${formatDate(r.date)}</td>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
                         <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
                         <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
-                        <td>${r.otStart || '—'}</td>
-                        <td>${r.otEnd || '—'}</td>
-                        <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
-                        <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td>${timeRange}</td>
+                        <td>${totalOtBadge}</td>
+                        <td>${noteDisplay}</td>
                         <td><div class="action-buttons">
                             <button class="btn btn-success btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
                                 ✓ Duyệt
@@ -1079,11 +1183,11 @@ async function refreshAdminRecords() {
                     </tr>`;
                 } else {
                     return `<tr>
-                        <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
-                        <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
-                        <td>${formatDate(r.date)}</td>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
                         <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
-                        <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td>${noteDisplay}</td>
                         <td><div class="action-buttons">
                             <button class="btn btn-success btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
                                 ✓ Duyệt
@@ -1099,23 +1203,36 @@ async function refreshAdminRecords() {
 
         // Render Rejected
         if (rejected.length === 0) {
-            const cols = (currentAdminRecType === 'ot') ? 10 : 6;
+            const cols = (currentAdminRecType === 'ot') ? 9 : 5;
             rejectedTbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Không có bản ghi ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} bị từ chối</td></tr>`;
         } else {
             rejectedTbody.innerHTML = rejected.map(r => {
                 const user = users.find(u => u.id === r.userId);
                 const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
+                const employeeCell = `
+                    <div class="user-profile-cell">
+                        <div class="avatar-mini">${user ? user.fullname.charAt(0).toUpperCase() : 'N'}</div>
+                        <div class="user-details">
+                            <span class="user-fullname">${user ? user.fullname : 'N/A'}</span>
+                            <span class="user-username">@${user ? user.username : 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+                const teamBadge = `<span class="tag-team">${teamName}</span>`;
+                const noteDisplay = r.note ? `<span class="text-note" title="${r.note}">${r.note}</span>` : '<span class="text-muted">—</span>';
+
                 if (currentAdminRecType === 'ot') {
+                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${r.otEnd || '—'}</span>` : '<span class="text-muted">—</span>';
+                    const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
                     return `<tr>
-                        <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
-                        <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
-                        <td>${formatDate(r.date)}</td>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
                         <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
                         <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
-                        <td>${r.otStart || '—'}</td>
-                        <td>${r.otEnd || '—'}</td>
-                        <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
-                        <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td>${timeRange}</td>
+                        <td>${totalOtBadge}</td>
+                        <td>${noteDisplay}</td>
                         <td><div class="action-buttons">
                             <button class="btn btn-primary btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt lại" style="padding: 4px 8px; font-size: 11px;">
                                 ✓ Duyệt lại
@@ -1124,11 +1241,11 @@ async function refreshAdminRecords() {
                     </tr>`;
                 } else {
                     return `<tr>
-                        <td><strong>${user ? user.fullname : 'N/A'}</strong></td>
-                        <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
-                        <td>${formatDate(r.date)}</td>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
                         <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
-                        <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                        <td>${noteDisplay}</td>
                         <td><div class="action-buttons">
                             <button class="btn btn-primary btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt lại" style="padding: 4px 8px; font-size: 11px;">
                                 ✓ Duyệt lại
@@ -2253,6 +2370,14 @@ async function handleOTSubmit(e) {
 
     if (!date) { errorEl.textContent = 'Vui lòng chọn ngày!'; return; }
 
+    const todayStr = new Date(Date.now() + 7 * 3600000).toISOString().split('T')[0];
+    const currentMonth = todayStr.substring(0, 7);
+    const selectedMonth = date.substring(0, 7);
+    if (selectedMonth < currentMonth && !isBackfill) {
+        errorEl.textContent = 'Để chọn ngày thuộc tháng cũ, vui lòng tích chọn "Bù tăng ca"!';
+        return;
+    }
+
     const hasTrip = document.getElementById('ot-has-trip')?.checked;
     const province = document.getElementById('ot-province')?.value.trim() || '';
 
@@ -3251,7 +3376,43 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Lỗi kiểm tra phiên bản:', e);
             const verEl = document.getElementById('login-version');
             if (verEl) {
-                verEl.textContent = 'Phiên bản v1.3.8';
+                verEl.textContent = 'Phiên bản v1.3.9';
+            }
+        }
+
+        // Force logout after 5 AM check
+        const token = localStorage.getItem('ot_auth_token');
+        if (token) {
+            const parts = token.split('.');
+            if (parts.length === 3) {
+                try {
+                    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+                    if (payload.iat) {
+                        const now = new Date();
+                        const vnNow = new Date(now.getTime() + 7 * 3600000);
+                        const vnToday5AM = new Date(Date.UTC(
+                            vnNow.getUTCFullYear(),
+                            vnNow.getUTCMonth(),
+                            vnNow.getUTCDate(),
+                            5, 0, 0, 0
+                        ));
+                        let today5AM = vnToday5AM.getTime() - 7 * 3600000;
+                        if (now.getTime() < today5AM) {
+                            today5AM -= 24 * 3600000;
+                        }
+                        if ((payload.iat * 1000) < today5AM) {
+                            localStorage.removeItem('ot_auth_token');
+                            localStorage.removeItem('ot_current_user');
+                            window.location.reload();
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    localStorage.removeItem('ot_auth_token');
+                    localStorage.removeItem('ot_current_user');
+                    window.location.reload();
+                    return;
+                }
             }
         }
 

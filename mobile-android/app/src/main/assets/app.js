@@ -106,12 +106,27 @@ const safeStorage = {
     _data: {}
 };
 
+function getMostRecent5AM() {
+    const now = new Date();
+    const vnNow = new Date(now.getTime() + 7 * 3600000);
+    const vnToday5AM = new Date(Date.UTC(
+        vnNow.getUTCFullYear(),
+        vnNow.getUTCMonth(),
+        vnNow.getUTCDate(),
+        5, 0, 0, 0
+    ));
+    let today5AM = vnToday5AM.getTime() - 7 * 3600000;
+    if (now.getTime() < today5AM) {
+        today5AM -= 24 * 3600000;
+    }
+    return today5AM;
+}
+
 function isSessionExpired(loginTimeMs) {
     if (!loginTimeMs) return true;
-    const loginDate = new Date(parseInt(loginTimeMs, 10));
-    // Tạo mốc 5:00 AM ngày tiếp theo
-    const cutoff = new Date(loginDate.getFullYear(), loginDate.getMonth(), loginDate.getDate() + 1, 5, 0, 0, 0);
-    return Date.now() >= cutoff.getTime();
+    const loginTime = parseInt(loginTimeMs, 10);
+    const mostRecent5AM = getMostRecent5AM();
+    return loginTime < mostRecent5AM;
 }
 
 function isLocalNetworkUrl(urlStr) {
@@ -135,7 +150,7 @@ function isLocalNetworkUrl(urlStr) {
 }
 
 // Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu chạy web local thì tự động dùng origin
-const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.8';
+const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.9';
 let updateCheckInterval = null;
 const PROVINCES = [
     "An Giang", "Bà Rịa – Vũng Tàu", "Bạc Liêu", "Bắc Giang", "Bắc Kạn", "Bắc Ninh", "Bến Tre", "Bình Dương", "Bình Định", "Bình Phước", "Bình Thuận", "Cà Mau", "Cần Thơ", "Cao Bằng", "Đà Nẵng", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp", "Gia Lai", "Hà Giang", "Hà Nam", "Hà Nội", "Hà Tĩnh", "Hải Dương", "Hải Phòng", "Hậu Giang", "Hòa Bình", "Hưng Yên", "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu", "Lạng Sơn", "Lào Cai", "Lâm Đồng", "Long An", "Nam Định", "Nghệ An", "Ninh Bình", "Ninh Thuận", "Phú Thọ", "Phú Yên", "Quảng Bình", "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sóc Trăng", "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang", "TP. Hồ Chí Minh", "Trà Vinh", "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
@@ -692,7 +707,7 @@ async function handleEmployeeLogin(e) {
 
     try {
         const oldUser = JSON.parse(safeStorage.getItem('ot_mobile_user') || 'null');
-        const data = await api('/api/auth/login', 'POST', { username, deviceId, isBrowser });
+        const data = await api('/api/auth/login', 'POST', { username, deviceId, isBrowser, clientSource: 'mobile_app' });
 
         if (data.user.role !== 'employee') {
             errEl.textContent = 'Tài khoản này không phải là nhân viên!';
@@ -1057,7 +1072,22 @@ async function handleOTSubmit(e) {
     if (!currentUser) return;
 
     const date = document.getElementById('ot-date').value;
-    
+    if (!date) {
+        showToast('Vui lòng chọn ngày!', 'error');
+        return;
+    }
+
+    const backfillCheckbox = document.getElementById('ot-backfill');
+    const isBackfill = backfillCheckbox ? backfillCheckbox.checked : false;
+
+    const todayStr = new Date(Date.now() + 7 * 3600000).toISOString().split('T')[0];
+    const currentMonth = todayStr.substring(0, 7);
+    const selectedMonth = date.substring(0, 7);
+    if (selectedMonth < currentMonth && !isBackfill) {
+        showToast('Để chọn ngày thuộc tháng cũ, vui lòng tích chọn "Bù tăng ca"!', 'error');
+        return;
+    }
+
     // Kiểm tra ghi trùng ngày
     const isDuplicate = await checkDuplicateDate(currentUser.id, date);
     if (isDuplicate) {
@@ -1067,8 +1097,6 @@ async function handleOTSubmit(e) {
     const lunch = document.getElementById('ot-lunch').checked;
     const start = document.getElementById('ot-start').value;
     const end = document.getElementById('ot-end').value;
-    const backfillCheckbox = document.getElementById('ot-backfill');
-    const isBackfill = backfillCheckbox ? backfillCheckbox.checked : false;
     let note = document.getElementById('ot-note').value.trim();
 
     const hasTrip = document.getElementById('ot-has-trip')?.checked;
@@ -2416,10 +2444,23 @@ async function handleEditOTSubmit(e) {
     }
 
     const date = elDate.value;
+    if (!date) {
+        showToast('Vui lòng chọn ngày!', 'error');
+        return;
+    }
+    const isBackfill = elBackfill ? elBackfill.checked : false;
+
+    const todayStr = new Date(Date.now() + 7 * 3600000).toISOString().split('T')[0];
+    const currentMonth = todayStr.substring(0, 7);
+    const selectedMonth = date.substring(0, 7);
+    if (selectedMonth < currentMonth && !isBackfill) {
+        showToast('Để chọn ngày thuộc tháng cũ, vui lòng tích chọn "Bù tăng ca"!', 'error');
+        return;
+    }
+
     const lunch = elLunch.checked;
     const start = elStart.value;
     const end = elEnd.value;
-    const isBackfill = elBackfill ? elBackfill.checked : false;
     let note = elNote.value.trim();
 
     const hasTrip = elHasTrip?.checked;
@@ -2554,11 +2595,7 @@ function checkMobileUpdates(isManual) {
                 try {
                     var info = JSON.parse(xhr.responseText);
                     if (info.version && compareMobileVersions(MOBILE_VERSION, info.version) < 0) {
-                        if (isMobileApp) {
-                            showMobileUpdateDialog(info.version, info.forceUpdate || false, info.changelog || '');
-                        } else {
-                            showToast('Có phiên bản mới: v' + info.version + '. Vui lòng vuốt xuống hoặc làm mới trang để cập nhật!', 'info');
-                        }
+                        showMobileUpdateDialog(info.version, info.forceUpdate || false, info.changelog || '', isMobileApp);
                     } else {
                         updateVersionDisplay();
                         if (isManual) {
@@ -2611,7 +2648,7 @@ function updateVersionDisplay() {
     }
 }
 
-function showMobileUpdateDialog(newVer, forceUpdate, changelog) {
+function showMobileUpdateDialog(newVer, forceUpdate, changelog, isMobileApp) {
     if (document.getElementById('mobile-update-overlay')) return;
 
     var changelogHtml = '';
@@ -2646,7 +2683,7 @@ function showMobileUpdateDialog(newVer, forceUpdate, changelog) {
             ? ''
             : '<button class="btn btn-ghost" id="mobile-update-later" style="padding: 10px 16px; font-size:0.85rem; border-radius:8px;">Để sau</button>') +
         '<button class="btn btn-primary" id="mobile-update-now" style="padding: 10px 20px; font-size:0.85rem; border-radius:8px; background: #10b981; flex:1;">' +
-        '⬇️ Tải về ngay' +
+        (isMobileApp ? '⬇️ Tải về ngay' : '🔄 Cập nhật ngay') +
         '</button>' +
         '</div>' +
         '</div>';
@@ -2663,7 +2700,23 @@ function showMobileUpdateDialog(newVer, forceUpdate, changelog) {
 
     document.getElementById('mobile-update-now').addEventListener('click', function () {
         overlay.remove();
-        window.location.href = API + '/OT-Manager-mobile.apk';
+        if (isMobileApp) {
+            window.location.href = API + '/OT-Manager-mobile.apk';
+        } else {
+            // WebClip / PWA: Unregister service workers and reload to clear cache and fetch new assets
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for (var i = 0; i < registrations.length; i++) {
+                        registrations[i].unregister();
+                    }
+                    window.location.reload(true);
+                }).catch(function() {
+                    window.location.reload(true);
+                });
+            } else {
+                window.location.reload(true);
+            }
+        }
     });
 }
 

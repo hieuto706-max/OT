@@ -114,6 +114,22 @@ function signJWT(payload, expiresInSeconds) {
     return `${headerB64}.${payloadB64}.${signature}`;
 }
 
+function getMostRecent5AM() {
+    const now = new Date();
+    const vnNow = new Date(now.getTime() + 7 * 3600000);
+    const vnToday5AM = new Date(Date.UTC(
+        vnNow.getUTCFullYear(),
+        vnNow.getUTCMonth(),
+        vnNow.getUTCDate(),
+        5, 0, 0, 0
+    ));
+    let today5AM = vnToday5AM.getTime() - 7 * 3600000;
+    if (now.getTime() < today5AM) {
+        today5AM -= 24 * 3600000;
+    }
+    return today5AM;
+}
+
 function verifyJWT(token) {
     try {
         const parts = token.split('.');
@@ -125,6 +141,13 @@ function verifyJWT(token) {
         if (signature !== expectedSig) return null;
         const payload = JSON.parse(base64UrlDecode(payloadB64));
         if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) return null;
+
+        // Force logout after 5 AM check
+        const mostRecent5AM = Math.floor(getMostRecent5AM() / 1000);
+        if (payload.iat && payload.iat < mostRecent5AM) {
+            return null;
+        }
+
         return payload;
     } catch (e) {
         return null;
@@ -692,14 +715,17 @@ async function handleAPI(req, res, urlPath, method) {
 
     // --- AUTH ---
     if (urlPath === '/api/auth/login' && method === 'POST') {
-        const { username, password, deviceId, isBrowser } = await parseBody(req);
+        const { username, password, deviceId, isBrowser, clientSource } = await parseBody(req);
         
         // Tìm user không phân biệt chữ hoa chữ thường
         const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
         if (!user) return sendError(res, 401, 'Sai tên đăng nhập!', req);
 
-        // Nếu là nhân viên, cho phép đăng nhập không cần mật khẩu khi thiết bị khớp, ngược lại yêu cầu nhập mật khẩu xác nhận
+        // Nếu là nhân viên, chỉ cho phép đăng nhập qua app APK hoặc app WebClip iOS (truyền clientSource = 'mobile_app')
         if (user.role === 'employee') {
+            if (isBrowser && clientSource !== 'mobile_app') {
+                return sendError(res, 403, 'Tài khoản nhân viên không được phép đăng nhập trên trình duyệt web thường. Vui lòng sử dụng ứng dụng di động (APK hoặc iOS WebClip)!', req);
+            }
             if (deviceId) {
                 const targetDeviceField = isBrowser ? 'browserDeviceId' : 'deviceId';
                 const currentBoundId = user[targetDeviceField];
@@ -957,11 +983,18 @@ async function handleAPI(req, res, urlPath, method) {
             return sendError(res, 401, 'Tài khoản của bạn đã bị xóa khỏi hệ thống!');
         }
 
+        const today = new Date(Date.now() + 7 * 3600000).toISOString().split('T')[0];
+        if (date > today) {
+            return sendError(res, 400, 'Không thể đăng ký tăng ca cho ngày tương lai!');
+        }
+
         // Check for existing record on same date
         const existingIdx = db.records.findIndex(r => r.userId === userId && r.date === date);
         const recordMonth = date.substring(0, 7);
+        const currentMonth = today.substring(0, 7);
         const isMonthClosed = db.closedMonths && db.closedMonths.includes(recordMonth);
-        const isBackfill = !!body.isBackfill || isMonthClosed;
+        const isPastMonth = recordMonth < currentMonth;
+        const isBackfill = !!body.isBackfill || isMonthClosed || isPastMonth;
 
         let resolvedRole = reqUserRole;
         if (!resolvedRole && reqUserId) {
@@ -970,14 +1003,67 @@ async function handleAPI(req, res, urlPath, method) {
         }
 
         let status = 'approved';
-        if (isBackfill) {
-            if (body.status) {
-                status = body.status;
-            } else if (existingIdx >= 0 && db.records[existingIdx].status) {
-                status = db.records[existingIdx].status;
+        if (resolvedRole === 'admin') {
+            status = body.status || 'approved';
+        } else {
+            // Nhân viên: Bắt buộc pending đối với bù giờ hoặc đi xe
+            const hasTrip = deliveryProvince && deliveryProvince.trim() !== '';
+            if (isBackfill || hasTrip) {
+                status = 'pending';
             } else {
-                status = (resolvedRole === 'admin') ? 'approved' : 'pending';
+                status = 'approved';
             }
+        }
+
+        const hasTrip = deliveryProvince && deliveryProvince.trim() !== '';
+        const hasOT = (totalHours || 0) > 0 || !!hasLunchOT || (eveningOTHours || 0) > 0;
+
+        if (resolvedRole === 'admin' && status === 'approved' && hasTrip && hasOT) {
+            // Tự động tách làm 2 bản ghi khi Admin tạo/duyệt trực tiếp
+            const otRecord = {
+                id: existingIdx >= 0 ? db.records[existingIdx].id : generateId(),
+                userId,
+                date,
+                hasLunchOT: !!hasLunchOT,
+                otStart: otStart || '',
+                otEnd: otEnd || '',
+                eveningOTHours: eveningOTHours || 0,
+                totalHours: totalHours || 0,
+                deliveryProvince: '',
+                note: note || '',
+                createdMonth: body.createdMonth || (isBackfill ? currentMonth : ''),
+                isBackfill: isBackfill,
+                status: 'approved',
+                createdAt: existingIdx >= 0 ? db.records[existingIdx].createdAt : new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            const tripRecord = {
+                id: generateId(),
+                userId,
+                date,
+                hasLunchOT: false,
+                otStart: '',
+                otEnd: '',
+                eveningOTHours: 0,
+                totalHours: 0,
+                deliveryProvince: deliveryProvince || '',
+                note: note || '',
+                createdMonth: body.createdMonth || (isBackfill ? currentMonth : ''),
+                isBackfill: isBackfill,
+                status: 'approved',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            if (existingIdx >= 0) {
+                db.records[existingIdx] = otRecord;
+            } else {
+                db.records.push(otRecord);
+            }
+            db.records.push(tripRecord);
+            saveDB(db);
+            return sendJSON(res, existingIdx >= 0 ? 200 : 201, { record: otRecord, updated: existingIdx >= 0, split: true });
         }
 
         const record = {
@@ -991,7 +1077,7 @@ async function handleAPI(req, res, urlPath, method) {
             totalHours: totalHours || 0,
             deliveryProvince: deliveryProvince || '',
             note: note || '',
-            createdMonth: body.createdMonth || '',
+            createdMonth: body.createdMonth || (isBackfill ? currentMonth : ''),
             isBackfill: isBackfill,
             status: status,
             createdAt: existingIdx >= 0 ? db.records[existingIdx].createdAt : new Date().toISOString(),
@@ -1069,6 +1155,11 @@ async function handleAPI(req, res, urlPath, method) {
             return sendError(res, 401, 'Tài khoản của bạn đã bị xóa khỏi hệ thống!');
         }
 
+        const today = new Date(Date.now() + 7 * 3600000).toISOString().split('T')[0];
+        if (date && date > today) {
+            return sendError(res, 400, 'Không thể đăng ký tăng ca cho ngày tương lai!');
+        }
+
         db.records[idx].date = date || db.records[idx].date;
         db.records[idx].hasLunchOT = hasLunchOT !== undefined ? !!hasLunchOT : db.records[idx].hasLunchOT;
         db.records[idx].otStart = otStart !== undefined ? otStart : db.records[idx].otStart;
@@ -1077,33 +1168,73 @@ async function handleAPI(req, res, urlPath, method) {
         db.records[idx].totalHours = totalHours !== undefined ? totalHours : db.records[idx].totalHours;
         db.records[idx].deliveryProvince = deliveryProvince !== undefined ? deliveryProvince : (db.records[idx].deliveryProvince || '');
         db.records[idx].note = note !== undefined ? note : db.records[idx].note;
-        if (body.createdMonth !== undefined) db.records[idx].createdMonth = body.createdMonth;
+        const currentMonth = today.substring(0, 7);
+        const currentRecDate = db.records[idx].date;
+        const currentRecMonth = currentRecDate.substring(0, 7);
+        const isMonthClosed = db.closedMonths && db.closedMonths.includes(currentRecMonth);
+        const isPastMonth = currentRecMonth < currentMonth;
+        const isBackfill = !!body.isBackfill || isMonthClosed || isPastMonth;
 
-        const currentMonth = db.records[idx].date.substring(0, 7);
-        const isMonthClosed = db.closedMonths && db.closedMonths.includes(currentMonth);
+        db.records[idx].isBackfill = isBackfill;
 
-        if (isMonthClosed) {
-            db.records[idx].isBackfill = true;
+        if (body.createdMonth !== undefined) {
+            db.records[idx].createdMonth = body.createdMonth;
+        } else if (isBackfill && !db.records[idx].createdMonth) {
+            db.records[idx].createdMonth = currentMonth;
+        }
+
+        if (resolvedRole === 'admin') {
             if (body.status !== undefined) {
                 db.records[idx].status = body.status;
-            } else if (resolvedRole !== 'admin') {
-                db.records[idx].status = 'pending';
             }
         } else {
-            if (body.isBackfill !== undefined) db.records[idx].isBackfill = !!body.isBackfill;
-            if (body.status !== undefined) {
-                db.records[idx].status = body.status;
-            } else if (db.records[idx].isBackfill) {
-                if (resolvedRole !== 'admin') {
-                    db.records[idx].status = 'pending';
-                }
+            // Nhân viên sửa bản ghi: tính toán status tự động
+            const hasTrip = db.records[idx].deliveryProvince && db.records[idx].deliveryProvince.trim() !== '';
+            if (isBackfill || hasTrip) {
+                db.records[idx].status = 'pending';
             } else {
                 db.records[idx].status = 'approved';
             }
         }
 
-        db.records[idx].updatedAt = new Date().toISOString();
+        const statusToBeApproved = (body.status === 'approved') || (db.records[idx].status === 'approved');
 
+        if (resolvedRole === 'admin' && statusToBeApproved) {
+            const hasTrip = db.records[idx].deliveryProvince && db.records[idx].deliveryProvince.trim() !== '';
+            const hasOT = (db.records[idx].totalHours || 0) > 0 || !!db.records[idx].hasLunchOT || (db.records[idx].eveningOTHours || 0) > 0;
+
+            if (hasTrip && hasOT) {
+                // Tách tự động bản ghi kết hợp thành 2 bản ghi độc lập
+                const originalProvince = db.records[idx].deliveryProvince;
+                db.records[idx].deliveryProvince = '';
+                db.records[idx].status = 'approved';
+                db.records[idx].updatedAt = new Date().toISOString();
+
+                const tripRecord = {
+                    id: generateId(),
+                    userId: db.records[idx].userId,
+                    date: db.records[idx].date,
+                    hasLunchOT: false,
+                    otStart: '',
+                    otEnd: '',
+                    eveningOTHours: 0,
+                    totalHours: 0,
+                    deliveryProvince: originalProvince,
+                    note: db.records[idx].note,
+                    createdMonth: db.records[idx].createdMonth,
+                    isBackfill: db.records[idx].isBackfill,
+                    status: 'approved',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                db.records.push(tripRecord);
+                saveDB(db);
+                return sendJSON(res, 200, { record: db.records[idx], split: true });
+            }
+        }
+
+        db.records[idx].updatedAt = new Date().toISOString();
         saveDB(db);
         return sendJSON(res, 200, { record: db.records[idx] });
     }
@@ -1127,8 +1258,14 @@ async function handleAPI(req, res, urlPath, method) {
             }
         }
 
-        const approvedRecords = db.records.filter(r => r.date.startsWith(currentMonth) && allowedUserIds.includes(r.userId) && (r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected')));
-        const pendingRecords = db.records.filter(r => r.date.startsWith(currentMonth) && allowedUserIds.includes(r.userId) && r.status === 'pending');
+        const approvedRecords = db.records.filter(r => {
+            const rMonth = r.createdMonth || r.date.substring(0, 7);
+            return rMonth === currentMonth && allowedUserIds.includes(r.userId) && (r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
+        });
+        const pendingRecords = db.records.filter(r => {
+            const rMonth = r.createdMonth || r.date.substring(0, 7);
+            return rMonth === currentMonth && allowedUserIds.includes(r.userId) && r.status === 'pending';
+        });
         const pendingUnlinksCount = employees.filter(u => u.pendingUnlink).length;
 
         return sendJSON(res, 200, {
@@ -1505,6 +1642,42 @@ const server = http.createServer(async (req, res) => {
             res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
             return res.end('Challenge not found');
         }
+    }
+
+    // Favicon handler: Serve favicon.png for /favicon.ico and /favicon.png
+    if (urlPath === '/favicon.ico' || urlPath === '/favicon.png') {
+        const faviconPath = path.join(__dirname, '..', 'favicon.png');
+        fs.readFile(faviconPath, (err, data) => {
+            if (err) {
+                res.writeHead(404);
+                return res.end();
+            }
+            res.writeHead(200, {
+                'Content-Type': 'image/png',
+                'Access-Control-Allow-Origin': '*',
+                'Cache-Control': 'public, max-age=86400'
+            });
+            return res.end(data);
+        });
+        return;
+    }
+
+    // Favicon handler: Serve favicon.svg for /favicon.svg
+    if (urlPath === '/favicon.svg') {
+        const faviconPath = path.join(__dirname, '..', 'favicon.svg');
+        fs.readFile(faviconPath, (err, data) => {
+            if (err) {
+                res.writeHead(404);
+                return res.end();
+            }
+            res.writeHead(200, {
+                'Content-Type': 'image/svg+xml',
+                'Access-Control-Allow-Origin': '*',
+                'Cache-Control': 'public, max-age=86400'
+            });
+            return res.end(data);
+        });
+        return;
     }
 
     // SSE endpoint

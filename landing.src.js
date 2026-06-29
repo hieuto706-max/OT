@@ -1414,7 +1414,7 @@ document.addEventListener('DOMContentLoaded', () => {
         desktopBtn.style.cursor = 'pointer';
         desktopBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const downloadUrl = this.getAttribute('data-url') || 'https://github.com/hieuto706-max/OT/releases/download/v1.3.8/ot-manager-Setup-1.3.8.exe';
+            const downloadUrl = this.getAttribute('data-url') || 'https://github.com/hieuto706-max/OT/releases/download/v1.3.9/ot-manager-Setup-1.3.9.exe';
             window.open(downloadUrl, '_blank');
         });
     }
@@ -1481,7 +1481,7 @@ document.addEventListener('DOMContentLoaded', () => {
             history.pushState(null, null, '#' + tabName);
             if (tabName === 'login') {
                 setTimeout(() => {
-                    const input = document.getElementById('login-user');
+                    const input = document.getElementById('login-admin-user');
                     if (input) input.focus();
                 }, 150);
             }
@@ -1598,7 +1598,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = true;
             submitBtn.textContent = 'Đang đăng nhập...';
 
-            apiCall('/api/auth/login', 'POST', { username, deviceId, isBrowser: true })
+            apiCall('/api/auth/login', 'POST', { username, deviceId, isBrowser: true, clientSource: 'web_landing' })
                 .then(data => {
                     if (data.user.role !== 'employee') {
                         throw new Error('Tài khoản này không phải là nhân viên!');
