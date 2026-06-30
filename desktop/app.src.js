@@ -1553,7 +1553,7 @@ function renderTeamBarChart(teamOTs) {
     }
     const maxVal = Math.max(...entries.map(e => e[1])) || 1;
     const width = 400;
-    const rowHeight = 32;
+    const rowHeight = 24;
     const paddingLeft = 110;
     const paddingRight = 60;
     const chartHeight = entries.length * rowHeight + 20;
@@ -1576,13 +1576,13 @@ function renderTeamBarChart(teamOTs) {
         const displayTeam = team.length > 14 ? team.substring(0, 12) + '..' : team;
         
         // Team label
-        svgHtml += `<text x="${paddingLeft - 10}" y="${y + 18}" fill="var(--text-secondary)" font-size="11" font-weight="500" text-anchor="end">${displayTeam}</text>`;
+        svgHtml += `<text x="${paddingLeft - 10}" y="${y + 15}" fill="var(--text-secondary)" font-size="11" font-weight="500" text-anchor="end">${displayTeam}</text>`;
         // Background bar track
-        svgHtml += `<rect x="${paddingLeft}" y="${y + 6}" width="${barMaxWidth}" height="14" rx="4" fill="rgba(255,255,255,0.03)" />`;
+        svgHtml += `<rect x="${paddingLeft}" y="${y + 4}" width="${barMaxWidth}" height="12" rx="4" fill="rgba(255,255,255,0.03)" />`;
         // Value bar
-        svgHtml += `<rect x="${paddingLeft}" y="${y + 6}" width="${barWidth}" height="14" rx="4" fill="url(#barGrad)" />`;
+        svgHtml += `<rect x="${paddingLeft}" y="${y + 4}" width="${barWidth}" height="12" rx="4" fill="url(#barGrad)" />`;
         // Value text
-        svgHtml += `<text x="${paddingLeft + barWidth + 8}" y="${y + 17}" fill="var(--accent-green)" font-size="11" font-weight="bold">${val.toFixed(1)}h</text>`;
+        svgHtml += `<text x="${paddingLeft + barWidth + 8}" y="${y + 14}" fill="var(--accent-green)" font-size="11" font-weight="bold">${val.toFixed(1)}h</text>`;
     });
     
     svgHtml += `</svg>`;
@@ -1594,11 +1594,11 @@ function renderTrendLineChart(dailyOTs, month) {
     const values = entries.map(e => e[1]);
     const maxVal = Math.max(...values) || 1;
     const width = 480;
-    const height = 180;
+    const height = 120;
     const paddingLeft = 30;
     const paddingRight = 15;
     const paddingTop = 15;
-    const paddingBottom = 30;
+    const paddingBottom = 22;
     
     const chartWidth = width - paddingLeft - paddingRight;
     const chartHeight = height - paddingTop - paddingBottom;
