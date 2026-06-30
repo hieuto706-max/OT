@@ -13,7 +13,7 @@
     "management",
     "ot"
   ],
-  "author": "OTManager",
+  "author": "OT Manager",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
@@ -27,9 +27,9 @@
   },
   "build": {
     "appId": "com.hieuto.otmanager",
+    "copyright": "Copyright © 2026 OT Manager",
     "icon": "resources/icon.png",
     "compression": "normal",
-    "copyright": "Copyright © 2026 OTManager",
     "publish": [
       {
         "provider": "github",
@@ -52,7 +52,7 @@
     "win": {
       "target": "nsis",
       "icon": "resources/icon.png",
-      "publisherName": "OTManager",
+      "publisherName": "OT Manager",
       "artifactName": "${name}-Setup-${version}.${ext}",
       "certificateFile": "build/certificate.pfx",
       "certificatePassword": "otmanager123",
