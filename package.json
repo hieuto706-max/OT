@@ -53,7 +53,8 @@
       "icon": "resources/icon.png",
       "artifactName": "${name}-Setup-${version}.${ext}",
       "certificateFile": "build/certificate.pfx",
-      "certificatePassword": "otmanager123"
+      "certificatePassword": "otmanager123",
+      "timeStampServer": null
     },
     "nsis": {
       "include": "build/installer.nsh"

@@ -333,48 +333,8 @@ global.startElectronUpdate = function(downloadUrl, targetVersion) {
     const http = require('http');
     const { URL } = require('url');
 
-    // Kiểm tra file tồn tại trước khi tải (HEAD request với theo dõi redirect)
-    function checkUrlExists(urlToCheck, callback, maxRedirects) {
-        if (maxRedirects === undefined) maxRedirects = 5;
-        
-        let called = false;
-        const done = (result) => {
-            if (called) return;
-            called = true;
-            callback(result);
-        };
-
-        if (maxRedirects <= 0) return done(false);
-        
-        let parsedUrl;
-        try { parsedUrl = new URL(urlToCheck); } catch (e) { return done(false); }
-        const client = parsedUrl.protocol === 'https:' ? https : http;
-
-        const req = client.request(urlToCheck, { method: 'HEAD', timeout: 10000 }, (res) => {
-            if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
-                let redirectUrl = res.headers.location;
-                if (!redirectUrl.startsWith('http')) {
-                    redirectUrl = new URL(redirectUrl, urlToCheck).href;
-                }
-                called = true;
-                return checkUrlExists(redirectUrl, callback, maxRedirects - 1);
-            }
-            done(res.statusCode === 200);
-        });
-        req.on('error', () => done(false));
-        req.on('timeout', () => { req.destroy(); done(false); });
-        req.end();
-    }
-
-    checkUrlExists(downloadUrl, (exists) => {
-        if (!exists) {
-            console.warn(`[Main Update] Không tìm thấy file cài đặt tại URL: ${downloadUrl}`);
-            return;
-        }
-
-        // File tồn tại, tiến hành tải
-        showDownloadProgress(downloadUrl, targetVersion);
-    });
+    // Tiến hành tải trực tiếp không qua check HEAD request (tránh lỗi 403 S3 signature)
+    showDownloadProgress(downloadUrl, targetVersion);
 };
 
 function showDownloadProgress(downloadUrl, targetVersion) {

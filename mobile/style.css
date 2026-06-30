@@ -560,10 +560,12 @@ body::before {
 #form-ot input[type="date"],
 #form-ot input[type="time"],
 #form-ot input[type="number"],
+#form-ot input[type="text"],
 #form-ot textarea,
 #form-edit-ot input[type="date"],
 #form-edit-ot input[type="time"],
 #form-edit-ot input[type="number"],
+#form-edit-ot input[type="text"],
 #form-edit-ot textarea {
     width: 100%;
     padding: 15px 18px;
@@ -592,7 +594,9 @@ body::before {
 }
 
 .mobile-form input::placeholder,
+#form-ot input::placeholder,
 #form-ot textarea::placeholder,
+#form-edit-ot input::placeholder,
 #form-edit-ot textarea::placeholder {
     color: var(--text-muted);
 }

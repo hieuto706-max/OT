@@ -63,6 +63,11 @@ const PROVINCES = [
 let currentAdminRecType = 'ot';
 let currentEmpRecType = 'ot';
 
+// Report Redesign global state variables
+let reportSearchQuery = '';
+let reportSortColumn = 'total'; // 'name', 'days', 'total'
+let reportSortOrder = 'desc'; // 'asc', 'desc'
+
 async function loadTeams() {
     try {
         const res = await api('/api/teams');
@@ -1539,9 +1544,212 @@ async function refreshAdminUsers() {
     } catch (e) {}
 }
 
+// SVG Chart Renderers for Report Redesign
+function renderTeamBarChart(teamOTs) {
+    const entries = Object.entries(teamOTs).sort((a, b) => b[1] - a[1]);
+    const totalHours = entries.reduce((sum, e) => sum + e[1], 0);
+    if (entries.length === 0 || totalHours === 0) {
+        return `<div class="chart-empty">Chưa có dữ liệu đội nhóm</div>`;
+    }
+    const maxVal = Math.max(...entries.map(e => e[1])) || 1;
+    const width = 400;
+    const rowHeight = 32;
+    const paddingLeft = 110;
+    const paddingRight = 60;
+    const chartHeight = entries.length * rowHeight + 20;
+    
+    let svgHtml = `<svg width="100%" height="${chartHeight}" viewBox="0 0 ${width} ${chartHeight}" style="font-family: inherit;">`;
+    
+    // Gradients definition
+    svgHtml += `
+        <defs>
+            <linearGradient id="barGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#0dd98b" stop-opacity="0.6"/>
+                <stop offset="100%" stop-color="#0dd98b" stop-opacity="0.95"/>
+            </linearGradient>
+        </defs>`;
+        
+    entries.forEach(([team, val], idx) => {
+        const y = idx * rowHeight + 10;
+        const barMaxWidth = width - paddingLeft - paddingRight;
+        const barWidth = (val / maxVal) * barMaxWidth;
+        const displayTeam = team.length > 14 ? team.substring(0, 12) + '..' : team;
+        
+        // Team label
+        svgHtml += `<text x="${paddingLeft - 10}" y="${y + 18}" fill="var(--text-secondary)" font-size="11" font-weight="500" text-anchor="end">${displayTeam}</text>`;
+        // Background bar track
+        svgHtml += `<rect x="${paddingLeft}" y="${y + 6}" width="${barMaxWidth}" height="14" rx="4" fill="rgba(255,255,255,0.03)" />`;
+        // Value bar
+        svgHtml += `<rect x="${paddingLeft}" y="${y + 6}" width="${barWidth}" height="14" rx="4" fill="url(#barGrad)" />`;
+        // Value text
+        svgHtml += `<text x="${paddingLeft + barWidth + 8}" y="${y + 17}" fill="var(--accent-green)" font-size="11" font-weight="bold">${val.toFixed(1)}h</text>`;
+    });
+    
+    svgHtml += `</svg>`;
+    return svgHtml;
+}
+
+function renderTrendLineChart(dailyOTs, month) {
+    const entries = Object.entries(dailyOTs).sort((a, b) => a[0].localeCompare(b[0]));
+    const values = entries.map(e => e[1]);
+    const maxVal = Math.max(...values) || 1;
+    const width = 480;
+    const height = 180;
+    const paddingLeft = 30;
+    const paddingRight = 15;
+    const paddingTop = 15;
+    const paddingBottom = 30;
+    
+    const chartWidth = width - paddingLeft - paddingRight;
+    const chartHeight = height - paddingTop - paddingBottom;
+    
+    const allZero = values.every(v => v === 0);
+    if (allZero) {
+        return `<div class="chart-empty">Chưa có dữ liệu xu hướng ngày</div>`;
+    }
+    
+    let points = [];
+    entries.forEach(([date, val], idx) => {
+        const x = paddingLeft + (idx / (entries.length - 1)) * chartWidth;
+        const y = paddingTop + chartHeight - (val / maxVal) * chartHeight;
+        points.push(`${x},${y}`);
+    });
+    
+    const pointsStr = points.join(' ');
+    // Area polygon points under the line chart
+    const firstPoint = points[0].split(',');
+    const lastPoint = points[points.length - 1].split(',');
+    const areaPointsStr = `${firstPoint[0]},${paddingTop + chartHeight} ${pointsStr} ${lastPoint[0]},${paddingTop + chartHeight}`;
+    
+    let svgHtml = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" style="font-family: inherit;">`;
+    
+    // Gradients definition
+    svgHtml += `
+        <defs>
+            <linearGradient id="areaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#a855f7" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#a855f7" stop-opacity="0.0"/>
+            </linearGradient>
+            <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#0dd98b"/>
+                <stop offset="50%" stop-color="#a855f7"/>
+                <stop offset="100%" stop-color="#3b82f6"/>
+            </linearGradient>
+        </defs>`;
+        
+    // Horizontal gridlines
+    for (let i = 0; i <= 4; i++) {
+        const y = paddingTop + (i / 4) * chartHeight;
+        const label = (maxVal - (i / 4) * maxVal).toFixed(1) + 'h';
+        svgHtml += `<line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="2,2" />`;
+        svgHtml += `<text x="${paddingLeft - 8}" y="${y + 4}" fill="var(--text-muted)" font-size="9" text-anchor="end">${label}</text>`;
+    }
+    
+    // Area under path
+    svgHtml += `<polygon points="${areaPointsStr}" fill="url(#areaGrad)" />`;
+    
+    // Trend line
+    svgHtml += `<polyline points="${pointsStr}" fill="none" stroke="url(#lineGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`;
+    
+    // Key days (label start, mid, end days)
+    const labelY = height - 10;
+    svgHtml += `<text x="${paddingLeft}" y="${labelY}" fill="var(--text-muted)" font-size="9" text-anchor="start">Ngày 1</text>`;
+    svgHtml += `<text x="${paddingLeft + chartWidth / 2}" y="${labelY}" fill="var(--text-muted)" font-size="9" text-anchor="middle">Ngày 15</text>`;
+    svgHtml += `<text x="${width - paddingRight}" y="${labelY}" fill="var(--text-muted)" font-size="9" text-anchor="end">Ngày ${entries.length}</text>`;
+    
+    svgHtml += `</svg>`;
+    return svgHtml;
+}
+
+// Expandable Detail Row Handler
+window.toggleReportRow = function(row, userId) {
+    const nextRow = row.nextElementSibling;
+    const isExpanded = row.classList.contains('expanded');
+    
+    // Collapse all other detail rows first to keep layout clean
+    document.querySelectorAll('.report-row.expanded').forEach(r => {
+        if (r !== row) {
+            r.classList.remove('expanded');
+            if (r.nextElementSibling && r.nextElementSibling.classList.contains('detail-row')) {
+                r.nextElementSibling.remove();
+            }
+        }
+    });
+    
+    if (isExpanded) {
+        row.classList.remove('expanded');
+        if (nextRow && nextRow.classList.contains('detail-row')) {
+            nextRow.remove();
+        }
+    } else {
+        row.classList.add('expanded');
+        const month = document.getElementById('report-filter-month').value;
+        
+        api(`/api/records?userId=${userId}&month=${month}`).then(data => {
+            const detailedRecords = data.records;
+            const detailRow = document.createElement('tr');
+            detailRow.className = 'detail-row';
+            
+            let recordsHtml = '';
+            if (detailedRecords.length === 0) {
+                recordsHtml = '<div style="padding: 12px; color: var(--text-muted); text-align: center; font-style: italic;">Không có chi tiết tăng ca cho tháng này.</div>';
+            } else {
+                recordsHtml = `
+                    <div class="report-detail-wrapper" style="padding: 16px 24px; background: rgba(0,0,0,0.18); margin: 6px 12px; border-radius: 8px;">
+                        <h5 style="margin-top: 0; margin-bottom: 12px; color: var(--accent-green); font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Chi tiết lịch sử làm thêm giờ</h5>
+                        <table class="detail-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left;">
+                                    <th style="color: var(--text-secondary); font-weight: 600;">Ngày làm việc</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">OT Trưa</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">OT Chiều/Tối (Khung giờ)</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">Tuyến đường (Xe tỉnh)</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">Trạng thái</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${detailedRecords.map(r => {
+                                    const hasLunch = r.hasLunchOT ? '1.0 tiếng' : '-';
+                                    const eveningH = r.eveningOTHours ? `${r.eveningOTHours.toFixed(1)} tiếng (${r.otStart} - ${r.otEnd})` : '-';
+                                    const province = r.deliveryProvince || '-';
+                                    const statusText = r.status === 'approved' ? '<span class="tag tag-success">Đã duyệt</span>' : (r.status === 'pending' ? '<span class="tag tag-warning">Đang chờ</span>' : '<span class="tag tag-danger">Từ chối</span>');
+                                    const isBackfillText = r.isBackfill ? '<span style="font-size: 9px; padding: 2px 5px; background: rgba(245,158,11,0.15); color: var(--accent-orange); border-radius: 4px; font-weight: 800; margin-left: 6px;">BÙ</span>' : '';
+                                    return `
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                                            <td><strong>${r.date}</strong>${isBackfillText}</td>
+                                            <td>${hasLunch}</td>
+                                            <td>${eveningH}</td>
+                                            <td><span style="color: var(--text-primary);">${province}</span></td>
+                                            <td>${statusText}</td>
+                                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${r.note || ''}">${r.note || '-'}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+            
+            const cell = document.createElement('td');
+            cell.colSpan = 8;
+            cell.innerHTML = recordsHtml;
+            detailRow.appendChild(cell);
+            
+            row.parentNode.insertBefore(detailRow, row.nextSibling);
+        }).catch(err => {
+            console.error('Error fetching details:', err);
+            showToast('Lỗi khi tải chi tiết', 'error');
+        });
+    }
+};
+
 async function refreshReport() {
     const month = document.getElementById('report-filter-month').value;
     const filterTeam = document.getElementById('report-filter-team') ? document.getElementById('report-filter-team').value : '';
+    const searchVal = document.getElementById('report-search-name') ? document.getElementById('report-search-name').value : '';
+    
     try {
         const usersData = await api('/api/users');
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
@@ -1569,31 +1777,166 @@ async function refreshReport() {
             const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
             return r.status === 'approved' || (!isBackfill && r.status !== 'pending' && r.status !== 'rejected');
         });
-        const tbody = document.getElementById('report-body');
-
-        if (users.length === 0) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Chưa có nhân viên</td></tr>';
-            return;
+        
+        // --- 1. Compute Overall Dashboard KPI Stats & Charts (prior to search filtration) ---
+        let totalOTHours = 0;
+        let activeEmployeesSet = new Set();
+        const teamOTs = {};
+        const dailyOTs = {};
+        
+        // Initialize daily trend map
+        const year = parseInt(month.substring(0, 4));
+        const monthVal = parseInt(month.substring(5, 7));
+        const daysInMonth = new Date(year, monthVal, 0).getDate();
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dayStr = `${month}-${String(d).padStart(2, '0')}`;
+            dailyOTs[dayStr] = 0;
         }
 
-        tbody.innerHTML = users.map((u, i) => {
+        users.forEach(u => {
+            const ur = records.filter(r => r.userId === u.id);
+            const lunchH = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
+            const eveningH = ur.reduce((s, r) => s + r.eveningOTHours, 0);
+            const totalH = lunchH + eveningH;
+            
+            if (totalH > 0) {
+                totalOTHours += totalH;
+                activeEmployeesSet.add(u.id);
+            }
+            
+            // Team stats
+            const teamName = u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team');
+            teamOTs[teamName] = (teamOTs[teamName] || 0) + totalH;
+        });
+        
+        // Sum daily trend
+        records.forEach(r => {
+            const belongsToMatchingUser = users.some(u => u.id === r.userId);
+            if (belongsToMatchingUser && dailyOTs[r.date] !== undefined) {
+                const lunchH = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
+                const eveningH = r.eveningOTHours || 0;
+                dailyOTs[r.date] += (lunchH + eveningH);
+            }
+        });
+        
+        // Find top team
+        let topTeam = '-';
+        let maxTeamHours = 0;
+        Object.entries(teamOTs).forEach(([team, val]) => {
+            if (val > maxTeamHours) {
+                maxTeamHours = val;
+                topTeam = `${team} (${val.toFixed(1)}h)`;
+            }
+        });
+        
+        // Update DOM KPIs
+        const activeCount = activeEmployeesSet.size;
+        const avgHours = activeCount > 0 ? (totalOTHours / activeCount) : 0;
+        
+        document.getElementById('rep-stat-total-hours').textContent = `${totalOTHours.toFixed(1)}h`;
+        document.getElementById('rep-stat-avg-hours').textContent = `${avgHours.toFixed(1)}h`;
+        document.getElementById('rep-stat-active-users').textContent = activeCount.toString();
+        const topTeamEl = document.getElementById('rep-stat-top-team');
+        topTeamEl.textContent = topTeam;
+        topTeamEl.title = topTeam;
+        
+        // Render Charts
+        document.getElementById('team-ot-chart').innerHTML = renderTeamBarChart(teamOTs);
+        document.getElementById('trend-ot-chart').innerHTML = renderTrendLineChart(dailyOTs, month);
+
+        // --- 2. Filter list by search query & Calculate Row Data ---
+        let filteredUsers = [...users];
+        if (searchVal) {
+            const query = searchVal.toLowerCase().trim();
+            filteredUsers = filteredUsers.filter(u => u.fullname.toLowerCase().includes(query) || (u.team && u.team.toLowerCase().includes(query)));
+        }
+        
+        const userReportData = filteredUsers.map(u => {
             const ur = records.filter(r => r.userId === u.id);
             const days = ur.length;
             const lunchH = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
             const eveningH = ur.reduce((s, r) => s + r.eveningOTHours, 0);
             const totalH = lunchH + eveningH;
+            return { user: u, days, lunchH, eveningH, totalH };
+        });
+        
+        // --- 3. Sorting ---
+        userReportData.sort((a, b) => {
+            let valA, valB;
+            if (reportSortColumn === 'name') {
+                valA = a.user.fullname.toLowerCase();
+                valB = b.user.fullname.toLowerCase();
+            } else if (reportSortColumn === 'days') {
+                valA = a.days;
+                valB = b.days;
+            } else { // 'total'
+                valA = a.totalH;
+                valB = b.totalH;
+            }
+            
+            if (valA < valB) return reportSortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return reportSortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        // Update Sorting Indicators
+        ['name', 'days', 'total'].forEach(col => {
+            const ind = document.getElementById(`sort-ind-${col}`);
+            if (ind) {
+                ind.className = 'sort-indicator';
+                if (reportSortColumn === col) {
+                    ind.classList.add(reportSortOrder);
+                }
+            }
+        });
+
+        // --- 4. Render Table Body ---
+        const tbody = document.getElementById('report-body');
+        if (userReportData.length === 0) {
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Không tìm thấy kết quả phù hợp</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = userReportData.map((data, i) => {
+            const { user: u, days, lunchH, eveningH, totalH } = data;
             const teamName = u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team');
-            return `<tr>
+            
+            const limitPercent = Math.min((totalH / 30) * 100, 100);
+            let progressColorClass = 'progress-bg-green';
+            if (totalH >= 15 && totalH < 25) {
+                progressColorClass = 'progress-bg-orange';
+            } else if (totalH >= 25) {
+                progressColorClass = 'progress-bg-red';
+            }
+            
+            const progressBarHtml = `
+                <div style="display:flex; flex-direction:column; align-items:center; gap: 2px;">
+                    <span style="font-size:10px; font-weight:bold; color: var(--text-secondary);">${limitPercent.toFixed(0)}% (${totalH.toFixed(1)}/30h)</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill ${progressColorClass}" style="width: ${limitPercent}%"></div>
+                    </div>
+                </div>
+            `;
+
+            return `<tr class="report-row" onclick="toggleReportRow(this, '${u.id}')">
                 <td>${i + 1}</td>
-                <td><strong>${u.fullname}</strong></td>
+                <td>
+                    <div class="employee-name-cell">
+                        <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        <strong>${u.fullname}</strong>
+                    </div>
+                </td>
                 <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
-                <td>${days}</td>
-                <td>${lunchH.toFixed(1)}</td>
-                <td>${eveningH.toFixed(1)}</td>
-                <td><span class="text-purple text-bold">${totalH.toFixed(1)}</span></td>
+                <td style="text-align: center;">${days} ngày</td>
+                <td style="text-align: center;">${lunchH.toFixed(1)}h</td>
+                <td style="text-align: center;">${eveningH.toFixed(1)}h</td>
+                <td style="text-align: center;"><span class="text-purple text-bold" style="font-size: 13px;">${totalH.toFixed(1)}h</span></td>
+                <td>${progressBarHtml}</td>
             </tr>`;
         }).join('');
-    } catch (e) {}
+    } catch (e) {
+        console.error('Lỗi khi vẽ báo cáo:', e);
+    }
 }
 
 function deleteUser(userId) {
@@ -3715,6 +4058,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (reportFilterTeam) {
         reportFilterTeam.addEventListener('change', refreshReport);
     }
+
+    const reportSearch = document.getElementById('report-search-name');
+    if (reportSearch) {
+        reportSearch.addEventListener('input', (e) => {
+            reportSearchQuery = e.target.value;
+            refreshReport();
+        });
+    }
+
+    const handleReportSort = (column) => {
+        if (reportSortColumn === column) {
+            reportSortOrder = reportSortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+            reportSortColumn = column;
+            reportSortOrder = 'desc';
+        }
+        refreshReport();
+    };
+
+    const thName = document.getElementById('th-report-name');
+    if (thName) thName.addEventListener('click', () => handleReportSort('name'));
+
+    const thDays = document.getElementById('th-report-days');
+    if (thDays) thDays.addEventListener('click', () => handleReportSort('days'));
+
+    const thTotal = document.getElementById('th-report-total');
+    if (thTotal) thTotal.addEventListener('click', () => handleReportSort('total'));
 
     // Export & Cleanup
     document.getElementById('btn-export').addEventListener('click', exportExcel);

@@ -880,11 +880,7 @@ function isStandaloneOrNative() {
 }
 
 function handleUnauthenticated() {
-    if (!isStandaloneOrNative()) {
-        window.location.replace('../');
-    } else {
-        showScreen('screen-login');
-    }
+    showScreen('screen-login');
 }
 
 function logout() {
@@ -899,12 +895,7 @@ function logout() {
     if (loginForm) loginForm.reset();
     showToast('Đã đăng xuất', 'info');
     
-    // Redirect to main website if running on standard web browser
-    if (!isStandaloneOrNative()) {
-        window.location.href = '../';
-    } else {
-        handleUnauthenticated();
-    }
+    handleUnauthenticated();
 }
 
 async function refreshCurrentUserInfo() {
