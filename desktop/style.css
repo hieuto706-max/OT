@@ -828,7 +828,6 @@ html.user-employee-logged-in .admin-layout {
     flex: 1;
     overflow: hidden;
     min-height: 0;
-    height: auto !important;
 }
 
 .admin-sidebar {
