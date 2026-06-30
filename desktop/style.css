@@ -1676,6 +1676,9 @@ html.user-employee-logged-in .admin-layout {
     border-radius: var(--radius-lg);
     width: 100%;
     max-width: 480px;
+    max-height: calc(100vh - 40px);
+    display: flex;
+    flex-direction: column;
     animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: var(--shadow-lg);
     overflow: hidden;
@@ -1720,6 +1723,8 @@ html.user-employee-logged-in .admin-layout {
     font-size: 14px;
     line-height: 1.6;
     color: var(--text-secondary);
+    overflow-y: auto;
+    flex: 1;
 }
 
 .modal-footer {
