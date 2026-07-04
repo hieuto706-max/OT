@@ -1009,7 +1009,7 @@ async function handleAPI(req, res, urlPath, method) {
         const currentMonth = today.substring(0, 7);
         const isMonthClosed = db.closedMonths && db.closedMonths.includes(recordMonth);
         const isPastMonth = recordMonth < currentMonth;
-        const isBackfill = !!body.isBackfill || isMonthClosed || isPastMonth;
+        const isBackfill = !!body.isBackfill || isMonthClosed || isPastMonth || (note && (note.includes('[BÙ THÁNG TRƯỚC]') || note.includes('[TĂNG THÁNG NÀY]')));
 
         let resolvedRole = reqUserRole;
         if (!resolvedRole && reqUserId) {
@@ -1188,7 +1188,8 @@ async function handleAPI(req, res, urlPath, method) {
         const currentRecMonth = currentRecDate.substring(0, 7);
         const isMonthClosed = db.closedMonths && db.closedMonths.includes(currentRecMonth);
         const isPastMonth = currentRecMonth < currentMonth;
-        const isBackfill = !!body.isBackfill || isMonthClosed || isPastMonth;
+        const currentNote = db.records[idx].note;
+        const isBackfill = !!body.isBackfill || isMonthClosed || isPastMonth || (currentNote && (currentNote.includes('[BÙ THÁNG TRƯỚC]') || currentNote.includes('[TĂNG THÁNG NÀY]')));
 
         db.records[idx].isBackfill = isBackfill;
 
