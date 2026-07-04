@@ -625,7 +625,14 @@ function getLocalIP() {
 function parseBody(req) {
     return new Promise((resolve, reject) => {
         let body = '';
-        req.on('data', chunk => { body += chunk; });
+        req.on('data', chunk => { 
+            body += chunk; 
+            // Limit body size to 2MB to prevent memory exhaustion DoS attacks
+            if (body.length > 2 * 1024 * 1024) {
+                req.destroy();
+                reject(new Error('Payload too large'));
+            }
+        });
         req.on('end', () => {
             try {
                 resolve(body ? JSON.parse(body) : {});
@@ -1598,7 +1605,10 @@ function serveStatic(req, res, basePath, urlPath) {
     let filePath = path.join(basePath, subFilePath);
 
     // Security: prevent directory traversal
-    if (!filePath.startsWith(basePath)) {
+    const resolvedBasePath = path.resolve(basePath);
+    const resolvedFilePath = path.resolve(filePath);
+    const safeBasePath = resolvedBasePath.endsWith(path.sep) ? resolvedBasePath : resolvedBasePath + path.sep;
+    if (!resolvedFilePath.startsWith(safeBasePath) && resolvedFilePath !== resolvedBasePath) {
         res.writeHead(403);
         return res.end('Forbidden');
     }
@@ -1620,9 +1630,31 @@ function serveStatic(req, res, basePath, urlPath) {
     });
 }
 
+// ==================== RATE LIMITER ====================
+const ipRequestCounts = new Map();
+setInterval(() => {
+    ipRequestCounts.clear();
+}, 60000);
+
+function isRateLimited(ip) {
+    const limit = 200; // max 200 requests per minute
+    const current = ipRequestCounts.get(ip) || 0;
+    if (current >= limit) {
+        return true;
+    }
+    ipRequestCounts.set(ip, current + 1);
+    return false;
+}
+
 // ==================== HTTP SERVER ====================
 const server = http.createServer(async (req, res) => {
     try {
+        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+        if (isRateLimited(ip)) {
+            res.writeHead(429, { 'Content-Type': 'text/plain; charset=utf-8' });
+            return res.end('Too Many Requests (Quá tải yêu cầu)');
+        }
+
         const method = req.method.toUpperCase();
     let urlPath;
     try {
