@@ -12,6 +12,14 @@ const os = require('os');
 const crypto = require('crypto');
 const { startTunnel, stopTunnel, updateRentry } = require('./tunnel');
 
+// ==================== GLOBAL ERROR HANDLERS ====================
+process.on('uncaughtException', (err) => {
+    console.error('⚠️ [CRITICAL] Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('⚠️ [CRITICAL] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 let updatesDir = null;
 try {
     const { app } = require('electron');
@@ -1614,7 +1622,8 @@ function serveStatic(req, res, basePath, urlPath) {
 
 // ==================== HTTP SERVER ====================
 const server = http.createServer(async (req, res) => {
-    const method = req.method.toUpperCase();
+    try {
+        const method = req.method.toUpperCase();
     let urlPath;
     try {
         urlPath = decodeURIComponent(req.url.split('?')[0]);
@@ -2096,6 +2105,13 @@ const server = http.createServer(async (req, res) => {
     // Root landing page / web app (served at root /)
     const rootPath = path.join(__dirname, '..');
     return serveStatic(req, res, rootPath, urlPath);
+    } catch (err) {
+        console.error('[Server Error] Unhandled exception during request processing:', err);
+        try {
+            res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+            res.end('Internal Server Error: ' + err.message);
+        } catch (e) {}
+    }
 });
 
 function getCloudUrl() {
