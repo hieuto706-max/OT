@@ -1615,7 +1615,14 @@ function serveStatic(req, res, basePath, urlPath) {
 // ==================== HTTP SERVER ====================
 const server = http.createServer(async (req, res) => {
     const method = req.method.toUpperCase();
-    let urlPath = decodeURIComponent(req.url.split('?')[0]);
+    let urlPath;
+    try {
+        urlPath = decodeURIComponent(req.url.split('?')[0]);
+    } catch (e) {
+        console.error(`[Malformed URL] Failed to decode URL: ${req.url}`, e);
+        res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+        return res.end('Bad Request: Malformed URI');
+    }
     // Normalize duplicate slashes (e.g. //api/records -> /api/records)
     urlPath = urlPath.replace(/\/+/g, '/');
 
