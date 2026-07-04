@@ -2911,11 +2911,11 @@ async function handleAdminOTSubmit(e) {
         let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0;
         let totalTrips = 0;
         records.forEach(r => {
-            const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
             const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
-            const isApproved = !isBackfill || r.status === 'approved';
+            const isApproved = r.status !== 'pending' && r.status !== 'rejected';
             
             if (isApproved) {
+                const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
                 totalLunchOT += lh;
                 totalEveningOT += isBackfill ? 0 : r.eveningOTHours;
                 totalHours += r.totalHours;
@@ -3032,14 +3032,12 @@ async function handleAdminOTSubmit(e) {
         tbody.innerHTML = recordsFiltered.map(r => {
             let badgeClass = 'status-approved';
             let badgeText = 'Đã duyệt';
-            if (r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')))) {
-                if (r.status === 'pending') {
-                    badgeClass = 'status-pending';
-                    badgeText = 'Chờ duyệt';
-                } else if (r.status === 'rejected') {
-                    badgeClass = 'status-rejected';
-                    badgeText = 'Từ chối';
-                }
+            if (r.status === 'pending') {
+                badgeClass = 'status-pending';
+                badgeText = 'Chờ duyệt';
+            } else if (r.status === 'rejected') {
+                badgeClass = 'status-rejected';
+                badgeText = 'Từ chối';
             }
 
             if (currentEmpRecType === 'ot') {

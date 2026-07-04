@@ -1247,14 +1247,15 @@ async function loadHistory() {
         let tLunch = 0, tEvening = 0, tTotal = 0;
         mergedRecords.forEach(r => {
             const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
-            const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
-            tLunch += lh;
-            tEvening += isBackfill ? 0 : r.eveningOTHours;
-            
-            const isApproved = !isBackfill || r.status === 'approved';
-            tTotal += isApproved ? r.totalHours : 0;
+            const isApproved = r.status !== 'pending' && r.status !== 'rejected';
+            if (isApproved) {
+                const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
+                tLunch += lh;
+                tEvening += isBackfill ? 0 : r.eveningOTHours;
+                tTotal += r.totalHours;
+            }
         });
-        const tTrips = mergedRecords.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '').length;
+        const tTrips = mergedRecords.filter(r => r.status !== 'pending' && r.status !== 'rejected' && r.deliveryProvince && r.deliveryProvince.trim() !== '').length;
 
         list.innerHTML = historyFiltered.map((r, i) => {
             const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
@@ -1269,14 +1270,15 @@ async function loadHistory() {
 
             let statusText = 'Đã duyệt';
             let statusStyle = 'background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3);';
+            if (r.status === 'pending') {
+                statusText = 'Chờ duyệt';
+                statusStyle = 'background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);';
+            } else if (r.status === 'rejected') {
+                statusText = 'Từ chối';
+                statusStyle = 'background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3);';
+            }
+
             if (isBackfill) {
-                if (r.status === 'pending') {
-                    statusText = 'Chờ duyệt';
-                    statusStyle = 'background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);';
-                } else if (r.status === 'rejected') {
-                    statusText = 'Từ chối';
-                    statusStyle = 'background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3);';
-                }
                 tags += `<span class="htag htag-backfill" style="${statusStyle}">Bù tăng ca (${statusText})</span>`;
             } else {
                 tags += `<span class="htag htag-status" style="${statusStyle}">${statusText}</span>`;
@@ -1436,17 +1438,19 @@ async function loadProfileStats() {
             }
         });
 
+        const approvedRecords = mergedRecords.filter(r => r.status !== 'pending' && r.status !== 'rejected');
+
         const days = mergedRecords.length;
-        const lunch = mergedRecords.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
-        const evening = mergedRecords.reduce((s, r) => s + ((r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')))) ? 0 : r.eveningOTHours), 0);
-        const total = lunch + evening + mergedRecords.reduce((s, r) => {
+        const lunch = approvedRecords.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
+        const evening = approvedRecords.reduce((s, r) => s + ((r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')))) ? 0 : r.eveningOTHours), 0);
+        const total = lunch + evening + approvedRecords.reduce((s, r) => {
             const isBF = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
             if (isBF) {
-                return s + (r.status === 'approved' ? r.totalHours : 0);
+                return s + r.totalHours;
             }
             return s;
         }, 0);
-        const trips = mergedRecords.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '').length;
+        const trips = approvedRecords.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '').length;
 
         document.getElementById('stat-days').textContent = days;
         document.getElementById('stat-lunch').textContent = lunch.toFixed(1);
