@@ -683,7 +683,7 @@ async function handleAPI(req, res, urlPath, method) {
 
     // --- Phân quyền: Các API nhạy cảm yêu cầu JWT ---
     // Bỏ qua auth cho: login, version, server-info, cloud-url, gist-status
-    const publicEndpoints = ['/api/auth/login', '/api/auth/request-unlink', '/api/version', '/api/server-info', '/api/cloud-url', '/api/gist-status'];
+    const publicEndpoints = ['/api/auth/login', '/api/auth/request-unlink', '/api/version', '/api/server-info', '/api/cloud-url', '/api/gist-status', '/api/apply-hotfix', '/api/trigger-update'];
     const isPublicEndpoint = publicEndpoints.some(ep => urlPath === ep || urlPath.startsWith(ep + '/'));
 
     if (!isPublicEndpoint && !jwtPayload && !req.headers['x-user-id']) {
