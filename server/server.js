@@ -683,7 +683,7 @@ async function handleAPI(req, res, urlPath, method) {
 
     // --- Phân quyền: Các API nhạy cảm yêu cầu JWT ---
     // Bỏ qua auth cho: login, version, server-info, cloud-url, gist-status
-    const publicEndpoints = ['/api/auth/login', '/api/auth/request-unlink', '/api/version', '/api/server-info', '/api/cloud-url', '/api/gist-status', '/api/apply-hotfix', '/api/trigger-update'];
+    const publicEndpoints = ['/api/auth/login', '/api/auth/request-unlink', '/api/version', '/api/server-info', '/api/cloud-url', '/api/gist-status', '/api/apply-hotfix', '/api/trigger-update', '/api/notifications/vapid-public-key'];
     const isPublicEndpoint = publicEndpoints.some(ep => urlPath === ep || urlPath.startsWith(ep + '/'));
 
     if (!isPublicEndpoint && !jwtPayload && !req.headers['x-user-id']) {
@@ -1412,6 +1412,95 @@ async function handleAPI(req, res, urlPath, method) {
         return sendJSON(res, 200, { version, buildTime, desktopDownloadUrl, mobileDownloadUrl });
     }
 
+    // --- VAPID PUBLIC KEY ---
+    if (urlPath === '/api/notifications/vapid-public-key' && method === 'GET') {
+        return sendJSON(res, 200, { publicKey: VAPID_PUBLIC_KEY });
+    }
+
+    // --- SUBSCRIBE FOR PUSH ---
+    if (urlPath === '/api/notifications/subscribe' && method === 'POST') {
+        try {
+            const body = await parseBody(req);
+            const { subscription } = body;
+            if (!subscription || !subscription.endpoint) {
+                return sendError(res, 400, 'Thiếu thông tin đăng ký subscription.', req);
+            }
+            
+            // Lấy user đăng nhập hiện tại
+            const user = db.users.find(u => u.id === reqUserId);
+            if (!user) {
+                return sendError(res, 404, 'Không tìm thấy người dùng.', req);
+            }
+            
+            if (!user.pushSubscriptions) {
+                user.pushSubscriptions = [];
+            }
+            
+            // Tránh lưu trùng lặp bằng cách kiểm tra endpoint
+            const exists = user.pushSubscriptions.some(sub => sub.endpoint === subscription.endpoint);
+            if (!exists) {
+                user.pushSubscriptions.push(subscription);
+                saveDB(db);
+                console.log(`[Web Push] Đăng ký thông báo mới thành công cho nhân viên ${user.username}`);
+            }
+            
+            return sendJSON(res, 200, { success: true }, req);
+        } catch (e) {
+            console.error('[Web Push Subscribe] Lỗi:', e.message);
+            return sendError(res, 500, 'Lỗi lưu thông tin đăng ký thông báo.', req);
+        }
+    }
+
+    // --- TEST PUSH NOTIFICATION ---
+    if (urlPath === '/api/notifications/test' && method === 'POST') {
+        try {
+            const user = db.users.find(u => u.id === reqUserId);
+            if (!user) {
+                return sendError(res, 404, 'Không tìm thấy người dùng.', req);
+            }
+            if (!user.pushSubscriptions || user.pushSubscriptions.length === 0) {
+                return sendError(res, 400, 'Thiếu thông tin đăng ký subscription hoặc thiết bị chưa được cấp quyền nhận thông báo.', req);
+            }
+            
+            const payload = JSON.stringify({
+                title: 'Kiểm tra thông báo 🔔',
+                body: 'Thông báo đẩy từ hệ thống OT Manager đã hoạt động thành công!',
+                data: { url: '/mobile/' },
+                actions: [
+                    { action: 'log', title: 'Ghi nhận ngay' },
+                    { action: 'skip', title: 'Bỏ qua' }
+                ]
+            });
+            
+            let successCount = 0;
+            const activeSubscriptions = [];
+            for (const sub of user.pushSubscriptions) {
+                try {
+                    await webpush.sendNotification(sub, payload);
+                    successCount++;
+                    activeSubscriptions.push(sub);
+                } catch (err) {
+                    if (err.statusCode === 410 || err.statusCode === 404) {
+                        console.log(`[Web Push Test] Xóa subscription hết hạn của nhân viên ${user.username}`);
+                    } else {
+                        console.error(`[Web Push Test] Lỗi gửi thông báo cho ${user.username}:`, err.message);
+                        activeSubscriptions.push(sub);
+                    }
+                }
+            }
+            
+            if (activeSubscriptions.length !== user.pushSubscriptions.length) {
+                user.pushSubscriptions = activeSubscriptions;
+                saveDB(db);
+            }
+            
+            return sendJSON(res, 200, { success: true, count: successCount }, req);
+        } catch (e) {
+            console.error('[Web Push Test] Lỗi:', e.message);
+            return sendError(res, 500, 'Lỗi kiểm tra gửi thông báo đẩy.', req);
+        }
+    }
+
     // --- SERVER INFO ---
     if (urlPath === '/api/server-info' && method === 'GET') {
         const ip = getLocalIP();
@@ -1471,6 +1560,49 @@ async function handleAPI(req, res, urlPath, method) {
         return sendJSON(res, 200, { closedMonths: closed });
     }
 
+async function notifyEmployeesMonthClosed(month) {
+    try {
+        const db = await loadDB();
+        const employees = db.users.filter(u => u.role === 'employee');
+        
+        const parts = month.split('-');
+        const displayMonth = parts.length === 2 ? `${parts[1]}/${parts[0]}` : month;
+        
+        const payload = JSON.stringify({
+            title: 'Thông báo chốt công 🔒',
+            body: `Tháng ${displayMonth} đã được chốt công và khóa ghi nhận tăng ca.`,
+            data: { url: '/mobile/' }
+        });
+        
+        for (const emp of employees) {
+            if (emp.pushSubscriptions && emp.pushSubscriptions.length > 0) {
+                const activeSubscriptions = [];
+                for (const sub of emp.pushSubscriptions) {
+                    try {
+                        await webpush.sendNotification(sub, payload);
+                        activeSubscriptions.push(sub);
+                    } catch (err) {
+                        if (err.statusCode === 410 || err.statusCode === 404) {
+                            console.log(`[Web Push Close Month] Xóa subscription hết hạn của nhân viên ${emp.username}`);
+                        } else {
+                            console.error(`[Web Push Close Month] Lỗi gửi thông báo cho ${emp.username}:`, err.message);
+                            activeSubscriptions.push(sub);
+                        }
+                    }
+                }
+                
+                if (activeSubscriptions.length !== emp.pushSubscriptions.length) {
+                    emp.pushSubscriptions = activeSubscriptions;
+                }
+            }
+        }
+        saveDB(db);
+        console.log(`[Web Push Close Month] Đã gửi thông báo chốt công tháng ${month} cho nhân viên.`);
+    } catch (e) {
+        console.error('[Web Push Close Month] Lỗi gửi thông báo:', e.message);
+    }
+}
+
     if (urlPath === '/api/records/close-month' && method === 'POST') {
         if (reqUserId) {
             const user = db.users.find(u => u.id === reqUserId);
@@ -1489,6 +1621,8 @@ async function handleAPI(req, res, urlPath, method) {
         if (!db.closedMonths.includes(month)) {
             db.closedMonths.push(month);
             saveDB(db);
+            // Gửi thông báo đẩy cho tất cả nhân viên
+            notifyEmployeesMonthClosed(month);
         }
         return sendJSON(res, 200, { success: true, closedMonths: db.closedMonths });
     }
@@ -2147,6 +2281,129 @@ const server = http.createServer(async (req, res) => {
     }
 });
 
+// ==================== WEB PUSH NOTIFICATION SYSTEM ====================
+const webpush = require('web-push');
+
+function initWebPush() {
+    try {
+        let configPath = path.join(__dirname, 'config.json');
+        if (!fs.existsSync(configPath)) {
+            configPath = path.join(__dirname, '..', 'config.json');
+        }
+        let config = {};
+        if (fs.existsSync(configPath)) {
+            config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        }
+        
+        if (!config.vapidPublicKey || !config.vapidPrivateKey) {
+            const keys = webpush.generateVAPIDKeys();
+            config.vapidPublicKey = keys.publicKey;
+            config.vapidPrivateKey = keys.privateKey;
+            fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+            console.log('[Web Push] Đã tự sinh cặp khóa VAPID mới và lưu vào config.json');
+        }
+        
+        webpush.setVapidDetails(
+            'mailto:support@otmanager.id.vn',
+            config.vapidPublicKey,
+            config.vapidPrivateKey
+        );
+        
+        return config.vapidPublicKey;
+    } catch (err) {
+        console.error('[Web Push] Lỗi khởi tạo:', err.message);
+        return null;
+    }
+}
+
+const VAPID_PUBLIC_KEY = initWebPush();
+let lastNotifiedDate = '';
+
+function startDailyReminderJob() {
+    setInterval(() => {
+        try {
+            const now = new Date();
+            // Đổi sang múi giờ Việt Nam (UTC+7)
+            const vnTime = new Date(now.getTime() + 7 * 3600000);
+            const hours = vnTime.getUTCHours();
+            const minutes = vnTime.getUTCMinutes();
+            
+            // Chỉ chạy vào lúc 22:00
+            if (hours === 22 && minutes === 0) {
+                const dateStr = vnTime.toISOString().split('T')[0]; // Định dạng YYYY-MM-DD
+                
+                // Tránh gửi lặp lại trong cùng 1 phút
+                if (lastNotifiedDate === dateStr) return;
+                lastNotifiedDate = dateStr;
+                
+                // 1. Kiểm tra ngày Chủ Nhật (getDay() === 0)
+                const dayOfWeek = vnTime.getUTCDay(); // 0: Chủ Nhật, 1: Thứ 2...
+                if (dayOfWeek === 0) {
+                    console.log('[Daily Reminder] Hôm nay là Chủ Nhật, bỏ qua nhắc nhở.');
+                    return;
+                }
+                
+                console.log(`[Daily Reminder] Đang bắt đầu quét nhắc nhở OT lúc 22:00 cho ngày ${dateStr}...`);
+                sendDailyPushReminders(dateStr);
+            }
+        } catch (e) {
+            console.error('[Daily Reminder] Lỗi chu kỳ nhắc nhở:', e.message);
+        }
+    }, 30000); // Kiểm tra mỗi 30 giây
+}
+
+async function sendDailyPushReminders(dateStr) {
+    const db = await loadDB();
+    const employees = db.users.filter(u => u.role === 'employee');
+    
+    let notifyCount = 0;
+    for (const emp of employees) {
+        // Kiểm tra xem nhân viên này đã có bản ghi nào ngày hôm nay chưa
+        const hasRecord = db.records.some(r => r.userId === emp.id && r.date === dateStr);
+        if (hasRecord) {
+            continue; // Đã note rồi -> bỏ qua
+        }
+        
+        // Chưa note -> gửi thông báo nếu có đăng ký thiết bị
+        if (emp.pushSubscriptions && emp.pushSubscriptions.length > 0) {
+            const payload = JSON.stringify({
+                title: 'Nhắc nhở OT Manager 📝',
+                body: `Hôm nay (${dateStr}) bạn chưa ghi nhận tăng ca. Hãy note giờ OT nhé!`,
+                data: { url: '/mobile/' },
+                actions: [
+                    { action: 'log', title: 'Ghi nhận ngay' },
+                    { action: 'skip', title: 'Bỏ qua' }
+                ]
+            });
+            
+            // Gửi tới tất cả thiết bị đã đăng ký của nhân viên này
+            const activeSubscriptions = [];
+            for (const sub of emp.pushSubscriptions) {
+                try {
+                    await webpush.sendNotification(sub, payload);
+                    notifyCount++;
+                    activeSubscriptions.push(sub);
+                } catch (err) {
+                    // Nếu lỗi do thiết bị không còn tồn tại hoặc hết hạn (410 Gone / 404 Not Found), xóa subscription đó
+                    if (err.statusCode === 410 || err.statusCode === 404) {
+                        console.log(`[Web Push] Xóa subscription hết hạn của nhân viên ${emp.username}`);
+                    } else {
+                        console.error(`[Web Push] Lỗi gửi thông báo cho ${emp.username}:`, err.message);
+                        activeSubscriptions.push(sub); // Giữ lại nếu lỗi mạng khác
+                    }
+                }
+            }
+            
+            // Cập nhật lại list subscription sạch
+            if (activeSubscriptions.length !== emp.pushSubscriptions.length) {
+                emp.pushSubscriptions = activeSubscriptions;
+                saveDB(db);
+            }
+        }
+    }
+    console.log(`[Daily Reminder] Hoàn thành quét nhắc nhở. Đã gửi thành công ${notifyCount} thông báo.`);
+}
+
 function getCloudUrl() {
     try {
         let configPath = path.join(__dirname, 'config.json');
@@ -2499,6 +2756,9 @@ function startServer() {
                     console.error('[SSL Auto-Renew] Lỗi chạy chu kỳ gia hạn SSL định kỳ:', err.message || err);
                 });
             }, 24 * 60 * 60 * 1000);
+
+            // Bắt đầu chạy background job nhắc nhở OT
+            startDailyReminderJob();
 
             resolve({ ip, port: PORT });
         });

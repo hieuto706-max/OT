@@ -150,7 +150,7 @@ function isLocalNetworkUrl(urlStr) {
 }
 
 // Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu chạy web local thì tự động dùng origin
-const MOBILE_VERSION = window.PACKAGED_VERSION || '1.3.9';
+const MOBILE_VERSION = window.PACKAGED_VERSION || '1.4.0';
 let updateCheckInterval = null;
 const PROVINCES = [
     "An Giang", "Bà Rịa – Vũng Tàu", "Bạc Liêu", "Bắc Giang", "Bắc Kạn", "Bắc Ninh", "Bến Tre", "Bình Dương", "Bình Định", "Bình Phước", "Bình Thuận", "Cà Mau", "Cần Thơ", "Cao Bằng", "Đà Nẵng", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp", "Gia Lai", "Hà Giang", "Hà Nam", "Hà Nội", "Hà Tĩnh", "Hải Dương", "Hải Phòng", "Hậu Giang", "Hòa Bình", "Hưng Yên", "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu", "Lạng Sơn", "Lào Cai", "Lâm Đồng", "Long An", "Nam Định", "Nghệ An", "Ninh Bình", "Ninh Thuận", "Phú Thọ", "Phú Yên", "Quảng Bình", "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sóc Trăng", "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang", "TP. Hồ Chí Minh", "Trà Vinh", "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
@@ -541,7 +541,7 @@ function timeToMinutes(t) {
 }
 
 function calcEveningOT(start, end) {
-    const s = Math.max(timeToMinutes(start), WORK_END_MIN);
+    const s = timeToMinutes(start);
     const e = timeToMinutes(end);
     if (e <= s) return 0;
     return Math.round(((e - s) / 60) * 100) / 100;
@@ -563,6 +563,9 @@ function getInitials(name) {
 
 function showToast(msg, type = 'success') {
     const c = document.getElementById('toast-container');
+    if (c) {
+        c.innerHTML = '';
+    }
     const t = document.createElement('div');
     t.className = `toast toast-${type}`;
     t.textContent = msg;
@@ -864,6 +867,7 @@ function enterApp() {
     updateConnectionStatus(true, API);
     updateSyncBanner();
     refreshCurrentUserInfo();
+    checkAndRegisterPushNotifications();
 }
 
 function getGreeting() {
@@ -928,6 +932,23 @@ async function refreshCurrentUserInfo() {
 
 // ==================== OT FORM ====================
 function updatePreview() {
+    // Kiểm tra và hiển thị cảnh báo nếu chọn ngày thuộc tháng đã khóa
+    const dateInput = document.getElementById('ot-date');
+    const warningEl = document.getElementById('closed-month-warning');
+    if (dateInput && warningEl) {
+        const selectedDate = dateInput.value;
+        if (selectedDate) {
+            const selectedMonth = selectedDate.substring(0, 7);
+            const closedMonths = JSON.parse(safeStorage.getItem('ot_cached_closed_months') || '[]');
+            if (closedMonths.includes(selectedMonth)) {
+                warningEl.style.display = 'block';
+            } else {
+                warningEl.style.display = 'none';
+            }
+        } else {
+            warningEl.style.display = 'none';
+        }
+    }
     const backfillCheckbox = document.getElementById('ot-backfill');
     const isBackfill = backfillCheckbox ? backfillCheckbox.checked : false;
     const rows = document.getElementById('preview-rows');
@@ -1704,7 +1725,11 @@ function initApp() {
         document.body.classList.add('is-web-browser');
     }
     const otDateEl = document.getElementById('ot-date');
-    if (otDateEl) otDateEl.max = new Date().toISOString().split('T')[0];
+    if (otDateEl) {
+        otDateEl.max = new Date().toISOString().split('T')[0];
+        otDateEl.addEventListener('change', updatePreview);
+        otDateEl.addEventListener('input', updatePreview);
+    }
 
     // Populate provinces-datalist
     const provincesDatalist = document.getElementById('provinces-datalist');
@@ -2745,3 +2770,72 @@ if (window.location.search.includes('mock=true')) {
 window.editRecordDialog = editRecordDialog;
 window.deleteRecord = deleteRecord;
 
+// ==================== WEB PUSH SUBSCRIPTION ====================
+async function checkAndRegisterPushNotifications() {
+    if (window.location.protocol === 'file:') {
+        // Bỏ qua nếu chạy offline dạng file:// trên Cordova
+        return;
+    }
+    
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.warn('[Push Notification] Trình duyệt không hỗ trợ Web Push.');
+        return;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        
+        // 1. Kiểm tra quyền thông báo hiện tại
+        let permission = Notification.permission;
+        if (permission === 'default') {
+            permission = await Notification.requestPermission();
+        }
+        
+        if (permission !== 'granted') {
+            console.warn('[Push Notification] Quyền thông báo bị từ chối.');
+            return;
+        }
+        
+        // 2. Lấy Public Key từ Server
+        const res = await api('/api/notifications/vapid-public-key');
+        if (!res || !res.publicKey) {
+            console.error('[Push Notification] Không lấy được VAPID public key từ server.');
+            return;
+        }
+        
+        const subscribeOptions = {
+            userVisibleOnly: true,
+            applicationServerKey: urlB64ToUint8Array(res.publicKey)
+        };
+        
+        // 3. Đăng ký thông báo với trình duyệt
+        let subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+            await subscription.unsubscribe();
+        }
+        
+        subscription = await registration.pushManager.subscribe(subscribeOptions);
+        console.log('[Push Notification] Đăng ký Subscription thành công:', subscription);
+        
+        // 4. Gửi subscription lên Server để lưu lại
+        await api('/api/notifications/subscribe', 'POST', { subscription });
+        console.log('[Push Notification] Gửi Subscription lên Server thành công.');
+    } catch (err) {
+        console.error('[Push Notification] Lỗi đăng ký:', err);
+    }
+}
+
+function urlB64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}

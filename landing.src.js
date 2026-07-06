@@ -326,18 +326,20 @@ function getRedirectPrefix() {
 
 // Simple toast notification helper
 function showToast(msg, type = 'success') {
-    const c = document.getElementById('toast-container');
+    let c = document.getElementById('toast-container');
     if (!c) {
         // Create if not exist
-        const div = document.createElement('div');
-        div.id = 'toast-container';
-        div.className = 'toast-container';
-        document.body.appendChild(div);
+        c = document.createElement('div');
+        c.id = 'toast-container';
+        c.className = 'toast-container';
+        document.body.appendChild(c);
+    } else {
+        c.innerHTML = '';
     }
     const t = document.createElement('div');
     t.className = `toast toast-${type}`;
     t.textContent = msg;
-    document.getElementById('toast-container').appendChild(t);
+    c.appendChild(t);
     setTimeout(() => {
         t.style.opacity = '0';
         t.style.transform = 'translateY(-20px)';
@@ -1414,7 +1416,7 @@ document.addEventListener('DOMContentLoaded', () => {
         desktopBtn.style.cursor = 'pointer';
         desktopBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const downloadUrl = this.getAttribute('data-url') || 'https://github.com/hieuto706-max/OT/releases/download/v1.3.9/ot-manager-Setup-1.3.9.exe';
+            const downloadUrl = this.getAttribute('data-url') || 'https://github.com/hieuto706-max/OT/releases/download/v1.4.0/ot-manager-Setup-1.4.0.exe';
             window.open(downloadUrl, '_blank');
         });
     }

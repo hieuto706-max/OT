@@ -94,6 +94,7 @@ syncFile('mobile/index.html', 'index.html');
 syncFile('mobile/style.css', 'style.css');
 syncFile('mobile/manifest.json', 'manifest.json');
 syncFile('mobile/icon-192.png', 'icon-192.png');
+syncFile('mobile/sw.js', 'sw.js');
 
 // Đồng bộ thư mục resources nếu có
 const resourcesSrc = 'mobile/resources';

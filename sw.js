@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ot-manager-v14';
+const CACHE_NAME = 'ot-manager-v16';
 const ASSETS = [
     './',
     'index.html',
@@ -55,6 +55,52 @@ self.addEventListener('fetch', event => {
 
             // Return cached response instantly if available, otherwise wait for network
             return cachedResponse || fetchPromise;
+        })
+    );
+});
+
+// ==================== WEB PUSH EVENT LISTENERS ====================
+self.addEventListener('push', event => {
+    let data = { title: 'OT Manager', body: 'Hãy ghi nhận giờ OT hôm nay nhé!' };
+    if (event.data) {
+        try {
+            data = event.data.json();
+        } catch (e) {
+            data = { title: 'OT Manager', body: event.data.text() };
+        }
+    }
+
+    const options = {
+        body: data.body,
+        icon: './mobile/favicon.png',
+        badge: './mobile/favicon.png',
+        data: data.data || {},
+        actions: data.actions || []
+    };
+
+    event.waitUntil(
+        self.registration.showNotification(data.title, options)
+    );
+});
+
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+    
+    if (event.action === 'skip') {
+        console.log('[Service Worker] Đã bấm bỏ qua thông báo.');
+        return;
+    }
+    
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+            for (const client of clientList) {
+                if (client.url.indexOf('/mobile/') !== -1 && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow('./mobile/');
+            }
         })
     );
 });

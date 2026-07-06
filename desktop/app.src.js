@@ -329,6 +329,9 @@ async function isPrivateMode() {
 
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
+    if (container) {
+        container.innerHTML = '';
+    }
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     const icons = { success: '✓', error: '✕', info: 'ℹ' };
@@ -363,10 +366,8 @@ function closeModal() {
 function calculateEveningOT(startTime, endTime) {
     const startMin = timeToMinutes(startTime);
     const endMin = timeToMinutes(endTime);
-    const workEndMin = timeToMinutes(WORK_END);
-    const effectiveStart = Math.max(startMin, workEndMin);
-    if (endMin <= effectiveStart) return 0;
-    return Math.round(((endMin - effectiveStart) / 60) * 100) / 100;
+    if (endMin <= startMin) return 0;
+    return Math.round(((endMin - startMin) / 60) * 100) / 100;
 }
 
 // ==================== SCREEN MANAGEMENT ====================
@@ -1840,9 +1841,7 @@ async function refreshReport() {
         topTeamEl.textContent = topTeam;
         topTeamEl.title = topTeam;
         
-        // Render Charts
-        document.getElementById('team-ot-chart').innerHTML = renderTeamBarChart(teamOTs);
-        document.getElementById('trend-ot-chart').innerHTML = renderTrendLineChart(dailyOTs, month);
+
 
         // --- 2. Filter list by search query & Calculate Row Data ---
         let filteredUsers = [...users];
@@ -1893,30 +1892,13 @@ async function refreshReport() {
         // --- 4. Render Table Body ---
         const tbody = document.getElementById('report-body');
         if (userReportData.length === 0) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Không tìm thấy kết quả phù hợp</td></tr>';
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Không tìm thấy kết quả phù hợp</td></tr>';
             return;
         }
 
         tbody.innerHTML = userReportData.map((data, i) => {
             const { user: u, days, lunchH, eveningH, totalH } = data;
             const teamName = u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team');
-            
-            const limitPercent = Math.min((totalH / 30) * 100, 100);
-            let progressColorClass = 'progress-bg-green';
-            if (totalH >= 15 && totalH < 25) {
-                progressColorClass = 'progress-bg-orange';
-            } else if (totalH >= 25) {
-                progressColorClass = 'progress-bg-red';
-            }
-            
-            const progressBarHtml = `
-                <div style="display:flex; flex-direction:column; align-items:center; gap: 2px;">
-                    <span style="font-size:10px; font-weight:bold; color: var(--text-secondary);">${limitPercent.toFixed(0)}% (${totalH.toFixed(1)}/30h)</span>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill ${progressColorClass}" style="width: ${limitPercent}%"></div>
-                    </div>
-                </div>
-            `;
 
             return `<tr class="report-row" onclick="toggleReportRow(this, '${u.id}')">
                 <td>${i + 1}</td>
@@ -1931,7 +1913,6 @@ async function refreshReport() {
                 <td style="text-align: center;">${lunchH.toFixed(1)}h</td>
                 <td style="text-align: center;">${eveningH.toFixed(1)}h</td>
                 <td style="text-align: center;"><span class="text-purple text-bold" style="font-size: 13px;">${totalH.toFixed(1)}h</span></td>
-                <td>${progressBarHtml}</td>
             </tr>`;
         }).join('');
     } catch (e) {
@@ -1996,6 +1977,8 @@ async function rejectRecord(recordId) {
 
 async function exportExcel() {
     const month = document.getElementById('report-filter-month').value;
+    const parts = month.split('-');
+    const displayMonth = parts.length === 2 ? `${parts[1]}-${parts[0]}` : month;
     const filterTeam = document.getElementById('report-filter-team') ? document.getElementById('report-filter-team').value : '';
     try {
         const usersData = await api('/api/users');
@@ -2007,7 +1990,7 @@ async function exportExcel() {
         if (isAdmin) {
             // Filter by selected team
             if (filterTeam) {
-                users = users.filter(u => {
+users = users.filter(u => {
                     const userTeam = u.team || '';
                     if (filterTeam === 'unassigned') {
                         return userTeam === '' || userTeam === 'unassigned';
@@ -2042,19 +2025,19 @@ async function exportExcel() {
         });
 
         // 1. Tiêu đề chính
-        wsSummary.mergeCells('A1:I1');
+        wsSummary.mergeCells('A1:G1');
         const title1 = wsSummary.getCell('A1');
-        title1.value = `BÁO CÁO TĂNG CA - THÁNG ${month}`;
-        title1.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+        title1.value = `BÁO CÁO TĂNG CA - THÁNG ${displayMonth}`;
+        title1.font = { name: 'Times New Roman', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
         title1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } }; // Navy Blue đậm
         title1.alignment = { vertical: 'middle', horizontal: 'center' };
         wsSummary.getRow(1).height = 40;
 
         // 2. Ngày xuất báo cáo
-        wsSummary.mergeCells('A2:I2');
+        wsSummary.mergeCells('A2:G2');
         const subtitle1 = wsSummary.getCell('A2');
         subtitle1.value = `Ngày xuất báo cáo: ${exportTime}`;
-        subtitle1.font = { name: 'Segoe UI', size: 10, italic: true, color: { argb: 'FF4B5563' } };
+        subtitle1.font = { name: 'Times New Roman', size: 10, italic: true, color: { argb: 'FF4B5563' } };
         subtitle1.alignment = { vertical: 'middle', horizontal: 'center' };
         wsSummary.getRow(2).height = 20;
 
@@ -2063,16 +2046,16 @@ async function exportExcel() {
 
         // 4. Tiêu đề bảng
         wsSummary.getCell('A4').value = "I. BẢNG TỔNG HỢP GIỜ TĂNG CA & CHUYẾN ĐI XE";
-        wsSummary.getCell('A4').font = { name: 'Segoe UI', size: 12, bold: true, color: { argb: 'FF1F2937' } };
+        wsSummary.getCell('A4').font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF1F2937' } };
         wsSummary.getRow(4).height = 22;
 
         // 5. Headers
-        const headers1 = ["STT", "Họ và tên", "Nhóm", "Mã nhân viên", "Số ngày OT", "OT Trưa (giờ)", "OT Chiều (giờ)", "Tổng OT (giờ)", "Tổng chuyến xe"];
+        const headers1 = ["STT", "Họ và tên", "Team", "Mã nhân viên", "Số ngày OT", "Tổng OT (giờ)", "Tổng chuyến xe"];
         wsSummary.getRow(5).values = headers1;
         wsSummary.getRow(5).height = 28;
-        wsSummary.getRow(5).font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        wsSummary.getRow(5).font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
         
-        for (let col = 1; col <= 9; col++) {
+        for (let col = 1; col <= 7; col++) {
             const cell = wsSummary.getCell(5, col);
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B6CB0' } }; // Medium Navy/Blue
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -2101,15 +2084,13 @@ async function exportExcel() {
                 u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team'),
                 u.username,
                 days,
-                lh,
-                eh,
                 lh + eh,
                 trips
             ];
             row.height = 22;
-            row.font = { name: 'Segoe UI', size: 10 };
+            row.font = { name: 'Times New Roman', size: 10 };
 
-            for (let col = 1; col <= 9; col++) {
+            for (let col = 1; col <= 7; col++) {
                 const cell = row.getCell(col);
                 cell.border = {
                     top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
@@ -2118,54 +2099,20 @@ async function exportExcel() {
                     right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
                 };
 
-                if (col === 2 || col === 3) {
-                    cell.alignment = { vertical: 'middle', horizontal: 'left' };
-                } else {
-                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
-                }
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
 
-                if (col === 1 || col === 5 || col === 9) {
+                if (col === 1 || col === 5 || col === 7) {
                     cell.numFmt = '0';
-                } else if (col >= 6) {
+                } else if (col === 6) {
                     cell.numFmt = '#,##0.0';
                 }
             }
         });
 
         // Thiết lập bộ lọc tự động cho Summary Sheet
-        wsSummary.autoFilter = 'A5:I' + (summaryStartRow + users.length - 1);
+        wsSummary.autoFilter = 'A5:G' + (summaryStartRow + users.length - 1);
 
-        // 7. Dòng Tổng cộng
-        const totalRow1Num = summaryStartRow + users.length;
-        wsSummary.mergeCells(`A${totalRow1Num}:D${totalRow1Num}`);
-        wsSummary.getCell(`A${totalRow1Num}`).value = "Tổng cộng";
-        
-        wsSummary.getCell(`E${totalRow1Num}`).value = { formula: `SUM(E6:E${totalRow1Num - 1})` };
-        wsSummary.getCell(`F${totalRow1Num}`).value = { formula: `SUM(F6:F${totalRow1Num - 1})` };
-        wsSummary.getCell(`G${totalRow1Num}`).value = { formula: `SUM(G6:G${totalRow1Num - 1})` };
-        wsSummary.getCell(`H${totalRow1Num}`).value = { formula: `SUM(H6:H${totalRow1Num - 1})` };
-        wsSummary.getCell(`I${totalRow1Num}`).value = { formula: `SUM(I6:I${totalRow1Num - 1})` };
 
-        const rowTotal1 = wsSummary.getRow(totalRow1Num);
-        rowTotal1.height = 26;
-        rowTotal1.font = { name: 'Segoe UI', size: 10, bold: true };
-        
-        for (let col = 1; col <= 9; col++) {
-            const cell = rowTotal1.getCell(col);
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEBF8FF' } }; // Soft Blue
-            cell.border = {
-                top: { style: 'thin', color: { argb: 'FF9CA3AF' } },
-                left: { style: 'thin', color: { argb: 'FF9CA3AF' } },
-                bottom: { style: 'double', color: { argb: 'FF9CA3AF' } },
-                right: { style: 'thin', color: { argb: 'FF9CA3AF' } }
-            };
-            if (col >= 5) {
-                cell.alignment = { vertical: 'middle', horizontal: 'center' };
-                cell.numFmt = (col === 5 || col === 9) ? '0' : '#,##0.0';
-            } else if (col === 1) {
-                cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-            }
-        }
 
         // Độ rộng cột
         wsSummary.columns = [
@@ -2174,8 +2121,6 @@ async function exportExcel() {
             { width: 18 },  // Nhóm
             { width: 16 },  // Mã nhân viên
             { width: 14 },  // Số ngày OT
-            { width: 18 },  // OT Trưa
-            { width: 18 },  // OT Chiều
             { width: 18 },  // Tổng OT
             { width: 18 }   // Tổng chuyến xe
         ];
@@ -2186,19 +2131,19 @@ async function exportExcel() {
         });
 
         // 1. Tiêu đề chính
-        wsDetail.mergeCells('A1:L1');
+        wsDetail.mergeCells('A1:I1');
         const title2 = wsDetail.getCell('A1');
-        title2.value = `CHI TIẾT TĂNG CA - THÁNG ${month}`;
-        title2.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+        title2.value = `CHI TIẾT TĂNG CA - THÁNG ${displayMonth}`;
+        title2.font = { name: 'Times New Roman', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
         title2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } }; // Navy Blue đậm
         title2.alignment = { vertical: 'middle', horizontal: 'center' };
         wsDetail.getRow(1).height = 40;
 
         // 2. Ngày xuất báo cáo
-        wsDetail.mergeCells('A2:L2');
+        wsDetail.mergeCells('A2:I2');
         const subtitle2 = wsDetail.getCell('A2');
         subtitle2.value = `Ngày xuất báo cáo: ${exportTime}`;
-        subtitle2.font = { name: 'Segoe UI', size: 10, italic: true, color: { argb: 'FF4B5563' } };
+        subtitle2.font = { name: 'Times New Roman', size: 10, italic: true, color: { argb: 'FF4B5563' } };
         subtitle2.alignment = { vertical: 'middle', horizontal: 'center' };
         wsDetail.getRow(2).height = 20;
 
@@ -2207,16 +2152,16 @@ async function exportExcel() {
 
         // 4. Tiêu đề bảng
         wsDetail.getCell('A4').value = "II. BẢNG CHI TIẾT TĂNG CA TỪNG NGÀY";
-        wsDetail.getCell('A4').font = { name: 'Segoe UI', size: 12, bold: true, color: { argb: 'FF1F2937' } };
+        wsDetail.getCell('A4').font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF1F2937' } };
         wsDetail.getRow(4).height = 22;
 
         // 5. Headers
-        const headers2 = ["STT", "Ngày", "Họ và tên", "Nhóm", "Mã nhân viên", "OT Trưa", "OT Chiều", "Giờ bắt đầu", "Giờ kết thúc", "Tổng OT (giờ)", "Đi xe (Tỉnh)", "Ghi chú"];
+        const headers2 = ["STT", "Ngày", "Họ và tên", "Team", "Mã nhân viên", "Thời gian OT", "Tổng OT (giờ)", "Đi xe (Tỉnh)", "Ghi chú"];
         wsDetail.getRow(5).values = headers2;
         wsDetail.getRow(5).height = 28;
-        wsDetail.getRow(5).font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        wsDetail.getRow(5).font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
         
-        for (let col = 1; col <= 12; col++) {
+        for (let col = 1; col <= 9; col++) {
             const cell = wsDetail.getCell(5, col);
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B6CB0' } }; // Medium Navy/Blue
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -2242,7 +2187,7 @@ async function exportExcel() {
             if (!isFirstUser) {
                 wsDetail.addRow([]);
                 wsDetail.getRow(currentDetailRow).height = 14;
-                for (let col = 1; col <= 12; col++) {
+                for (let col = 1; col <= 9; col++) {
                     const cell = wsDetail.getCell(currentDetailRow, col);
                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } }; // Slate 100
                     cell.border = {
@@ -2257,8 +2202,14 @@ async function exportExcel() {
             isFirstUser = false;
 
             userRecords.forEach(r => {
-                const lunchVal = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
-                const eveningVal = r.eveningOTHours > 0 ? r.eveningOTHours : 0;
+                let timeRange = '—';
+                if (r.hasLunchOT && r.eveningOTHours > 0) {
+                    timeRange = `12:20-13:20, ${r.otStart}-${r.otEnd}`;
+                } else if (r.hasLunchOT) {
+                    timeRange = '12:20-13:20';
+                } else if (r.eveningOTHours > 0) {
+                    timeRange = `${r.otStart}-${r.otEnd}`;
+                }
 
                 const row = wsDetail.getRow(currentDetailRow);
                 row.values = [
@@ -2267,18 +2218,15 @@ async function exportExcel() {
                     u.fullname,
                     u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team'),
                     u.username,
-                    lunchVal,
-                    eveningVal,
-                    r.otStart || '—',
-                    r.otEnd || '—',
+                    timeRange,
                     r.totalHours,
                     r.deliveryProvince || '—',
                     r.note || '—'
                 ];
                 row.height = 22;
-                row.font = { name: 'Segoe UI', size: 10 };
+                row.font = { name: 'Times New Roman', size: 10 };
 
-                for (let col = 1; col <= 12; col++) {
+                for (let col = 1; col <= 9; col++) {
                     const cell = row.getCell(col);
                     cell.border = {
                         top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
@@ -2287,15 +2235,11 @@ async function exportExcel() {
                         right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
                     };
 
-                    if (col === 3 || col === 4 || col === 12) {
-                        cell.alignment = { vertical: 'middle', horizontal: 'left' };
-                    } else {
-                        cell.alignment = { vertical: 'middle', horizontal: 'center' };
-                    }
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
 
                     if (col === 1) {
                         cell.numFmt = '0';
-                    } else if (col === 6 || col === 7 || col === 10) {
+                    } else if (col === 7) {
                         cell.numFmt = '#,##0.0';
                     }
                 }
@@ -2306,42 +2250,9 @@ async function exportExcel() {
         // 7. Tổng cộng chi tiết
         if (detailedIdx > 1) {
             // Áp dụng bộ lọc cho toàn bộ vùng dữ liệu chi tiết (từ dòng 5 đến dòng cuối cùng trước dòng tổng cộng)
-            wsDetail.autoFilter = 'A5:L' + (currentDetailRow - 1);
-
-            const totalRow2Num = currentDetailRow;
-            wsDetail.mergeCells(`A${totalRow2Num}:E${totalRow2Num}`);
-            wsDetail.getCell(`A${totalRow2Num}`).value = "Tổng cộng";
-            
-            wsDetail.getCell(`F${totalRow2Num}`).value = { formula: `SUM(F6:F${totalRow2Num - 1})` };
-            wsDetail.getCell(`G${totalRow2Num}`).value = { formula: `SUM(G6:G${totalRow2Num - 1})` };
-            wsDetail.getCell(`J${totalRow2Num}`).value = { formula: `SUM(J6:J${totalRow2Num - 1})` };
-            wsDetail.getCell(`K${totalRow2Num}`).value = { formula: `COUNTA(K6:K${totalRow2Num - 1}) - COUNTIF(K6:K${totalRow2Num - 1}, "—")` };
-
-            const rowTotal2 = wsDetail.getRow(totalRow2Num);
-            rowTotal2.height = 26;
-            rowTotal2.font = { name: 'Segoe UI', size: 10, bold: true };
-            
-            for (let col = 1; col <= 12; col++) {
-                const cell = rowTotal2.getCell(col);
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEBF8FF' } }; // Soft Blue
-                cell.border = {
-                    top: { style: 'thin', color: { argb: 'FF9CA3AF' } },
-                    left: { style: 'thin', color: { argb: 'FF9CA3AF' } },
-                    bottom: { style: 'double', color: { argb: 'FF9CA3AF' } },
-                    right: { style: 'thin', color: { argb: 'FF9CA3AF' } }
-                };
-                if (col === 6 || col === 7 || col === 10) {
-                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
-                    cell.numFmt = '#,##0.0';
-                } else if (col === 11) {
-                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
-                    cell.numFmt = '0';
-                } else if (col === 1) {
-                    cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
-                }
-            }
+            wsDetail.autoFilter = 'A5:I' + (currentDetailRow - 1);
         } else {
-            wsDetail.mergeCells(`A${currentDetailRow}:L${currentDetailRow}`);
+            wsDetail.mergeCells(`A${currentDetailRow}:I${currentDetailRow}`);
             const emptyCell = wsDetail.getCell(`A${currentDetailRow}`);
             emptyCell.value = "Chưa có dữ liệu chi tiết tăng ca cho tháng này.";
             emptyCell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -2355,10 +2266,7 @@ async function exportExcel() {
             { width: 28 },  // Họ và tên
             { width: 18 },  // Nhóm
             { width: 16 },  // Mã nhân viên
-            { width: 12 },  // OT Trưa
-            { width: 12 },  // OT Chiều
-            { width: 14 },  // Giờ bắt đầu
-            { width: 14 },  // Giờ kết thúc
+            { width: 24 },  // Thời gian OT
             { width: 16 },  // Tổng OT (giờ)
             { width: 20 },  // Đi xe (Tỉnh)
             { width: 35 }   // Ghi chú
@@ -2390,7 +2298,7 @@ async function handleCloseMonth() {
 
     // Bước 1: Yêu cầu tải báo cáo Excel trước
     showModal(
-        'Xác nhận Chốt công & Dọn dẹp',
+        'Xác nhận Chốt công & Khóa tháng',
         `<p style="font-size: 14px; line-height: 1.6; color: var(--text-primary);">
             Hệ thống yêu cầu bạn đã xuất báo cáo Excel lưu trữ về máy tính trước khi thực hiện.<br><br>
             <strong>Bạn đã tải báo cáo Excel tháng ${month} về chưa?</strong>
@@ -2404,17 +2312,17 @@ async function handleCloseMonth() {
                 }
             },
             {
-                text: 'Đã tải (Tiếp tục dọn dẹp)',
+                text: 'Đã tải (Khóa tháng)',
                 class: 'btn-primary',
                 action: () => {
                     setTimeout(() => {
-                        // Bước 2: Cảnh báo xóa dữ liệu vĩnh viễn trên Server
+                        // Bước 2: Cảnh báo và xác nhận khóa tháng
                         showModal(
-                            'CẢNH BÁO QUAN TRỌNG',
-                            `<p style="font-size: 14px; line-height: 1.6; color: var(--accent-red); font-weight: 600;">
-                                CẢNH BÁO: Tất cả dữ liệu tăng ca của tháng ${month} và các tháng cũ hơn sẽ bị xóa sạch khỏi Server.<br><br>
-                                Hệ thống sẽ tự động tạo file sao lưu trên Server và GitHub Gist, tuy nhiên dữ liệu hiển thị hiện tại sẽ bị xóa vĩnh viễn.<br><br>
-                                Thao tác này KHÔNG THỂ HOÀN TÁC! Bạn vẫn muốn tiếp tục?
+                            'XÁC NHẬN KHÓA THÁNG',
+                            `<p style="font-size: 14px; line-height: 1.6; color: var(--text-primary);">
+                                Thao tác này sẽ **khóa ghi nhận tăng ca** của tháng ${month}.<br><br>
+                                Sau khi khóa, nhân viên đăng ký OT trong tháng này sẽ phải được **Quản lý phê duyệt** mới được tính.<br><br>
+                                Bạn có chắc chắn muốn khóa tháng ${month}?
                              </p>`,
                             [
                                 {
@@ -2423,13 +2331,13 @@ async function handleCloseMonth() {
                                     action: null
                                 },
                                 {
-                                    text: 'Xác nhận xóa dữ liệu',
-                                    class: 'btn-danger',
+                                    text: 'Xác nhận khóa tháng',
+                                    class: 'btn-warning',
                                     action: async () => {
                                         try {
-                                            showToast('Đang thực hiện dọn dẹp...');
-                                            const res = await api('/api/records/cleanup', 'POST', { month });
-                                            showToast('Dọn dẹp dữ liệu thành công!');
+                                            showToast('Đang thực hiện khóa tháng...');
+                                            const res = await api('/api/records/close-month', 'POST', { month });
+                                            showToast('Khóa tháng thành công!');
                                             await Promise.all([
                                                 refreshAdminRecords(),
                                                 refreshAdminStats(),
@@ -3717,7 +3625,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Lỗi kiểm tra phiên bản:', e);
             const verEl = document.getElementById('login-version');
             if (verEl) {
-                verEl.textContent = 'Phiên bản v1.3.9';
+                verEl.textContent = 'Phiên bản v1.4.0';
             }
         }
 

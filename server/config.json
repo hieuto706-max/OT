@@ -1,3 +1,5 @@
 {
-  "serverUrl": "https://api.otmanager.id.vn"
+  "serverUrl": "https://api.otmanager.id.vn",
+  "vapidPublicKey": "BGl0JMv3Eghb1Hz2hnHa9y9cQDmmTrxb7fGqm757Jv0Z7fW8ZplX184ELE1sQlri20DuVr2nZIPU4jTrLxtSip0",
+  "vapidPrivateKey": "vaKjdFR9uVbQZ6__Ybj5ZT6q9CWe77cwkaTG3GohSEU"
 }
