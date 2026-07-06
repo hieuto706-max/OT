@@ -3516,3 +3516,25 @@ select option {
     background-color: #050510 !important;
     color: var(--text) !important;
 }
+
+/* ==================== NATIVE APK VIEWPORT FULL-SCREEN RESPONSIVE SCROLL OVERRIDES ==================== */
+body:not(.is-web-browser) #screen-app {
+    max-width: 100% !important;
+    width: 100% !important;
+    border-left: none !important;
+    border-right: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+body:not(.is-web-browser) #screen-app .mobile-header {
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+body:not(.is-web-browser) #screen-app .bottom-nav {
+    max-width: calc(100% - 32px) !important;
+    left: 16px !important;
+    right: 16px !important;
+    transform: none !important;
+}

@@ -3817,7 +3817,7 @@ document.addEventListener('DOMContentLoaded', () => {
         adminFormOt.addEventListener('submit', handleAdminOTSubmit);
         const adminOtStart = document.getElementById('admin-ot-start');
         if (adminOtStart) {
-            adminOtStart.addEventListener('change', () => {
+            const syncAdminOtEnd = () => {
                 const startVal = adminOtStart.value;
                 const endVal = document.getElementById('admin-ot-end').value;
                 if (startVal && endVal) {
@@ -3827,7 +3827,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         document.getElementById('admin-ot-end').value = startVal;
                     }
                 }
-            });
+            };
+            adminOtStart.addEventListener('change', syncAdminOtEnd);
+            adminOtStart.addEventListener('input', syncAdminOtEnd);
         }
         const adminOtBackfill = document.getElementById('admin-ot-backfill');
         if (adminOtBackfill) {
@@ -3882,8 +3884,8 @@ document.addEventListener('DOMContentLoaded', () => {
         previewTriggerEls.forEach(id => {
             const el = document.getElementById(id);
             if (el) {
-                const eventType = (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number')) || el.tagName === 'TEXTAREA' ? 'input' : 'change';
-                el.addEventListener(eventType, updateAdminOTPreview);
+                el.addEventListener('change', updateAdminOTPreview);
+                el.addEventListener('input', updateAdminOTPreview);
             }
         });
         
@@ -3902,9 +3904,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // OT Preview
     document.getElementById('ot-lunch').addEventListener('change', updateOTPreview);
+    document.getElementById('ot-lunch').addEventListener('input', updateOTPreview);
     document.getElementById('ot-start').addEventListener('change', updateOTPreview);
+    document.getElementById('ot-start').addEventListener('input', updateOTPreview);
     document.getElementById('ot-end').addEventListener('change', updateOTPreview);
-    document.getElementById('ot-start').addEventListener('change', () => {
+    document.getElementById('ot-end').addEventListener('input', updateOTPreview);
+
+    const syncOtEnd = () => {
         const startVal = document.getElementById('ot-start').value;
         const endVal = document.getElementById('ot-end').value;
         if (startVal && endVal) {
@@ -3915,7 +3921,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateOTPreview();
             }
         }
-    });
+    };
+    document.getElementById('ot-start').addEventListener('change', syncOtEnd);
+    document.getElementById('ot-start').addEventListener('input', syncOtEnd);
 
     const otBackfill = document.getElementById('ot-backfill');
     if (otBackfill) {
@@ -4174,13 +4182,15 @@ async function editRecordDialog(recordId, source) {
         const modalStart = document.getElementById('modal-rec-start');
         const modalEnd = document.getElementById('modal-rec-end');
         if (modalStart && modalEnd) {
-            modalStart.addEventListener('change', () => {
+            const syncModalEnd = () => {
                 const s = timeToMinutes(modalStart.value);
                 const e = timeToMinutes(modalEnd.value);
                 if (e <= s) {
                     modalEnd.value = modalStart.value;
                 }
-            });
+            };
+            modalStart.addEventListener('change', syncModalEnd);
+            modalStart.addEventListener('input', syncModalEnd);
         }
 
         const modalHasTrip = document.getElementById('modal-rec-has-trip');

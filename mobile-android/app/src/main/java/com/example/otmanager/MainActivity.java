@@ -55,10 +55,21 @@ public class MainActivity extends AppCompatActivity {
         // Bật lớp phần cứng dựng hình GPU cho WebView
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
+        // Yêu cầu quyền hiển thị thông báo trên Android 13+
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(this, "android.permission.POST_NOTIFICATIONS")
+                    != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                androidx.core.app.ActivityCompat.requestPermissions(this,
+                        new String[]{"android.permission.POST_NOTIFICATIONS"}, 101);
+            }
+        }
+
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(true);
+        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(true);
         
         // Cho phép truy cập file cục bộ
         try {

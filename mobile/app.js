@@ -1887,8 +1887,11 @@ function initApp() {
     // OT form
     document.getElementById('form-ot').addEventListener('submit', handleOTSubmit);
     document.getElementById('ot-lunch').addEventListener('change', updatePreview);
+    document.getElementById('ot-lunch').addEventListener('input', updatePreview);
     document.getElementById('ot-start').addEventListener('change', updatePreview);
+    document.getElementById('ot-start').addEventListener('input', updatePreview);
     document.getElementById('ot-end').addEventListener('change', updatePreview);
+    document.getElementById('ot-end').addEventListener('input', updatePreview);
 
     const otBackfillCheckbox = document.getElementById('ot-backfill');
     if (otBackfillCheckbox) {
