@@ -28,7 +28,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="landing.css?v=1.3.9">
+    <link rel="stylesheet" href="landing.css?v=1.4.0">
     <!-- Prevent login portal flashing if already logged in -->
     <style id="anti-flash-style">
       html.user-logged-in #login-welcome-box {
@@ -115,7 +115,7 @@
                     </defs>
                 </svg>
                 <span class="logo-text">OT Manager</span>
-                <span class="web-version-badge">v1.3.9</span>
+                <span class="web-version-badge">v1.4.0</span>
             </div>
             <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle navigation">
                 <div class="hamburger-bar"></div>
@@ -601,6 +601,28 @@
                     <h2 class="section-title text-center">Nhật ký cập nhật hệ thống</h2>
                     <div class="changelog-timeline">
                         
+                        <!-- Item 0: v1.4.0 -->
+                        <div class="changelog-item">
+                            <div class="changelog-header-btn">
+                                <span class="changelog-badge">v1.4.0</span>
+                                <span class="changelog-date">07/07/2026</span>
+                                <span class="changelog-chevron">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="changelog-body-expand">
+                                <ul class="changelog-list">
+                                    <li>Tinh giản báo cáo Excel (Tổng hợp & Chi tiết) gộp các cột khung giờ và tự động gộp OT trưa.</li>
+                                    <li>Thêm thông báo cảnh báo khóa tháng khi đăng ký tăng ca và gửi thông báo nhắc nhở đẩy (Web Push) khi chốt công tháng.</li>
+                                    <li>Xin quyền hiển thị thông báo động (Notification Permission) trực tiếp trên Android APK 13+ khi khởi chạy ứng dụng.</li>
+                                    <li>Căn chỉnh tỷ lệ màn hình 100% full-screen vừa vặn và cuộn mượt mà trên tất cả các thiết bị di động (kể cả máy gập, máy tính bảng).</li>
+                                    <li>Đồng bộ hóa cơ chế lắng nghe sự kiện đồng thời (input/change) trên Desktop giúp giao diện phiếu xem trước (Ticket Preview) cập nhật số giờ lập tức.</li>
+                                </ul>
+                            </div>
+                        </div>
+
                         <!-- Item 0: v1.3.9 -->
                         <div class="changelog-item">
                             <div class="changelog-header-btn">
@@ -901,6 +923,6 @@
         </div>
     </div>
 
-    <script src="landing.js?v=1.3.9_rev1"></script>
+    <script src="landing.js?v=1.4.0"></script>
 </body>
 </html>
