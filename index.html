@@ -28,7 +28,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="landing.css?v=1.4.0">
+    <link rel="stylesheet" href="landing.css?v=1.4.0b">
     <!-- Prevent login portal flashing if already logged in -->
     <style id="anti-flash-style">
       html.user-logged-in #login-welcome-box {
@@ -124,6 +124,8 @@
             </button>
             <div class="landing-nav">
                 <a class="nav-link active" data-tab="home">Trang chủ</a>
+                <a class="nav-link" data-tab="features">Tính năng</a>
+                <a class="nav-link" data-tab="gallery">Hình ảnh</a>
                 <a class="nav-link" data-tab="download">Tải xuống</a>
                 <a class="nav-link" data-tab="release">Thông tin phát hành</a>
                 <a class="nav-link" data-tab="terms">Điều khoản & Bảo mật</a>
@@ -176,7 +178,10 @@
                         </div>
                     </div>
                 </section>
+            </div>
 
+            <!-- TAB 1B: TÍNH NĂNG -->
+            <div id="ltab-features" class="landing-tab-content">
                 <section class="landing-section features-section-container">
                     <h2 class="section-title text-center">Các tính năng hệ thống</h2>
                     <div class="features-grid-large">
@@ -278,9 +283,12 @@
                         </div>
                     </div>
                 </section>
+            </div>
 
+            <!-- TAB 1C: HÌNH ẢNH GIAO DIỆN -->
+            <div id="ltab-gallery" class="landing-tab-content">
                 <!-- ACTUAL APP GALLERY -->
-                <section class="landing-section gallery-section-container" style="border-top: 1px solid var(--border); padding-top: 50px; margin-top: 30px;">
+                <section class="landing-section gallery-section-container" style="border-top: none; padding-top: 0; margin-top: 0;">
                     <h2 class="section-title text-center">📸 Hình ảnh giao diện thực tế</h2>
                     <div class="gallery-wrapper">
                         <!-- Navigation for gallery roles -->
@@ -923,6 +931,6 @@
         </div>
     </div>
 
-    <script src="landing.js?v=1.4.0"></script>
+    <script src="landing.js?v=1.4.0b"></script>
 </body>
 </html>

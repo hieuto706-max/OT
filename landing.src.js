@@ -420,6 +420,16 @@ class Interactive8DBackground {
             this.targetSpeedMultiplier = 0.35;
             this.targetHueStart = 205; // Slate Blue
             this.targetHueRange = 25;
+        } else if (tabName === 'features') {
+            this.targetPerspective = 450;
+            this.targetSpeedMultiplier = 1.1;
+            this.targetHueStart = 160; // Green-Cyan
+            this.targetHueRange = 30;
+        } else if (tabName === 'gallery') {
+            this.targetPerspective = 400;
+            this.targetSpeedMultiplier = 1.25;
+            this.targetHueStart = 125; // Emerald Green
+            this.targetHueRange = 35;
         }
         this.warpFactor = 2.8; // Burst dynamic warp stretch
     }
