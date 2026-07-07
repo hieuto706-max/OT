@@ -145,6 +145,7 @@ function migrateTeams(db) {
                 id: team,
                 name: team,
                 leaderId: null,
+                leaderIds: [],
                 customActivities: [],
                 autoApproveRules: {
                     normalOT: false,
@@ -158,6 +159,7 @@ function migrateTeams(db) {
         let updated = false;
         if (!team.id) { team.id = team.name || generateId(); updated = true; }
         if (team.leaderId === undefined) { team.leaderId = null; updated = true; }
+        if (team.leaderIds === undefined) { team.leaderIds = team.leaderId ? [team.leaderId] : []; updated = true; }
         if (!team.customActivities) { team.customActivities = []; updated = true; }
         if (!team.autoApproveRules) {
             team.autoApproveRules = {
@@ -1568,11 +1570,14 @@ async function handleAPI(req, res, urlPath, method) {
 
         // Đồng bộ gán tên team tương ứng cho Leader
         teams.forEach(t => {
-            if (t && typeof t === 'object' && t.leaderId) {
-                const leader = db.users.find(u => u.id === t.leaderId);
-                if (leader) {
-                    leader.team = t.name;
-                }
+            if (t && typeof t === 'object') {
+                const leaderIds = t.leaderIds || (t.leaderId ? [t.leaderId] : []);
+                leaderIds.forEach(leaderId => {
+                    const leader = db.users.find(u => u.id === leaderId);
+                    if (leader) {
+                        leader.team = t.name;
+                    }
+                });
             }
         });
 

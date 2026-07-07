@@ -732,11 +732,17 @@ function renderSelectedTeamDetails() {
     const members = modalAllUsers.filter(u => u.team === team.name);
     // Danh sách ứng viên Trưởng nhóm (Chỉ các tài khoản có role === 'admin')
     const potentialLeaders = modalAllUsers.filter(u => u.role === 'admin');
+    const activeLeaderIds = team.leaderIds || (team.leaderId ? [team.leaderId] : []);
 
-    const leaderOptions = `
-        <option value="">-- Chưa gán Trưởng nhóm --</option>
-        ${potentialLeaders.map(u => `<option value="${u.id}" ${team.leaderId === u.id ? 'selected' : ''}>${u.fullname} (@${u.username})</option>`).join('')}
-    `;
+    const leaderCheckboxes = potentialLeaders.map(u => {
+        const isChecked = activeLeaderIds.includes(u.id);
+        return `
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; cursor: pointer; color: var(--text-primary); user-select: none;">
+                <input type="checkbox" class="modal-team-leader-chk" value="${u.id}" ${isChecked ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px; margin: 0;">
+                <span>${u.fullname} (@${u.username})</span>
+            </label>
+        `;
+    }).join('') || '<span style="color: var(--text-muted); font-size: 11px;">Chưa có tài khoản Admin nào làm ứng viên.</span>';
 
     const rules = team.autoApproveRules || { normalOT: false, backfill: false, sunday: false, customActivity: false };
     const activities = team.customActivities || [];
@@ -790,10 +796,10 @@ function renderSelectedTeamDetails() {
             <div style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 4px;">
                 <!-- 1. Chọn Trưởng nhóm -->
                 <div class="form-group" style="margin: 0;">
-                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Trưởng nhóm (Leader duyệt OT)</label>
-                    <select id="modal-team-leader-select" onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 100%; height: 32px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0 8px; font-size: 12px;">
-                        ${leaderOptions}
-                    </select>
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Trưởng nhóm (Leader duyệt OT - Có thể chọn nhiều)</label>
+                    <div style="max-height: 100px; overflow-y: auto; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px;">
+                        ${leaderCheckboxes}
+                    </div>
                 </div>
 
                 <!-- 2. Quy tắc tự duyệt -->
@@ -857,15 +863,16 @@ async function saveTeamSettingsFromModal(teamId) {
     const team = TEAMS.find(t => t.id === teamId);
     if (!team) return;
 
-    const leaderSelect = document.getElementById('modal-team-leader-select');
-    const leaderId = leaderSelect ? leaderSelect.value : null;
-
+    const leaderChks = document.querySelectorAll('.modal-team-leader-chk:checked');
+    const leaderIds = Array.from(leaderChks).map(chk => chk.value);
+ 
     const ruleNormal = document.getElementById('rule-normal')?.checked;
     const ruleBackfill = document.getElementById('rule-backfill')?.checked;
     const ruleSunday = document.getElementById('rule-sunday')?.checked;
     const ruleCustom = document.getElementById('rule-custom')?.checked;
-
-    team.leaderId = leaderId || null;
+ 
+    team.leaderIds = leaderIds;
+    team.leaderId = leaderIds[0] || null;
     team.autoApproveRules = {
         normalOT: !!ruleNormal,
         backfill: !!ruleBackfill,
@@ -1005,6 +1012,7 @@ async function addTeamFromModal() {
         id: 'team_' + Date.now(),
         name: teamName,
         leaderId: null,
+        leaderIds: [],
         customActivities: [],
         autoApproveRules: {
             normalOT: false,
