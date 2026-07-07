@@ -614,6 +614,9 @@ async function loadDB() {
                     fs.writeFileSync(dbFile, JSON.stringify(gistData, null, 2), 'utf-8');
                 }
                 console.log('[Gist] Tải dữ liệu từ Gist thành công!');
+                if (process.env.DATABASE_URL) {
+                    saveDBToPG(gistData).catch(e => console.error('[Database PG] Lỗi đồng bộ từ Gist lên PG:', e.message));
+                }
                 dbCache = gistData;
                 return gistData;
             }
@@ -648,6 +651,8 @@ async function loadDB() {
         if (migratedPass || migratedTeams) {
             saveDB(localDB);
             console.log('[Migration] Đã tự động di trú cơ sở dữ liệu (Passwords/Teams).');
+        } else if (process.env.DATABASE_URL) {
+            saveDBToPG(localDB).catch(e => console.error('[Database PG] Lỗi đồng bộ từ local lên PG:', e.message));
         }
         return localDB;
     }
