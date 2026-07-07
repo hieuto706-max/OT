@@ -941,9 +941,6 @@ function setupCustomActivitiesUI() {
     const editLegacyGroup = document.getElementById('edit-ot-legacy-trip-group');
     const editLegacyProvinceGroup = document.getElementById('edit-ot-province-group');
 
-    const select = document.getElementById('ot-custom-activity');
-    const editSelect = document.getElementById('edit-ot-custom-activity');
-
     const teamSettings = currentUser ? currentUser.teamSettings : null;
     const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
 
@@ -956,12 +953,41 @@ function setupCustomActivitiesUI() {
         if (editLegacyGroup) editLegacyGroup.style.display = 'none';
         if (editLegacyProvinceGroup) editLegacyProvinceGroup.style.display = 'none';
 
-        const optionsHtml = activities.map(act => `<option value="${act.name}">${act.name}</option>`).join('');
-        if (select) select.innerHTML = optionsHtml;
-        if (editSelect) editSelect.innerHTML = optionsHtml;
+        // Nạp danh sách checkbox cho Form thêm
+        const listContainer = document.getElementById('ot-custom-activities-list');
+        if (listContainer) {
+            listContainer.innerHTML = activities.map(act => `
+                <div class="custom-activity-item" style="margin-bottom: 12px; text-align: left;">
+                    <label class="checkbox-label" style="margin-top: 0; display: inline-flex; align-items: center; gap: 8px; width: 100%;">
+                        <input type="checkbox" class="ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleCustomActivityInput('${act.id}')">
+                        <span class="checkbox-custom"></span>
+                        <strong>${act.name}</strong>
+                    </label>
+                    <div class="form-group" id="ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding-left: 30px; margin-bottom: 0;">
+                        <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiết'}</label>
+                        <input type="text" class="ot-custom-activity-detail" data-act-id="${act.id}" placeholder="${act.placeholder || 'Nhập chi tiết...'}" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
+                    </div>
+                </div>
+            `).join('');
+        }
 
-        handleCustomActivityChange();
-        handleEditCustomActivityChange();
+        // Nạp danh sách checkbox cho Form sửa
+        const editListContainer = document.getElementById('edit-ot-custom-activities-list');
+        if (editListContainer) {
+            editListContainer.innerHTML = activities.map(act => `
+                <div class="custom-activity-item" style="margin-bottom: 12px; text-align: left;">
+                    <label class="checkbox-label" style="margin-top: 0; display: inline-flex; align-items: center; gap: 8px; width: 100%;">
+                        <input type="checkbox" class="edit-ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleEditCustomActivityInput('${act.id}')">
+                        <span class="checkbox-custom"></span>
+                        <strong>${act.name}</strong>
+                    </label>
+                    <div class="form-group" id="edit-ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding-left: 30px; margin-bottom: 0;">
+                        <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiết'}</label>
+                        <input type="text" class="edit-ot-custom-activity-detail" data-act-id="${act.id}" placeholder="${act.placeholder || 'Nhập chi tiết...'}" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
+                    </div>
+                </div>
+            `).join('');
+        }
     } else {
         if (activityGroup) activityGroup.style.display = 'none';
         if (legacyGroup) legacyGroup.style.display = 'block';
@@ -971,76 +997,72 @@ function setupCustomActivitiesUI() {
     }
 }
 
-function handleCustomActivityChange() {
-    const select = document.getElementById('ot-custom-activity');
-    const selectedVal = select ? select.value : '';
-    const detailGroup = document.getElementById('ot-custom-activity-detail-group');
-    const detailLabel = document.getElementById('ot-custom-activity-detail-label');
-    const detailInput = document.getElementById('ot-custom-activity-detail');
-    const otNormalInputs = document.getElementById('ot-normal-inputs');
+window.toggleCustomActivityInput = function(actId) {
+    const chk = document.querySelector(`.ot-custom-activity-checkbox[data-act-id="${actId}"]`);
+    if (chk && chk.checked) {
+        // Tự động bỏ chọn các checkbox hoạt động khác (chỉ cho phép chọn tối đa 1 hoạt động)
+        document.querySelectorAll('.ot-custom-activity-checkbox').forEach(other => {
+            if (other !== chk) {
+                other.checked = false;
+                const otherGroup = document.getElementById(`ot-custom-activity-detail-group-${other.dataset.actId}`);
+                if (otherGroup) {
+                    otherGroup.style.display = 'none';
+                    const otherInput = otherGroup.querySelector('.ot-custom-activity-detail');
+                    if (otherInput) {
+                        otherInput.value = '';
+                        otherInput.required = false;
+                    }
+                }
+            }
+        });
+    }
 
-    const teamSettings = currentUser ? currentUser.teamSettings : null;
-    const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
-    const currentAct = activities.find(a => a.name === selectedVal);
-
-    if (currentAct) {
-        if (detailGroup) detailGroup.style.display = 'block';
-        if (detailLabel) detailLabel.textContent = currentAct.detailLabel || 'Chi tiết';
-        if (detailInput) {
-            detailInput.placeholder = currentAct.placeholder || `Nhập ${currentAct.detailLabel || 'chi tiết'}...`;
-            detailInput.required = true;
+    const group = document.getElementById(`ot-custom-activity-detail-group-${actId}`);
+    const input = group ? group.querySelector('.ot-custom-activity-detail') : null;
+    if (chk && group) {
+        group.style.display = chk.checked ? 'block' : 'none';
+        if (input) {
+            input.required = chk.checked;
+            if (!chk.checked) input.value = '';
         }
-
-        if (currentAct.calcMode === 'trip') {
-            if (otNormalInputs) otNormalInputs.style.display = 'none';
-        } else {
-            if (otNormalInputs) otNormalInputs.style.display = 'block';
-        }
-    } else {
-        if (detailGroup) detailGroup.style.display = 'none';
-        if (detailInput) {
-            detailInput.required = false;
-            detailInput.value = '';
-        }
-        if (otNormalInputs) otNormalInputs.style.display = 'block';
     }
     updatePreview();
-}
+};
 
-function handleEditCustomActivityChange() {
-    const select = document.getElementById('edit-ot-custom-activity');
-    const selectedVal = select ? select.value : '';
-    const detailGroup = document.getElementById('edit-ot-custom-activity-detail-group');
-    const detailLabel = document.getElementById('edit-ot-custom-activity-detail-label');
-    const detailInput = document.getElementById('edit-ot-custom-activity-detail');
-    const editNormalInputs = document.getElementById('edit-ot-normal-inputs');
-
-    const teamSettings = currentUser ? currentUser.teamSettings : null;
-    const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
-    const currentAct = activities.find(a => a.name === selectedVal);
-
-    if (currentAct) {
-        if (detailGroup) detailGroup.style.display = 'block';
-        if (detailLabel) detailLabel.textContent = currentAct.detailLabel || 'Chi tiết';
-        if (detailInput) {
-            detailInput.placeholder = currentAct.placeholder || `Nhập ${currentAct.detailLabel || 'chi tiết'}...`;
-            detailInput.required = true;
-        }
-
-        if (currentAct.calcMode === 'trip') {
-            if (editNormalInputs) editNormalInputs.style.display = 'none';
-        } else {
-            if (editNormalInputs) editNormalInputs.style.display = 'block';
-        }
-    } else {
-        if (detailGroup) detailGroup.style.display = 'none';
-        if (detailInput) {
-            detailInput.required = false;
-            detailInput.value = '';
-        }
-        if (editNormalInputs) editNormalInputs.style.display = 'block';
+window.toggleEditCustomActivityInput = function(actId) {
+    const chk = document.querySelector(`.edit-ot-custom-activity-checkbox[data-act-id="${actId}"]`);
+    if (chk && chk.checked) {
+        // Tự động bỏ chọn các checkbox hoạt động khác (chỉ cho phép chọn tối đa 1 hoạt động)
+        document.querySelectorAll('.edit-ot-custom-activity-checkbox').forEach(other => {
+            if (other !== chk) {
+                other.checked = false;
+                const otherGroup = document.getElementById(`edit-ot-custom-activity-detail-group-${other.dataset.actId}`);
+                if (otherGroup) {
+                    otherGroup.style.display = 'none';
+                    const otherInput = otherGroup.querySelector('.edit-ot-custom-activity-detail');
+                    if (otherInput) {
+                        otherInput.value = '';
+                        otherInput.required = false;
+                    }
+                }
+            }
+        });
     }
-}
+
+    const group = document.getElementById(`edit-ot-custom-activity-detail-group-${actId}`);
+    const input = group ? group.querySelector('.edit-ot-custom-activity-detail') : null;
+    if (chk && group) {
+        group.style.display = chk.checked ? 'block' : 'none';
+        if (input) {
+            input.required = chk.checked;
+            if (!chk.checked) input.value = '';
+        }
+    }
+};
+
+// Hàm cũ giữ lại làm rỗng để tránh lỗi gọi hàm
+function handleCustomActivityChange() {}
+function handleEditCustomActivityChange() {}
 
 // ==================== OT FORM ====================
 function updatePreview() {
@@ -1078,14 +1100,12 @@ function updatePreview() {
     const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
     
     if (activities.length > 0) {
-        const select = document.getElementById('ot-custom-activity');
-        customActivity = select ? select.value : '';
-        if (customActivity) {
-            const act = activities.find(a => a.name === customActivity);
-            if (act) {
-                calcMode = act.calcMode;
-                customDetail = document.getElementById('ot-custom-activity-detail')?.value.trim() || '';
-            }
+        const checkedChk = document.querySelector('.ot-custom-activity-checkbox:checked');
+        if (checkedChk) {
+            customActivity = checkedChk.dataset.actName;
+            calcMode = checkedChk.dataset.actMode;
+            const input = document.querySelector(`.ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+            customDetail = input ? input.value.trim() : '';
         }
     }
 
@@ -1261,14 +1281,12 @@ async function handleOTSubmit(e) {
     const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
     
     if (activities.length > 0) {
-        const select = document.getElementById('ot-custom-activity');
-        customActivity = select ? select.value : '';
-        if (customActivity) {
-            const act = activities.find(a => a.name === customActivity);
-            if (act) {
-                calcMode = act.calcMode;
-                customDetail = document.getElementById('ot-custom-activity-detail')?.value.trim() || '';
-            }
+        const checkedChk = document.querySelector('.ot-custom-activity-checkbox:checked');
+        if (checkedChk) {
+            customActivity = checkedChk.dataset.actName;
+            calcMode = checkedChk.dataset.actMode;
+            const input = document.querySelector(`.ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+            customDetail = input ? input.value.trim() : '';
         }
     }
 
@@ -2074,9 +2092,20 @@ function initApp() {
         otBackfillCheckbox.addEventListener('change', function() {
             const normalInputs = document.getElementById('ot-normal-inputs');
             const backfillGroup = document.getElementById('ot-backfill-hours-group');
+            const customActGroup = document.getElementById('ot-custom-activity-group');
+            const legacyTripGroup = document.getElementById('ot-legacy-trip-group');
+            const legacyProvinceGroup = document.getElementById('ot-province-group');
+
+            const teamSettings = currentUser ? currentUser.teamSettings : null;
+            const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
+
             if (this.checked) {
                 if (normalInputs) normalInputs.style.display = 'none';
                 if (backfillGroup) backfillGroup.style.display = 'block';
+                if (customActGroup) customActGroup.style.display = 'none';
+                if (legacyTripGroup) legacyTripGroup.style.display = 'none';
+                if (legacyProvinceGroup) legacyProvinceGroup.style.display = 'none';
+
                 // Reset other OT choices
                 const lunchEl = document.getElementById('ot-lunch');
                 if (lunchEl) lunchEl.checked = false;
@@ -2084,9 +2113,36 @@ function initApp() {
                 if (startEl) startEl.value = '16:30';
                 const endEl = document.getElementById('ot-end');
                 if (endEl) endEl.value = '16:30';
+
+                // Uncheck custom activities checkboxes and clear their inputs
+                document.querySelectorAll('.ot-custom-activity-checkbox').forEach(chk => {
+                    chk.checked = false;
+                    const detailGrp = document.getElementById(`ot-custom-activity-detail-group-${chk.dataset.actId}`);
+                    if (detailGrp) {
+                        detailGrp.style.display = 'none';
+                        const input = detailGrp.querySelector('.ot-custom-activity-detail');
+                        if (input) {
+                            input.value = '';
+                            input.required = false;
+                        }
+                    }
+                });
+
+                // Reset legacy trip checkbox and province
+                const otHasTrip = document.getElementById('ot-has-trip');
+                if (otHasTrip) otHasTrip.checked = false;
+                const otProv = document.getElementById('ot-province');
+                if (otProv) otProv.value = '';
             } else {
                 if (normalInputs) normalInputs.style.display = 'block';
                 if (backfillGroup) backfillGroup.style.display = 'none';
+                
+                // Restore custom/legacy visibility based on team activities settings
+                if (activities.length > 0) {
+                    if (customActGroup) customActGroup.style.display = 'block';
+                } else {
+                    if (legacyTripGroup) legacyTripGroup.style.display = 'block';
+                }
             }
             updatePreview();
         });
@@ -2099,9 +2155,20 @@ function initApp() {
         editOtBackfillCheckbox.addEventListener('change', function() {
             const normalInputs = document.getElementById('edit-ot-normal-inputs');
             const backfillGroup = document.getElementById('edit-ot-backfill-hours-group');
+            const customActGroup = document.getElementById('edit-ot-custom-activity-group');
+            const legacyTripGroup = document.getElementById('edit-ot-legacy-trip-group');
+            const legacyProvinceGroup = document.getElementById('edit-ot-province-group');
+
+            const teamSettings = currentUser ? currentUser.teamSettings : null;
+            const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
+
             if (this.checked) {
                 if (normalInputs) normalInputs.style.display = 'none';
                 if (backfillGroup) backfillGroup.style.display = 'block';
+                if (customActGroup) customActGroup.style.display = 'none';
+                if (legacyTripGroup) legacyTripGroup.style.display = 'none';
+                if (legacyProvinceGroup) legacyProvinceGroup.style.display = 'none';
+
                 // Reset edit form other OT choices
                 const lunchEl = document.getElementById('edit-ot-lunch');
                 if (lunchEl) lunchEl.checked = false;
@@ -2109,9 +2176,40 @@ function initApp() {
                 if (startEl) startEl.value = '16:30';
                 const endEl = document.getElementById('edit-ot-end');
                 if (endEl) endEl.value = '16:30';
+
+                // Uncheck custom activities checkboxes and clear their inputs
+                document.querySelectorAll('.edit-ot-custom-activity-checkbox').forEach(chk => {
+                    chk.checked = false;
+                    const detailGrp = document.getElementById(`edit-ot-custom-activity-detail-group-${chk.dataset.actId}`);
+                    if (detailGrp) {
+                        detailGrp.style.display = 'none';
+                        const input = detailGrp.querySelector('.edit-ot-custom-activity-detail');
+                        if (input) {
+                            input.value = '';
+                            input.required = false;
+                        }
+                    }
+                });
+
+                // Reset legacy trip checkbox and province
+                const editOtHasTrip = document.getElementById('edit-ot-has-trip');
+                if (editOtHasTrip) editOtHasTrip.checked = false;
+                const editOtProv = document.getElementById('edit-ot-province');
+                if (editOtProv) editOtProv.value = '';
             } else {
                 if (normalInputs) normalInputs.style.display = 'block';
                 if (backfillGroup) backfillGroup.style.display = 'none';
+                
+                // Restore custom/legacy visibility based on team settings
+                if (activities.length > 0) {
+                    if (customActGroup) customActGroup.style.display = 'block';
+                } else {
+                    if (legacyTripGroup) legacyTripGroup.style.display = 'block';
+                    const editOtHasTrip = document.getElementById('edit-ot-has-trip');
+                    if (editOtHasTrip && editOtHasTrip.checked) {
+                        if (legacyProvinceGroup) legacyProvinceGroup.style.display = 'block';
+                    }
+                }
             }
         });
     }
@@ -2588,30 +2686,34 @@ async function editRecordDialog(id) {
         const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
 
         if (activities.length > 0) {
-            if (elEditCustomActGroup) elEditCustomActGroup.style.display = 'block';
+            if (elEditCustomActGroup) elEditCustomActGroup.style.display = isBackfill ? 'none' : 'block';
             if (elEditLegacyGroup) elEditLegacyGroup.style.display = 'none';
             if (elProvinceGroup) elProvinceGroup.style.display = 'none';
 
-            if (elEditSelect) {
-                // Nạp danh sách tùy chọn
-                const optionsHtml = activities.map(act => `<option value="${act.name}">${act.name}</option>`).join('');
-                elEditSelect.innerHTML = optionsHtml;
+            let activeActName = record.customActivity || '';
+            if (!activeActName && record.deliveryProvince) {
+                const firstTripAct = activities.find(a => a.calcMode === 'trip');
+                activeActName = firstTripAct ? firstTripAct.name : (activities[0]?.name || '');
+            }
+
+            document.querySelectorAll('.edit-ot-custom-activity-checkbox').forEach(chk => {
+                const isSelected = chk.dataset.actName === activeActName;
+                chk.checked = isSelected;
                 
-                if (!record.customActivity && record.deliveryProvince) {
-                    const firstTripAct = activities.find(a => a.calcMode === 'trip');
-                    elEditSelect.value = firstTripAct ? firstTripAct.name : (activities[0]?.name || '');
-                } else {
-                    elEditSelect.value = record.customActivity || '';
+                const group = document.getElementById(`edit-ot-custom-activity-detail-group-${chk.dataset.actId}`);
+                const input = group ? group.querySelector('.edit-ot-custom-activity-detail') : null;
+                if (group) {
+                    group.style.display = isSelected ? 'block' : 'none';
+                    if (input) {
+                        input.required = isSelected;
+                        if (isSelected) {
+                            input.value = record.deliveryProvince || '';
+                        } else {
+                            input.value = '';
+                        }
+                    }
                 }
-            }
-
-            handleEditCustomActivityChange();
-
-            if (elEditSelect && elEditSelect.value) {
-                if (elEditDetail) elEditDetail.value = record.deliveryProvince || '';
-            } else {
-                if (elEditDetail) elEditDetail.value = '';
-            }
+            });
         } else {
             if (elEditCustomActGroup) elEditCustomActGroup.style.display = 'none';
             if (elEditLegacyGroup) elEditLegacyGroup.style.display = 'block';
@@ -2710,14 +2812,12 @@ async function handleEditOTSubmit(e) {
     const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
     
     if (activities.length > 0) {
-        const select = document.getElementById('edit-ot-custom-activity');
-        customActivity = select ? select.value : '';
-        if (customActivity) {
-            const act = activities.find(a => a.name === customActivity);
-            if (act) {
-                calcMode = act.calcMode;
-                customDetail = document.getElementById('edit-ot-custom-activity-detail')?.value.trim() || '';
-            }
+        const checkedChk = document.querySelector('.edit-ot-custom-activity-checkbox:checked');
+        if (checkedChk) {
+            customActivity = checkedChk.dataset.actName;
+            calcMode = checkedChk.dataset.actMode;
+            const input = document.querySelector(`.edit-ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+            customDetail = input ? input.value.trim() : '';
         }
     }
 
