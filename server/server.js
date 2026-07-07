@@ -2962,6 +2962,11 @@ function startServer() {
             console.log(`📱 Mobile (Nhân viên): http://${ip}:${activePort}`);
             console.log(`🖥️  Desktop: http://localhost:${activePort}/desktop/`);
             
+            // Nạp DB ngay lúc khởi động để đồng bộ PostgreSQL/Gist nếu cần
+            loadDB().catch(err => {
+                console.error('[Server] Lỗi nạp Database lúc khởi động:', err.message);
+            });
+            
             // Khởi chạy đường hầm tunnel kết nối từ xa qua internet (chỉ chạy khi không ở môi trường Cloud)
             if (!process.env.PORT) {
                 const cloudUrl = getCloudUrl();
