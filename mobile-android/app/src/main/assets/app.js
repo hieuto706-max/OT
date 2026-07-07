@@ -958,12 +958,21 @@ function setupCustomActivitiesUI() {
         if (listContainer) {
             listContainer.innerHTML = activities.map(act => `
                 <div class="custom-activity-item" style="margin-bottom: 12px; text-align: left;">
-                    <label class="checkbox-label" style="margin-top: 0; display: inline-flex; align-items: center; gap: 8px; width: 100%;">
-                        <input type="checkbox" class="ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleCustomActivityInput('${act.id}')">
-                        <span class="checkbox-custom"></span>
-                        <strong>${act.name}</strong>
-                    </label>
-                    <div class="form-group" id="ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding-left: 30px; margin-bottom: 0;">
+                    <div class="form-group toggle-group" style="margin-top: 0; margin-bottom: 0; border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
+                        <label class="toggle-label" for="chk-${act.id}" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                            <span class="toggle-text">
+                                <strong>${act.name}</strong>
+                                <small style="display: block; color: var(--text-muted); font-size: 0.75rem;">
+                                    Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}
+                                </small>
+                            </span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="chk-${act.id}" class="ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleCustomActivityInput('${act.id}')">
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="form-group" id="ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding: 0 4px; margin-bottom: 0;">
                         <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiết'}</label>
                         <input type="text" class="ot-custom-activity-detail" data-act-id="${act.id}" placeholder="${act.placeholder || 'Nhập chi tiết...'}" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
                     </div>
@@ -976,12 +985,21 @@ function setupCustomActivitiesUI() {
         if (editListContainer) {
             editListContainer.innerHTML = activities.map(act => `
                 <div class="custom-activity-item" style="margin-bottom: 12px; text-align: left;">
-                    <label class="checkbox-label" style="margin-top: 0; display: inline-flex; align-items: center; gap: 8px; width: 100%;">
-                        <input type="checkbox" class="edit-ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleEditCustomActivityInput('${act.id}')">
-                        <span class="checkbox-custom"></span>
-                        <strong>${act.name}</strong>
-                    </label>
-                    <div class="form-group" id="edit-ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding-left: 30px; margin-bottom: 0;">
+                    <div class="form-group toggle-group" style="margin-top: 0; margin-bottom: 0; border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
+                        <label class="toggle-label" for="edit-chk-${act.id}" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                            <span class="toggle-text">
+                                <strong>${act.name}</strong>
+                                <small style="display: block; color: var(--text-muted); font-size: 0.75rem;">
+                                    Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}
+                                </small>
+                            </span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="edit-chk-${act.id}" class="edit-ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleEditCustomActivityInput('${act.id}')">
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="form-group" id="edit-ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding: 0 4px; margin-bottom: 0;">
                         <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiết'}</label>
                         <input type="text" class="edit-ot-custom-activity-detail" data-act-id="${act.id}" placeholder="${act.placeholder || 'Nhập chi tiết...'}" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
                     </div>
