@@ -3609,7 +3609,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const verEl = document.getElementById('login-version');
             if (verEl) {
-                verEl.textContent = 'Phiên bản v' + currentVersion;
+                const valEl = verEl.querySelector('.login-ver-val');
+                if (valEl) {
+                    valEl.textContent = 'v' + currentVersion;
+                } else {
+                    verEl.textContent = 'Phiên bản v' + currentVersion;
+                }
             }
 
             const storedVersion = localStorage.getItem('ot_app_version');
@@ -3639,7 +3644,12 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Lỗi kiểm tra phiên bản:', e);
             const verEl = document.getElementById('login-version');
             if (verEl) {
-                verEl.textContent = 'Phiên bản v1.4.0';
+                const valEl = verEl.querySelector('.login-ver-val');
+                if (valEl) {
+                    valEl.textContent = 'v1.4.0';
+                } else {
+                    verEl.textContent = 'Phiên bản v1.4.0';
+                }
             }
         }
 

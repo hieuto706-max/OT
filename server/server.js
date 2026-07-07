@@ -25,8 +25,43 @@ try {
     const { app } = require('electron');
     if (app) {
         updatesDir = path.join(app.getPath('userData'), 'hotfixes');
+        cleanObsoleteHotfixes();
     }
 } catch (e) {}
+
+function cleanObsoleteHotfixes() {
+    if (!updatesDir || !fs.existsSync(updatesDir)) return;
+    try {
+        const hotfixBuildPath = path.join(updatesDir, 'build.json');
+        const internalBuildPath = path.join(__dirname, 'build.json');
+        
+        let hotfixBuildTime = 0;
+        let internalBuildTime = 0;
+        
+        if (fs.existsSync(hotfixBuildPath)) {
+            const hotfixInfo = JSON.parse(fs.readFileSync(hotfixBuildPath, 'utf-8'));
+            hotfixBuildTime = hotfixInfo.buildTime || 0;
+        }
+        
+        if (fs.existsSync(internalBuildPath)) {
+            const internalInfo = JSON.parse(fs.readFileSync(internalBuildPath, 'utf-8'));
+            internalBuildTime = internalInfo.buildTime || 0;
+        }
+        
+        if (internalBuildTime >= hotfixBuildTime) {
+            console.log(`[Hotfix] Internal buildTime (${internalBuildTime}) >= Hotfix buildTime (${hotfixBuildTime}). Clearing obsolete hotfixes.`);
+            const files = fs.readdirSync(updatesDir);
+            for (const file of files) {
+                const filePath = path.join(updatesDir, file);
+                if (fs.statSync(filePath).isFile()) {
+                    fs.unlinkSync(filePath);
+                }
+            }
+        }
+    } catch (e) {
+        console.error('[Hotfix] Error cleaning obsolete hotfixes:', e.message);
+    }
+}
 
 // ==================== ENVIRONMENT VARIABLES ====================
 function loadEnv() {

@@ -1417,7 +1417,7 @@ document.addEventListener('DOMContentLoaded', () => {
         apkBtn.style.cursor = 'pointer';
         apkBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const downloadUrl = this.getAttribute('data-url') || 'https://api.otmanager.id.vn/OT-Manager-mobile.apk';
+            const downloadUrl = this.getAttribute('data-url') || 'https://github.com/hieuto706-max/OT/releases/download/v1.4.0/OT-Manager-mobile.apk';
             window.location.href = downloadUrl;
         });
     }
