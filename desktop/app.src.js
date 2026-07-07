@@ -62,6 +62,7 @@ const PROVINCES = [
 
 let currentAdminRecType = 'ot';
 let currentEmpRecType = 'ot';
+let loadedUsers = [];
 
 // Report Redesign global state variables
 let reportSearchQuery = '';
@@ -1187,6 +1188,7 @@ async function populateUserFilter() {
     try {
         const data = await api('/api/users');
         const users = data.users;
+        loadedUsers = users;
         users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
 
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
@@ -2914,6 +2916,7 @@ async function initEmployeeDashboard(user) {
     document.getElementById('ot-date').value = todayStr;
     document.getElementById('ot-date').max = todayStr;
     document.getElementById('emp-filter-month').value = getCurrentMonth();
+    setupEmployeeCustomActivitiesUI();
     updateOTPreview();
     await refreshEmployeeRecords();
 }
@@ -2926,8 +2929,20 @@ function updateOTPreview() {
     let items = [];
     let total = 0;
 
-    const hasTrip = document.getElementById('ot-has-trip')?.checked;
-    const province = document.getElementById('ot-province')?.value || '';
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
+
+    const checkedChk = document.querySelector('.ot-custom-activity-checkbox:checked');
+    if (checkedChk) {
+        customActivity = checkedChk.dataset.actName;
+        calcMode = checkedChk.dataset.actMode;
+        const input = document.querySelector(`.ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+        customDetail = input ? input.value.trim() : '';
+    }
+
+    const hasTrip = calcMode === 'trip' && !!customActivity;
+    const province = customDetail;
 
     if (isBackfill) {
         const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
@@ -2954,8 +2969,12 @@ function updateOTPreview() {
         }
     }
 
+    if (customActivity && calcMode === 'hour') {
+        items.push({ label: 'Hoạt động', value: customActivity });
+    }
+
     if (hasTrip && province) {
-        items.push({ label: 'Đi xe tăng cường', value: province });
+        items.push({ label: customActivity, value: province });
     }
 
     previewItems.innerHTML = items.length === 0
@@ -2968,7 +2987,7 @@ function updateOTPreview() {
     if (noteEl) {
         if (hasTrip && total === 0) {
             noteEl.required = false;
-            noteEl.placeholder = "Mặc định: Đi xe tăng cường " + province;
+            noteEl.placeholder = "Mặc định: " + customActivity + " " + province;
         } else {
             noteEl.required = true;
             noteEl.placeholder = "Lý do tăng ca, phân công công việc...";
@@ -3020,11 +3039,43 @@ function updateAdminOTPreview() {
         ticketDate.textContent = 'Chưa chọn ngày';
     }
 
-    // 3. Lunch, Evening and Total Hours
+    // 3. Custom Activity
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
+
+    const checkedChk = document.querySelector('.admin-ot-custom-activity-checkbox:checked');
+    if (checkedChk) {
+        customActivity = checkedChk.dataset.actName;
+        calcMode = checkedChk.dataset.actMode;
+        const input = document.querySelector(`.admin-ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+        customDetail = input ? input.value.trim() : '';
+    }
+
+    const ticketActGroup = document.getElementById('preview-ticket-activity-group');
+    const ticketActLabel = document.getElementById('preview-ticket-activity-label');
+    const ticketActValue = document.getElementById('preview-ticket-activity');
+
+    if (ticketActGroup && ticketActLabel && ticketActValue) {
+        if (customActivity) {
+            ticketActGroup.style.display = 'flex';
+            ticketActLabel.textContent = customActivity;
+            if (calcMode === 'trip') {
+                ticketActValue.textContent = customDetail || 'Chưa nhập chi tiết';
+            } else {
+                ticketActValue.innerHTML = `<span class="preview-active-badge">✓ Đăng ký</span>`;
+            }
+        } else {
+            ticketActGroup.style.display = 'none';
+        }
+    }
+
+    const hasTrip = calcMode === 'trip' && !!customActivity;
+    const province = customDetail;
+
+    // 4. Lunch, Evening and Total Hours
     let total = 0;
     const isBackfill = otBackfill && otBackfill.checked;
-    const hasTrip = document.getElementById('admin-ot-has-trip')?.checked;
-    const province = document.getElementById('admin-ot-province')?.value || '';
 
     if (isBackfill) {
         const hours = parseFloat(backfillHours?.value) || 0;
@@ -3061,7 +3112,7 @@ function updateAdminOTPreview() {
     if (otNote) {
         if (hasTrip && total === 0) {
             otNote.required = false;
-            otNote.placeholder = "Mặc định: Đi xe tăng cường " + province;
+            otNote.placeholder = "Mặc định: " + customActivity + " " + province;
         } else {
             otNote.required = true;
             otNote.placeholder = "Lý do tăng ca, phân công công việc...";
@@ -3072,7 +3123,7 @@ function updateAdminOTPreview() {
     if (otNote && otNote.value.trim()) {
         ticketNote.textContent = otNote.value.trim();
     } else if (hasTrip && total === 0) {
-        ticketNote.textContent = "Mặc định: Đi xe tăng cường " + province;
+        ticketNote.textContent = "Mặc định: " + customActivity + " " + province;
     } else {
         ticketNote.textContent = 'Chưa có ghi chú...';
     }
@@ -3105,10 +3156,30 @@ async function handleOTSubmit(e) {
         return;
     }
 
-    const hasTrip = document.getElementById('ot-has-trip')?.checked;
-    const province = document.getElementById('ot-province')?.value.trim() || '';
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
 
-    if (hasTrip && !province) { errorEl.textContent = 'Vui lòng chọn hoặc nhập tỉnh đi xe!'; return; }
+    const checkedChk = document.querySelector('.ot-custom-activity-checkbox:checked');
+    if (checkedChk) {
+        customActivity = checkedChk.dataset.actName;
+        calcMode = checkedChk.dataset.actMode;
+        const input = document.querySelector(`.ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+        customDetail = input ? input.value.trim() : '';
+    }
+
+    const hasTrip = calcMode === 'trip' && !!customActivity;
+    const province = customDetail;
+
+    if (hasTrip && !province) {
+        let detailLabel = 'chi tiết';
+        const userTeam = user.team || '';
+        const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+        const actObj = teamObj?.customActivities?.find(a => a.name === customActivity);
+        if (actObj && actObj.detailLabel) detailLabel = actObj.detailLabel;
+        errorEl.textContent = `Vui lòng nhập ${detailLabel.toLowerCase()}!`;
+        return;
+    }
 
     let eveningHours = 0;
     let totalHours = 0;
@@ -3123,11 +3194,11 @@ async function handleOTSubmit(e) {
         eveningHours = calculateEveningOT(otStart, otEnd);
         const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
         totalHours = lunchHours + eveningHours;
-        if (totalHours <= 0 && !hasTrip) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT hoặc đi xe tăng cường!'; return; }
+        if (totalHours <= 0 && !hasTrip) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT hoặc hoạt động ngoài giờ!'; return; }
     }
 
     if (hasTrip && totalHours === 0 && !note) {
-        note = 'Đi xe tăng cường ' + province;
+        note = customActivity + ' ' + province;
     } else if (!note) {
         errorEl.textContent = 'Vui lòng nhập ghi chú!';
         return;
@@ -3140,6 +3211,8 @@ async function handleOTSubmit(e) {
             otEnd: (!isBackfill && eveningHours > 0) ? otEnd : '',
             eveningOTHours: eveningHours, totalHours, note, isBackfill,
             deliveryProvince: hasTrip ? province : '',
+            customActivity,
+            calcMode,
             createdMonth: isBackfill ? getCurrentMonth() : date.substring(0, 7)
         });
 
@@ -3160,12 +3233,14 @@ async function handleOTSubmit(e) {
         document.getElementById('ot-end').value = '16:30';
         document.getElementById('ot-note').value = '';
         
-        const otHasTrip = document.getElementById('ot-has-trip');
-        if (otHasTrip) otHasTrip.checked = false;
-        const otProvGroup = document.getElementById('ot-province-group');
-        if (otProvGroup) otProvGroup.style.display = 'none';
-        const otProvInput = document.getElementById('ot-province');
-        if (otProvInput) otProvInput.value = '';
+        document.querySelectorAll('.ot-custom-activity-checkbox').forEach(chk => {
+            chk.checked = false;
+        });
+        document.querySelectorAll('.ot-custom-activity-detail').forEach(input => {
+            input.value = '';
+        });
+        const otCustomActGroup = document.getElementById('ot-custom-activity-group');
+        if (otCustomActGroup) otCustomActGroup.style.display = 'none';
 
         updateOTPreview();
         await refreshEmployeeRecords();
@@ -3200,10 +3275,33 @@ async function handleAdminOTSubmit(e) {
     if (!userId) { errorEl.textContent = 'Vui lòng chọn nhân viên!'; return; }
     if (!date) { errorEl.textContent = 'Vui lòng chọn ngày!'; return; }
 
-    const hasTrip = document.getElementById('admin-ot-has-trip')?.checked;
-    const province = document.getElementById('admin-ot-province')?.value.trim() || '';
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
 
-    if (hasTrip && !province) { errorEl.textContent = 'Vui lòng chọn hoặc nhập tỉnh đi xe!'; return; }
+    const checkedChk = document.querySelector('.admin-ot-custom-activity-checkbox:checked');
+    if (checkedChk) {
+        customActivity = checkedChk.dataset.actName;
+        calcMode = checkedChk.dataset.actMode;
+        const input = document.querySelector(`.admin-ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+        customDetail = input ? input.value.trim() : '';
+    }
+
+    const hasTrip = calcMode === 'trip' && !!customActivity;
+    const province = customDetail;
+
+    if (hasTrip && !province) {
+        let detailLabel = 'chi tiết';
+        if (userId) {
+            const foundUser = loadedUsers.find(u => u.id === userId);
+            const userTeam = foundUser ? (foundUser.team || '') : '';
+            const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+            const actObj = teamObj?.customActivities?.find(a => a.name === customActivity);
+            if (actObj && actObj.detailLabel) detailLabel = actObj.detailLabel;
+        }
+        errorEl.textContent = `Vui lòng nhập ${detailLabel.toLowerCase()}!`;
+        return;
+    }
 
     let eveningHours = 0;
     let totalHours = 0;
@@ -3218,11 +3316,11 @@ async function handleAdminOTSubmit(e) {
         eveningHours = calculateEveningOT(otStart, otEnd);
         const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
         totalHours = lunchHours + eveningHours;
-        if (totalHours <= 0 && !hasTrip) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT hoặc đi xe tăng cường!'; return; }
+        if (totalHours <= 0 && !hasTrip) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT hoặc hoạt động ngoài giờ!'; return; }
     }
 
     if (hasTrip && totalHours === 0 && !note) {
-        note = 'Đi xe tăng cường ' + province;
+        note = customActivity + ' ' + province;
     } else if (!note) {
         errorEl.textContent = 'Vui lòng nhập ghi chú!';
         return;
@@ -3235,6 +3333,8 @@ async function handleAdminOTSubmit(e) {
             otEnd: (!isBackfill && eveningHours > 0) ? otEnd : '',
             eveningOTHours: eveningHours, totalHours, note, isBackfill,
             deliveryProvince: hasTrip ? province : '',
+            customActivity,
+            calcMode,
             createdMonth: isBackfill ? getCurrentMonth() : date.substring(0, 7)
         });
 
@@ -3261,12 +3361,14 @@ async function handleAdminOTSubmit(e) {
         document.getElementById('admin-ot-end').value = '16:30';
         document.getElementById('admin-ot-note').value = '';
         
-        const adminOtHasTrip = document.getElementById('admin-ot-has-trip');
-        if (adminOtHasTrip) adminOtHasTrip.checked = false;
-        const adminOtProvGroup = document.getElementById('admin-ot-province-group');
-        if (adminOtProvGroup) adminOtProvGroup.style.display = 'none';
-        const adminOtProvInput = document.getElementById('admin-ot-province');
-        if (adminOtProvInput) adminOtProvInput.value = '';
+        document.querySelectorAll('.admin-ot-custom-activity-checkbox').forEach(chk => {
+            chk.checked = false;
+        });
+        document.querySelectorAll('.admin-ot-custom-activity-detail').forEach(input => {
+            input.value = '';
+        });
+        const adminOtCustomActGroup = document.getElementById('admin-ot-custom-activity-group');
+        if (adminOtCustomActGroup) adminOtCustomActGroup.style.display = 'none';
 
         const todayStr2 = new Date().toISOString().split('T')[0];
         const adminOtDateEl = document.getElementById('admin-ot-date');
@@ -4339,9 +4441,11 @@ document.addEventListener('DOMContentLoaded', () => {
             adminOtBackfill.addEventListener('change', function() {
                 const normalInputs = document.getElementById('admin-ot-normal-inputs');
                 const backfillGroup = document.getElementById('admin-ot-backfill-hours-group');
+                const customActGroup = document.getElementById('admin-ot-custom-activity-group');
                 if (this.checked) {
                     if (normalInputs) normalInputs.style.display = 'none';
                     if (backfillGroup) backfillGroup.style.display = 'block';
+                    if (customActGroup) customActGroup.style.display = 'none';
                     const lunchEl = document.getElementById('admin-ot-lunch');
                     if (lunchEl) lunchEl.checked = false;
                     const startEl = document.getElementById('admin-ot-start');
@@ -4351,6 +4455,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     if (normalInputs) normalInputs.style.display = 'block';
                     if (backfillGroup) backfillGroup.style.display = 'none';
+                    const targetSelf = document.getElementById('admin-ot-target-self');
+                    let userId = '';
+                    if (targetSelf && !targetSelf.checked) {
+                        userId = document.getElementById('admin-ot-user').value;
+                    }
+                    setupAdminCustomActivitiesUI(userId);
                 }
             });
         }
@@ -4366,6 +4476,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         userSelect.required = false;
                         userSelect.value = '';
                     }
+                    setupAdminCustomActivitiesUI('');
                 }
             });
             adminOtTargetEmp.addEventListener('change', function() {
@@ -4374,8 +4485,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (userSelect) {
                         userSelect.required = true;
                     }
+                    setupAdminCustomActivitiesUI(userSelect.value);
                 }
             });
+            if (userSelect) {
+                userSelect.addEventListener('change', function() {
+                    setupAdminCustomActivitiesUI(this.value);
+                });
+            }
         }
 
         // Live preview listeners
@@ -4433,9 +4550,11 @@ document.addEventListener('DOMContentLoaded', () => {
         otBackfill.addEventListener('change', function() {
             const normalInputs = document.getElementById('ot-normal-inputs');
             const backfillGroup = document.getElementById('ot-backfill-hours-group');
+            const customActGroup = document.getElementById('ot-custom-activity-group');
             if (this.checked) {
                 if (normalInputs) normalInputs.style.display = 'none';
                 if (backfillGroup) backfillGroup.style.display = 'block';
+                if (customActGroup) customActGroup.style.display = 'none';
                 const lunchEl = document.getElementById('ot-lunch');
                 if (lunchEl) lunchEl.checked = false;
                 const startEl = document.getElementById('ot-start');
@@ -4445,6 +4564,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 if (normalInputs) normalInputs.style.display = 'block';
                 if (backfillGroup) backfillGroup.style.display = 'none';
+                setupEmployeeCustomActivitiesUI();
             }
             updateOTPreview();
         });
@@ -4973,6 +5093,170 @@ async function approveUnlinkDevice(userId, fullname) {
         }}
     ]);
 }
+
+
+// ==================== CUSTOM ACTIVITIES UI FOR DESKTOP ====================
+function setupAdminCustomActivitiesUI(userId) {
+    const listContainer = document.getElementById('admin-ot-custom-activities-list');
+    const activityGroup = document.getElementById('admin-ot-custom-activity-group');
+    if (!listContainer) return;
+
+    // Reset container first
+    listContainer.innerHTML = '';
+    
+    // Find the user's team
+    let userTeam = '';
+    if (userId) {
+        const foundUser = loadedUsers.find(u => u.id === userId);
+        userTeam = foundUser ? (foundUser.team || '') : '';
+    } else {
+        // Target is self
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        userTeam = currentUser ? (currentUser.team || '') : '';
+    }
+
+    if (!userTeam || userTeam === 'admin') {
+        if (activityGroup) activityGroup.style.display = 'none';
+        return;
+    }
+
+    // Find the team settings of userTeam in TEAMS
+    const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+    const activities = (teamObj && teamObj.customActivities) ? teamObj.customActivities : [];
+
+    const isBackfillChecked = document.getElementById('admin-ot-backfill')?.checked || false;
+
+    if (activities.length > 0) {
+        if (activityGroup) activityGroup.style.display = isBackfillChecked ? 'none' : 'block';
+
+        listContainer.innerHTML = activities.map(act => `
+            <div class="custom-activity-item toggle-row" style="margin-bottom: 14px; text-align: left;">
+                <label class="toggle-label" for="admin-chk-${act.id}" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                    <span class="toggle-text">
+                        <strong>${act.name}</strong>
+                        <small>Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}</small>
+                    </span>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="admin-chk-${act.id}" class="admin-ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleAdminCustomActivityInput('${act.id}')">
+                        <span class="toggle-slider"></span>
+                    </div>
+                </label>
+                <div class="form-group" id="admin-ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding: 0 4px; margin-bottom: 0;">
+                    <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiết'}</label>
+                    <input type="text" class="admin-ot-custom-activity-detail" data-act-id="${act.id}" placeholder="${act.placeholder || 'Nhập chi tiết...'}" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
+                </div>
+            </div>
+        `).join('');
+
+        // Bind input listeners for new text inputs to update preview dynamically
+        document.querySelectorAll('.admin-ot-custom-activity-detail').forEach(input => {
+            input.addEventListener('input', updateAdminOTPreview);
+        });
+    } else {
+        if (activityGroup) activityGroup.style.display = 'none';
+    }
+}
+
+window.toggleAdminCustomActivityInput = function(actId) {
+    const chk = document.querySelector(`.admin-ot-custom-activity-checkbox[data-act-id="${actId}"]`);
+    if (chk && chk.checked) {
+        // Tự động bỏ chọn các checkbox hoạt động khác (chỉ cho phép chọn tối đa 1 hoạt động)
+        document.querySelectorAll('.admin-ot-custom-activity-checkbox').forEach(other => {
+            if (other !== chk) {
+                other.checked = false;
+                // Ẩn chi tiết của checkbox kia đi
+                const otherDetailGroup = document.getElementById(`admin-ot-custom-activity-detail-group-${other.dataset.actId}`);
+                if (otherDetailGroup) otherDetailGroup.style.display = 'none';
+            }
+        });
+        
+        // Hiển thị khung nhập chi tiết của hoạt động này
+        const detailGroup = document.getElementById(`admin-ot-custom-activity-detail-group-${actId}`);
+        if (detailGroup) detailGroup.style.display = 'block';
+    } else {
+        // Ẩn khung nhập chi tiết
+        const detailGroup = document.getElementById(`admin-ot-custom-activity-detail-group-${actId}`);
+        if (detailGroup) detailGroup.style.display = 'none';
+    }
+    updateAdminOTPreview();
+};
+
+function setupEmployeeCustomActivitiesUI() {
+    const listContainer = document.getElementById('ot-custom-activities-list');
+    const activityGroup = document.getElementById('ot-custom-activity-group');
+    if (!listContainer) return;
+
+    // Reset container first
+    listContainer.innerHTML = '';
+    
+    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+    const userTeam = currentUser ? (currentUser.team || '') : '';
+
+    if (!userTeam || userTeam === 'admin') {
+        if (activityGroup) activityGroup.style.display = 'none';
+        return;
+    }
+
+    // Find the team settings of userTeam in TEAMS
+    const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+    const activities = (teamObj && teamObj.customActivities) ? teamObj.customActivities : [];
+
+    const isBackfillChecked = document.getElementById('ot-backfill')?.checked || false;
+
+    if (activities.length > 0) {
+        if (activityGroup) activityGroup.style.display = isBackfillChecked ? 'none' : 'block';
+
+        listContainer.innerHTML = activities.map(act => `
+            <div class="custom-activity-item toggle-row" style="margin-bottom: 14px; text-align: left;">
+                <label class="toggle-label" for="chk-${act.id}" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                    <span class="toggle-text">
+                        <strong>${act.name}</strong>
+                        <small>Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}</small>
+                    </span>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="chk-${act.id}" class="ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleEmployeeCustomActivityInput('${act.id}')">
+                        <span class="toggle-slider"></span>
+                    </div>
+                </label>
+                <div class="form-group" id="ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding: 0 4px; margin-bottom: 0;">
+                    <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiết'}</label>
+                    <input type="text" class="ot-custom-activity-detail" data-act-id="${act.id}" placeholder="${act.placeholder || 'Nhập chi tiết...'}" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
+                </div>
+            </div>
+        `).join('');
+
+        // Bind input listeners for new text inputs to update preview dynamically
+        document.querySelectorAll('.ot-custom-activity-detail').forEach(input => {
+            input.addEventListener('input', updateOTPreview);
+        });
+    } else {
+        if (activityGroup) activityGroup.style.display = 'none';
+    }
+}
+
+window.toggleEmployeeCustomActivityInput = function(actId) {
+    const chk = document.querySelector(`.ot-custom-activity-checkbox[data-act-id="${actId}"]`);
+    if (chk && chk.checked) {
+        // Tự động bỏ chọn các checkbox hoạt động khác (chỉ cho phép chọn tối đa 1 hoạt động)
+        document.querySelectorAll('.ot-custom-activity-checkbox').forEach(other => {
+            if (other !== chk) {
+                other.checked = false;
+                // Ẩn chi tiết của checkbox kia đi
+                const otherDetailGroup = document.getElementById(`ot-custom-activity-detail-group-${other.dataset.actId}`);
+                if (otherDetailGroup) otherDetailGroup.style.display = 'none';
+            }
+        });
+        
+        // Hiển thị khung nhập chi tiết của hoạt động này
+        const detailGroup = document.getElementById(`ot-custom-activity-detail-group-${actId}`);
+        if (detailGroup) detailGroup.style.display = 'block';
+    } else {
+        // Ẩn khung nhập chi tiết
+        const detailGroup = document.getElementById(`ot-custom-activity-detail-group-${actId}`);
+        if (detailGroup) detailGroup.style.display = 'none';
+    }
+    updateOTPreview();
+};
 
 // Expose global methods for inline HTML onclick handlers
 window.editRecordDialog = editRecordDialog;

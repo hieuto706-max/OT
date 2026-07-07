@@ -899,19 +899,9 @@
                                 </div>
                             </div>
 
-                            <!-- Trip inputs -->
-                            <div class="form-group" style="margin-bottom: 15px; text-align: left;">
-                                <label class="switch-label">
-                                    <input type="checkbox" id="admin-ot-has-trip">
-                                    <span class="switch-slider"></span>
-                                    <span class="switch-text">Đi xe tăng cường</span>
-                                </label>
-                            </div>
-                            <div class="form-group" id="admin-ot-province-group" style="display: none; margin-bottom: 20px;">
-                                <label for="admin-ot-province" class="field-label">Tỉnh đi xe</label>
-                                <div class="input-wrapper">
-                                    <input type="text" id="admin-ot-province" list="provinces-datalist" placeholder="Nhập để tìm kiếm tỉnh..." class="input-sm" style="height: 42px; border-radius: 8px; box-sizing: border-box; padding-left: 12px; width: 100%;">
-                                </div>
+                            <!-- Nhóm Hoạt động ngoài giờ tùy chỉnh cho Admin ghi nhận -->
+                            <div id="admin-ot-custom-activity-group" style="display: none; margin-bottom: 20px;">
+                                <div id="admin-ot-custom-activities-list"></div>
                             </div>
 
                             <!-- Note -->
@@ -959,6 +949,10 @@
                                 <div class="ticket-field">
                                     <div class="ticket-label">OT chiều</div>
                                     <div class="ticket-value" id="preview-ticket-evening">Không đăng ký</div>
+                                </div>
+                                <div class="ticket-field" id="preview-ticket-activity-group" style="display: none;">
+                                    <div class="ticket-label" id="preview-ticket-activity-label">Hoạt động</div>
+                                    <div class="ticket-value" id="preview-ticket-activity">-</div>
                                 </div>
                                 <div class="ticket-divider"></div>
                                 <div class="ticket-field total-field">
@@ -1201,19 +1195,12 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Nhóm Hoạt động ngoài giờ tùy chỉnh cho cá nhân ghi nhận -->
+                            <div id="ot-custom-activity-group" style="display: none; margin-bottom: 16px;">
+                                <div id="ot-custom-activities-list"></div>
+                            </div>
 
-                            <!-- Trip inputs -->
-                            <div class="form-group" style="margin-bottom: 12px; text-align: left;">
-                                <label class="checkbox-label" style="margin-top: 0; display: inline-flex; align-items: center; gap: 8px;">
-                                    <input type="checkbox" id="ot-has-trip">
-                                    <span class="checkbox-custom"></span>
-                                    Đi xe tăng cường
-                                </label>
-                            </div>
-                            <div class="form-group" id="ot-province-group" style="display: none; margin-bottom: 16px;">
-                                <label for="ot-province">Tỉnh đi xe</label>
-                                <input type="text" id="ot-province" list="provinces-datalist" placeholder="Nhập để tìm kiếm tỉnh...">
-                            </div>
 
                             <div class="form-group">
                                 <label for="ot-note">Ghi chú</label>

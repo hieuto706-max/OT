@@ -1127,7 +1127,7 @@ function updatePreview() {
             total += OT_LUNCH_HOURS;
         }
 
-        if (start && end && calcMode !== 'trip') {
+        if (start && end) {
             const ev = calcEveningOT(start, end);
             if (ev > 0) {
                 items.push({ label: `OT Chiều (${start}-${end})`, val: `${ev.toFixed(1)} giờ` });
@@ -1317,30 +1317,30 @@ async function handleOTSubmit(e) {
         note = '[BÙ THÁNG TRƯỚC] ' + note;
     } else {
         eveningOTHours = calcEveningOT(start, end);
-        totalHours = (lunch ? OT_LUNCH_HOURS : 0) + (calcMode === 'trip' ? 0 : eveningOTHours);
-
+        totalHours = (lunch ? OT_LUNCH_HOURS : 0) + eveningOTHours;
+ 
         if (totalHours <= 0 && !hasTrip) {
             showToast('Vui lòng chọn ít nhất một loại OT hoặc hoạt động ngoài giờ!', 'error');
             return;
         }
     }
-
+ 
     if (hasTrip && totalHours === 0 && !note) {
         note = (customActivity || 'Đi xe tăng cường') + ' ' + province;
     } else if (!note) {
         showToast('Vui lòng nhập ghi chú (lý do tăng ca, chi tiết công việc)!', 'error');
         return;
     }
-
+ 
     const createdMonth = isBackfill ? getCurrentMonth() : date.substring(0, 7);
-
+ 
     const recordData = {
         userId: currentUser.id,
         date,
         hasLunchOT: isBackfill ? false : lunch,
-        otStart: (!isBackfill && eveningOTHours > 0 && calcMode !== 'trip') ? start : '',
-        otEnd: (!isBackfill && eveningOTHours > 0 && calcMode !== 'trip') ? end : '',
-        eveningOTHours: calcMode === 'trip' ? 0 : eveningOTHours,
+        otStart: (!isBackfill && eveningOTHours > 0) ? start : '',
+        otEnd: (!isBackfill && eveningOTHours > 0) ? end : '',
+        eveningOTHours: eveningOTHours,
         totalHours,
         deliveryProvince: hasTrip ? province : '',
         customActivity,
@@ -2788,22 +2788,22 @@ async function handleEditOTSubmit(e) {
         eveningOTHours = hoursVal;
     } else {
         eveningOTHours = calcEveningOT(start, end);
-        totalHours = (lunch ? OT_LUNCH_HOURS : 0) + (calcMode === 'trip' ? 0 : eveningOTHours);
-
+        totalHours = (lunch ? OT_LUNCH_HOURS : 0) + eveningOTHours;
+ 
         if (totalHours <= 0 && !hasTrip) {
             showToast('Vui lòng chọn ít nhất một loại OT hoặc hoạt động ngoài giờ!', 'error');
             return;
         }
     }
-
+ 
     const createdMonth = isBackfill ? getCurrentMonth() : date.substring(0, 7);
-
+ 
     const updatedData = {
         date,
         hasLunchOT: isBackfill ? false : lunch,
-        otStart: (!isBackfill && eveningOTHours > 0 && calcMode !== 'trip') ? start : '',
-        otEnd: (!isBackfill && eveningOTHours > 0 && calcMode !== 'trip') ? end : '',
-        eveningOTHours: calcMode === 'trip' ? 0 : eveningOTHours,
+        otStart: (!isBackfill && eveningOTHours > 0) ? start : '',
+        otEnd: (!isBackfill && eveningOTHours > 0) ? end : '',
+        eveningOTHours: eveningOTHours,
         totalHours,
         deliveryProvince: hasTrip ? province : '',
         customActivity,
