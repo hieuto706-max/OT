@@ -956,10 +956,7 @@ function setupCustomActivitiesUI() {
         if (editLegacyGroup) editLegacyGroup.style.display = 'none';
         if (editLegacyProvinceGroup) editLegacyProvinceGroup.style.display = 'none';
 
-        const optionsHtml = `
-            <option value="">-- Không có (Chỉ tăng ca bình thường) --</option>
-            ${activities.map(act => `<option value="${act.name}">${act.name}</option>`).join('')}
-        `;
+        const optionsHtml = activities.map(act => `<option value="${act.name}">${act.name}</option>`).join('');
         if (select) select.innerHTML = optionsHtml;
         if (editSelect) editSelect.innerHTML = optionsHtml;
 

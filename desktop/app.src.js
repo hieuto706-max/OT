@@ -817,14 +817,14 @@ function renderSelectedTeamDetails() {
                 <!-- 3. Quản lý hoạt động tùy chọn -->
                 <div style="display: flex; flex-direction: column; flex: 1; min-height: 200px;">
                     <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">Hoạt động ngoài giờ của Team</span>
-                    <div style="display: flex; gap: 4px; margin-bottom: 6px;">
-                        <input type="text" id="modal-new-act-name" placeholder="Tên hoạt động..." style="flex: 1.5; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
-                        <select id="modal-new-act-mode" style="flex: 1.2; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 2px; font-size:11px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;">
+                        <input type="text" id="modal-new-act-name" placeholder="Tên hoạt động..." style="flex: 1.5; min-width: 100px; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
+                        <select id="modal-new-act-mode" style="flex: 1.2; min-width: 100px; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 2px; font-size:11px;">
                             <option value="hour">Tính theo Giờ</option>
                             <option value="trip">Tính theo Chuyến</option>
                         </select>
-                        <input type="text" id="modal-new-act-label" placeholder="Nhãn (Tỉnh đi xe...)" style="flex: 1.5; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
-                        <button class="btn btn-primary btn-sm" onclick="addActivityToTeam('${team.id}')" style="height: 28px; border-radius:6px; font-size:11px; padding:0 6px; white-space:nowrap;">Thêm</button>
+                        <input type="text" id="modal-new-act-label" placeholder="Nhãn (Tỉnh đi xe...)" style="flex: 1.5; min-width: 100px; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
+                        <button class="btn btn-primary btn-sm" onclick="addActivityToTeam('${team.id}')" style="height: 28px; border-radius:6px; font-size:11px; padding:0 10px; white-space:nowrap; flex: 1;">Thêm</button>
                     </div>
                     <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px; background: rgba(0,0,0,0.05); min-height: 100px;">
                         ${activitiesListHtml}
