@@ -104,27 +104,62 @@ class ViewController: UIViewController {
 
     // MARK: - Auto Discover Server (quét mạng WiFi tìm server OT Manager)
 
-    private func autoDiscoverServer() {
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self else { return }
-
-            // 1. Thử kết nối Render Cloud Server trước
-            let cloudUrl = "https://ot-manager-server-jbxd.onrender.com"
-            if self.isServerReachable(host: "ot-manager-server-jbxd.onrender.com", port: 443, timeout: 5.0) {
-                DispatchQueue.main.async {
-                    self.sendServerDiscovered(serverUrl: cloudUrl)
-                }
+    private func fetchRentryUrl(completion: @escaping (String?) -> Void) {
+        guard let url = URL(string: "https://rentry.co/otmanager-hieutm?t=\(Date().timeIntervalSince1970)") else {
+            completion(nil)
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 5.0
+        request.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)", forHTTPHeaderField: "User-Agent")
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard error == nil, let data = data, let html = String(data: data, encoding: .utf8) else {
+                completion(nil)
                 return
             }
+            
+            let pattern = "href=\"(https://[a-zA-Z0-9.-]+\\.[a-zA-Z0-9.-]+)\" class=\"external\""
+            if let regex = try? NSRegularExpression(pattern: pattern, options: []),
+               let match = regex.firstMatch(in: html, options: [], range: NSRange(location: 0, length: html.utf16.count)) {
+                if let range = Range(match.range(at: 1), in: html) {
+                    completion(String(html[range]))
+                    return
+                }
+            }
+            
+            let fallbackPattern = "https://[a-zA-Z0-9.-]+\\.lhr\\.life"
+            if let regex = try? NSRegularExpression(pattern: fallbackPattern, options: []),
+               let match = regex.firstMatch(in: html, options: [], range: NSRange(location: 0, length: html.utf16.count)) {
+                if let range = Range(match.range(at: 0), in: html) {
+                    completion(String(html[range]))
+                    return
+                }
+            }
+            
+            completion(nil)
+        }.resume()
+    }
 
-            // 2. Quét subnet WiFi nội bộ cổng 3456
-            let port: UInt16 = 3456
-            guard let localIP = self.getWiFiIPAddress() else { return }
-
-            if let serverIP = self.discoverServerIP(localIP: localIP, port: port) {
-                let serverUrl = "http://\(serverIP):\(port)"
+    private func autoDiscoverServer() {
+        fetchRentryUrl { [weak self] resolvedUrl in
+            guard let self = self else { return }
+            
+            if let urlStr = resolvedUrl {
+                if self.isServerReachable(urlStr: urlStr, timeout: 5.0) {
+                    DispatchQueue.main.async {
+                        self.sendServerDiscovered(serverUrl: urlStr)
+                    }
+                    return
+                }
+            }
+            
+            let cloudUrl = "https://api.otmanager.id.vn"
+            if self.isServerReachable(urlStr: cloudUrl, timeout: 5.0) {
                 DispatchQueue.main.async {
-                    self.sendServerDiscovered(serverUrl: serverUrl)
+                    self.sendServerDiscovered(serverUrl: cloudUrl)
                 }
             }
         }
@@ -143,47 +178,17 @@ class ViewController: UIViewController {
         webView.evaluateJavaScript(js, completionHandler: nil)
     }
 
-    // MARK: - Network Utilities
-
-    private func getWiFiIPAddress() -> String? {
-        var address: String?
-        var ifaddr: UnsafeMutablePointer<ifaddrs>?
-
-        guard getifaddrs(&ifaddr) == 0 else { return nil }
-        guard let firstAddr = ifaddr else { return nil }
-
-        for ptr in sequence(first: firstAddr, next: { $0.pointee.ifa_next }) {
-            let interface = ptr.pointee
-            guard let ifaAddr = interface.ifa_addr else { continue }
-            guard let ifaName = interface.ifa_name else { continue }
-            let addrFamily = ifaAddr.pointee.sa_family
-
-            if addrFamily == UInt8(AF_INET) {
-                let name = String(cString: ifaName)
-                if name == "en0" { // en0 = WiFi interface trên iOS
-                    var ip = [CChar](repeating: 0, count: 16)
-                    let ipAddress = ifaAddr.withMemoryRebound(to: sockaddr_in.self, capacity: 1) { ptr -> String? in
-                        var sinAddr = ptr.pointee.sin_addr
-                        if inet_ntop(AF_INET, &sinAddr, &ip, socklen_t(16)) != nil {
-                            return String(cString: ip)
-                        }
-                        return nil
-                    }
-                    if let ipAddress = ipAddress {
-                        address = ipAddress
-                    }
-                }
-            }
-        }
-        freeifaddrs(ifaddr)
-        return address
-    }
-
-    private func isServerReachable(host: String, port: Int, timeout: TimeInterval) -> Bool {
+    private func isServerReachable(urlStr: String, timeout: TimeInterval) -> Bool {
         let semaphore = DispatchSemaphore(value: 0)
         var reachable = false
-
-        let task = URLSession.shared.dataTask(with: URL(string: "https://\(host)/api/version")!) { data, response, error in
+        
+        guard let url = URL(string: urlStr + "/api/server-info") else { return false }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = timeout
+        
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
                 reachable = true
             }
@@ -192,72 +197,6 @@ class ViewController: UIViewController {
         task.resume()
         _ = semaphore.wait(timeout: .now() + timeout)
         return reachable
-    }
-
-    private func discoverServerIP(localIP: String, port: UInt16) -> String? {
-        guard let lastDotIndex = localIP.lastIndex(of: ".") else { return nil }
-        let subnet = String(localIP[...lastDotIndex]) // "192.168.1."
-
-        let dispatchGroup = DispatchGroup()
-        let queue = DispatchQueue(label: "com.otmanager.scanner", attributes: .concurrent)
-        var foundIP: String?
-        let lock = NSLock()
-
-        for host in 1...254 {
-            dispatchGroup.enter()
-            queue.async {
-                defer { dispatchGroup.leave() }
-
-                lock.lock()
-                let alreadyFound = foundIP != nil
-                lock.unlock()
-                if alreadyFound { return }
-
-                let ip = "\(subnet)\(host)"
-                if self.isPortOpen(host: ip, port: port, timeout: 1.0) {
-                    lock.lock()
-                    if foundIP == nil {
-                        foundIP = ip
-                    }
-                    lock.unlock()
-                }
-            }
-        }
-
-        _ = dispatchGroup.wait(timeout: .now() + 12)
-        return foundIP
-    }
-
-    private func isPortOpen(host: String, port: UInt16, timeout: TimeInterval) -> Bool {
-        let semaphore = DispatchSemaphore(value: 0)
-        var success = false
-        
-        let hostName = NWEndpoint.Host(host)
-        guard let portNumber = NWEndpoint.Port(rawValue: port) else { return false }
-        let connection = NWConnection(host: hostName, port: portNumber, using: .tcp)
-        
-        connection.stateUpdateHandler = { state in
-            switch state {
-            case .ready:
-                success = true
-                connection.cancel()
-                semaphore.signal()
-            case .failed(_):
-                connection.cancel()
-                semaphore.signal()
-            case .waiting(_):
-                break
-            default:
-                break
-            }
-        }
-        
-        connection.start(queue: DispatchQueue.global(qos: .userInitiated))
-        
-        _ = semaphore.wait(timeout: .now() + timeout)
-        connection.cancel()
-        
-        return success
     }
 
     // MARK: - Helpers

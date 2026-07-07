@@ -1345,7 +1345,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function autoResolveRentryUrl() {
         return new Promise((resolve) => {
-            fetch('https://rentry.co/otmanager-hieutm-3456?t=' + Date.now())
+            fetch('https://rentry.co/otmanager-hieutm?t=' + Date.now())
                 .then(res => {
                     if (!res.ok) throw new Error();
                     return res.text();

@@ -12,7 +12,94 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.4.5">
+    <style>
+      /* Styles for the analytics charts */
+      .chart-team-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          font-size: 0.85rem;
+      }
+      .chart-team-label {
+          width: 110px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: #e2f0ea;
+      }
+      .chart-team-progress-wrapper {
+          flex: 1;
+          height: 10px;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 5px;
+          overflow: hidden;
+          position: relative;
+      }
+      .chart-team-progress {
+          height: 100%;
+          border-radius: 5px;
+          background: linear-gradient(90deg, #8b5cf6, #d946ef);
+          width: 0%;
+          transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .chart-team-value {
+          width: 65px;
+          text-align: right;
+          color: #879f95;
+          font-weight: 500;
+          font-family: monospace;
+      }
+      
+      .chart-day-column {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          height: 100%;
+          justify-content: flex-end;
+          position: relative;
+      }
+      .chart-day-bar {
+          width: 100%;
+          min-height: 2px;
+          background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+          border-top-left-radius: 3px;
+          border-top-right-radius: 3px;
+          height: var(--height, 0%);
+          transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+      }
+      .chart-day-bar:hover {
+          background: linear-gradient(180deg, #34d399 0%, #059669 100%);
+      }
+      .chart-day-tooltip {
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translate(-50%, -8px);
+          background: #18181b;
+          border: 1px solid rgba(255,255,255,0.15);
+          color: #fff;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          white-space: nowrap;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.2s, transform 0.2s;
+          z-index: 10;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      }
+      .chart-day-column:hover .chart-day-tooltip {
+          opacity: 1;
+          transform: translate(-50%, -4px);
+      }
+      .chart-day-label {
+          font-size: 0.65rem;
+          color: #71717a;
+          margin-top: 4px;
+      }
+    </style>
     <!-- Prevent login screen flashing if already logged in -->
     <style id="anti-flash-style">
       html.user-admin-logged-in #screen-login,
@@ -625,7 +712,35 @@
                     </div>
                 </div>
 
+                <!-- Charts Panel -->
+                <div class="panel" id="charts-panel" style="margin-bottom: 24px; display: none; overflow: hidden;">
+                    <div class="panel-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 12px; margin-bottom: 16px;">
+                        <h3>📊 Phân tích thống kê tăng ca</h3>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 24px;">
+                        <!-- Chart 1: OT hours by Team (Bar Chart) -->
+                        <div class="chart-box" style="background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255, 255, 255, 0.03); padding: 20px; border-radius: 12px;">
+                            <h4 style="margin-top: 0; margin-bottom: 20px; font-size: 1rem; color: #a1a1aa; border-left: 3px solid #8b5cf6; padding-left: 10px;">Lũy kế giờ OT theo Team</h4>
+                            <div id="chart-teams-bars" style="display: flex; flex-direction: column; gap: 16px;">
+                                <!-- Dynamically populated bars -->
+                                <div style="text-align: center; color: #71717a; padding: 20px 0;">Không có dữ liệu</div>
+                            </div>
+                        </div>
 
+                        <!-- Chart 2: OT Hours by Day (Vertical Bar Chart) -->
+                        <div class="chart-box" style="background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255, 255, 255, 0.03); padding: 20px; border-radius: 12px; display: flex; flex-direction: column;">
+                            <h4 style="margin-top: 0; margin-bottom: 20px; font-size: 1rem; color: #a1a1aa; border-left: 3px solid #10b981; padding-left: 10px;">Biến động tăng ca theo ngày</h4>
+                            <div id="chart-days-trend" style="display: flex; align-items: flex-end; justify-content: space-between; height: 180px; gap: 4px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-top: auto;">
+                                <!-- Dynamically populated bars -->
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #71717a; margin-top: 8px;">
+                                <span>Ngày 1</span>
+                                <span>Ngày 15</span>
+                                <span>Ngày cuối tháng</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Data Table Panel -->
                 <div class="panel">
@@ -653,6 +768,13 @@
                                     <option value="">Tất cả Team</option>
                                 </select>
                             </div>
+                            <button class="btn btn-secondary btn-sm" id="btn-toggle-charts" style="background-color: #27272a; border-color: #3f3f46; color: #e4e4e7;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="display:inline; margin-right:4px;">
+                                    <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+                                    <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+                                </svg>
+                                Biểu đồ
+                            </button>
                             <button class="btn btn-primary btn-sm" id="btn-export">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -1197,6 +1319,7 @@
 
     <script src="exceljs.min.js"></script>
     <script src="xlsx.full.min.js"></script>
+    <script src="server-config.js"></script>
     <script src="app.js?v=1.4.4"></script>
 </body>
 </html>

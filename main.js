@@ -1,7 +1,7 @@
 const { app, BrowserWindow, Menu, Tray, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { startServer, stopServer, getLocalIP, PORT } = require('./server/server');
+// Không require server local nữa vì chạy client cloud thuần túy
 
 // Kích hoạt tăng tốc phần cứng (GPU Acceleration) giúp giao diện mượt mà, không bị giật lag trên các máy văn phòng yếu.
 // Chỉ vô hiệu hóa sandbox để tránh một số lỗi phân quyền hệ thống.
@@ -40,27 +40,7 @@ function isLocalHostOrIP(hostname) {
 }
 
 async function createWindow() {
-    // Khởi động server local (Luôn chạy để load giao diện nhanh và hỗ trợ API)
-    try {
-        await startServer();
-    } catch (err) {
-        if (err.code === 'EADDRINUSE') {
-            dialog.showErrorBox(
-                'Cổng kết nối bị chiếm dụng',
-                'Ứng dụng OT Manager đã được chạy hoặc cổng 3456 đang bị sử dụng bởi một chương trình khác.\n\nVui lòng kiểm tra khay hệ thống (System Tray) hoặc tắt chương trình đang chiếm dụng cổng này trước khi mở lại.'
-            );
-        } else {
-            dialog.showErrorBox(
-                'Lỗi khởi động máy chủ',
-                'Đã xảy ra lỗi không thể khởi động server local:\n' + err.message
-            );
-        }
-        app.quit();
-        return;
-    }
-
-    let serverUrl = `http://localhost:${PORT}`;
-    let cloudUrl = '';
+    let cloudUrl = 'https://api.otmanager.id.vn';
 
     // Đọc file config.json: Ưu tiên kế bên file exe khi đóng gói, sau đó mới đến file trong asar/dev
     let configPath = path.join(__dirname, 'server', 'config.json');
@@ -85,7 +65,17 @@ async function createWindow() {
             console.error('[Main] Lỗi đọc file config.json:', e);
         }
     }
-    const ip = getLocalIP();
+
+    // Ghi file cấu hình cổng / server động cho renderer app đọc
+    try {
+        fs.writeFileSync(
+            path.join(__dirname, 'desktop', 'server-config.js'),
+            `window.OT_CLOUD_URL = "${cloudUrl}";`,
+            'utf-8'
+        );
+    } catch (e) {
+        console.error('[Main] Lỗi ghi file server-config.js:', e);
+    }
 
     mainWindow = new BrowserWindow({
         width: 1280,
@@ -104,20 +94,16 @@ async function createWindow() {
         show: false,
     });
 
-    // Load desktop app từ server local (để tránh lỗi DNS/SSL/Render ngủ đông gây ra màn hình đen)
-    let finalDesktopUrl = `${serverUrl}/desktop/index.html`;
-    mainWindow.loadURL(finalDesktopUrl);
+    // Nạp giao diện trực tiếp từ file tĩnh trên máy tính
+    mainWindow.loadFile(path.join(__dirname, 'desktop', 'index.html'));
 
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
         // mainWindow.webContents.openDevTools(); // Mở DevTools để chẩn đoán lỗi
         console.log(`\n╔══════════════════════════════════════╗`);
-        console.log(`║   OT Manager đang chạy!              ║`);
-        console.log(`║                                      ║`);
-        console.log(`║   📱 App Nhân Viên (Điện thoại):     ║`);
-        console.log(`║   http://${ip}:${PORT}`.padEnd(41) + `║`);
-        console.log(`║                                      ║`);
-        console.log(`║   🖥️  App Quản Lý (Desktop):         ║`);
+        console.log(`║   OT Manager Desktop đang chạy!      ║`);
+        console.log(`║   Đã nạp Cloud Server:               ║`);
+        console.log(`║   ${cloudUrl}`.padEnd(38) + `   ║`);
         console.log(`╚══════════════════════════════════════╝\n`);
         
         // Kích hoạt kiểm tra cập nhật trên startup khi online (Đã chuyển sang dùng checkUpdateSilent ở frontend để hiển thị giao diện đẹp hơn)
@@ -553,5 +539,5 @@ app.on('window-all-closed', () => {
 });
 
 app.on('will-quit', () => {
-    stopServer();
+    // Không chạy server local nữa nên không cần dừng
 });

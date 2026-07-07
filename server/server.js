@@ -131,6 +131,57 @@ async function migratePasswords(db) {
     return migrated;
 }
 
+// Tự động chuyển đổi các team dạng chuỗi cũ sang đối tượng cấu hình mới
+function migrateTeams(db) {
+    if (!db.teams) {
+        db.teams = [];
+        return false;
+    }
+    let migrated = false;
+    db.teams = db.teams.map(team => {
+        if (typeof team === 'string') {
+            migrated = true;
+            return {
+                id: team,
+                name: team,
+                leaderId: null,
+                customActivities: [],
+                autoApproveRules: {
+                    normalOT: false,
+                    backfill: false,
+                    sunday: false,
+                    customActivity: false
+                }
+            };
+        }
+        // Đảm bảo có đầy đủ thuộc tính nếu là dạng đối tượng cũ
+        let updated = false;
+        if (!team.id) { team.id = team.name || generateId(); updated = true; }
+        if (team.leaderId === undefined) { team.leaderId = null; updated = true; }
+        if (!team.customActivities) { team.customActivities = []; updated = true; }
+        if (!team.autoApproveRules) {
+            team.autoApproveRules = {
+                normalOT: false,
+                backfill: false,
+                sunday: false,
+                customActivity: false
+            };
+            updated = true;
+        } else {
+            const rules = team.autoApproveRules;
+            if (rules.normalOT === undefined) { rules.normalOT = false; updated = true; }
+            if (rules.backfill === undefined) { rules.backfill = false; updated = true; }
+            if (rules.sunday === undefined) { rules.sunday = false; updated = true; }
+            if (rules.customActivity === undefined) { rules.customActivity = false; updated = true; }
+        }
+        if (updated) {
+            migrated = true;
+        }
+        return team;
+    });
+    return migrated;
+}
+
 // ==================== JWT TOKEN ====================
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
@@ -255,10 +306,10 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
 
 function getCorsOrigin(req) {
     const origin = req.headers['origin'] || '';
-    if (!ALLOWED_ORIGINS) return '*'; // Backward compatible
+    if (!ALLOWED_ORIGINS) return origin || '*'; // Backward compatible
     if (ALLOWED_ORIGINS.includes(origin)) return origin;
-    // Cho phép localhost và các IP nội bộ
-    if (origin.includes('localhost') || origin.includes('127.0.0.1') || /^https?:\/\/192\.168\./.test(origin)) {
+    // Cho phép localhost, các IP nội bộ, và file:// hoặc null (từ Electron/Webview)
+    if (origin.includes('localhost') || origin.includes('127.0.0.1') || /^https?:\/\/192\.168\./.test(origin) || origin === 'file://' || origin === 'null') {
         return origin;
     }
     return ''; // Từ chối
@@ -287,7 +338,7 @@ function enqueueWrite(fn) {
     return writeQueue;
 }
 
-const PORT = process.env.PORT || 3456;
+const PORT = process.env.PORT || (process.versions.electron ? 0 : 8080);
 let DB_FILE = null;
 let sseClients = [];
 
@@ -461,8 +512,84 @@ function updateGist(data) {
 // ==================== DATABASE ====================
 let dbCache = null;
 
+async function loadDBFromPG() {
+    if (!process.env.DATABASE_URL) return null;
+    const { Client } = require('pg');
+    const client = new Client({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+    });
+    try {
+        await client.connect();
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS ot_state (
+                key VARCHAR(50) PRIMARY KEY,
+                data TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        const res = await client.query("SELECT data FROM ot_state WHERE key = 'db_state'");
+        if (res.rows.length > 0) {
+            return JSON.parse(res.rows[0].data);
+        }
+    } catch (err) {
+        console.error('[Database PG] Lỗi nạp dữ liệu từ PostgreSQL:', err.message);
+    } finally {
+        await client.end();
+    }
+    return null;
+}
+
+async function saveDBToPG(data) {
+    if (!process.env.DATABASE_URL) return;
+    const { Client } = require('pg');
+    const client = new Client({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+    });
+    try {
+        await client.connect();
+        const jsonStr = JSON.stringify(data);
+        await client.query(`
+            INSERT INTO ot_state (key, data, updated_at)
+            VALUES ('db_state', $1, CURRENT_TIMESTAMP)
+            ON CONFLICT (key) DO UPDATE
+            SET data = $1, updated_at = CURRENT_TIMESTAMP
+        `, [jsonStr]);
+        console.log('[Database PG] Đã đồng bộ dữ liệu thành công lên Cloud PostgreSQL.');
+    } catch (err) {
+        console.error('[Database PG] Lỗi đồng bộ lên PostgreSQL:', err.message);
+    } finally {
+        await client.end();
+    }
+}
+
 async function loadDB() {
     if (dbCache) return dbCache;
+
+    // 0. Nếu có cấu hình PostgreSQL, ưu tiên nạp từ PostgreSQL trước!
+    if (process.env.DATABASE_URL) {
+        try {
+            console.log('[Database PG] Đang kết nối tải cơ sở dữ liệu từ Cloud PostgreSQL...');
+            const pgData = await loadDBFromPG();
+            if (pgData) {
+                if (!pgData.users) pgData.users = [];
+                if (!pgData.records) pgData.records = [];
+                if (!pgData.closedMonths) pgData.closedMonths = [];
+                
+                const migratedTeams = migrateTeams(pgData);
+                const migratedPass = await migratePasswords(pgData);
+                if (migratedTeams || migratedPass) {
+                    await saveDBToPG(pgData);
+                }
+                console.log('[Database PG] Tải dữ liệu từ PostgreSQL thành công!');
+                dbCache = pgData;
+                return pgData;
+            }
+        } catch (e) {
+            console.error('[Database PG] Lỗi khi tải dữ liệu khởi động từ PostgreSQL:', e.message);
+        }
+    }
 
     const dbFile = getDbPath();
     let fileLoaded = false;
@@ -478,8 +605,14 @@ async function loadDB() {
                 if (!gistData.records) gistData.records = [];
                 if (!gistData.closedMonths) gistData.closedMonths = [];
                 
-                // Ghi đè vào file local làm cache
-                fs.writeFileSync(dbFile, JSON.stringify(gistData, null, 2), 'utf-8');
+                const migratedTeams = migrateTeams(gistData);
+                const migratedPass = await migratePasswords(gistData);
+                if (migratedTeams || migratedPass) {
+                    saveDB(gistData);
+                } else {
+                    // Ghi đè vào file local làm cache
+                    fs.writeFileSync(dbFile, JSON.stringify(gistData, null, 2), 'utf-8');
+                }
                 console.log('[Gist] Tải dữ liệu từ Gist thành công!');
                 dbCache = gistData;
                 return gistData;
@@ -509,11 +642,12 @@ async function loadDB() {
 
     // 3. Nếu file local đã tồn tại và tải thành công, ta tin tưởng nó là bản mới nhất
     if (fileLoaded && localDB) {
-        // Tự động băm mật khẩu plaintext cũ
-        const migrated = await migratePasswords(localDB);
-        if (migrated) {
+        // Tự động băm mật khẩu plaintext cũ và di trú cấu hình team
+        const migratedPass = await migratePasswords(localDB);
+        const migratedTeams = migrateTeams(localDB);
+        if (migratedPass || migratedTeams) {
             saveDB(localDB);
-            console.log('[Migration] Đã tự động băm mật khẩu plaintext.');
+            console.log('[Migration] Đã tự động di trú cơ sở dữ liệu (Passwords/Teams).');
         }
         return localDB;
     }
@@ -542,6 +676,13 @@ function saveDB(data) {
     enqueueWrite(() => {
         fs.writeFileSync(getDbPath(), JSON.stringify(data, null, 2), 'utf-8');
         notifySseClients({ type: 'update' });
+
+        // Cập nhật bất đồng bộ lên PostgreSQL
+        if (process.env.DATABASE_URL) {
+            saveDBToPG(data).catch(e => {
+                console.error('[Database PG] Lỗi cập nhật lên PostgreSQL:', e.message);
+            });
+        }
 
         // Cập nhật bất đồng bộ lên Gist (không làm nghẽn phản hồi API)
         if (process.env.GIST_ID && process.env.GITHUB_TOKEN) {
@@ -890,7 +1031,14 @@ async function handleAPI(req, res, urlPath, method) {
         const user = db.users.find(u => u.id === userId);
         if (!user) return sendError(res, 404, 'Không tìm thấy người dùng!');
         const { password: _, ...safeUser } = user;
-        return sendJSON(res, 200, { user: safeUser });
+        let teamSettings = null;
+        if (user.team) {
+            const team = (db.teams || []).find(t => (typeof t === 'string' ? t : t.name) === user.team);
+            if (team && typeof team === 'object') {
+                teamSettings = team;
+            }
+        }
+        return sendJSON(res, 200, { user: { ...safeUser, teamSettings } });
     }
 
     if (urlPath.startsWith('/api/users/') && method === 'DELETE') {
@@ -1056,17 +1204,34 @@ async function handleAPI(req, res, urlPath, method) {
         if (resolvedRole === 'admin') {
             status = body.status || 'approved';
         } else {
-            // Nhân viên: Bắt buộc pending đối với bù giờ hoặc đi xe
-            const hasTrip = deliveryProvince && deliveryProvince.trim() !== '';
-            if (isBackfill || hasTrip) {
-                status = 'pending';
-            } else {
-                status = 'approved';
+            // Nhân viên: Kiểm tra luật tự động duyệt của Team
+            const employeeUser = db.users.find(u => u.id === userId);
+            const userTeamName = employeeUser ? employeeUser.team : '';
+            
+            let autoApprove = false;
+            if (userTeamName) {
+                const team = (db.teams || []).find(t => (typeof t === 'string' ? t : t.name) === userTeamName);
+                if (team && typeof team === 'object' && team.autoApproveRules) {
+                    const rules = team.autoApproveRules;
+                    const isSunday = new Date(date + 'T00:00:00').getDay() === 0;
+                    const hasCustomActivity = !!body.customActivity;
+                    
+                    if (isSunday && rules.sunday) {
+                        autoApprove = true;
+                    } else if (isBackfill && rules.backfill) {
+                        autoApprove = true;
+                    } else if (hasCustomActivity && rules.customActivity) {
+                        autoApprove = true;
+                    } else if (!isSunday && !isBackfill && !hasCustomActivity && rules.normalOT) {
+                        autoApprove = true;
+                    }
+                }
             }
+            status = autoApprove ? 'approved' : 'pending';
         }
 
-        const hasTrip = deliveryProvince && deliveryProvince.trim() !== '';
-        const hasOT = (totalHours || 0) > 0 || !!hasLunchOT || (eveningOTHours || 0) > 0;
+        const hasTrip = (deliveryProvince && deliveryProvince.trim() !== '') || body.calcMode === 'trip';
+        const hasOT = (totalHours || 0) > 0 || !!hasLunchOT || (eveningOTHours || 0) > 0 || body.calcMode === 'hour';
 
         if (resolvedRole === 'admin' && status === 'approved' && hasTrip && hasOT) {
             // Tự động tách làm 2 bản ghi khi Admin tạo/duyệt trực tiếp
@@ -1080,6 +1245,8 @@ async function handleAPI(req, res, urlPath, method) {
                 eveningOTHours: eveningOTHours || 0,
                 totalHours: totalHours || 0,
                 deliveryProvince: '',
+                customActivity: body.calcMode === 'hour' ? (body.customActivity || '') : '',
+                calcMode: body.calcMode === 'hour' ? (body.calcMode || '') : '',
                 note: note || '',
                 createdMonth: body.createdMonth || (isBackfill ? currentMonth : ''),
                 isBackfill: isBackfill,
@@ -1098,6 +1265,8 @@ async function handleAPI(req, res, urlPath, method) {
                 eveningOTHours: 0,
                 totalHours: 0,
                 deliveryProvince: deliveryProvince || '',
+                customActivity: body.calcMode === 'trip' ? (body.customActivity || '') : '',
+                calcMode: body.calcMode === 'trip' ? (body.calcMode || '') : '',
                 note: note || '',
                 createdMonth: body.createdMonth || (isBackfill ? currentMonth : ''),
                 isBackfill: isBackfill,
@@ -1126,6 +1295,8 @@ async function handleAPI(req, res, urlPath, method) {
             eveningOTHours: eveningOTHours || 0,
             totalHours: totalHours || 0,
             deliveryProvince: deliveryProvince || '',
+            customActivity: body.customActivity || '',
+            calcMode: body.calcMode || '',
             note: note || '',
             createdMonth: body.createdMonth || (isBackfill ? currentMonth : ''),
             isBackfill: isBackfill,
@@ -1178,7 +1349,7 @@ async function handleAPI(req, res, urlPath, method) {
     if (urlPath.startsWith('/api/records/') && method === 'PUT') {
         const recordId = urlPath.split('/api/records/')[1];
         const body = await parseBody(req);
-        const { date, hasLunchOT, otStart, otEnd, eveningOTHours, totalHours, note, deliveryProvince } = body;
+        const { date, hasLunchOT, otStart, otEnd, eveningOTHours, totalHours, note, deliveryProvince, customActivity, calcMode } = body;
         const idx = db.records.findIndex(r => r.id === recordId);
         if (idx < 0) return sendError(res, 404, 'Không tìm thấy bản ghi!');
 
@@ -1217,6 +1388,8 @@ async function handleAPI(req, res, urlPath, method) {
         db.records[idx].eveningOTHours = eveningOTHours !== undefined ? eveningOTHours : db.records[idx].eveningOTHours;
         db.records[idx].totalHours = totalHours !== undefined ? totalHours : db.records[idx].totalHours;
         db.records[idx].deliveryProvince = deliveryProvince !== undefined ? deliveryProvince : (db.records[idx].deliveryProvince || '');
+        db.records[idx].customActivity = customActivity !== undefined ? customActivity : (db.records[idx].customActivity || '');
+        db.records[idx].calcMode = calcMode !== undefined ? calcMode : (db.records[idx].calcMode || '');
         db.records[idx].note = note !== undefined ? note : db.records[idx].note;
         const currentMonth = today.substring(0, 7);
         const currentRecDate = db.records[idx].date;
@@ -1239,25 +1412,44 @@ async function handleAPI(req, res, urlPath, method) {
                 db.records[idx].status = body.status;
             }
         } else {
-            // Nhân viên sửa bản ghi: tính toán status tự động
-            const hasTrip = db.records[idx].deliveryProvince && db.records[idx].deliveryProvince.trim() !== '';
-            if (isBackfill || hasTrip) {
-                db.records[idx].status = 'pending';
-            } else {
-                db.records[idx].status = 'approved';
+            // Nhân viên sửa bản ghi: tính toán status tự động dựa trên luật tự duyệt của Team
+            const employeeUser = db.users.find(u => u.id === db.records[idx].userId);
+            const userTeamName = employeeUser ? employeeUser.team : '';
+            
+            let autoApprove = false;
+            if (userTeamName) {
+                const team = (db.teams || []).find(t => (typeof t === 'string' ? t : t.name) === userTeamName);
+                if (team && typeof team === 'object' && team.autoApproveRules) {
+                    const rules = team.autoApproveRules;
+                    const isSunday = new Date(db.records[idx].date + 'T00:00:00').getDay() === 0;
+                    const hasCustomActivity = !!db.records[idx].customActivity;
+                    
+                    if (isSunday && rules.sunday) {
+                        autoApprove = true;
+                    } else if (isBackfill && rules.backfill) {
+                        autoApprove = true;
+                    } else if (hasCustomActivity && rules.customActivity) {
+                        autoApprove = true;
+                    } else if (!isSunday && !isBackfill && !hasCustomActivity && rules.normalOT) {
+                        autoApprove = true;
+                    }
+                }
             }
+            db.records[idx].status = autoApprove ? 'approved' : 'pending';
         }
 
         const statusToBeApproved = (body.status === 'approved') || (db.records[idx].status === 'approved');
 
         if (resolvedRole === 'admin' && statusToBeApproved) {
-            const hasTrip = db.records[idx].deliveryProvince && db.records[idx].deliveryProvince.trim() !== '';
-            const hasOT = (db.records[idx].totalHours || 0) > 0 || !!db.records[idx].hasLunchOT || (db.records[idx].eveningOTHours || 0) > 0;
+            const hasTrip = (db.records[idx].deliveryProvince && db.records[idx].deliveryProvince.trim() !== '') || db.records[idx].calcMode === 'trip';
+            const hasOT = (db.records[idx].totalHours || 0) > 0 || !!db.records[idx].hasLunchOT || (db.records[idx].eveningOTHours || 0) > 0 || db.records[idx].calcMode === 'hour';
 
             if (hasTrip && hasOT) {
                 // Tách tự động bản ghi kết hợp thành 2 bản ghi độc lập
                 const originalProvince = db.records[idx].deliveryProvince;
                 db.records[idx].deliveryProvince = '';
+                db.records[idx].customActivity = db.records[idx].calcMode === 'hour' ? (db.records[idx].customActivity || '') : '';
+                db.records[idx].calcMode = db.records[idx].calcMode === 'hour' ? (db.records[idx].calcMode || '') : '';
                 db.records[idx].status = 'approved';
                 db.records[idx].updatedAt = new Date().toISOString();
 
@@ -1271,6 +1463,8 @@ async function handleAPI(req, res, urlPath, method) {
                     eveningOTHours: 0,
                     totalHours: 0,
                     deliveryProvince: originalProvince,
+                    customActivity: db.records[idx].calcMode === 'trip' ? (db.records[idx].customActivity || '') : '',
+                    calcMode: db.records[idx].calcMode === 'trip' ? (db.records[idx].calcMode || '') : '',
                     note: db.records[idx].note,
                     createdMonth: db.records[idx].createdMonth,
                     isBackfill: db.records[idx].isBackfill,
@@ -1366,6 +1560,16 @@ async function handleAPI(req, res, urlPath, method) {
                 }
             });
         }
+
+        // Đồng bộ gán tên team tương ứng cho Leader
+        teams.forEach(t => {
+            if (t && typeof t === 'object' && t.leaderId) {
+                const leader = db.users.find(u => u.id === t.leaderId);
+                if (leader) {
+                    leader.team = t.name;
+                }
+            }
+        });
 
         db.teams = teams;
         saveDB(db);
@@ -2747,10 +2951,11 @@ function startServer() {
 
         server.listen(PORT, '0.0.0.0', () => {
             server.removeListener('error', onError);
+            const activePort = server.address().port;
             const ip = getLocalIP();
             console.log(`✅ OT Manager Server đang chạy!`);
-            console.log(`📱 Mobile (Nhân viên): http://${ip}:${PORT}`);
-            console.log(`🖥️  Desktop: http://localhost:${PORT}/desktop/`);
+            console.log(`📱 Mobile (Nhân viên): http://${ip}:${activePort}`);
+            console.log(`🖥️  Desktop: http://localhost:${activePort}/desktop/`);
             
             // Khởi chạy đường hầm tunnel kết nối từ xa qua internet (chỉ chạy khi không ở môi trường Cloud)
             if (!process.env.PORT) {
@@ -2758,7 +2963,7 @@ function startServer() {
                 const isLocal = !cloudUrl || cloudUrl.includes('localhost') || cloudUrl.includes('127.0.0.1');
                 if (isLocal) {
                     try {
-                        startTunnel();
+                        startTunnel(activePort);
                     } catch (e) {
                         console.error('Lỗi khởi chạy tunnel:', e);
                     }
@@ -2802,7 +3007,7 @@ function startServer() {
             // Bắt đầu chạy background job nhắc nhở OT
             startDailyReminderJob();
 
-            resolve({ ip, port: PORT });
+            resolve({ ip, port: activePort });
         });
     });
 }

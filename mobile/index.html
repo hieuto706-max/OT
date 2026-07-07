@@ -260,7 +260,22 @@
                             </div>
                         </div>
 
-                        <div class="form-group toggle-group" style="margin-top: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
+                        <!-- Nhóm Hoạt động ngoài giờ tùy chỉnh -->
+                        <div id="ot-custom-activity-group" style="display: none; margin-top: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
+                            <div class="form-group" style="margin-bottom: 10px;">
+                                <label for="ot-custom-activity">Hoạt động ngoài giờ</label>
+                                <select id="ot-custom-activity" onchange="handleCustomActivityChange()" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
+                                    <!-- Nạp động -->
+                                </select>
+                            </div>
+                            <div class="form-group" id="ot-custom-activity-detail-group" style="display: none;">
+                                <label id="ot-custom-activity-detail-label" for="ot-custom-activity-detail">Chi tiết</label>
+                                <input type="text" id="ot-custom-activity-detail" placeholder="Nhập chi tiết...">
+                            </div>
+                        </div>
+
+                        <!-- Đi xe tăng cường (Cũ) -->
+                        <div class="form-group toggle-group" id="ot-legacy-trip-group" style="margin-top: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
                             <label class="toggle-label" for="ot-has-trip" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
                                 <span class="toggle-text">
                                     <strong>Đi xe tăng cường</strong>
@@ -486,7 +501,22 @@
                         <input type="time" id="edit-ot-end" value="16:30">
                     </div>
                 </div>
-                <div class="toggle-row" style="margin-bottom:14px; border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
+                <!-- Nhóm Hoạt động ngoài giờ tùy chỉnh (Sửa) -->
+                <div id="edit-ot-custom-activity-group" style="display: none; margin-top: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label for="edit-ot-custom-activity" style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Hoạt động ngoài giờ</label>
+                        <select id="edit-ot-custom-activity" onchange="handleEditCustomActivityChange()" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
+                            <!-- Nạp động -->
+                        </select>
+                    </div>
+                    <div class="form-group" id="edit-ot-custom-activity-detail-group" style="display: none; margin-bottom: 10px;">
+                        <label id="edit-ot-custom-activity-detail-label" for="edit-ot-custom-activity-detail" style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Chi tiết</label>
+                        <input type="text" id="edit-ot-custom-activity-detail" placeholder="Nhập chi tiết...">
+                    </div>
+                </div>
+
+                <!-- Đi xe tăng cường (Cũ) -->
+                <div class="toggle-row" id="edit-ot-legacy-trip-group" style="margin-bottom:14px; border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
                     <label class="toggle-label" for="edit-ot-has-trip" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
                         <span class="toggle-text" style="display:flex;flex-direction:column;text-align:left;">
                             <strong style="font-size:0.85rem;color:var(--text);">Đi xe tăng cường</strong>

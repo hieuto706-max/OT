@@ -861,6 +861,7 @@ function enterApp() {
     }
 
     showScreen('screen-app');
+    setupCustomActivitiesUI();
     updatePreview();
     loadHistory();
     loadProfileStats();
@@ -910,6 +911,7 @@ async function refreshCurrentUserInfo() {
         if (data && data.user) {
             currentUser = Object.assign({}, currentUser, data.user);
             safeStorage.setItem('ot_mobile_user', JSON.stringify(currentUser));
+            setupCustomActivitiesUI();
             
             // Cập nhật giao diện nút hủy liên kết
             const btn = document.getElementById('btn-unlink-device');
@@ -927,6 +929,119 @@ async function refreshCurrentUserInfo() {
         }
     } catch (err) {
         console.error('Error refreshing user info:', err);
+    }
+}
+
+function setupCustomActivitiesUI() {
+    const activityGroup = document.getElementById('ot-custom-activity-group');
+    const legacyGroup = document.getElementById('ot-legacy-trip-group');
+    const legacyProvinceGroup = document.getElementById('ot-province-group');
+
+    const editActivityGroup = document.getElementById('edit-ot-custom-activity-group');
+    const editLegacyGroup = document.getElementById('edit-ot-legacy-trip-group');
+    const editLegacyProvinceGroup = document.getElementById('edit-ot-province-group');
+
+    const select = document.getElementById('ot-custom-activity');
+    const editSelect = document.getElementById('edit-ot-custom-activity');
+
+    const teamSettings = currentUser ? currentUser.teamSettings : null;
+    const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
+
+    if (activities.length > 0) {
+        if (activityGroup) activityGroup.style.display = 'block';
+        if (legacyGroup) legacyGroup.style.display = 'none';
+        if (legacyProvinceGroup) legacyProvinceGroup.style.display = 'none';
+
+        if (editActivityGroup) editActivityGroup.style.display = 'block';
+        if (editLegacyGroup) editLegacyGroup.style.display = 'none';
+        if (editLegacyProvinceGroup) editLegacyProvinceGroup.style.display = 'none';
+
+        const optionsHtml = `
+            <option value="">-- Không có (Chỉ tăng ca bình thường) --</option>
+            ${activities.map(act => `<option value="${act.name}">${act.name}</option>`).join('')}
+        `;
+        if (select) select.innerHTML = optionsHtml;
+        if (editSelect) editSelect.innerHTML = optionsHtml;
+
+        handleCustomActivityChange();
+        handleEditCustomActivityChange();
+    } else {
+        if (activityGroup) activityGroup.style.display = 'none';
+        if (legacyGroup) legacyGroup.style.display = 'block';
+        
+        if (editActivityGroup) editActivityGroup.style.display = 'none';
+        if (editLegacyGroup) editLegacyGroup.style.display = 'block';
+    }
+}
+
+function handleCustomActivityChange() {
+    const select = document.getElementById('ot-custom-activity');
+    const selectedVal = select ? select.value : '';
+    const detailGroup = document.getElementById('ot-custom-activity-detail-group');
+    const detailLabel = document.getElementById('ot-custom-activity-detail-label');
+    const detailInput = document.getElementById('ot-custom-activity-detail');
+    const otNormalInputs = document.getElementById('ot-normal-inputs');
+
+    const teamSettings = currentUser ? currentUser.teamSettings : null;
+    const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
+    const currentAct = activities.find(a => a.name === selectedVal);
+
+    if (currentAct) {
+        if (detailGroup) detailGroup.style.display = 'block';
+        if (detailLabel) detailLabel.textContent = currentAct.detailLabel || 'Chi tiết';
+        if (detailInput) {
+            detailInput.placeholder = currentAct.placeholder || `Nhập ${currentAct.detailLabel || 'chi tiết'}...`;
+            detailInput.required = true;
+        }
+
+        if (currentAct.calcMode === 'trip') {
+            if (otNormalInputs) otNormalInputs.style.display = 'none';
+        } else {
+            if (otNormalInputs) otNormalInputs.style.display = 'block';
+        }
+    } else {
+        if (detailGroup) detailGroup.style.display = 'none';
+        if (detailInput) {
+            detailInput.required = false;
+            detailInput.value = '';
+        }
+        if (otNormalInputs) otNormalInputs.style.display = 'block';
+    }
+    updatePreview();
+}
+
+function handleEditCustomActivityChange() {
+    const select = document.getElementById('edit-ot-custom-activity');
+    const selectedVal = select ? select.value : '';
+    const detailGroup = document.getElementById('edit-ot-custom-activity-detail-group');
+    const detailLabel = document.getElementById('edit-ot-custom-activity-detail-label');
+    const detailInput = document.getElementById('edit-ot-custom-activity-detail');
+    const editNormalInputs = document.getElementById('edit-ot-normal-inputs');
+
+    const teamSettings = currentUser ? currentUser.teamSettings : null;
+    const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
+    const currentAct = activities.find(a => a.name === selectedVal);
+
+    if (currentAct) {
+        if (detailGroup) detailGroup.style.display = 'block';
+        if (detailLabel) detailLabel.textContent = currentAct.detailLabel || 'Chi tiết';
+        if (detailInput) {
+            detailInput.placeholder = currentAct.placeholder || `Nhập ${currentAct.detailLabel || 'chi tiết'}...`;
+            detailInput.required = true;
+        }
+
+        if (currentAct.calcMode === 'trip') {
+            if (editNormalInputs) editNormalInputs.style.display = 'none';
+        } else {
+            if (editNormalInputs) editNormalInputs.style.display = 'block';
+        }
+    } else {
+        if (detailGroup) detailGroup.style.display = 'none';
+        if (detailInput) {
+            detailInput.required = false;
+            detailInput.value = '';
+        }
+        if (editNormalInputs) editNormalInputs.style.display = 'block';
     }
 }
 
@@ -957,8 +1072,33 @@ function updatePreview() {
     let items = [];
     let total = 0;
 
-    const hasTrip = document.getElementById('ot-has-trip')?.checked;
-    const province = document.getElementById('ot-province')?.value.trim() || '';
+    // Custom activity
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
+    
+    const teamSettings = currentUser ? currentUser.teamSettings : null;
+    const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
+    
+    if (activities.length > 0) {
+        const select = document.getElementById('ot-custom-activity');
+        customActivity = select ? select.value : '';
+        if (customActivity) {
+            const act = activities.find(a => a.name === customActivity);
+            if (act) {
+                calcMode = act.calcMode;
+                customDetail = document.getElementById('ot-custom-activity-detail')?.value.trim() || '';
+            }
+        }
+    }
+
+    const hasTrip = (activities.length > 0) 
+        ? (calcMode === 'trip' && !!customActivity)
+        : (document.getElementById('ot-has-trip')?.checked);
+        
+    const province = (activities.length > 0)
+        ? customDetail
+        : (document.getElementById('ot-province')?.value.trim() || '');
 
     if (isBackfill) {
         const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
@@ -976,7 +1116,7 @@ function updatePreview() {
             total += OT_LUNCH_HOURS;
         }
 
-        if (start && end) {
+        if (start && end && calcMode !== 'trip') {
             const ev = calcEveningOT(start, end);
             if (ev > 0) {
                 items.push({ label: `OT Chiều (${start}-${end})`, val: `${ev.toFixed(1)} giờ` });
@@ -985,8 +1125,12 @@ function updatePreview() {
         }
     }
 
+    if (customActivity && calcMode === 'hour') {
+        items.push({ label: 'Hoạt động', val: customActivity });
+    }
+
     if (hasTrip && province) {
-        items.push({ label: 'Đi xe tăng cường', val: province });
+        items.push({ label: customActivity || 'Đi xe tăng cường', val: province });
     }
 
     rows.innerHTML = items.length === 0
@@ -1000,7 +1144,7 @@ function updatePreview() {
     if (noteEl) {
         if (hasTrip && total === 0) {
             noteEl.required = false;
-            noteEl.placeholder = "Mặc định: Đi xe tăng cường " + province;
+            noteEl.placeholder = `Mặc định: ${customActivity || 'Đi xe tăng cường'} ${province}`;
         } else {
             noteEl.required = true;
             noteEl.placeholder = "Lý do tăng ca, chi tiết công việc...";
@@ -1111,11 +1255,39 @@ async function handleOTSubmit(e) {
     const end = document.getElementById('ot-end').value;
     let note = document.getElementById('ot-note').value.trim();
 
-    const hasTrip = document.getElementById('ot-has-trip')?.checked;
-    const province = document.getElementById('ot-province')?.value.trim() || '';
+    // Custom activity
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
+    
+    const teamSettings = currentUser ? currentUser.teamSettings : null;
+    const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
+    
+    if (activities.length > 0) {
+        const select = document.getElementById('ot-custom-activity');
+        customActivity = select ? select.value : '';
+        if (customActivity) {
+            const act = activities.find(a => a.name === customActivity);
+            if (act) {
+                calcMode = act.calcMode;
+                customDetail = document.getElementById('ot-custom-activity-detail')?.value.trim() || '';
+            }
+        }
+    }
+
+    const hasTrip = (activities.length > 0) 
+        ? (calcMode === 'trip' && !!customActivity)
+        : (document.getElementById('ot-has-trip')?.checked);
+        
+    const province = (activities.length > 0)
+        ? customDetail
+        : (document.getElementById('ot-province')?.value.trim() || '');
 
     if (hasTrip && !province) {
-        showToast('Vui lòng chọn hoặc nhập tỉnh đi xe!', 'error');
+        const label = (activities.length > 0 && customActivity) 
+            ? (activities.find(a => a.name === customActivity)?.detailLabel || 'chi tiết')
+            : 'tỉnh đi xe';
+        showToast(`Vui lòng nhập ${label.toLowerCase()}!`, 'error');
         return;
     }
 
@@ -1133,16 +1305,16 @@ async function handleOTSubmit(e) {
         note = '[BÙ THÁNG TRƯỚC] ' + note;
     } else {
         eveningOTHours = calcEveningOT(start, end);
-        totalHours = (lunch ? OT_LUNCH_HOURS : 0) + eveningOTHours;
+        totalHours = (lunch ? OT_LUNCH_HOURS : 0) + (calcMode === 'trip' ? 0 : eveningOTHours);
 
         if (totalHours <= 0 && !hasTrip) {
-            showToast('Vui lòng chọn ít nhất một loại OT hoặc đi xe tăng cường!', 'error');
+            showToast('Vui lòng chọn ít nhất một loại OT hoặc hoạt động ngoài giờ!', 'error');
             return;
         }
     }
 
     if (hasTrip && totalHours === 0 && !note) {
-        note = 'Đi xe tăng cường ' + province;
+        note = (customActivity || 'Đi xe tăng cường') + ' ' + province;
     } else if (!note) {
         showToast('Vui lòng nhập ghi chú (lý do tăng ca, chi tiết công việc)!', 'error');
         return;
@@ -1154,11 +1326,13 @@ async function handleOTSubmit(e) {
         userId: currentUser.id,
         date,
         hasLunchOT: isBackfill ? false : lunch,
-        otStart: (!isBackfill && eveningOTHours > 0) ? start : '',
-        otEnd: (!isBackfill && eveningOTHours > 0) ? end : '',
-        eveningOTHours,
+        otStart: (!isBackfill && eveningOTHours > 0 && calcMode !== 'trip') ? start : '',
+        otEnd: (!isBackfill && eveningOTHours > 0 && calcMode !== 'trip') ? end : '',
+        eveningOTHours: calcMode === 'trip' ? 0 : eveningOTHours,
         totalHours,
         deliveryProvince: hasTrip ? province : '',
+        customActivity,
+        calcMode,
         note,
         createdMonth,
         isBackfill
@@ -1247,9 +1421,9 @@ async function loadHistory() {
         // Apply Record Type Filter
         let historyFiltered = [];
         if (currentMobileHistoryType === 'ot') {
-            historyFiltered = mergedRecords.filter(r => r.totalHours > 0 || r.isBackfill);
+            historyFiltered = mergedRecords.filter(r => r.totalHours > 0 || r.isBackfill || r.calcMode === 'hour');
         } else {
-            historyFiltered = mergedRecords.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '');
+            historyFiltered = mergedRecords.filter(r => r.calcMode === 'trip' || (!r.calcMode && r.deliveryProvince && r.deliveryProvince.trim() !== ''));
         }
 
         if (historyFiltered.length === 0) {
@@ -1276,7 +1450,7 @@ async function loadHistory() {
                 tTotal += r.totalHours;
             }
         });
-        const tTrips = mergedRecords.filter(r => r.status !== 'pending' && r.status !== 'rejected' && r.deliveryProvince && r.deliveryProvince.trim() !== '').length;
+        const tTrips = mergedRecords.filter(r => r.status !== 'pending' && r.status !== 'rejected' && (r.calcMode === 'trip' || (!r.calcMode && r.deliveryProvince && r.deliveryProvince.trim() !== ''))).length;
 
         list.innerHTML = historyFiltered.map((r, i) => {
             const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
@@ -1285,8 +1459,13 @@ async function loadHistory() {
             if (currentMobileHistoryType === 'ot') {
                 if (r.hasLunchOT) tags += '<span class="htag htag-lunch">OT Trưa 1h</span>';
                 if (r.eveningOTHours > 0 && !isBackfill) tags += `<span class="htag htag-evening">OT Chiều ${r.eveningOTHours.toFixed(1)}h</span>`;
+                if (r.customActivity) tags += `<span class="htag" style="background:rgba(59,130,246,0.15); color:#3b82f6; border:1px solid rgba(59,130,246,0.3); margin-left: 4px;">📋 ${r.customActivity}${r.deliveryProvince ? ': ' + r.deliveryProvince : ''}</span>`;
             } else {
-                if (r.deliveryProvince) tags += `<span class="htag" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">🚚 ${r.deliveryProvince}</span>`;
+                if (r.customActivity) {
+                    tags += `<span class="htag" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">📋 ${r.customActivity}${r.deliveryProvince ? ': ' + r.deliveryProvince : ''}</span>`;
+                } else if (r.deliveryProvince) {
+                    tags += `<span class="htag" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">🚚 ${r.deliveryProvince}</span>`;
+                }
             }
 
             let statusText = 'Đã duyệt';
@@ -1471,7 +1650,7 @@ async function loadProfileStats() {
             }
             return s;
         }, 0);
-        const trips = approvedRecords.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '').length;
+        const trips = approvedRecords.filter(r => r.calcMode === 'trip' || (!r.calcMode && r.deliveryProvince && r.deliveryProvince.trim() !== '')).length;
 
         document.getElementById('stat-days').textContent = days;
         document.getElementById('stat-lunch').textContent = lunch.toFixed(1);
@@ -1577,7 +1756,7 @@ function autoResolveRentryUrl() {
     return new Promise(function(resolve) {
         try {
             var xhr = new XMLHttpRequest();
-            xhr.open('GET', 'https://rentry.co/otmanager-hieutm-3456?t=' + Date.now(), true);
+            xhr.open('GET', 'https://rentry.co/otmanager-hieutm?t=' + Date.now(), true);
             xhr.timeout = 2000;
             xhr.onload = function() {
                 if (xhr.status === 200) {
@@ -2401,19 +2580,55 @@ async function editRecordDialog(id) {
         }
         console.log('[editRecordDialog] Step 13: Backfill layout set');
 
-        // Handle delivery trip editing
-        if (elHasTrip) {
-            elHasTrip.checked = !!record.deliveryProvince;
-            if (record.deliveryProvince) {
-                if (elProvinceGroup) elProvinceGroup.style.display = 'block';
-                if (elProvince) elProvince.value = record.deliveryProvince;
-                elNote.required = false;
-                elNote.placeholder = "Mặc định: Đi xe tăng cường...";
+        // Handle delivery trip editing or custom activities
+        const elEditCustomActGroup = document.getElementById('edit-ot-custom-activity-group');
+        const elEditLegacyGroup = document.getElementById('edit-ot-legacy-trip-group');
+        const elEditSelect = document.getElementById('edit-ot-custom-activity');
+        const elEditDetailGroup = document.getElementById('edit-ot-custom-activity-detail-group');
+        const elEditDetail = document.getElementById('edit-ot-custom-activity-detail');
+
+        const teamSettings = currentUser ? currentUser.teamSettings : null;
+        const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
+
+        if (activities.length > 0) {
+            if (elEditCustomActGroup) elEditCustomActGroup.style.display = 'block';
+            if (elEditLegacyGroup) elEditLegacyGroup.style.display = 'none';
+            if (elProvinceGroup) elProvinceGroup.style.display = 'none';
+
+            if (elEditSelect) {
+                // Nạp danh sách tùy chọn
+                const optionsHtml = `
+                    <option value="">-- Không có (Chỉ tăng ca bình thường) --</option>
+                    ${activities.map(act => `<option value="${act.name}">${act.name}</option>`).join('')}
+                `;
+                elEditSelect.innerHTML = optionsHtml;
+                elEditSelect.value = record.customActivity || '';
+            }
+
+            handleEditCustomActivityChange();
+
+            if (record.customActivity) {
+                if (elEditDetail) elEditDetail.value = record.deliveryProvince || '';
             } else {
-                if (elProvinceGroup) elProvinceGroup.style.display = 'none';
-                if (elProvince) elProvince.value = '';
-                elNote.required = true;
-                elNote.placeholder = "Lý do...";
+                if (elEditDetail) elEditDetail.value = '';
+            }
+        } else {
+            if (elEditCustomActGroup) elEditCustomActGroup.style.display = 'none';
+            if (elEditLegacyGroup) elEditLegacyGroup.style.display = 'block';
+
+            if (elHasTrip) {
+                elHasTrip.checked = !!record.deliveryProvince;
+                if (record.deliveryProvince) {
+                    if (elProvinceGroup) elProvinceGroup.style.display = 'block';
+                    if (elProvince) elProvince.value = record.deliveryProvince;
+                    elNote.required = false;
+                    elNote.placeholder = "Mặc định: Đi xe tăng cường...";
+                } else {
+                    if (elProvinceGroup) elProvinceGroup.style.display = 'none';
+                    if (elProvince) elProvince.value = '';
+                    elNote.required = true;
+                    elNote.placeholder = "Lý do...";
+                }
             }
         }
 
@@ -2486,39 +2701,40 @@ async function handleEditOTSubmit(e) {
     const end = elEnd.value;
     let note = elNote.value.trim();
 
-    const hasTrip = elHasTrip?.checked;
-    const province = elProvince?.value.trim() || '';
+    // Custom activity
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
+    
+    const teamSettings = currentUser ? currentUser.teamSettings : null;
+    const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
+    
+    if (activities.length > 0) {
+        const select = document.getElementById('edit-ot-custom-activity');
+        customActivity = select ? select.value : '';
+        if (customActivity) {
+            const act = activities.find(a => a.name === customActivity);
+            if (act) {
+                calcMode = act.calcMode;
+                customDetail = document.getElementById('edit-ot-custom-activity-detail')?.value.trim() || '';
+            }
+        }
+    }
+
+    const hasTrip = (activities.length > 0) 
+        ? (calcMode === 'trip' && !!customActivity)
+        : (elHasTrip?.checked);
+        
+    const province = (activities.length > 0)
+        ? customDetail
+        : (elProvince?.value.trim() || '');
 
     if (hasTrip && !province) {
-        showToast('Vui lòng chọn hoặc nhập tỉnh đi xe!', 'error');
+        const label = (activities.length > 0 && customActivity) 
+            ? (activities.find(a => a.name === customActivity)?.detailLabel || 'chi tiết')
+            : 'tỉnh đi xe';
+        showToast(`Vui lòng nhập ${label.toLowerCase()}!`, 'error');
         return;
-    }
-
-    let closedMonths = [];
-    try {
-        if (API) {
-            const closedData = await api('/api/records/closed-months');
-            closedMonths = closedData.closedMonths || [];
-            safeStorage.setItem('ot_cached_closed_months', JSON.stringify(closedMonths));
-        } else {
-            closedMonths = JSON.parse(safeStorage.getItem('ot_cached_closed_months') || '[]');
-        }
-    } catch (e) {
-        closedMonths = JSON.parse(safeStorage.getItem('ot_cached_closed_months') || '[]');
-    }
-
-    const targetMonth = date.substring(0, 7);
-    if (closedMonths.includes(targetMonth)) {
-        showToast('Tháng này đã chốt OT, bạn không thể chỉnh sửa bản ghi về tháng này!', 'error');
-        return;
-    }
-
-    if (!note) {
-        showToast('Vui lòng nhập ghi chú!', 'error');
-        return;
-    }
-    if (isBackfill) {
-        note = '[BÙ THÁNG TRƯỚC] ' + note;
     }
 
     let eveningOTHours = 0;
@@ -2534,10 +2750,10 @@ async function handleEditOTSubmit(e) {
         eveningOTHours = hoursVal;
     } else {
         eveningOTHours = calcEveningOT(start, end);
-        totalHours = (lunch ? OT_LUNCH_HOURS : 0) + eveningOTHours;
+        totalHours = (lunch ? OT_LUNCH_HOURS : 0) + (calcMode === 'trip' ? 0 : eveningOTHours);
 
-        if (totalHours <= 0) {
-            showToast('Vui lòng chọn ít nhất một loại OT!', 'error');
+        if (totalHours <= 0 && !hasTrip) {
+            showToast('Vui lòng chọn ít nhất một loại OT hoặc hoạt động ngoài giờ!', 'error');
             return;
         }
     }
@@ -2547,10 +2763,13 @@ async function handleEditOTSubmit(e) {
     const updatedData = {
         date,
         hasLunchOT: isBackfill ? false : lunch,
-        otStart: (!isBackfill && eveningOTHours > 0) ? start : '',
-        otEnd: (!isBackfill && eveningOTHours > 0) ? end : '',
-        eveningOTHours,
+        otStart: (!isBackfill && eveningOTHours > 0 && calcMode !== 'trip') ? start : '',
+        otEnd: (!isBackfill && eveningOTHours > 0 && calcMode !== 'trip') ? end : '',
+        eveningOTHours: calcMode === 'trip' ? 0 : eveningOTHours,
         totalHours,
+        deliveryProvince: hasTrip ? province : '',
+        customActivity,
+        calcMode,
         note,
         createdMonth,
         isBackfill

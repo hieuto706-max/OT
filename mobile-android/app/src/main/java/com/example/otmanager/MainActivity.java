@@ -167,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
     private String fetchRentryUrl() {
         HttpURLConnection conn = null;
         try {
-            URL url = new URL("https://rentry.co/otmanager-hieutm-3456?t=" + System.currentTimeMillis());
+            URL url = new URL("https://rentry.co/otmanager-hieutm?t=" + System.currentTimeMillis());
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(5000);

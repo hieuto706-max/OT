@@ -2,8 +2,8 @@ const { spawn } = require('child_process');
 const https = require('https');
 const os = require('os');
 
-const EDIT_CODE = 'otmanager3456';
-const RENTRY_URL = 'otmanager-hieutm-3456';
+const EDIT_CODE = 'otmanagerkey';
+const RENTRY_URL = 'otmanager-hieutm';
 
 function getLocalIP() {
     const interfaces = os.networkInterfaces();
@@ -65,12 +65,12 @@ function stopTunnel() {
     }
 }
 
-function startTunnel() {
+function startTunnel(port = 8080) {
     isStopping = false;
-    console.log(`[Tunnel] Starting localhost.run tunnel in background for 127.0.0.1:3456...`);
+    console.log(`[Tunnel] Starting localhost.run tunnel in background for 127.0.0.1:${port}...`);
     const ssh = spawn('ssh', [
         '-o', 'StrictHostKeyChecking=no',
-        '-R', '80:127.0.0.1:3456',
+        '-R', `80:127.0.0.1:${port}`,
         'localhost.run'
     ]);
     sshProcess = ssh;
@@ -106,7 +106,7 @@ function startTunnel() {
         if (isStopping) return;
         console.log(`[Tunnel] SSH process exited with code ${code}. Restarting in 5s...`);
         resolved = false;
-        setTimeout(startTunnel, 5000);
+        setTimeout(() => startTunnel(port), 5000);
     });
 }
 

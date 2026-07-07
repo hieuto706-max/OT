@@ -589,67 +589,401 @@ async function initAdminDashboard(user) {
     checkGistStatus();
 }
 
-function openTeamSettingsModal() {
+let selectedTeamIdForModal = null;
+let modalAllUsers = [];
+
+async function openTeamSettingsModal() {
+    const modalEl = document.querySelector('.modal');
+    if (modalEl) modalEl.style.maxWidth = '950px';
+
+    try {
+        const uData = await api('/api/users');
+        modalAllUsers = uData.users || [];
+    } catch (e) {
+        console.error('Lỗi khi lấy danh sách user:', e);
+    }
+
+    // Tải lại danh sách team mới nhất từ server
+    await loadTeams();
+
+    // Mặc định chọn team đầu tiên nếu chưa chọn team nào
+    if (TEAMS.length > 0 && (!selectedTeamIdForModal || !TEAMS.some(t => t.id === selectedTeamIdForModal))) {
+        selectedTeamIdForModal = TEAMS[0].id;
+    }
+
     const body = `
-    <div style="text-align: left; padding: 5px 0;">
-        <div style="display: flex; gap: 8px; margin-bottom: 16px; align-items: center;">
-            <input type="text" id="input-modal-new-team" class="input-sm" placeholder="Tên team mới..." style="flex: 1; height: 36px; box-sizing: border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px; padding:0 12px;">
-            <button class="btn btn-primary btn-sm" onclick="addTeamFromModal()" style="height: 36px; white-space: nowrap; border-radius:8px;">
-                Thêm Team
-            </button>
+    <div style="display: flex; gap: 20px; height: 500px; text-align: left;">
+        <!-- LEFT PANEL: Danh sách nhóm -->
+        <div style="width: 280px; display: flex; flex-direction: column; border-right: 1px solid var(--border-color); padding-right: 20px;">
+            <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text-secondary);">Danh sách nhóm</h4>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="text" id="input-modal-new-team" class="input-sm" placeholder="Tên team mới..." style="flex: 1; height: 32px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 8px; font-size:12px;">
+                <button class="btn btn-primary btn-sm" onclick="addTeamFromModal()" style="height: 32px; padding: 0 10px; border-radius:6px; font-size:12px; white-space: nowrap;">Thêm</button>
+            </div>
+            <div style="flex: 1; overflow-y: auto;" id="modal-teams-list-container">
+                ${renderModalTeamsRows()}
+            </div>
         </div>
-        <div style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
-            <table class="data-table" style="margin: 0; width: 100%; min-width: auto;">
-                <thead>
-                    <tr>
-                        <th style="width: 60px; text-align: center;">STT</th>
-                        <th>Tên Team</th>
-                        <th style="width: 100px; text-align: center;">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody id="modal-teams-list-body">
-                    ${renderModalTeamsRows()}
-                </tbody>
-            </table>
+
+        <!-- RIGHT PANEL: Chi tiết & Thành viên -->
+        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;" id="modal-team-details-container">
+            ${renderSelectedTeamDetails()}
         </div>
     </div>`;
 
     showModal('Thiết lập danh sách Team', body, [
-        { text: 'Đóng', class: 'btn-ghost' }
+        {
+            text: 'Đóng',
+            class: 'btn-ghost',
+            action: () => {
+                if (modalEl) modalEl.style.maxWidth = '';
+            }
+        }
     ]);
+
+    // Lắng nghe sự kiện click đóng modal để thu hồi kích thước rộng của modal
+    const closeBtn = document.getElementById('modal-close');
+    if (closeBtn) {
+        const originalClose = closeBtn.onclick;
+        closeBtn.onclick = () => {
+            if (modalEl) modalEl.style.maxWidth = '';
+            if (originalClose) originalClose();
+            else closeModal();
+        };
+    }
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay) {
+        overlay.onclick = (e) => {
+            if (e.target === e.currentTarget) {
+                if (modalEl) modalEl.style.maxWidth = '';
+                closeModal();
+            }
+        };
+    }
 }
 
 function renderModalTeamsRows() {
     if (!TEAMS || TEAMS.length === 0) {
-        return '<tr class="empty-row"><td colspan="3" style="text-align:center;">Chưa có team nào được thiết lập</td></tr>';
+        return '<div style="color: var(--text-muted); text-align: center; padding: 20px; font-size:12px;">Chưa có team nào.</div>';
     }
-    return TEAMS.map((teamName, index) => `
-        <tr>
-            <td style="text-align:center;">${index + 1}</td>
-            <td><strong>${teamName}</strong></td>
-            <td style="text-align:center;">
-                <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
-                    <button class="btn-icon-only edit" onclick="renameTeamFromModal('${teamName}')" title="Đổi tên">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                    </button>
-                    <button class="btn-icon-only delete" onclick="deleteTeamFromModal('${teamName}')" title="Xóa">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
+    return TEAMS.map(team => {
+        const isSelected = selectedTeamIdForModal === team.id;
+        const bg = isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
+        const border = isSelected ? '1px solid var(--accent-blue)' : '1px solid transparent';
+        const memberCount = modalAllUsers.filter(u => u.team === team.name).length;
+        
+        return `
+        <div onclick="selectTeamInModal('${team.id}')" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; cursor: pointer; background: ${bg}; border: ${border}; transition: all 0.2s;">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-weight: 600; font-size: 13px; color: ${isSelected ? 'var(--accent-blue-text)' : 'var(--text-primary)'};">${team.name}</span>
+                <span style="font-size: 11px; color: var(--text-muted);">${memberCount} nhân viên</span>
+            </div>
+            <div style="display: flex; gap: 4px;" onclick="event.stopPropagation();">
+                <button class="btn-icon-only edit" onclick="renameTeamFromModal('${team.name}')" title="Đổi tên" style="padding: 4px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                </button>
+                <button class="btn-icon-only delete" onclick="deleteTeamFromModal('${team.name}')" title="Xóa" style="padding: 4px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function selectTeamInModal(teamId) {
+    selectedTeamIdForModal = teamId;
+    refreshModalTeamsView();
 }
 
 function refreshModalTeamsView() {
-    const tbody = document.getElementById('modal-teams-list-body');
-    if (tbody) {
-        tbody.innerHTML = renderModalTeamsRows();
+    const listContainer = document.getElementById('modal-teams-list-container');
+    if (listContainer) {
+        listContainer.innerHTML = renderModalTeamsRows();
+    }
+    const detailsContainer = document.getElementById('modal-team-details-container');
+    if (detailsContainer) {
+        detailsContainer.innerHTML = renderSelectedTeamDetails();
+    }
+}
+
+function renderSelectedTeamDetails() {
+    const team = TEAMS.find(t => t.id === selectedTeamIdForModal);
+    if (!team) {
+        return `
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="margin-bottom: 12px; opacity: 0.5;">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+            </svg>
+            <span>Vui lòng chọn hoặc thêm một team ở cột trái để bắt đầu thiết lập.</span>
+        </div>`;
+    }
+
+    // Thành viên hiện tại
+    const members = modalAllUsers.filter(u => u.team === team.name);
+    // Danh sách ứng viên Trưởng nhóm (Chỉ các tài khoản có role === 'admin')
+    const potentialLeaders = modalAllUsers.filter(u => u.role === 'admin');
+
+    const leaderOptions = `
+        <option value="">-- Chưa gán Trưởng nhóm --</option>
+        ${potentialLeaders.map(u => `<option value="${u.id}" ${team.leaderId === u.id ? 'selected' : ''}>${u.fullname} (@${u.username})</option>`).join('')}
+    `;
+
+    const rules = team.autoApproveRules || { normalOT: false, backfill: false, sunday: false, customActivity: false };
+    const activities = team.customActivities || [];
+
+    const activitiesListHtml = activities.length === 0 
+        ? '<div style="color: var(--text-muted); font-size: 11px; padding: 12px 0; text-align:center;">Chưa cấu hình hoạt động ngoài giờ nào.</div>'
+        : activities.map((act, index) => `
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 12px; margin-bottom: 6px; font-size: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
+                    <span style="font-weight: 600;">${act.name}</span>
+                    <span style="font-size: 10px; color: var(--text-muted);">
+                        Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'} | Nhãn: ${act.detailLabel || 'Không có'}
+                    </span>
+                </div>
+                <button class="btn-icon-only delete" onclick="deleteActivityFromTeam('${team.id}', ${index})" title="Xóa" style="padding: 2px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </button>
+            </div>
+        `).join('');
+
+    const membersListHtml = members.length === 0
+        ? '<div style="color: var(--text-muted); font-size: 11px; text-align: center; padding: 20px;">Chưa có thành viên nào trong team.</div>'
+        : members.map(m => `
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; font-size: 12px;">
+                <span><strong>${m.fullname}</strong> (@${m.username})</span>
+                <button class="btn-icon-only delete" onclick="removeMemberFromTeam('${m.id}')" title="Xóa khỏi nhóm" style="padding: 2px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+        `).join('');
+
+    const unassignedEmployees = modalAllUsers.filter(u => u.role === 'employee' && u.team !== team.name);
+    const unassignedOptions = `
+        <option value="">-- Chọn nhân viên để thêm --</option>
+        ${unassignedEmployees.map(u => `<option value="${u.id}">${u.fullname} (${u.team ? 'Đang ở: ' + u.team : 'Chưa có nhóm'})</option>`).join('')}
+    `;
+
+    return `
+    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding-left: 10px;">
+        <h3 style="margin: 0 0 16px 0; font-size: 15px; color: var(--accent-blue-text); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+            <span>Cấu hình nhóm: ${team.name}</span>
+            <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">Thiết lập Quỹ OT & Quy tắc</span>
+        </h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; overflow: hidden;">
+            <!-- LEFT SUB-COLUMN: Cài đặt và hoạt động -->
+            <div style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 4px;">
+                <!-- 1. Chọn Trưởng nhóm -->
+                <div class="form-group" style="margin: 0;">
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Trưởng nhóm (Leader duyệt OT)</label>
+                    <select id="modal-team-leader-select" onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 100%; height: 32px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0 8px; font-size: 12px;">
+                        ${leaderOptions}
+                    </select>
+                </div>
+
+                <!-- 2. Quy tắc tự duyệt -->
+                <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+                    <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; display: block;">Quy tắc Tự động duyệt</span>
+                    
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
+                        <input type="checkbox" id="rule-normal" ${rules.normalOT ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
+                        Tự duyệt giờ OT bình thường
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
+                        <input type="checkbox" id="rule-backfill" ${rules.backfill ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
+                        Tự duyệt Bù tăng ca (Backfill)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
+                        <input type="checkbox" id="rule-sunday" ${rules.sunday ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
+                        Tự duyệt nếu đăng ký vào Chủ nhật
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
+                        <input type="checkbox" id="rule-custom" ${rules.customActivity ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
+                        Tự duyệt Hoạt động ngoài giờ tùy chỉnh
+                    </label>
+                </div>
+
+                <!-- 3. Quản lý hoạt động tùy chọn -->
+                <div style="display: flex; flex-direction: column; flex: 1; min-height: 200px;">
+                    <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">Hoạt động ngoài giờ của Team</span>
+                    <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+                        <input type="text" id="modal-new-act-name" placeholder="Tên hoạt động..." style="flex: 1.5; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
+                        <select id="modal-new-act-mode" style="flex: 1.2; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 2px; font-size:11px;">
+                            <option value="hour">Tính theo Giờ</option>
+                            <option value="trip">Tính theo Chuyến</option>
+                        </select>
+                        <input type="text" id="modal-new-act-label" placeholder="Nhãn (Tỉnh đi xe...)" style="flex: 1.5; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
+                        <button class="btn btn-primary btn-sm" onclick="addActivityToTeam('${team.id}')" style="height: 28px; border-radius:6px; font-size:11px; padding:0 6px; white-space:nowrap;">Thêm</button>
+                    </div>
+                    <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px; background: rgba(0,0,0,0.05); min-height: 100px;">
+                        ${activitiesListHtml}
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT SUB-COLUMN: Danh sách nhân viên -->
+            <div style="display: flex; flex-direction: column; overflow: hidden;">
+                <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">Quản lý thành viên (${members.length})</span>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <select id="modal-add-member-select" style="flex: 1; height: 30px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0 8px; font-size: 11px;">
+                        ${unassignedOptions}
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="addMemberToTeamFromModal('${team.id}')" style="height: 30px; border-radius: 6px; font-size: 11px; padding: 0 10px; white-space:nowrap;">Thêm</button>
+                </div>
+                <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px; background: rgba(0,0,0,0.05);">
+                    ${membersListHtml}
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
+
+async function saveTeamSettingsFromModal(teamId) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+
+    const leaderSelect = document.getElementById('modal-team-leader-select');
+    const leaderId = leaderSelect ? leaderSelect.value : null;
+
+    const ruleNormal = document.getElementById('rule-normal')?.checked;
+    const ruleBackfill = document.getElementById('rule-backfill')?.checked;
+    const ruleSunday = document.getElementById('rule-sunday')?.checked;
+    const ruleCustom = document.getElementById('rule-custom')?.checked;
+
+    team.leaderId = leaderId || null;
+    team.autoApproveRules = {
+        normalOT: !!ruleNormal,
+        backfill: !!ruleBackfill,
+        sunday: !!ruleSunday,
+        customActivity: !!ruleCustom
+    };
+
+    try {
+        await api('/api/teams', 'POST', { teams: TEAMS });
+        await loadTeams();
+        
+        // Refresh users list locally
+        const uData = await api('/api/users');
+        modalAllUsers = uData.users || [];
+        
+        showToast('Đã lưu cấu hình team!');
+        refreshModalTeamsView();
+        await populateUserFilter();
+        await refreshAdminUsers();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function addActivityToTeam(teamId) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+
+    const nameInput = document.getElementById('modal-new-act-name');
+    const modeSelect = document.getElementById('modal-new-act-mode');
+    const labelInput = document.getElementById('modal-new-act-label');
+
+    const name = nameInput?.value.trim();
+    const calcMode = modeSelect?.value;
+    const detailLabel = labelInput?.value.trim();
+
+    if (!name) return showToast('Vui lòng nhập tên hoạt động!', 'error');
+
+    if (!team.customActivities) team.customActivities = [];
+    if (team.customActivities.some(a => a.name.toLowerCase() === name.toLowerCase())) {
+        return showToast('Hoạt động này đã tồn tại!', 'error');
+    }
+
+    team.customActivities.push({
+        id: 'act_' + Date.now(),
+        name,
+        calcMode,
+        detailLabel: detailLabel || 'Chi tiết',
+        placeholder: `Nhập ${detailLabel || 'chi tiết'}...`
+    });
+
+    try {
+        await api('/api/teams', 'POST', { teams: TEAMS });
+        await loadTeams();
+        showToast('Đã thêm hoạt động!');
+        if (nameInput) nameInput.value = '';
+        if (labelInput) labelInput.value = '';
+        refreshModalTeamsView();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function deleteActivityFromTeam(teamId, index) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+
+    team.customActivities.splice(index, 1);
+
+    try {
+        await api('/api/teams', 'POST', { teams: TEAMS });
+        await loadTeams();
+        showToast('Đã xóa hoạt động!');
+        refreshModalTeamsView();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function addMemberToTeamFromModal(teamId) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+
+    const select = document.getElementById('modal-add-member-select');
+    if (!select) return;
+    const userId = select.value;
+    if (!userId) return showToast('Vui lòng chọn nhân viên!', 'error');
+
+    const user = modalAllUsers.find(u => u.id === userId);
+    if (!user) return;
+
+    try {
+        await api('/api/users/' + userId, 'PUT', { team: team.name });
+        showToast(`Đã thêm ${user.fullname} vào ${team.name}!`);
+        
+        const uData = await api('/api/users');
+        modalAllUsers = uData.users || [];
+        
+        refreshModalTeamsView();
+        await populateUserFilter();
+        await refreshAdminUsers();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function removeMemberFromTeam(userId) {
+    const user = modalAllUsers.find(u => u.id === userId);
+    if (!user) return;
+
+    try {
+        await api('/api/users/' + userId, 'PUT', { team: '' });
+        showToast(`Đã xóa ${user.fullname} khỏi nhóm!`);
+        
+        const uData = await api('/api/users');
+        modalAllUsers = uData.users || [];
+        
+        refreshModalTeamsView();
+        await populateUserFilter();
+        await refreshAdminUsers();
+    } catch (e) {
+        showToast(e.message, 'error');
     }
 }
 
@@ -659,16 +993,29 @@ async function addTeamFromModal() {
     const teamName = input.value.trim();
     if (!teamName) return showToast('Vui lòng nhập tên team!', 'error');
 
-    if (TEAMS.includes(teamName)) {
+    if (TEAMS.some(t => t.name.toLowerCase() === teamName.toLowerCase())) {
         return showToast('Team này đã tồn tại!', 'error');
     }
 
-    const updatedTeams = [...TEAMS, teamName];
+    const newTeam = {
+        id: 'team_' + Date.now(),
+        name: teamName,
+        leaderId: null,
+        customActivities: [],
+        autoApproveRules: {
+            normalOT: false,
+            backfill: false,
+            sunday: false,
+            customActivity: false
+        }
+    };
+    const updatedTeams = [...TEAMS, newTeam];
     try {
         await api('/api/teams', 'POST', { teams: updatedTeams });
         TEAMS = updatedTeams;
         input.value = '';
         showToast('Thêm team thành công!');
+        selectedTeamIdForModal = newTeam.id;
         refreshModalTeamsView();
         await populateUserFilter();
     } catch (e) {
@@ -707,12 +1054,17 @@ async function renameTeamFromModal(oldName) {
                     setTimeout(() => openTeamSettingsModal(), 50);
                     return;
                 }
-                if (TEAMS.includes(newName)) {
+                if (TEAMS.some(t => t.name.toLowerCase() === newName.toLowerCase())) {
                     showToast('Tên team này đã tồn tại!', 'error');
                     setTimeout(() => openTeamSettingsModal(), 50);
                     return;
                 }
-                const updatedTeams = TEAMS.map(t => t === oldName ? newName : t);
+                const updatedTeams = TEAMS.map(t => {
+                    if (t.name === oldName) {
+                        t.name = newName;
+                    }
+                    return t;
+                });
                 try {
                     await api('/api/teams', 'POST', { teams: updatedTeams, oldName, newName });
                     TEAMS = updatedTeams;
@@ -752,7 +1104,10 @@ async function deleteTeamFromModal(teamName) {
                 text: 'Xóa',
                 class: 'btn-danger btn-sm',
                 action: async () => {
-                    const updatedTeams = TEAMS.filter(t => t !== teamName);
+                    const updatedTeams = TEAMS.filter(t => t.name !== teamName);
+                    if (selectedTeamIdForModal && !updatedTeams.some(t => t.id === selectedTeamIdForModal)) {
+                        selectedTeamIdForModal = null;
+                    }
                     try {
                         await api('/api/teams', 'POST', { teams: updatedTeams, deletedTeam: teamName });
                         TEAMS = updatedTeams;
@@ -1915,8 +2270,64 @@ async function refreshReport() {
                 <td style="text-align: center;"><span class="text-purple text-bold" style="font-size: 13px;">${totalH.toFixed(1)}h</span></td>
             </tr>`;
         }).join('');
+        
+        // Vẽ biểu đồ phân tích trực quan
+        try {
+            renderAnalyticsCharts(teamOTs, dailyOTs);
+        } catch (err) {
+            console.error("Lỗi vẽ biểu đồ phân tích:", err);
+        }
     } catch (e) {
         console.error('Lỗi khi vẽ báo cáo:', e);
+    }
+}
+
+function renderAnalyticsCharts(teamOTs, dailyOTs) {
+    // 1. Vẽ biểu đồ cột ngang theo Team
+    const teamBarsContainer = document.getElementById('chart-teams-bars');
+    if (teamBarsContainer) {
+        const teamEntries = Object.entries(teamOTs).sort((a, b) => b[1] - a[1]); // Sắp xếp giảm dần
+        const maxHours = teamEntries.length > 0 ? Math.max(...teamEntries.map(e => e[1])) : 0;
+        
+        if (teamEntries.length === 0 || maxHours === 0) {
+            teamBarsContainer.innerHTML = '<div style="text-align: center; color: #71717a; padding: 20px 0; font-size: 0.9rem;">Không có dữ liệu tăng ca</div>';
+        } else {
+            teamBarsContainer.innerHTML = teamEntries.map(([team, hours]) => {
+                const percent = maxHours > 0 ? (hours / maxHours) * 100 : 0;
+                return `
+                    <div class="chart-team-row">
+                        <span class="chart-team-label" title="${team}">${team}</span>
+                        <div class="chart-team-progress-wrapper">
+                            <div class="chart-team-progress" style="width: ${percent}%;"></div>
+                        </div>
+                        <span class="chart-team-value">${hours.toFixed(1)}h</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
+    // 2. Vẽ biểu đồ xu hướng theo ngày của tháng
+    const daysTrendContainer = document.getElementById('chart-days-trend');
+    if (daysTrendContainer) {
+        const dailyEntries = Object.entries(dailyOTs).sort((a, b) => a[0].localeCompare(b[0])); // Ngày tăng dần
+        const maxDailyHours = dailyEntries.length > 0 ? Math.max(...dailyEntries.map(e => e[1])) : 0;
+        
+        if (dailyEntries.length === 0 || maxDailyHours === 0) {
+            daysTrendContainer.innerHTML = '<div style="text-align: center; color: #71717a; width: 100%; font-size: 0.9rem;">Không có dữ liệu biến động</div>';
+        } else {
+            daysTrendContainer.innerHTML = dailyEntries.map(([dateStr, hours]) => {
+                const dayNum = parseInt(dateStr.substring(8, 10));
+                const percent = maxDailyHours > 0 ? (hours / maxDailyHours) * 100 : 0;
+                return `
+                    <div class="chart-day-column">
+                        <div class="chart-day-tooltip">Ngày ${dayNum}: ${hours.toFixed(1)}h</div>
+                        <div class="chart-day-bar" style="--height: ${percent}%;"></div>
+                        <span class="chart-day-label">${dayNum}</span>
+                    </div>
+                `;
+            }).join('');
+        }
     }
 }
 
@@ -2074,7 +2485,7 @@ users = users.filter(u => {
             const days = ur.length;
             const lh = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
             const eh = ur.reduce((s, r) => s + r.eveningOTHours, 0);
-            const trips = ur.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '').length;
+            const trips = ur.filter(r => r.calcMode === 'trip' || (!r.calcMode && r.deliveryProvince && r.deliveryProvince.trim() !== '')).length;
 
             const rowNum = summaryStartRow + i;
             const row = wsSummary.getRow(rowNum);
@@ -2156,7 +2567,7 @@ users = users.filter(u => {
         wsDetail.getRow(4).height = 22;
 
         // 5. Headers
-        const headers2 = ["STT", "Ngày", "Họ và tên", "Team", "Mã nhân viên", "Thời gian OT", "Tổng OT (giờ)", "Đi xe (Tỉnh)", "Ghi chú"];
+        const headers2 = ["STT", "Ngày", "Họ và tên", "Team", "Mã nhân viên", "Thời gian OT", "Tổng OT (giờ)", "Hoạt động / Chuyến đi", "Ghi chú"];
         wsDetail.getRow(5).values = headers2;
         wsDetail.getRow(5).height = 28;
         wsDetail.getRow(5).font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -2211,6 +2622,17 @@ users = users.filter(u => {
                     timeRange = `${r.otStart}-${r.otEnd}`;
                 }
 
+                let activityVal = '—';
+                if (r.customActivity) {
+                    if (r.calcMode === 'trip') {
+                        activityVal = `${r.customActivity}${r.deliveryProvince ? ': ' + r.deliveryProvince : ''}`;
+                    } else {
+                        activityVal = r.customActivity;
+                    }
+                } else if (r.deliveryProvince && r.deliveryProvince.trim() !== '') {
+                    activityVal = r.deliveryProvince;
+                }
+
                 const row = wsDetail.getRow(currentDetailRow);
                 row.values = [
                     detailedIdx++,
@@ -2220,7 +2642,7 @@ users = users.filter(u => {
                     u.username,
                     timeRange,
                     r.totalHours,
-                    r.deliveryProvince || '—',
+                    activityVal,
                     r.note || '—'
                 ];
                 row.height = 22;
@@ -3066,24 +3488,43 @@ async function handleAdminOTSubmit(e) {
 // ==================== CLOUD WAKING & SYNC CONFIG ====================
 async function initCloudConfig() {
     try {
-        const res = await fetch(`${localServerUrl}/api/cloud-url`);
-        const data = await res.json();
-        const isLocalhostWeb = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && !isElectron;
-        if (data.cloudUrl && !isLocalhostWeb) {
-            API_BASE = data.cloudUrl;
-            if (API_BASE.endsWith('/')) {
-                API_BASE = API_BASE.slice(0, -1);
+        if (window.OT_CLOUD_URL) {
+            API_BASE = window.OT_CLOUD_URL;
+        } else {
+            API_BASE = 'https://api.otmanager.id.vn';
+        }
+        if (API_BASE.endsWith('/')) {
+            API_BASE = API_BASE.slice(0, -1);
+        }
+        console.log("[Desktop App] API Base trỏ tới Cloud:", API_BASE);
+
+        if (isElectron) {
+            // Thử kết nối nhanh xem server có đang hoạt động không
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5s timeout cho ping nhanh
+                const res = await fetch(`${API_BASE}/api/server-info`, { 
+                    method: 'GET', 
+                    mode: 'cors',
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                if (res.ok) {
+                    console.log("[Cloud] Server is already awake. Direct entry.");
+                    initSseConnection();
+                    return;
+                }
+            } catch (e) {
+                console.log("[Cloud] Server seems asleep or network slow, showing wakeup loader.");
             }
-            console.log("[Desktop App] API Base trỏ tới Cloud:", API_BASE);
-            if (isElectron) {
-                showCloudWakeupOverlay();
-                await wakeupCloudServer();
-            } else {
-                initSseConnection();
-            }
+
+            showCloudWakeupOverlay();
+            await wakeupCloudServer();
+        } else {
+            initSseConnection();
         }
     } catch (e) {
-        console.error("Lỗi đồng bộ Cloud URL:", e);
+        console.error("Lỗi cấu hình kết nối Cloud:", e);
     }
 }
 
@@ -3109,9 +3550,9 @@ function showCloudWakeupOverlay() {
     overlay.innerHTML = `
         <div style="text-align: center; max-width: 400px; padding: 20px;">
             <div style="width: 50px; height: 50px; border: 3px solid rgba(16, 185, 129, 0.2); border-top: 3px solid #10b981; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
-            <h3 style="margin-top: 0; color: #10b981; font-size: 1.3rem; margin-bottom: 10px;">Đang kết nối Cloud Server</h3>
-            <p style="font-size: 0.9rem; color: #a1a1aa; line-height: 1.5; margin-bottom: 8px;">Hệ thống đang kiểm tra kết nối và đánh thức Cloud Server miễn phí (Render Free Tier).</p>
-            <p style="font-size: 0.8rem; color: #71717a; font-style: italic;">Có thể mất từ 30 đến 50 giây để khởi động lại máy chủ nếu server đang ngủ. Vui lòng đợi trong giây lát...</p>
+            <h3 style="margin-top: 0; color: #10b981; font-size: 1.3rem; margin-bottom: 10px;">Đang kết nối đến hệ thống...</h3>
+            <p style="font-size: 0.9rem; color: #a1a1aa; line-height: 1.5; margin-bottom: 8px;">Hệ thống đang chuẩn bị tài nguyên và thiết lập đường truyền bảo mật.</p>
+            <p style="font-size: 0.8rem; color: #71717a; font-style: italic;">Vui lòng đợi trong giây lát...</p>
         </div>
         <style>
             @keyframes spin {
@@ -4027,6 +4468,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // Export & Cleanup
     document.getElementById('btn-export').addEventListener('click', exportExcel);
     document.getElementById('btn-close-month').addEventListener('click', handleCloseMonth);
+
+    // Toggle Report Charts
+    const btnToggleCharts = document.getElementById('btn-toggle-charts');
+    const chartsPanel = document.getElementById('charts-panel');
+    if (btnToggleCharts && chartsPanel) {
+        // Restore state on load
+        const savedShowCharts = localStorage.getItem('ot_show_report_charts') === 'true';
+        if (savedShowCharts) {
+            chartsPanel.style.display = 'block';
+            btnToggleCharts.style.backgroundColor = '#10b981';
+            btnToggleCharts.style.borderColor = '#10b981';
+            btnToggleCharts.style.color = '#ffffff';
+        }
+        
+        btnToggleCharts.addEventListener('click', () => {
+            const isHidden = chartsPanel.style.display === 'none' || !chartsPanel.style.display;
+            if (isHidden) {
+                chartsPanel.style.display = 'block';
+                btnToggleCharts.style.backgroundColor = '#10b981';
+                btnToggleCharts.style.borderColor = '#10b981';
+                btnToggleCharts.style.color = '#ffffff';
+                localStorage.setItem('ot_show_report_charts', 'true');
+            } else {
+                chartsPanel.style.display = 'none';
+                btnToggleCharts.style.backgroundColor = '#27272a';
+                btnToggleCharts.style.borderColor = '#3f3f46';
+                btnToggleCharts.style.color = '#e4e4e7';
+                localStorage.setItem('ot_show_report_charts', 'false');
+            }
+        });
+    }
     const btnCleanupDatabase = document.getElementById('btn-cleanup-database');
     if (btnCleanupDatabase) {
         btnCleanupDatabase.addEventListener('click', handleDatabaseCleanup);
