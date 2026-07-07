@@ -54,10 +54,7 @@
       "target": "nsis",
       "icon": "resources/icon.png",
       "publisherName": "OT Manager",
-      "artifactName": "${name}-Setup-${version}.${ext}",
-      "certificateFile": "build/certificate.pfx",
-      "certificatePassword": "otmanager123",
-      "timeStampServer": null
+      "artifactName": "${name}-Setup-${version}.${ext}"
     },
     "nsis": {
       "include": "build/installer.nsh"
