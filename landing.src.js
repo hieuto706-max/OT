@@ -1417,7 +1417,7 @@ document.addEventListener('DOMContentLoaded', () => {
         apkBtn.style.cursor = 'pointer';
         apkBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const downloadUrl = this.getAttribute('data-url') || 'https://github.com/hieuto706-max/OT/releases/download/v1.4.0/OT-Manager-mobile.apk';
+            const downloadUrl = this.getAttribute('data-url') || 'https://github.com/hieuto706-max/OT/releases/download/v1.4.1/OT-Manager-mobile.apk';
             window.location.href = downloadUrl;
         });
     }
@@ -1426,7 +1426,7 @@ document.addEventListener('DOMContentLoaded', () => {
         desktopBtn.style.cursor = 'pointer';
         desktopBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            const downloadUrl = this.getAttribute('data-url') || 'https://github.com/hieuto706-max/OT/releases/download/v1.4.0/ot-manager-Setup-1.4.0.exe';
+            const downloadUrl = this.getAttribute('data-url') || 'https://github.com/hieuto706-max/OT/releases/download/v1.4.1/ot-manager-Setup-1.4.1.exe';
             window.open(downloadUrl, '_blank');
         });
     }
