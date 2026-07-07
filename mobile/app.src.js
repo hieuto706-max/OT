@@ -945,9 +945,12 @@ function setupCustomActivitiesUI() {
     const teamSettings = currentUser ? currentUser.teamSettings : null;
     const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
 
+    const isBackfillChecked = document.getElementById('ot-backfill')?.checked || false;
+    const isEditBackfillChecked = document.getElementById('edit-ot-backfill')?.checked || false;
+
     if (activities.length > 0) {
-        if (activityGroup) activityGroup.style.display = 'block';
-        if (editActivityGroup) editActivityGroup.style.display = 'block';
+        if (activityGroup) activityGroup.style.display = isBackfillChecked ? 'none' : 'block';
+        if (editActivityGroup) editActivityGroup.style.display = isEditBackfillChecked ? 'none' : 'block';
 
         // Nạp danh sách checkbox cho Form thêm (chỉ nạp nếu chưa có phần tử con)
         const listContainer = document.getElementById('ot-custom-activities-list');
