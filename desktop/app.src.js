@@ -3628,10 +3628,7 @@ async function checkUpdateManual() {
     if (!isElectron) return;
     showToast('Đang kiểm tra bản cập nhật...', 'info');
     try {
-        // 1. Lấy thông tin Cloud URL từ local server
-        const cloudConfRes = await fetch(`${localServerUrl}/api/cloud-url`);
-        const cloudConf = await cloudConfRes.json();
-        const cloudUrl = cloudConf.cloudUrl;
+        const cloudUrl = window.OT_CLOUD_URL || API_BASE;
 
         if (!cloudUrl) {
             showModal(
@@ -3646,10 +3643,8 @@ async function checkUpdateManual() {
         }
 
         // 2. Lấy version hiện tại của ứng dụng local
-        const localRes = await fetch(`${localServerUrl}/api/version`);
-        const localData = await localRes.json();
-        const localVer = localData.version || '1.0.0';
-        const localBuildTime = localData.buildTime || 0;
+        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.4.1';
+        const localBuildTime = window.OT_LOCAL_BUILD_TIME || parseInt(localStorage.getItem('ot_app_build_time')) || 0;
 
         // 3. Lấy version mới nhất trên Cloud Server
         const cloudRes = await fetch(`${cloudUrl}/api/version`);
@@ -3782,15 +3777,11 @@ async function checkUpdateManual() {
 async function checkUpdateSilent() {
     if (!isElectron) return;
     try {
-        const cloudConfRes = await fetch(`${localServerUrl}/api/cloud-url`);
-        const cloudConf = await cloudConfRes.json();
-        const cloudUrl = cloudConf.cloudUrl;
+        const cloudUrl = window.OT_CLOUD_URL || API_BASE;
         if (!cloudUrl) return;
 
-        const localRes = await fetch(`${localServerUrl}/api/version`);
-        const localData = await localRes.json();
-        const localVer = localData.version || '1.0.0';
-        const localBuildTime = localData.buildTime || 0;
+        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.4.1';
+        const localBuildTime = window.OT_LOCAL_BUILD_TIME || parseInt(localStorage.getItem('ot_app_build_time')) || 0;
 
         const cloudRes = await fetch(`${cloudUrl}/api/version`);
         const cloudData = await cloudRes.json();

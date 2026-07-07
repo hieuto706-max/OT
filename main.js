@@ -68,9 +68,20 @@ async function createWindow() {
 
     // Ghi file cấu hình cổng / server động cho renderer app đọc
     try {
+        let localVersion = app.getVersion();
+        let localBuildTime = 0;
+        const buildJsonPath = path.join(__dirname, 'server', 'build.json');
+        if (fs.existsSync(buildJsonPath)) {
+            try {
+                const buildInfo = JSON.parse(fs.readFileSync(buildJsonPath, 'utf-8'));
+                if (buildInfo.buildTime) localBuildTime = buildInfo.buildTime;
+                if (buildInfo.version) localVersion = buildInfo.version;
+            } catch (buildErr) {}
+        }
+        
         fs.writeFileSync(
             path.join(__dirname, 'desktop', 'server-config.js'),
-            `window.OT_CLOUD_URL = "${cloudUrl}";`,
+            `window.OT_CLOUD_URL = "${cloudUrl}";\nwindow.OT_LOCAL_VERSION = "${localVersion}";\nwindow.OT_LOCAL_BUILD_TIME = ${localBuildTime};`,
             'utf-8'
         );
     } catch (e) {
