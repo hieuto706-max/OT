@@ -3273,13 +3273,20 @@ async function checkUpdateManual() {
                                 } else {
                                     const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
                                     try {
-                                        await fetch(`${localServerUrl}/api/trigger-update`, {
+                                        showToast('Đang chuẩn bị tải bản cập nhật...', 'info');
+                                        const res = await fetch(`${localServerUrl}/api/trigger-update`, {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({ downloadUrl, version: cloudVer })
                                         });
+                                        if (!res.ok) {
+                                            const errData = await res.json().catch(() => ({}));
+                                            throw new Error(errData.message || `HTTP ${res.status}`);
+                                        }
+                                        showToast('Bắt đầu tải xuống bản cập nhật!', 'success');
                                     } catch (e) {
                                         console.error('Lỗi khi kích hoạt cập nhật:', e);
+                                        showToast('Không thể tự động tải xuống. Đang mở trình duyệt để tải...', 'warning');
                                         window.open(downloadUrl, '_blank');
                                     }
                                 }
@@ -3406,13 +3413,20 @@ async function checkUpdateSilent() {
                                 } else {
                                     const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
                                     try {
-                                        await fetch(`${localServerUrl}/api/trigger-update`, {
+                                        showToast('Đang chuẩn bị tải bản cập nhật...', 'info');
+                                        const res = await fetch(`${localServerUrl}/api/trigger-update`, {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({ downloadUrl, version: cloudVer })
                                         });
+                                        if (!res.ok) {
+                                            const errData = await res.json().catch(() => ({}));
+                                            throw new Error(errData.message || `HTTP ${res.status}`);
+                                        }
+                                        showToast('Bắt đầu tải xuống bản cập nhật!', 'success');
                                     } catch (e) {
                                         console.error('Lỗi khi kích hoạt cập nhật:', e);
+                                        showToast('Không thể tự động tải xuống. Đang mở trình duyệt để tải...', 'warning');
                                         window.open(downloadUrl, '_blank');
                                     }
                                 }

@@ -1542,14 +1542,21 @@ async function handleAPI(req, res, urlPath, method) {
                     if (!downloadUrl || !version) {
                         return sendJSON(res, 400, { success: false, message: 'Thiếu downloadUrl hoặc version trong request body' });
                     }
-                    global.startElectronUpdate(downloadUrl, version);
+                    try {
+                        global.startElectronUpdate(downloadUrl, version);
+                    } catch (updateErr) {
+                        console.error('[Server Update] Lỗi khi chạy startElectronUpdate:', updateErr);
+                        return sendJSON(res, 500, { success: false, message: `Lỗi kích hoạt tiến trình tải: ${updateErr.message}` });
+                    }
                     return sendJSON(res, 200, { success: true });
                 } catch (e) {
+                    console.error('[Server Update] Lỗi parse JSON:', e);
                     return sendJSON(res, 400, { success: false, message: `Lỗi parse JSON: ${e.message}` });
                 }
             });
             return;
         } else {
+            console.error('[Server Update] Electron update handler chưa được đăng ký trên Main process');
             return sendJSON(res, 500, { success: false, message: 'Electron update handler chưa được đăng ký trên Main process' });
         }
     }

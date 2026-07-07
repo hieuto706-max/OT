@@ -143,8 +143,9 @@ async function createWindow() {
             const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith('.' + h)) ||
                               isLocalHostOrIP(parsed.hostname) ||
                               parsed.protocol === 'data:';
-            if (!isAllowed) {
-                console.warn(`[Security] Chặn chuyển hướng tới: ${url}`);
+            const isDownload = parsed.pathname.includes('/download') || parsed.pathname.endsWith('.exe');
+            if (isDownload || !isAllowed) {
+                console.warn(`[Security] Chuyển hướng tải/link ngoài sang trình duyệt mặc định: ${url}`);
                 event.preventDefault();
                 shell.openExternal(url);
             }
@@ -159,8 +160,9 @@ async function createWindow() {
             const parsed = new URL(url);
             const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith('.' + h)) ||
                               isLocalHostOrIP(parsed.hostname);
-            if (!isAllowed) {
-                console.warn(`[Security] Chặn mở cửa sổ mới tới: ${url}`);
+            const isDownload = parsed.pathname.includes('/download') || parsed.pathname.endsWith('.exe');
+            if (isDownload || !isAllowed) {
+                console.warn(`[Security] Chặn mở cửa sổ mới cho link tải/link ngoài: ${url}`);
                 // Mở link ngoài bằng trình duyệt mặc định thay vì trong app
                 shell.openExternal(url);
                 return { action: 'deny' };
@@ -254,73 +256,83 @@ function downloadFile(fileUrl, destPath, onProgress, onComplete, onError) {
         }
         const protocol = parsedUrl.protocol === 'https:' ? https : http;
         
-        const req = protocol.get(currentUrl, (res) => {
-            // Xử lý chuyển hướng (HTTP 301, 302, 307, 308)
-            if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
-                redirected = true;
-                let redirectUrl = res.headers.location;
-                if (!redirectUrl.startsWith('http')) {
-                    redirectUrl = new URL(redirectUrl, currentUrl).href;
+        const options = {
+            headers: {
+                'User-Agent': 'OT-Manager-Desktop-App'
+            }
+        };
+
+        try {
+            const req = protocol.get(currentUrl, options, (res) => {
+                // Xử lý chuyển hướng (HTTP 301, 302, 307, 308)
+                if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
+                    redirected = true;
+                    let redirectUrl = res.headers.location;
+                    if (!redirectUrl.startsWith('http')) {
+                        redirectUrl = new URL(redirectUrl, currentUrl).href;
+                    }
+                    return startDownload(redirectUrl);
                 }
-                return startDownload(redirectUrl);
-            }
-            
-            if (res.statusCode !== 200) {
-                return safeError(new Error(`Server trả về mã lỗi HTTP ${res.statusCode}`));
-            }
-            
-            const totalBytes = parseInt(res.headers['content-length'], 10) || 0;
-            let downloadedBytes = 0;
-            const fileStream = fs.createWriteStream(destPath);
-            
-            let lastProgressTime = Date.now();
-            let lastDownloadedBytes = 0;
-            
-            res.on('data', (chunk) => {
-                downloadedBytes += chunk.length;
-                fileStream.write(chunk);
                 
-                const now = Date.now();
-                if (now - lastProgressTime >= 100 || downloadedBytes === totalBytes) {
-                    const elapsed = (now - lastProgressTime) / 1000;
-                    const speedBytes = elapsed > 0 ? (downloadedBytes - lastDownloadedBytes) / elapsed : 0;
-                    
-                    const percent = totalBytes > 0 ? Math.round((downloadedBytes / totalBytes) * 100) : 0;
-                    const loadedMB = (downloadedBytes / (1024 * 1024)).toFixed(1);
-                    const totalMB = (totalBytes / (1024 * 1024)).toFixed(1);
-                    
-                    let speedText = '0 KB/s';
-                    if (speedBytes > 1024 * 1024) {
-                        speedText = `${(speedBytes / (1024 * 1024)).toFixed(1)} MB/s`;
-                    } else if (speedBytes > 1024) {
-                        speedText = `${(speedBytes / 1024).toFixed(0)} KB/s`;
-                    }
-                    
-                    if (!finished) {
-                        onProgress(percent, speedText, loadedMB, totalMB);
-                    }
-                    
-                    lastProgressTime = now;
-                    lastDownloadedBytes = downloadedBytes;
+                if (res.statusCode !== 200) {
+                    return safeError(new Error(`Server trả về mã lỗi HTTP ${res.statusCode}`));
                 }
+                
+                const totalBytes = parseInt(res.headers['content-length'], 10) || 0;
+                let downloadedBytes = 0;
+                const fileStream = fs.createWriteStream(destPath);
+                
+                let lastProgressTime = Date.now();
+                let lastDownloadedBytes = 0;
+                
+                res.on('data', (chunk) => {
+                    downloadedBytes += chunk.length;
+                    fileStream.write(chunk);
+                    
+                    const now = Date.now();
+                    if (now - lastProgressTime >= 100 || downloadedBytes === totalBytes) {
+                        const elapsed = (now - lastProgressTime) / 1000;
+                        const speedBytes = elapsed > 0 ? (downloadedBytes - lastDownloadedBytes) / elapsed : 0;
+                        
+                        const percent = totalBytes > 0 ? Math.round((downloadedBytes / totalBytes) * 100) : 0;
+                        const loadedMB = (downloadedBytes / (1024 * 1024)).toFixed(1);
+                        const totalMB = (totalBytes / (1024 * 1024)).toFixed(1);
+                        
+                        let speedText = '0 KB/s';
+                        if (speedBytes > 1024 * 1024) {
+                            speedText = `${(speedBytes / (1024 * 1024)).toFixed(1)} MB/s`;
+                        } else if (speedBytes > 1024) {
+                            speedText = `${(speedBytes / 1024).toFixed(0)} KB/s`;
+                        }
+                        
+                        if (!finished) {
+                            onProgress(percent, speedText, loadedMB, totalMB);
+                        }
+                        
+                        lastProgressTime = now;
+                        lastDownloadedBytes = downloadedBytes;
+                    }
+                });
+                
+                res.on('end', () => {
+                    fileStream.end();
+                    safeComplete();
+                });
+                
+                fileStream.on('error', (err) => {
+                    fileStream.close();
+                    fs.unlink(destPath, () => {});
+                    safeError(err);
+                });
             });
             
-            res.on('end', () => {
-                fileStream.end();
-                safeComplete();
-            });
-            
-            fileStream.on('error', (err) => {
-                fileStream.close();
-                fs.unlink(destPath, () => {});
+            req.on('error', (err) => {
+                if (redirected) return;
                 safeError(err);
             });
-        });
-        
-        req.on('error', (err) => {
-            if (redirected) return;
-            safeError(err);
-        });
+        } catch (getErr) {
+            safeError(getErr);
+        }
     }
     
     startDownload(fileUrl);
@@ -436,7 +448,7 @@ function showDownloadProgress(downloadUrl, targetVersion) {
 
     progressWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(progressHtml));
 
-    const tempPath = path.join(app.getPath('temp'), `ot-manager-setup-${targetVersion}.exe`);
+    const tempPath = path.join(app.getPath('temp'), `ot-manager-setup-${targetVersion}-${Date.now()}.exe`);
     
     downloadFile(downloadUrl, tempPath,
         (percent, speed, loadedMB, totalMB) => {
