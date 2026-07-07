@@ -898,6 +898,12 @@ function logout() {
     
     const loginForm = document.getElementById('form-login-employee');
     if (loginForm) loginForm.reset();
+    
+    const listContainer = document.getElementById('ot-custom-activities-list');
+    if (listContainer) listContainer.innerHTML = '';
+    const editListContainer = document.getElementById('edit-ot-custom-activities-list');
+    if (editListContainer) editListContainer.innerHTML = '';
+
     showToast('Đã đăng xuất', 'info');
     
     handleUnauthenticated();
@@ -943,25 +949,21 @@ function setupCustomActivitiesUI() {
         if (activityGroup) activityGroup.style.display = 'block';
         if (editActivityGroup) editActivityGroup.style.display = 'block';
 
-        // Nạp danh sách checkbox cho Form thêm
+        // Nạp danh sách checkbox cho Form thêm (chỉ nạp nếu chưa có phần tử con)
         const listContainer = document.getElementById('ot-custom-activities-list');
-        if (listContainer) {
+        if (listContainer && listContainer.children.length === 0) {
             listContainer.innerHTML = activities.map(act => `
-                <div class="custom-activity-item" style="margin-bottom: 12px; text-align: left;">
-                    <div class="form-group toggle-group" style="margin-top: 0; margin-bottom: 0; border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
-                        <label class="toggle-label" for="chk-${act.id}" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-                            <span class="toggle-text">
-                                <strong>${act.name}</strong>
-                                <small style="display: block; color: var(--text-muted); font-size: 0.75rem;">
-                                    Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}
-                                </small>
-                            </span>
-                            <div class="toggle-switch">
-                                <input type="checkbox" id="chk-${act.id}" class="ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleCustomActivityInput('${act.id}')">
-                                <span class="toggle-slider"></span>
-                            </div>
-                        </label>
-                    </div>
+                <div class="custom-activity-item toggle-row" style="margin-bottom: 14px; text-align: left;">
+                    <label class="toggle-label" for="chk-${act.id}" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                        <span class="toggle-text">
+                            <strong>${act.name}</strong>
+                            <small>Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}</small>
+                        </span>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="chk-${act.id}" class="ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleCustomActivityInput('${act.id}')">
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </label>
                     <div class="form-group" id="ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding: 0 4px; margin-bottom: 0;">
                         <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiết'}</label>
                         <input type="text" class="ot-custom-activity-detail" data-act-id="${act.id}" placeholder="${act.placeholder || 'Nhập chi tiết...'}" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
@@ -970,25 +972,21 @@ function setupCustomActivitiesUI() {
             `).join('');
         }
 
-        // Nạp danh sách checkbox cho Form sửa
+        // Nạp danh sách checkbox cho Form sửa (chỉ nạp nếu chưa có phần tử con)
         const editListContainer = document.getElementById('edit-ot-custom-activities-list');
-        if (editListContainer) {
+        if (editListContainer && editListContainer.children.length === 0) {
             editListContainer.innerHTML = activities.map(act => `
-                <div class="custom-activity-item" style="margin-bottom: 12px; text-align: left;">
-                    <div class="form-group toggle-group" style="margin-top: 0; margin-bottom: 0; border: 1px solid rgba(255,255,255,0.08); padding: 12px; border-radius: 8px;">
-                        <label class="toggle-label" for="edit-chk-${act.id}" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-                            <span class="toggle-text">
-                                <strong>${act.name}</strong>
-                                <small style="display: block; color: var(--text-muted); font-size: 0.75rem;">
-                                    Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}
-                                </small>
-                            </span>
-                            <div class="toggle-switch">
-                                <input type="checkbox" id="edit-chk-${act.id}" class="edit-ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleEditCustomActivityInput('${act.id}')">
-                                <span class="toggle-slider"></span>
-                            </div>
-                        </label>
-                    </div>
+                <div class="custom-activity-item toggle-row" style="margin-bottom: 14px; text-align: left;">
+                    <label class="toggle-label" for="edit-chk-${act.id}" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                        <span class="toggle-text">
+                            <strong>${act.name}</strong>
+                            <small>Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}</small>
+                        </span>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="edit-chk-${act.id}" class="edit-ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleEditCustomActivityInput('${act.id}')">
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </label>
                     <div class="form-group" id="edit-ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding: 0 4px; margin-bottom: 0;">
                         <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiết'}</label>
                         <input type="text" class="edit-ot-custom-activity-detail" data-act-id="${act.id}" placeholder="${act.placeholder || 'Nhập chi tiết...'}" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
@@ -1206,12 +1204,20 @@ function resetForm() {
     const backfillHours = document.getElementById('ot-backfill-hours');
     if (backfillHours) backfillHours.value = '';
 
-    const otHasTrip = document.getElementById('ot-has-trip');
-    if (otHasTrip) otHasTrip.checked = false;
-    const otProvGroup = document.getElementById('ot-province-group');
-    if (otProvGroup) otProvGroup.style.display = 'none';
-    const otProvInput = document.getElementById('ot-province');
-    if (otProvInput) otProvInput.value = '';
+    // Reset custom activities
+    document.querySelectorAll('.ot-custom-activity-checkbox').forEach(chk => {
+        chk.checked = false;
+        const actId = chk.dataset.actId;
+        const group = document.getElementById(`ot-custom-activity-detail-group-${actId}`);
+        if (group) {
+            group.style.display = 'none';
+            const input = group.querySelector('.ot-custom-activity-detail');
+            if (input) {
+                input.value = '';
+                input.required = false;
+            }
+        }
+    });
 
     updatePreview();
 }
