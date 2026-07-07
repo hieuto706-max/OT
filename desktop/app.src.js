@@ -4638,6 +4638,8 @@ async function editRecordDialog(recordId, source) {
                         eveningOTHours: eveningHours,
                         totalHours,
                         deliveryProvince: hasTrip ? province : '',
+                        customActivity: record.customActivity || '',
+                        calcMode: record.calcMode || '',
                         note,
                         isBackfill: isRecBackfill,
                         createdMonth: isRecBackfill ? getCurrentMonth() : date.substring(0, 7)

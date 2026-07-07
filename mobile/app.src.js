@@ -2594,17 +2594,20 @@ async function editRecordDialog(id) {
 
             if (elEditSelect) {
                 // Nạp danh sách tùy chọn
-                const optionsHtml = `
-                    <option value="">-- Không có (Chỉ tăng ca bình thường) --</option>
-                    ${activities.map(act => `<option value="${act.name}">${act.name}</option>`).join('')}
-                `;
+                const optionsHtml = activities.map(act => `<option value="${act.name}">${act.name}</option>`).join('');
                 elEditSelect.innerHTML = optionsHtml;
-                elEditSelect.value = record.customActivity || '';
+                
+                if (!record.customActivity && record.deliveryProvince) {
+                    const firstTripAct = activities.find(a => a.calcMode === 'trip');
+                    elEditSelect.value = firstTripAct ? firstTripAct.name : (activities[0]?.name || '');
+                } else {
+                    elEditSelect.value = record.customActivity || '';
+                }
             }
 
             handleEditCustomActivityChange();
 
-            if (record.customActivity) {
+            if (elEditSelect && elEditSelect.value) {
                 if (elEditDetail) elEditDetail.value = record.deliveryProvince || '';
             } else {
                 if (elEditDetail) elEditDetail.value = '';
