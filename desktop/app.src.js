@@ -4148,18 +4148,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
                     if (payload.iat) {
                         const now = new Date();
-                        const vnNow = new Date(now.getTime() + 7 * 3600000);
-                        const vnToday5AM = new Date(Date.UTC(
-                            vnNow.getUTCFullYear(),
-                            vnNow.getUTCMonth(),
-                            vnNow.getUTCDate(),
-                            5, 0, 0, 0
-                        ));
-                        let today5AM = vnToday5AM.getTime() - 7 * 3600000;
-                        if (now.getTime() < today5AM) {
-                            today5AM -= 24 * 3600000;
+                        const today5AM = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 5, 0, 0, 0);
+                        if (now.getTime() < today5AM.getTime()) {
+                            today5AM.setDate(today5AM.getDate() - 1);
                         }
-                        if ((payload.iat * 1000) < today5AM) {
+                        if ((payload.iat * 1000) < today5AM.getTime()) {
                             localStorage.removeItem('ot_auth_token');
                             localStorage.removeItem('ot_current_user');
                             window.location.reload();
