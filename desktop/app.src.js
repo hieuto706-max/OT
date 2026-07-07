@@ -87,7 +87,10 @@ function populateTeamFilters() {
         <option value="">Tất cả Team</option>
         <option value="admin">admin</option>
         <option value="unassigned">Chưa phân team</option>
-        ${TEAMS.map(t => `<option value="${t}">${t}</option>`).join('')}
+        ${TEAMS.map(t => {
+            const name = typeof t === 'string' ? t : (t.name || '');
+            return `<option value="${name}">${name}</option>`;
+        }).join('')}
     `;
     
     if (adminFilter) {
@@ -3771,7 +3774,7 @@ async function checkUpdateManual() {
             );
         }
     } catch (err) {
-        showToast('Không thể kết nối đến Cloud Server để check cập nhật', 'error');
+        showToast('Không thể kết nối đến Cloud Server. Máy chủ đám mây có thể đang khởi động (mất khoảng 1 phút) hoặc tạm ngưng hoạt động. Vui lòng thử lại sau!', 'error');
         console.error('Lỗi check cập nhật:', err);
     }
 }
@@ -4755,7 +4758,10 @@ async function addUserDialog() {
             <select id="modal-user-team" class="input-sm" style="width:100%; box-sizing:border-box;">
                 <option value="">-- Chưa phân team --</option>
                 ${isAdmin ? '<option value="admin">admin</option>' : ''}
-                ${TEAMS.map(teamName => `<option value="${teamName}">${teamName}</option>`).join('')}
+                ${TEAMS.map(t => {
+                    const name = typeof t === 'string' ? t : (t.name || '');
+                    return `<option value="${name}">${name}</option>`;
+                }).join('')}
             </select>
         </div>
     </form>`;
@@ -4845,7 +4851,10 @@ async function editUserDialog(userId) {
                     <select id="modal-user-team" class="input-sm" style="width:100%; box-sizing:border-box;">
                         <option value="">-- Chưa phân team --</option>
                         ${isBelongToAdminTeam ? `<option value="admin" ${user.team === 'admin' ? 'selected' : ''}>admin</option>` : ''}
-                        ${TEAMS.map(teamName => `<option value="${teamName}" ${user.team === teamName ? 'selected' : ''}>${teamName}</option>`).join('')}
+                        ${TEAMS.map(t => {
+                            const name = typeof t === 'string' ? t : (t.name || '');
+                            return `<option value="${name}" ${user.team === name ? 'selected' : ''}>${name}</option>`;
+                        }).join('')}
                     </select>
                 </div>
             </div>
