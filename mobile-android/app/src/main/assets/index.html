@@ -41,9 +41,12 @@
           const saved = localStorage.getItem('ot_mobile_user') || sessionStorage.getItem('ot_mobile_user');
           const loginTime = localStorage.getItem('ot_login_time') || sessionStorage.getItem('ot_login_time');
           if (saved && loginTime) {
-            const loginDate = new Date(parseInt(loginTime, 10));
-            const cutoff = new Date(loginDate.getFullYear(), loginDate.getMonth(), loginDate.getDate() + 1, 5, 0, 0, 0);
-            if (Date.now() < cutoff.getTime()) {
+            const now = new Date();
+            const today5AM = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 5, 0, 0, 0);
+            if (now.getTime() < today5AM.getTime()) {
+              today5AM.setDate(today5AM.getDate() - 1);
+            }
+            if (parseInt(loginTime, 10) >= today5AM.getTime()) {
               document.documentElement.classList.add('user-logged-in');
             }
           }

@@ -1433,8 +1433,21 @@ async function refreshAdminRecords() {
 
         // Render Approved
         if (approved.length === 0) {
-            const cols = (currentAdminRecType === 'ot') ? 10 : 5;
-            approvedTbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Không có dữ liệu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} đã duyệt</td></tr>`;
+            const cols = (currentAdminRecType === 'ot') ? 10 : 7;
+            approvedTbody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color: var(--text-muted); opacity: 0.6;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M8 12h8"/>
+                            </svg>
+                            <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">Không có dữ liệu đã duyệt</span>
+                            <span style="font-size: 13px; color: var(--text-muted);">Không tìm thấy bản ghi ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} nào đã được duyệt trong tháng này.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
         } else {
             approvedTbody.innerHTML = approved.map(r => {
                 const user = users.find(u => u.id === r.userId);
@@ -1506,8 +1519,22 @@ async function refreshAdminRecords() {
 
         // Render Pending
         if (pending.length === 0) {
-            const cols = (currentAdminRecType === 'ot') ? 9 : 5;
-            pendingTbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Không có yêu cầu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} chờ duyệt</td></tr>`;
+            const cols = (currentAdminRecType === 'ot') ? 9 : 6;
+            pendingTbody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color: var(--accent-green-light); opacity: 0.8;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 8v4"/>
+                                <path d="M12 16h.01"/>
+                            </svg>
+                            <span style="font-size: 15px; font-weight: 600; color: var(--text-primary);">Không có yêu cầu chờ duyệt</span>
+                            <span style="font-size: 13px; color: var(--text-muted);">Tất cả yêu cầu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} đã được xử lý xong.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
         } else {
             pendingTbody.innerHTML = pending.map(r => {
                 const user = users.find(u => u.id === r.userId);
@@ -1567,8 +1594,22 @@ async function refreshAdminRecords() {
 
         // Render Rejected
         if (rejected.length === 0) {
-            const cols = (currentAdminRecType === 'ot') ? 9 : 5;
-            rejectedTbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Không có bản ghi ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} bị từ chối</td></tr>`;
+            const cols = (currentAdminRecType === 'ot') ? 9 : 6;
+            rejectedTbody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color: #ef4444; opacity: 0.7;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M15 9l-6 6"/>
+                                <path d="M9 9l6 6"/>
+                            </svg>
+                            <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">Không có bản ghi bị từ chối</span>
+                            <span style="font-size: 13px; color: var(--text-muted);">Không có yêu cầu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} nào bị từ chối duyệt.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
         } else {
             rejectedTbody.innerHTML = rejected.map(r => {
                 const user = users.find(u => u.id === r.userId);
@@ -1584,7 +1625,7 @@ async function refreshAdminRecords() {
                 `;
                 const teamBadge = `<span class="tag-team">${teamName}</span>`;
                 const noteDisplay = r.note ? `<span class="text-note" title="${r.note}">${r.note}</span>` : '<span class="text-muted">—</span>';
-
+ 
                 if (currentAdminRecType === 'ot') {
                     const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${r.otEnd || '—'}</span>` : '<span class="text-muted">—</span>';
                     const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
@@ -1597,9 +1638,14 @@ async function refreshAdminRecords() {
                         <td>${timeRange}</td>
                         <td>${totalOtBadge}</td>
                         <td>${noteDisplay}</td>
-                        <td><div class="action-buttons">
+                        <td><div class="action-buttons" style="display: flex; align-items: center; gap: 8px;">
                             <button class="btn btn-primary btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt lại" style="padding: 4px 8px; font-size: 11px;">
                                 ✓ Duyệt lại
+                            </button>
+                            <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="Xóa" style="padding: 2px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px; color: #ef4444; cursor: pointer;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
                             </button>
                         </div></td>
                     </tr>`;
@@ -1610,9 +1656,14 @@ async function refreshAdminRecords() {
                         <td><span class="text-date">${formatDate(r.date)}</span></td>
                         <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
                         <td>${noteDisplay}</td>
-                        <td><div class="action-buttons">
+                        <td><div class="action-buttons" style="display: flex; align-items: center; gap: 8px;">
                             <button class="btn btn-primary btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt lại" style="padding: 4px 8px; font-size: 11px;">
                                 ✓ Duyệt lại
+                            </button>
+                            <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="Xóa" style="padding: 2px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px; color: #ef4444; cursor: pointer;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
                             </button>
                         </div></td>
                     </tr>`;

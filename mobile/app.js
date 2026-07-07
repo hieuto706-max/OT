@@ -108,18 +108,11 @@ const safeStorage = {
 
 function getMostRecent5AM() {
     const now = new Date();
-    const vnNow = new Date(now.getTime() + 7 * 3600000);
-    const vnToday5AM = new Date(Date.UTC(
-        vnNow.getUTCFullYear(),
-        vnNow.getUTCMonth(),
-        vnNow.getUTCDate(),
-        5, 0, 0, 0
-    ));
-    let today5AM = vnToday5AM.getTime() - 7 * 3600000;
-    if (now.getTime() < today5AM) {
-        today5AM -= 24 * 3600000;
+    const today5AM = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 5, 0, 0, 0);
+    if (now.getTime() < today5AM.getTime()) {
+        today5AM.setDate(today5AM.getDate() - 1);
     }
-    return today5AM;
+    return today5AM.getTime();
 }
 
 function isSessionExpired(loginTimeMs) {
