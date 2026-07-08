@@ -10,8 +10,8 @@ android {
         applicationId = "com.hieuto.otmanager"
         minSdk = 29
         targetSdk = 36
-        versionCode = 23
-        versionName = "1.4.1"
+        versionCode = 24
+        versionName = "1.4.2"
     }
 
     signingConfigs {
