@@ -38,10 +38,36 @@ import java.util.regex.Pattern;
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
+    public String nativeFcmToken = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Initialize Firebase Messaging programmatically
+        try {
+            com.google.firebase.FirebaseOptions options = new com.google.firebase.FirebaseOptions.Builder()
+                    .setApiKey("AIzaSyD8W_NVkhL-7uSfR6aNigLDHXtLN7fO6cI")
+                    .setApplicationId("1:75783850598:web:274a61bee43b65c2343ba7")
+                    .setProjectId("ot-manager-4a0eb")
+                    .setGcmSenderId("75783850598")
+                    .build();
+
+            if (com.google.firebase.FirebaseApp.getApps(this).isEmpty()) {
+                com.google.firebase.FirebaseApp.initializeApp(this, options);
+            }
+
+            // Pre-fetch token to cache
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        this.nativeFcmToken = task.getResult();
+                        android.util.Log.d("FCM", "Prefetched native token: " + this.nativeFcmToken);
+                    }
+                });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         // Ép tăng tốc phần cứng cho cửa sổ (Window) ứng dụng
         getWindow().setFlags(
@@ -380,6 +406,24 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception e) {
                 return "";
             }
+        }
+
+        @JavascriptInterface
+        public String getFcmToken() {
+            if (activity.nativeFcmToken != null && !activity.nativeFcmToken.isEmpty()) {
+                return activity.nativeFcmToken;
+            }
+            try {
+                com.google.android.gms.tasks.Task<String> task = com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken();
+                String token = com.google.android.gms.tasks.Tasks.await(task, 4, java.util.concurrent.TimeUnit.SECONDS);
+                if (token != null) {
+                    activity.nativeFcmToken = token;
+                    return token;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return "";
         }
     }
 }

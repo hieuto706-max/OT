@@ -46,4 +46,7 @@ dependencies {
     // AndroidX AppCompat + Activity (cần cho AppCompatActivity & OnBackPressedCallback)
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.activity:activity:1.9.0")
+    
+    // Firebase Cloud Messaging Native SDK
+    implementation("com.google.firebase:firebase-messaging:23.4.1")
 }
