@@ -3030,15 +3030,15 @@ if (window.location.search.includes('mock=true')) {
 window.editRecordDialog = editRecordDialog;
 window.deleteRecord = deleteRecord;
 
-// ==================== WEB PUSH SUBSCRIPTION ====================
+// ==================== WEB PUSH & FIREBASE FCM SUBSCRIPTION ====================
 async function checkAndRegisterPushNotifications() {
     if (window.location.protocol === 'file:') {
         // Bỏ qua nếu chạy offline dạng file:// trên Cordova
         return;
     }
     
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.warn('[Push Notification] Trình duyệt không hỗ trợ Web Push.');
+    if (!('serviceWorker' in navigator)) {
+        console.warn('[Notification] Trình duyệt không hỗ trợ Service Worker.');
         return;
     }
 
@@ -3052,36 +3052,68 @@ async function checkAndRegisterPushNotifications() {
         }
         
         if (permission !== 'granted') {
-            console.warn('[Push Notification] Quyền thông báo bị từ chối.');
+            console.warn('[Notification] Quyền thông báo bị từ chối.');
             return;
         }
-        
-        // 2. Lấy Public Key từ Server
-        const res = await api('/api/notifications/vapid-public-key');
-        if (!res || !res.publicKey) {
-            console.error('[Push Notification] Không lấy được VAPID public key từ server.');
-            return;
+
+        let fcmToken = null;
+        let subscription = null;
+
+        // 2. Đăng ký nhận token Firebase FCM
+        try {
+            if (typeof firebase !== 'undefined') {
+                if (firebase.apps.length === 0) {
+                    firebase.initializeApp({
+                        apiKey: "AIzaSyD8W_NVkhL-7uSfR6aNigLDHXtLN7fO6cI",
+                        authDomain: "ot-manager-4a0eb.firebaseapp.com",
+                        projectId: "ot-manager-4a0eb",
+                        storageBucket: "ot-manager-4a0eb.firebasestorage.app",
+                        messagingSenderId: "75783850598",
+                        appId: "1:75783850598:web:274a61bee43b65c2343ba7"
+                    });
+                }
+                const messaging = firebase.messaging();
+                messaging.useServiceWorker(registration);
+                
+                fcmToken = await messaging.getToken({
+                    vapidKey: 'BARnKZdR_my8mhr8jAQN_5hli_kiCCkOPVFJi06ZLvN2TJ5DMKskyaaS0fY_d_wVcIQe73rs8GY57NDqVdUtg5A'
+                });
+                console.log('[FCM] Lấy token thành công:', fcmToken);
+            }
+        } catch (fcmErr) {
+            console.warn('[FCM] Không khởi tạo được FCM hoặc lỗi lấy token:', fcmErr.message);
+        }
+
+        // 3. Đăng ký nhận tin qua Web Push (Fallback / Dự phòng)
+        if ('PushManager' in window) {
+            try {
+                const res = await api('/api/notifications/vapid-public-key');
+                if (res && res.publicKey) {
+                    const subscribeOptions = {
+                        userVisibleOnly: true,
+                        applicationServerKey: urlB64ToUint8Array(res.publicKey)
+                    };
+                    
+                    subscription = await registration.pushManager.getSubscription();
+                    if (subscription) {
+                        await subscription.unsubscribe();
+                    }
+                    
+                    subscription = await registration.pushManager.subscribe(subscribeOptions);
+                    console.log('[Web Push] Đăng ký Subscription thành công:', subscription);
+                }
+            } catch (wpErr) {
+                console.warn('[Web Push] Lỗi đăng ký:', wpErr.message);
+            }
         }
         
-        const subscribeOptions = {
-            userVisibleOnly: true,
-            applicationServerKey: urlB64ToUint8Array(res.publicKey)
-        };
-        
-        // 3. Đăng ký thông báo với trình duyệt
-        let subscription = await registration.pushManager.getSubscription();
-        if (subscription) {
-            await subscription.unsubscribe();
+        // 4. Gửi các thông tin đăng ký lên Server để lưu lại
+        if (subscription || fcmToken) {
+            await api('/api/notifications/subscribe', 'POST', { subscription, fcmToken });
+            console.log('[Notification] Đồng bộ thông tin thông báo lên Server thành công.');
         }
-        
-        subscription = await registration.pushManager.subscribe(subscribeOptions);
-        console.log('[Push Notification] Đăng ký Subscription thành công:', subscription);
-        
-        // 4. Gửi subscription lên Server để lưu lại
-        await api('/api/notifications/subscribe', 'POST', { subscription });
-        console.log('[Push Notification] Gửi Subscription lên Server thành công.');
     } catch (err) {
-        console.error('[Push Notification] Lỗi đăng ký:', err);
+        console.error('[Notification] Lỗi tiến trình đăng ký thông báo:', err);
     }
 }
 
