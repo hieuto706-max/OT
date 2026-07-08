@@ -832,8 +832,8 @@ async function saveDBToPG(data) {
 }
 
 async function loadDB() {
-    if (dbCache) return dbCache;
-    if (dbLoadingPromise) return dbLoadingPromise;
+    if (dbCache) return JSON.parse(JSON.stringify(dbCache));
+    if (dbLoadingPromise) return dbLoadingPromise.then(res => JSON.parse(JSON.stringify(res)));
 
     dbLoadingPromise = (async () => {
         // 0. Nếu có cấu hình PostgreSQL, ưu tiên nạp từ PostgreSQL trước!
@@ -946,7 +946,7 @@ async function loadDB() {
 
     try {
         const result = await dbLoadingPromise;
-        return result;
+        return JSON.parse(JSON.stringify(result));
     } finally {
         dbLoadingPromise = null;
     }
@@ -1142,9 +1142,9 @@ function saveDB(data) {
         fs.writeFileSync(getDbPath(), JSON.stringify(data, null, 2), 'utf-8');
         notifySseClients({ type: 'update' });
 
-        // Cập nhật bất đồng bộ lên PostgreSQL (Direct CRUD qua Full Sync để tránh lỗi so sánh vùng nhớ cache)
+        // Cập nhật bất đồng bộ lên PostgreSQL (Direct CRUD qua Diffing hiệu năng cao)
         if (process.env.DATABASE_URL) {
-            saveDBToPG(data).catch(e => {
+            syncDiffToPG(oldData, data).catch(e => {
                 logError('[Database PG] Lỗi cập nhật lên PostgreSQL:', e.message);
             });
         }
