@@ -8,9 +8,6 @@ import android.webkit.DownloadListener;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
-import androidx.webkit.WebViewAssetLoader;
 import android.webkit.JavascriptInterface;
 import android.view.View;
 import android.view.WindowManager;
@@ -40,7 +37,6 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
-    private WebViewAssetLoader assetLoader;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
 
     @Override
@@ -55,10 +51,6 @@ public class MainActivity extends AppCompatActivity {
 
         webView = new WebView(this);
         setContentView(webView);
-
-        assetLoader = new WebViewAssetLoader.Builder()
-                .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
-                .build();
 
         // Bật lớp phần cứng dựng hình GPU cho WebView
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
@@ -133,11 +125,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 return super.shouldOverrideUrlLoading(view, request);
             }
-
-            @Override
-            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                return assetLoader.shouldInterceptRequest(request.getUrl());
-            }
         });
 
         webView.setDownloadListener(new DownloadListener() {
@@ -168,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
+        webView.loadUrl("https://api.otmanager.id.vn/mobile/");
     }
 
     @Override
