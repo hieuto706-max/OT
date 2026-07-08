@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <!-- Firebase SDK (Compat Version) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-messaging-compat.js"></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>OT Manager - Hệ thống quản lý tăng ca</title>
+    <meta name="description" content="Ghi nhận tăng ca - OT Manager">
+    <meta name="theme-color" content="#07070c">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="OT Manager">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/favicon.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link id="main-theme-style" rel="stylesheet" href="style.css?v=1.3.11">
+    <!-- Prevent login screen flashing if already logged in -->
+    <style id="anti-flash-style">
+      html.user-logged-in #screen-login {
+        display: none !important;
+      }
+      html.is-web-browser #screen-login {
+        display: none !important;
+      }
+      html.user-logged-in #screen-app {
+        display: flex !important;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        height: 100%; height: 100dvh;
+        flex-direction: column;
+        overflow: hidden;
+      }
+    </style>
+    <script id="anti-flash-script">
+      (function() {
+        try {
+          const saved = localStorage.getItem('ot_mobile_user') || sessionStorage.getItem('ot_mobile_user');
+          const loginTime = localStorage.getItem('ot_login_time') || sessionStorage.getItem('ot_login_time');
+          if (saved && loginTime) {
+            const now = new Date();
+            const today5AM = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 5, 0, 0, 0);
+            if (now.getTime() < today5AM.getTime()) {
+              today5AM.setDate(today5AM.getDate() - 1);
+            }
+            if (parseInt(loginTime, 10) >= today5AM.getTime()) {
+              document.documentElement.classList.add('user-logged-in');
+            }
+          }
+          const isStandaloneWeb = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+          if (window.location.protocol !== 'file:' && !isStandaloneWeb && !window.AndroidBridge) {
+            document.documentElement.classList.add('is-web-browser');
+          }
+        } catch(e) {}
+      })();
+    </script>
+</head>
+<body>
+    <!-- ==================== BACKGROUND GLOWING ORBS ==================== -->
+    <div class="bg-glow-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- ==================== BACKGROUND TECH GRID ==================== -->
+    <div class="landing-bg-decorations">
+        <div class="tech-grid"></div>
+    </div>
+
+    <!-- ==================== SPLASH SCREEN ==================== -->
+    <div id="splash" class="splash active">
+        <div class="splash-content">
+            <div class="splash-icon">
+                <svg viewBox="0 0 64 64" fill="none">
+                    <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#gm1)"/>
+                    <path d="M32 18v14l9 5" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <defs>
+                        <linearGradient id="gm1" x1="4" y1="4" x2="60" y2="60">
+                            <stop stop-color="#10b981"/>
+                            <stop offset="1" stop-color="#059669"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <h1>OT Manager</h1>
+            <p>Đang tải ứng dụng...</p>
+            <div class="splash-loader">
+                <div class="loader-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LOGIN SCREEN & LANDING PAGE ==================== -->
+    <div id="screen-login" class="screen">
+        <header class="landing-header">
+            <div class="landing-logo">
+                <svg viewBox="0 0 48 48" fill="none" class="logo-svg">
+                    <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#gm2)"/>
+                    <path d="M24 14v10l7 4" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+                    <defs>
+                        <linearGradient id="gm2" x1="4" y1="4" x2="44" y2="44">
+                            <stop stop-color="#10b981"/>
+                            <stop offset="1" stop-color="#059669"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span class="logo-text">OT Manager</span>
+            </div>
+        </header>
+
+        <div class="landing-container">
+            <!-- Left Side: Login & Features -->
+            <div class="landing-left-side" id="login-section">
+                <!-- Login widget card -->
+                <div class="login-page-card">
+                    <div class="login-header">
+                        <h1>Hệ thống OT Manager</h1>
+                        <p>Vui lòng đăng nhập để tiếp tục</p>
+                    </div>
+
+                    <!-- Form Đăng nhập Nhân viên -->
+                    <form id="form-login-employee" class="mobile-form login-form active">
+                        <div class="form-group">
+                            <label for="login-user">Tên đăng nhập / Mã nhân viên</label>
+                            <div class="input-wrapper">
+                                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                <input type="text" id="login-user" placeholder="Nhập mã nhân viên..." autocomplete="username" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full" id="btn-login-emp">
+                            Đăng nhập Nhân viên
+                        </button>
+                        <p id="login-error-emp" class="form-error"></p>
+                    </form>
+
+                    <div class="login-footer" style="margin-top: 20px; text-align: center; color: var(--text-muted); font-size: 11px; line-height: 1.6;">
+                        <div class="login-register-hint" style="color: var(--text-secondary); font-weight: 500; margin-bottom: 4px;">Chưa có tài khoản? Liên hệ quản lý</div>
+                        <div class="login-version-badge" style="margin-bottom: 6px;">Phiên bản <span class="login-ver-val">v1.4.2</span></div>
+                        <div>Phát triển bởi: Đội ngũ phát triển OT Manager</div>
+                        <div>Hỗ trợ kỹ thuật: support@otmanager.id.vn</div>
+                        <div style="margin-top: 8px; font-size: 10px; opacity: 0.8; max-width: 280px; margin-left: auto; margin-right: auto; line-height: 1.4;">
+                            * Dữ liệu tăng ca được bảo mật và lưu trữ trực tiếp trên hệ thống máy chủ của ứng dụng, phục vụ duy nhất cho mục đích quản lý công việc và tính lương nội bộ.
+                        </div>
+                        <div id="connection-status" style="display:none; margin-top:8px;font-size:0.8rem;"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN APP ==================== -->
+    <div id="screen-app" class="screen">
+        <!-- Top Header -->
+        <header class="mobile-header">
+            <div class="header-info">
+                <span class="header-greeting" id="greeting">Xin chào</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="header-name" id="user-name">Nhân viên</span>
+                    <span id="app-connection-badge" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 12px; background: rgba(239, 68, 68, 0.15); color: #ef4444; display: none; font-weight: 700;">Offline</span>
+                </div>
+            </div>
+            <button class="header-btn" id="btn-logout" title="Đăng xuất">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+            </button>
+        </header>
+
+        <!-- Tab Content -->
+        <main class="mobile-main">
+            <!-- Pull to refresh indicator -->
+            <div id="pull-to-refresh" class="pull-to-refresh">
+                <div class="ptr-content">
+                    <span class="ptr-icon">↓</span>
+                    <span class="ptr-spinner" style="display: none;"></span>
+                    <span class="ptr-text">Kéo để làm mới...</span>
+                </div>
+            </div>
+
+            <!-- ===== TAB: HOME ===== -->
+            <div id="tab-home" class="tab-content active">
+                <!-- Sync Banner -->
+                <div id="sync-banner" style="display: none;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.1rem; animation: pulse 2s infinite;">⚠️</span>
+                        <span>Có <strong id="unsynced-count">0</strong> dữ liệu chưa đồng bộ.</span>
+                    </div>
+                    <button type="button" id="btn-manual-sync" style="background: #f59e0b; color: #0f0f1a; padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; font-weight: 700; border: none; cursor: pointer;">Đồng bộ ngay</button>
+                </div>
+
+
+
+                <!-- OT Entry Form -->
+                <div class="card form-card">
+                    <div class="card-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="16"/>
+                            <line x1="8" y1="12" x2="16" y2="12"/>
+                        </svg>
+                        Ghi nhận tăng ca
+                    </div>
+
+                    <form id="form-ot">
+                        <div class="form-group">
+                            <label>Ngày tăng ca</label>
+                            <input type="date" id="ot-date" required>
+                            <div id="closed-month-warning" style="display: none; color: #f59e0b; font-size: 11px; font-weight: 600; margin-top: 6px; line-height: 1.4;">
+                                ⚠️ Tháng này đã chốt công. Đăng ký mới của bạn sẽ được gửi dưới dạng Chờ duyệt để Quản lý phê duyệt.
+                            </div>
+                        </div>
+
+                        <div class="toggle-row" style="margin-top: 14px; margin-bottom: 22px;">
+                            <label class="toggle-label" for="ot-backfill">
+                                <span class="toggle-text">
+                                    <strong>Bù tăng ca</strong>
+                                    <small>Ghi nhận bổ sung giờ làm bị thiếu</small>
+                                </span>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="ot-backfill">
+                                    <span class="toggle-slider"></span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Backfill hours input -->
+                        <div class="form-group" id="ot-backfill-hours-group" style="display: none; margin-bottom: 14px;">
+                            <label>Số giờ tăng ca cần bù</label>
+                            <input type="number" id="ot-backfill-hours" step="0.1" min="0.1" max="24" placeholder="Nhập số giờ bù (ví dụ: 8.0)">
+                        </div>
+
+                        <div id="ot-normal-inputs">
+                            <div class="toggle-row">
+                                <label class="toggle-label" for="ot-lunch">
+                                    <span class="toggle-text">
+                                        <strong>Tăng ca trưa</strong>
+                                        <small>12:20 - 13:20 (1 tiếng)</small>
+                                    </span>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="ot-lunch">
+                                        <span class="toggle-slider"></span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Giờ BĐ OT chiều</label>
+                                <input type="time" id="ot-start" value="16:30">
+                            </div>
+                            <div class="form-group">
+                                <label>Giờ KT OT chiều</label>
+                                <input type="time" id="ot-end" value="16:30">
+                            </div>
+                        </div>
+
+                        <!-- Nhóm Hoạt động ngoài giờ tùy chỉnh -->
+                        <div id="ot-custom-activity-group" style="display: none; margin-top: 14px; margin-bottom: 14px;">
+                            <!-- Danh sách hoạt động dạng tích chọn sẽ được nạp động ở đây -->
+                            <div id="ot-custom-activities-list"></div>
+                        </div>
+
+
+
+                        <div class="form-group">
+                            <label>Ghi chú</label>
+                            <textarea id="ot-note" placeholder="Lý do tăng ca, chi tiết công việc..." required></textarea>
+                        </div>
+
+                        <!-- Preview -->
+                        <div class="ot-preview">
+                            <div class="preview-rows" id="preview-rows"></div>
+                            <div class="preview-total">
+                                <span>Tổng cộng tính toán:</span>
+                                <strong><span id="preview-total">0</span> giờ</strong>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-full">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                <polyline points="17 21 17 13 7 13 7 21"/>
+                                <polyline points="7 3 7 8 15 8"/>
+                            </svg>
+                            Lưu tăng ca
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ===== TAB: HISTORY ===== -->
+            <div id="tab-history" class="tab-content">
+                <div class="card">
+                    <div class="card-title-row">
+                        <span class="card-title">Lịch sử tăng ca</span>
+                        <input type="month" id="filter-month" class="input-sm">
+                    </div>
+
+                    <div class="segmented-control" style="display: flex; background: rgba(255,255,255,0.05); padding: 3px; border-radius: 8px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <button id="btn-mobile-history-ot" class="segment-btn active" style="flex: 1; border: none; background: var(--green, #0dd98b); color: #020805; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s;">Tăng ca (OT)</button>
+                        <button id="btn-mobile-history-trips" class="segment-btn" style="flex: 1; border: none; background: transparent; color: #94a3b8; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s;">Chuyến xe</button>
+                    </div>
+
+                    <div id="history-list" class="history-list">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            <p>Chưa có dữ liệu tăng ca</p>
+                        </div>
+                    </div>
+
+                    <div id="history-summary" class="history-summary"></div>
+                </div>
+            </div>
+
+            <!-- ===== TAB: PROFILE ===== -->
+            <div id="tab-profile" class="tab-content">
+                <div class="profile-header">
+                    <div class="profile-avatar" id="profile-avatar">NV</div>
+                    <h2 id="profile-name">Nhân viên</h2>
+                    <p id="profile-username">@username</p>
+                    <div class="profile-ver-badge">Phiên bản <span id="app-version-display">v1.4.2</span></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Thống kê tháng này</div>
+                    <div class="stats-grid" style="display: flex; justify-content: center;">
+                        <div class="stat-item" style="display: none;">
+                            <span class="stat-number" id="stat-days">0</span>
+                            <span class="stat-text">Ngày OT</span>
+                        </div>
+                        <div class="stat-item" style="display: none;">
+                            <span class="stat-number" id="stat-lunch">0</span>
+                            <span class="stat-text">OT Trưa (giờ)</span>
+                        </div>
+                        <div class="stat-item" style="display: none;">
+                            <span class="stat-number" id="stat-evening">0</span>
+                            <span class="stat-text">OT Chiều (giờ)</span>
+                        </div>
+                        <div class="stat-item" style="flex: 1; max-width: 200px; text-align: center;">
+                            <span class="stat-number stat-highlight" id="stat-total" style="color: var(--accent-purple) !important;">0</span>
+                            <span class="stat-text">Tổng OT (giờ)</span>
+                        </div>
+                        <div class="stat-item" style="flex: 1; max-width: 200px; text-align: center; border-left: 1px solid rgba(255,255,255,0.08);">
+                            <span class="stat-number stat-highlight" id="stat-trips" style="color: var(--accent-orange) !important;">0</span>
+                            <span class="stat-text">Tổng chuyến xe</span>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div class="card" style="margin-top: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 15px; border-radius: var(--radius-lg); margin-bottom: 20px;">
+                    <div style="font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="color: var(--green, #0dd98b);">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        Hỗ trợ kỹ thuật
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6;">
+                        <div>Đơn vị: <strong>Đội ngũ phát triển OT Manager</strong></div>
+                        <div>Email: <a href="mailto:support@otmanager.id.vn" style="color: var(--green, #0dd98b); text-decoration: none;">support@otmanager.id.vn</a></div>
+                    </div>
+                </div>
+
+                <button class="btn btn-ghost btn-full" id="btn-check-update-mobile" style="margin-bottom:12px; border: 1px dashed rgba(16, 185, 129, 0.4); color: #10b981; font-weight: 600;">
+                    🔄 Kiểm tra cập nhật
+                </button>
+                <button class="btn btn-warning btn-full" id="btn-unlink-device" style="margin-bottom:12px;">
+                    🔓 Xin huỷ liên kết thiết bị
+                </button>
+                <button class="btn btn-danger btn-full" id="btn-logout-2">
+                    Đăng xuất
+                </button>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-tab="home">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="16"/>
+                    <line x1="8" y1="12" x2="16" y2="12"/>
+                </svg>
+                <span>Ghi OT</span>
+            </button>
+            <button class="nav-item" data-tab="history">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span>Lịch sử</span>
+            </button>
+            <button class="nav-item" data-tab="profile">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span>Tôi</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Confirm Dialog -->
+    <div id="confirm-overlay" class="confirm-overlay">
+        <div class="confirm-dialog">
+            <p id="confirm-msg"></p>
+            <div class="confirm-actions">
+                <button class="btn btn-ghost" id="confirm-cancel">Hủy</button>
+                <button class="btn btn-danger" id="confirm-ok">Xóa</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit OT Dialog -->
+    <div id="edit-overlay" class="confirm-overlay">
+        <div class="confirm-dialog" style="max-width: 90%; width: 340px; text-align: left;">
+            <h3 style="margin-top:0;margin-bottom:16px;color:var(--text);font-size:1.1rem;display:flex;align-items:center;gap:6px;">
+                📝 Sửa giờ tăng ca
+            </h3>
+            <form id="form-edit-ot">
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Ngày tăng ca</label>
+                    <input type="date" id="edit-ot-date" required>
+                </div>
+                <div class="toggle-row" style="margin-bottom:14px;">
+                    <label class="toggle-label" for="edit-ot-backfill">
+                        <span class="toggle-text" style="display:flex;flex-direction:column;text-align:left;">
+                            <strong style="font-size:0.85rem;color:var(--text);">Bù tăng ca</strong>
+                            <small style="font-size:0.7rem;color:var(--text-muted);">Ghi nhận bổ sung giờ làm bị thiếu</small>
+                        </span>
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="edit-ot-backfill">
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="form-group" id="edit-ot-backfill-hours-group" style="display: none; margin-bottom:14px;">
+                    <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Số giờ tăng ca cần bù</label>
+                    <input type="number" id="edit-ot-backfill-hours" step="0.1" min="0.1" max="24" placeholder="Nhập số giờ bù (ví dụ: 8.0)">
+                </div>
+
+                <div id="edit-ot-normal-inputs">
+                    <div class="toggle-row" style="margin-bottom:14px;">
+                        <label class="toggle-label" for="edit-ot-lunch">
+                            <span class="toggle-text" style="display:flex;flex-direction:column;text-align:left;">
+                                <strong style="font-size:0.85rem;color:var(--text);">Tăng ca trưa</strong>
+                                <small style="font-size:0.7rem;color:var(--text-muted);">12:20 - 13:20 (1 tiếng)</small>
+                            </span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="edit-ot-lunch">
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Giờ BĐ OT chiều</label>
+                        <input type="time" id="edit-ot-start" value="16:30">
+                    </div>
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Giờ KT OT chiều</label>
+                        <input type="time" id="edit-ot-end" value="16:30">
+                    </div>
+                </div>
+                <!-- Nhóm Hoạt động ngoài giờ tùy chỉnh (Sửa) -->
+                <div id="edit-ot-custom-activity-group" style="display: none; margin-top: 14px; margin-bottom: 14px;">
+                    <div id="edit-ot-custom-activities-list"></div>
+                </div>
+
+
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Ghi chú</label>
+                    <textarea id="edit-ot-note" rows="2" placeholder="Lý do..." required></textarea>
+                </div>
+                <div class="confirm-actions" style="display:flex;gap:10px;justify-content:flex-end;">
+                    <button type="button" class="btn btn-ghost" id="edit-ot-cancel" style="padding:10px 16px;font-size:0.85rem;border-radius:8px;">Hủy</button>
+                    <button type="submit" class="btn btn-primary" style="padding:10px 16px;font-size:0.85rem;border-radius:8px;">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script triggers -->
+    <script>
+        window.scrollToLogin = function() {
+            const el = document.getElementById('login-section');
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                const input = document.getElementById('login-user');
+                if (input) setTimeout(() => input.focus(), 600);
+            }
+        };
+    </script>
+    <script>
+        window.PACKAGED_VERSION = '1.4.2';
+    </script>
+    <script src="app.js?v=1.4.2" defer></script>
+    <datalist id="provinces-datalist"></datalist>
+</body>
+</html>

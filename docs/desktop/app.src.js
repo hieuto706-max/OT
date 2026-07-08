@@ -1,0 +1,5282 @@
+/**
+ * OT Manager - Desktop App (Admin)
+ * Giờ làm chính: 7:00 - 16:30
+ * Nghỉ trưa: 11:50 - 13:20
+ * OT trưa: 12:20 - 13:20 (1 tiếng)
+ *
+ * Sử dụng Server API để đồng bộ dữ liệu với mobile
+ */
+
+// Safe localStorage wrapper to support sessionStorage fallback seamlessly
+const localStorage = {
+    getItem(key) {
+        try {
+            return window.localStorage.getItem(key) || window.sessionStorage.getItem(key);
+        } catch (e) {
+            return this._data[key] || null;
+        }
+    },
+    setItem(key, val) {
+        try {
+            window.localStorage.setItem(key, val);
+            window.sessionStorage.setItem(key, val);
+        } catch (e) {
+            this._data[key] = val;
+        }
+    },
+    removeItem(key) {
+        try {
+            window.localStorage.removeItem(key);
+            window.sessionStorage.removeItem(key);
+        } catch (e) {
+            delete this._data[key];
+        }
+    },
+    _data: {}
+};
+
+// Prevent developer tools and right click
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+    if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'K')) ||
+        (e.ctrlKey && e.key === 'u')
+    ) {
+        e.preventDefault();
+    }
+});
+
+const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+const isGitHubPages = window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
+const localServerUrl = isGitHubPages 
+    ? (localStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com') 
+    : window.location.origin;
+let API_BASE = localServerUrl;
+const OT_LUNCH_HOURS = 1;
+const WORK_END = '16:30';
+let TEAMS = [];
+const PROVINCES = [
+    "An Giang", "Bà Rịa – Vũng Tàu", "Bạc Liêu", "Bắc Giang", "Bắc Kạn", "Bắc Ninh", "Bến Tre", "Bình Dương", "Bình Định", "Bình Phước", "Bình Thuận", "Cà Mau", "Cần Thơ", "Cao Bằng", "Đà Nẵng", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp", "Gia Lai", "Hà Giang", "Hà Nam", "Hà Nội", "Hà Tĩnh", "Hải Dương", "Hải Phòng", "Hậu Giang", "Hòa Bình", "Hưng Yên", "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu", "Lạng Sơn", "Lào Cai", "Lâm Đồng", "Long An", "Nam Định", "Nghệ An", "Ninh Bình", "Ninh Thuận", "Phú Thọ", "Phú Yên", "Quảng Bình", "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sóc Trăng", "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang", "TP. Hồ Chí Minh", "Trà Vinh", "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
+];
+
+let currentAdminRecType = 'ot';
+let currentEmpRecType = 'ot';
+let loadedUsers = [];
+
+// Report Redesign global state variables
+let reportSearchQuery = '';
+let reportSortColumn = 'total'; // 'name', 'days', 'total'
+let reportSortOrder = 'desc'; // 'asc', 'desc'
+
+async function loadTeams() {
+    try {
+        const res = await api('/api/teams');
+        TEAMS = res.teams || [];
+    } catch (e) {
+        console.error('Lỗi load teams:', e);
+        TEAMS = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6', 'Team 7', 'Team 8', 'Team 9', 'Team 10'];
+    }
+    populateTeamFilters();
+}
+
+function populateTeamFilters() {
+    const adminFilter = document.getElementById('admin-filter-team');
+    const reportFilter = document.getElementById('report-filter-team');
+    
+    const optionsHtml = `
+        <option value="">Tất cả Team</option>
+        <option value="admin">admin</option>
+        <option value="unassigned">Chưa phân team</option>
+        ${TEAMS.map(t => {
+            const name = typeof t === 'string' ? t : (t.name || '');
+            return `<option value="${name}">${name}</option>`;
+        }).join('')}
+    `;
+    
+    if (adminFilter) {
+        const val = adminFilter.value;
+        adminFilter.innerHTML = optionsHtml;
+        if (val && [...adminFilter.options].some(opt => opt.value === val)) {
+            adminFilter.value = val;
+        }
+    }
+    if (reportFilter) {
+        const val = reportFilter.value;
+        reportFilter.innerHTML = optionsHtml;
+        if (val && [...reportFilter.options].some(opt => opt.value === val)) {
+            reportFilter.value = val;
+        }
+    }
+}
+
+// Add blink-red style rules dynamically
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes blink-red {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+`;
+document.head.appendChild(style);
+
+// ==================== API CLIENT ====================
+async function api(endpoint, method = 'GET', body = null) {
+    const opts = {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+    };
+    // Gửi JWT Token nếu có
+    const token = localStorage.getItem('ot_auth_token');
+    if (token) {
+        opts.headers['Authorization'] = `Bearer ${token}`;
+    }
+    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+    if (currentUser && currentUser.id) {
+        opts.headers['x-user-id'] = currentUser.id;
+    }
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(`${API_BASE}${endpoint}`, opts);
+    const data = await res.json();
+    if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem('ot_auth_token');
+            localStorage.removeItem('ot_current_user');
+            window.location.reload();
+        }
+        throw new Error(data.error || 'Lỗi kết nối server');
+    }
+    return data;
+}
+
+// ==================== HELPERS ====================
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+}
+
+function formatDate(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
+}
+
+function formatDateFull(date) {
+    const days = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    const months = ['tháng 1', 'tháng 2', 'tháng 3', 'tháng 4', 'tháng 5', 'tháng 6',
+                    'tháng 7', 'tháng 8', 'tháng 9', 'tháng 10', 'tháng 11', 'tháng 12'];
+    return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+function timeToMinutes(timeStr) {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+}
+
+function getCurrentMonth() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+async function isPrivateMode() {
+    return new Promise((resolve) => {
+        // Native mobile apps running under file:// protocol must bypass this check
+        if (window.location.protocol === 'file:') {
+            resolve(false);
+            return;
+        }
+
+        // Only run incognito checks in secure contexts (HTTPS or localhost)
+        const isSecureContext = window.location.protocol === 'https:' || 
+                               window.location.hostname === 'localhost' || 
+                               window.location.hostname === '127.0.0.1';
+        if (!isSecureContext) {
+            resolve(false);
+            return;
+        }
+
+        try {
+            const testKey = "__private_test__";
+            localStorage.setItem(testKey, "1");
+            localStorage.removeItem(testKey);
+        } catch (e) {
+            resolve(true);
+            return;
+        }
+
+        // Engine-level detection for Safari
+        const ua = navigator.userAgent.toLowerCase();
+        let toFixedEngineID = 0;
+        let neg = parseInt("-1");
+        try {
+            neg.toFixed(neg);
+        } catch (e) {
+            toFixedEngineID = e.message ? e.message.length : 0;
+        }
+        const isSafari = (ua.includes('safari') && !ua.includes('chrome') && !ua.includes('android')) || 
+                         (toFixedEngineID === 44 || toFixedEngineID === 43);
+
+        if (isSafari) {
+            safariPrivateTest();
+        } else {
+            if (navigator.serviceWorker && typeof navigator.serviceWorker.register === 'function') {
+                navigator.serviceWorker.register('sw.js').then((reg) => {
+                    reg.unregister();
+                    detectChromiumOrFallback();
+                }).catch((err) => {
+                    if (err && err.name === 'SecurityError') {
+                        resolve(true);
+                    } else {
+                        detectChromiumOrFallback();
+                    }
+                });
+            } else {
+                detectChromiumOrFallback();
+            }
+        }
+
+        async function safariPrivateTest() {
+            if (navigator.storage && typeof navigator.storage.getDirectory === 'function') {
+                try {
+                    await navigator.storage.getDirectory();
+                    resolve(false);
+                } catch (e) {
+                    const message = (e instanceof Error && typeof e.message === 'string') ? e.message : String(e);
+                    if (message.includes('unknown transient reason')) {
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
+                }
+            } else if (navigator.maxTouchPoints !== undefined) {
+                // Safari 13-18 IndexedDB Blob test
+                const tmp = String(Math.random());
+                try {
+                    const dbReq = indexedDB.open(tmp, 1);
+                    dbReq.onupgradeneeded = (ev) => {
+                        const db = ev.target.result;
+                        try {
+                            db.createObjectStore('t', { autoIncrement: true }).put(new Blob());
+                            resolve(false);
+                        } catch (err) {
+                            const message = (err instanceof Error && typeof err.message === 'string') ? err.message : String(err);
+                            if (message.includes('are not yet supported')) {
+                                resolve(true);
+                            } else {
+                                resolve(false);
+                            }
+                        } finally {
+                            db.close();
+                            indexedDB.deleteDatabase(tmp);
+                        }
+                    };
+                    dbReq.onerror = () => resolve(false);
+                } catch (err) {
+                    resolve(false);
+                }
+            } else {
+                if (window.openDatabase) {
+                    try {
+                        window.openDatabase(null, null, null, null);
+                        resolve(false);
+                    } catch (e) {
+                        resolve(true);
+                    }
+                } else {
+                    resolve(false);
+                }
+            }
+        }
+
+        function detectChromiumOrFallback() {
+            if (navigator.storage && typeof navigator.storage.getDirectory === 'function' && typeof Worker === 'function') {
+                try {
+                    const src = `(async()=>{try{const r=await navigator.storage.getDirectory(),f=await(await r.getFileHandle('_',{create:true})).createSyncAccessHandle(),b=new Uint8Array(1);let m=1/0;for(let i=0;i<5;i++){f.write(b,{at:0});const s=performance.now();f.flush();const dt=performance.now()-s;if(dt<m)m=dt}f.close();postMessage(m<.04)}catch(e){postMessage(false)}})()`;
+                    const blob = new Blob([src], { type: 'application/javascript' });
+                    const w = new Worker(URL.createObjectURL(blob));
+                    w.onmessage = (e) => {
+                        w.terminate();
+                        if (e.data) {
+                            resolve(true);
+                        } else {
+                            fallbackQuota();
+                        }
+                    };
+                    w.onerror = () => {
+                        w.terminate();
+                        fallbackQuota();
+                    };
+                    setTimeout(() => {
+                        w.terminate();
+                        fallbackQuota();
+                    }, 2000);
+                } catch (err) {
+                    fallbackQuota();
+                }
+            } else {
+                fallbackQuota();
+            }
+        }
+
+        function fallbackQuota() {
+            const isMobile = /android|iphone|ipad|ipod/i.test(ua);
+            if (isMobile) {
+                resolve(false);
+            } else if (navigator.storage && navigator.storage.estimate) {
+                navigator.storage.estimate().then((est) => {
+                    resolve(est.quota < 120000000);
+                }).catch(() => resolve(false));
+            } else {
+                resolve(false);
+            }
+        }
+    });
+}
+
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (container) {
+        container.innerHTML = '';
+    }
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    const icons = { success: '✓', error: '✕', info: 'ℹ' };
+    toast.innerHTML = `<span>${icons[type] || ''}</span> ${message}`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'slideOutRight 0.3s ease forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+function showModal(title, body, buttons = []) {
+    const overlay = document.getElementById('modal-overlay');
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').innerHTML = body;
+    const footer = document.getElementById('modal-footer');
+    footer.innerHTML = '';
+    buttons.forEach(btn => {
+        const button = document.createElement('button');
+        button.className = `btn ${btn.class || 'btn-ghost'}`;
+        button.textContent = btn.text;
+        button.onclick = () => { if (btn.action) btn.action(); closeModal(); };
+        footer.appendChild(button);
+    });
+    overlay.classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('active');
+}
+
+function calculateEveningOT(startTime, endTime) {
+    const startMin = timeToMinutes(startTime);
+    const endMin = timeToMinutes(endTime);
+    if (endMin <= startMin) return 0;
+    return Math.round(((endMin - startMin) / 60) * 100) / 100;
+}
+
+// ==================== SCREEN MANAGEMENT ====================
+function showScreen(screenId) {
+    if (screenId === 'screen-login') {
+        document.documentElement.classList.remove('user-admin-logged-in', 'user-employee-logged-in');
+    } else if (screenId === 'screen-admin') {
+        document.documentElement.classList.add('user-admin-logged-in');
+    } else if (screenId === 'screen-employee') {
+        document.documentElement.classList.add('user-employee-logged-in');
+    }
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+}
+
+// ==================== AUTH ====================
+async function handleEmployeeLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value.trim();
+    const errorEl = document.getElementById('login-error-emp');
+    errorEl.textContent = '';
+
+    if (await isPrivateMode()) {
+        errorEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
+        return;
+    }
+
+    try {
+        const data = await api('/api/auth/login', 'POST', { username });
+        const user = data.user;
+
+        if (user.role !== 'employee') {
+            errorEl.textContent = 'Tài khoản này không phải là nhân viên!';
+            return;
+        }
+
+        localStorage.setItem('ot_current_user', JSON.stringify(user));
+        if (data.token) localStorage.setItem('ot_auth_token', data.token);
+        const todayStr = new Date().toISOString().split('T')[0];
+        localStorage.setItem('ot_login_date', todayStr);
+        try {
+            const versionRes = await fetch(`${localServerUrl}/api/version`);
+            const versionData = await versionRes.json();
+            localStorage.setItem('ot_app_version', versionData.version || '1.0.0');
+        } catch (e) {}
+
+        initEmployeeDashboard(user);
+        showScreen('screen-employee');
+        showToast(`Xin chào, ${user.fullname}!`, 'info');
+        e.target.reset();
+    } catch (err) {
+        errorEl.textContent = err.message;
+    }
+}
+
+async function handleAdminLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('login-admin-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errorEl = document.getElementById('login-error-admin');
+    errorEl.textContent = '';
+
+    if (await isPrivateMode()) {
+        errorEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
+        return;
+    }
+
+    try {
+        const data = await api('/api/auth/login', 'POST', { username, password });
+        const user = data.user;
+
+        if (user.role !== 'admin') {
+            errorEl.textContent = 'Tài khoản nhân viên không được phép đăng nhập bên phần quản trị!';
+            return;
+        }
+
+        localStorage.setItem('ot_current_user', JSON.stringify(user));
+        if (data.token) localStorage.setItem('ot_auth_token', data.token);
+        const todayStr = new Date().toISOString().split('T')[0];
+        localStorage.setItem('ot_login_date', todayStr);
+        try {
+            const versionRes = await fetch(`${localServerUrl}/api/version`);
+            const versionData = await versionRes.json();
+            localStorage.setItem('ot_app_version', versionData.version || '1.0.0');
+        } catch (e) {}
+
+        initAdminDashboard(user);
+        showScreen('screen-admin');
+        showToast(`Xin chào, ${user.fullname}!`, 'info');
+        e.target.reset();
+    } catch (err) {
+        errorEl.textContent = err.message;
+    }
+}
+
+function checkMidnightLogout() {
+    const currentUser = localStorage.getItem('ot_current_user');
+    if (!currentUser) return;
+
+    const loginDate = localStorage.getItem('ot_login_date');
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (loginDate && loginDate !== todayStr) {
+        logout();
+        showToast('Đã qua ngày mới, vui lòng đăng nhập lại.', 'info');
+    }
+}
+
+function logout() {
+    localStorage.removeItem('ot_current_user');
+    localStorage.removeItem('ot_login_date');
+    localStorage.removeItem('ot_mobile_user');
+    localStorage.removeItem('ot_login_time');
+    localStorage.removeItem('ot_auth_token');
+    
+    sessionStorage.removeItem('ot_current_user');
+    sessionStorage.removeItem('ot_login_date');
+    sessionStorage.removeItem('ot_mobile_user');
+    sessionStorage.removeItem('ot_login_time');
+    sessionStorage.removeItem('ot_auth_token');
+    sessionStorage.removeItem('ot_session_temp');
+    
+    if (isElectron) {
+        // Trong Electron, reset và hiển thị lại màn hình đăng nhập thay vì chuyển hướng ra Landing Page
+        showScreen('screen-login');
+        const loginForm = document.getElementById('form-login-admin');
+        if (loginForm) loginForm.reset();
+        return;
+    }
+
+    const needsOtPrefix = window.location.hostname.includes('github.io');
+    const mainPageUrl = needsOtPrefix ? '/OT/index.html' : '/index.html';
+    window.location.href = mainPageUrl;
+}
+
+async function checkGistStatus() {
+    try {
+        const res = await fetch(`${API_BASE}/api/gist-status`);
+        const data = await res.json();
+        if (data.status === 'error') {
+            showModal(
+                'Cảnh báo đồng bộ đám mây',
+                `<p style="color: var(--accent-red); font-weight: 600; font-size: 15px; margin-bottom: 8px;">
+                    ⚠️ Lỗi đồng bộ đám mây (GitHub Gist)
+                </p>
+                <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                    Chi tiết lỗi: <strong>${data.message}</strong>
+                </p>
+                <p style="color: var(--text-muted); font-size: 13px;">
+                    Dữ liệu của bạn sẽ bị mất mỗi khi server Render khởi động lại hoặc tạm dừng do dịch vụ đám mây chưa được cấu hình đúng. Vui lòng kiểm tra lại cấu hình biến môi trường (Environment Variables) trên Render Dashboard.
+                </p>`,
+                [{ text: 'Đóng', class: 'btn-ghost' }]
+            );
+        }
+    } catch (e) {
+        console.error('Lỗi kiểm tra trạng thái Gist:', e);
+    }
+}
+
+// ==================== ADMIN DASHBOARD ====================
+async function initAdminDashboard(user) {
+    const welcomeEl = document.getElementById('admin-welcome');
+    if (welcomeEl) welcomeEl.textContent = `Xin chào, ${user.fullname}`;
+    
+    // Update top header user profile details dynamically
+    const headerFullnameEl = document.getElementById('header-user-fullname');
+    const headerAvatarEl = document.getElementById('header-user-avatar');
+    const headerRoleEl = document.getElementById('header-user-role');
+    if (headerFullnameEl) headerFullnameEl.textContent = user.fullname;
+    if (headerAvatarEl) headerAvatarEl.textContent = user.fullname.charAt(0).toUpperCase();
+    if (headerRoleEl) headerRoleEl.textContent = user.role === 'admin' ? 'Quản lý' : 'Nhân viên';
+
+    // Setup Notification Bell Click Listener to open pending subtab
+    const bellBtn = document.getElementById('btn-notification-bell');
+    if (bellBtn) {
+        bellBtn.onclick = () => {
+            const tabBtn = document.querySelector('[data-admin-tab="records"]');
+            if (tabBtn) tabBtn.click();
+            
+            const subtabBtn = document.querySelector('[data-subtab="records-pending"]');
+            if (subtabBtn) subtabBtn.click();
+        };
+    }
+
+    document.getElementById('admin-date').textContent = formatDateFull(new Date());
+
+    const currentMonth = getCurrentMonth();
+    document.getElementById('admin-filter-month').value = currentMonth;
+    document.getElementById('report-filter-month').value = currentMonth;
+    const cleanupMonthInput = document.getElementById('cleanup-month-input');
+    if (cleanupMonthInput) {
+        cleanupMonthInput.value = currentMonth;
+    }
+
+    const isAdmin = user && user.username === 'admin';
+    const adminTeamGroup = document.getElementById('admin-filter-team-group');
+    const reportTeamGroup = document.getElementById('report-filter-team-group');
+    if (adminTeamGroup) {
+        adminTeamGroup.style.display = isAdmin ? 'flex' : 'none';
+    }
+    if (reportTeamGroup) {
+        reportTeamGroup.style.display = isAdmin ? 'flex' : 'none';
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const adminOtDate = document.getElementById('admin-ot-date');
+    if (adminOtDate) {
+        adminOtDate.value = todayStr;
+        adminOtDate.max = todayStr;
+    }
+
+    await loadTeams();
+    await populateUserFilter();
+    await Promise.all([
+        refreshAdminRecords(),
+        refreshAdminUsers(),
+        refreshReport(),
+        refreshAdminStats()
+    ]);
+    checkGistStatus();
+}
+
+let selectedTeamIdForModal = null;
+let modalAllUsers = [];
+
+async function openTeamSettingsModal() {
+    const modalEl = document.querySelector('.modal');
+    if (modalEl) modalEl.style.maxWidth = '950px';
+
+    try {
+        const uData = await api('/api/users');
+        modalAllUsers = uData.users || [];
+    } catch (e) {
+        console.error('Lỗi khi lấy danh sách user:', e);
+    }
+
+    // Tải lại danh sách team mới nhất từ server
+    await loadTeams();
+
+    // Mặc định chọn team đầu tiên nếu chưa chọn team nào
+    if (TEAMS.length > 0 && (!selectedTeamIdForModal || !TEAMS.some(t => t.id === selectedTeamIdForModal))) {
+        selectedTeamIdForModal = TEAMS[0].id;
+    }
+
+    const body = `
+    <div style="display: flex; gap: 20px; height: 500px; text-align: left;">
+        <!-- LEFT PANEL: Danh sách nhóm -->
+        <div style="width: 280px; display: flex; flex-direction: column; border-right: 1px solid var(--border-color); padding-right: 20px;">
+            <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text-secondary);">Danh sách nhóm</h4>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="text" id="input-modal-new-team" class="input-sm" placeholder="Tên team mới..." style="flex: 1; height: 32px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 8px; font-size:12px;">
+                <button class="btn btn-primary btn-sm" onclick="addTeamFromModal()" style="height: 32px; padding: 0 10px; border-radius:6px; font-size:12px; white-space: nowrap;">Thêm</button>
+            </div>
+            <div style="flex: 1; overflow-y: auto;" id="modal-teams-list-container">
+                ${renderModalTeamsRows()}
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: Chi tiết & Thành viên -->
+        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;" id="modal-team-details-container">
+            ${renderSelectedTeamDetails()}
+        </div>
+    </div>`;
+
+    showModal('Thiết lập danh sách Team', body, [
+        {
+            text: 'Đóng',
+            class: 'btn-ghost',
+            action: () => {
+                if (modalEl) modalEl.style.maxWidth = '';
+            }
+        }
+    ]);
+
+    // Lắng nghe sự kiện click đóng modal để thu hồi kích thước rộng của modal
+    const closeBtn = document.getElementById('modal-close');
+    if (closeBtn) {
+        const originalClose = closeBtn.onclick;
+        closeBtn.onclick = () => {
+            if (modalEl) modalEl.style.maxWidth = '';
+            if (originalClose) originalClose();
+            else closeModal();
+        };
+    }
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay) {
+        overlay.onclick = (e) => {
+            if (e.target === e.currentTarget) {
+                if (modalEl) modalEl.style.maxWidth = '';
+                closeModal();
+            }
+        };
+    }
+}
+
+function renderModalTeamsRows() {
+    if (!TEAMS || TEAMS.length === 0) {
+        return '<div style="color: var(--text-muted); text-align: center; padding: 20px; font-size:12px;">Chưa có team nào.</div>';
+    }
+    return TEAMS.map(team => {
+        const isSelected = selectedTeamIdForModal === team.id;
+        const bg = isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
+        const border = isSelected ? '1px solid var(--accent-blue)' : '1px solid transparent';
+        const memberCount = modalAllUsers.filter(u => u.team === team.name).length;
+        
+        return `
+        <div onclick="selectTeamInModal('${team.id}')" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; cursor: pointer; background: ${bg}; border: ${border}; transition: all 0.2s;">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-weight: 600; font-size: 13px; color: ${isSelected ? 'var(--accent-blue-text)' : 'var(--text-primary)'};">${team.name}</span>
+                <span style="font-size: 11px; color: var(--text-muted);">${memberCount} nhân viên</span>
+            </div>
+            <div style="display: flex; gap: 4px;" onclick="event.stopPropagation();">
+                <button class="btn-icon-only edit" onclick="renameTeamFromModal('${team.name}')" title="Đổi tên" style="padding: 4px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                </button>
+                <button class="btn-icon-only delete" onclick="deleteTeamFromModal('${team.name}')" title="Xóa" style="padding: 4px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function selectTeamInModal(teamId) {
+    selectedTeamIdForModal = teamId;
+    refreshModalTeamsView();
+}
+
+function refreshModalTeamsView() {
+    const listContainer = document.getElementById('modal-teams-list-container');
+    if (listContainer) {
+        listContainer.innerHTML = renderModalTeamsRows();
+    }
+    const detailsContainer = document.getElementById('modal-team-details-container');
+    if (detailsContainer) {
+        detailsContainer.innerHTML = renderSelectedTeamDetails();
+    }
+}
+
+function renderSelectedTeamDetails() {
+    const team = TEAMS.find(t => t.id === selectedTeamIdForModal);
+    if (!team) {
+        return `
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="margin-bottom: 12px; opacity: 0.5;">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+            </svg>
+            <span>Vui lòng chọn hoặc thêm một team ở cột trái để bắt đầu thiết lập.</span>
+        </div>`;
+    }
+
+    // Thành viên hiện tại
+    const members = modalAllUsers.filter(u => u.team === team.name);
+    // Danh sách ứng viên Trưởng nhóm (Chỉ các tài khoản có role === 'admin')
+    const potentialLeaders = modalAllUsers.filter(u => u.role === 'admin');
+    const activeLeaderIds = team.leaderIds || (team.leaderId ? [team.leaderId] : []);
+
+    const leaderCheckboxes = potentialLeaders.map(u => {
+        const isChecked = activeLeaderIds.includes(u.id);
+        return `
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; cursor: pointer; color: var(--text-primary); user-select: none;">
+                <input type="checkbox" class="modal-team-leader-chk" value="${u.id}" ${isChecked ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px; margin: 0;">
+                <span>${u.fullname} (@${u.username})</span>
+            </label>
+        `;
+    }).join('') || '<span style="color: var(--text-muted); font-size: 11px;">Chưa có tài khoản Admin nào làm ứng viên.</span>';
+
+    const rules = team.autoApproveRules || { normalOT: false, backfill: false, sunday: false, customActivity: false };
+    const activities = team.customActivities || [];
+
+    const activitiesListHtml = activities.length === 0 
+        ? '<div style="color: var(--text-muted); font-size: 11px; padding: 12px 0; text-align:center;">Chưa cấu hình hoạt động ngoài giờ nào.</div>'
+        : activities.map((act, index) => `
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 12px; margin-bottom: 6px; font-size: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
+                    <span style="font-weight: 600;">${act.name}</span>
+                    <span style="font-size: 10px; color: var(--text-muted);">
+                        Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'} | Nhãn: ${act.detailLabel || 'Không có'}
+                    </span>
+                </div>
+                <button class="btn-icon-only delete" onclick="deleteActivityFromTeam('${team.id}', ${index})" title="Xóa" style="padding: 2px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </button>
+            </div>
+        `).join('');
+
+    const membersListHtml = members.length === 0
+        ? '<div style="color: var(--text-muted); font-size: 11px; text-align: center; padding: 20px;">Chưa có thành viên nào trong team.</div>'
+        : members.map(m => `
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; font-size: 12px;">
+                <span><strong>${m.fullname}</strong> (@${m.username})</span>
+                <button class="btn-icon-only delete" onclick="removeMemberFromTeam('${m.id}')" title="Xóa khỏi nhóm" style="padding: 2px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+        `).join('');
+
+    const unassignedEmployees = modalAllUsers.filter(u => u.role === 'employee' && u.team !== team.name);
+    const unassignedOptions = `
+        <option value="">-- Chọn nhân viên để thêm --</option>
+        ${unassignedEmployees.map(u => `<option value="${u.id}">${u.fullname} (${u.team ? 'Đang ở: ' + u.team : 'Chưa có nhóm'})</option>`).join('')}
+    `;
+
+    return `
+    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding-left: 10px;">
+        <h3 style="margin: 0 0 16px 0; font-size: 15px; color: var(--accent-blue-text); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+            <span>Cấu hình nhóm: ${team.name}</span>
+            <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">Thiết lập Quỹ OT & Quy tắc</span>
+        </h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; overflow: hidden;">
+            <!-- LEFT SUB-COLUMN: Cài đặt và hoạt động -->
+            <div style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 4px;">
+                <!-- 1. Chọn Trưởng nhóm -->
+                <div class="form-group" style="margin: 0;">
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Trưởng nhóm (Leader duyệt OT - Có thể chọn nhiều)</label>
+                    <div style="max-height: 100px; overflow-y: auto; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px;">
+                        ${leaderCheckboxes}
+                    </div>
+                </div>
+
+                <!-- 2. Quy tắc tự duyệt -->
+                <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+                    <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; display: block;">Quy tắc Tự động duyệt</span>
+                    
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
+                        <input type="checkbox" id="rule-normal" ${rules.normalOT ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
+                        Tự duyệt giờ OT bình thường
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
+                        <input type="checkbox" id="rule-backfill" ${rules.backfill ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
+                        Tự duyệt Bù tăng ca (Backfill)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
+                        <input type="checkbox" id="rule-sunday" ${rules.sunday ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
+                        Tự duyệt nếu đăng ký vào Chủ nhật
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
+                        <input type="checkbox" id="rule-custom" ${rules.customActivity ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
+                        Tự duyệt Hoạt động ngoài giờ tùy chỉnh
+                    </label>
+                </div>
+
+                <!-- 3. Quản lý hoạt động tùy chọn -->
+                <div style="display: flex; flex-direction: column; flex: 1; min-height: 200px;">
+                    <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">Hoạt động ngoài giờ của Team</span>
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;">
+                        <input type="text" id="modal-new-act-name" placeholder="Tên hoạt động..." style="flex: 1.5; min-width: 100px; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
+                        <select id="modal-new-act-mode" style="flex: 1.2; min-width: 100px; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 2px; font-size:11px;">
+                            <option value="hour">Tính theo Giờ</option>
+                            <option value="trip">Tính theo Chuyến</option>
+                        </select>
+                        <input type="text" id="modal-new-act-label" placeholder="Nhãn (Tỉnh đi xe...)" style="flex: 1.5; min-width: 100px; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
+                        <button class="btn btn-primary btn-sm" onclick="addActivityToTeam('${team.id}')" style="height: 28px; border-radius:6px; font-size:11px; padding:0 10px; white-space:nowrap; flex: 1;">Thêm</button>
+                    </div>
+                    <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px; background: rgba(0,0,0,0.05); min-height: 100px;">
+                        ${activitiesListHtml}
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT SUB-COLUMN: Danh sách nhân viên -->
+            <div style="display: flex; flex-direction: column; overflow: hidden;">
+                <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">Quản lý thành viên (${members.length})</span>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <select id="modal-add-member-select" style="flex: 1; height: 30px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0 8px; font-size: 11px;">
+                        ${unassignedOptions}
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="addMemberToTeamFromModal('${team.id}')" style="height: 30px; border-radius: 6px; font-size: 11px; padding: 0 10px; white-space:nowrap;">Thêm</button>
+                </div>
+                <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px; background: rgba(0,0,0,0.05);">
+                    ${membersListHtml}
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
+
+async function saveTeamSettingsFromModal(teamId) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+
+    const leaderChks = document.querySelectorAll('.modal-team-leader-chk:checked');
+    const leaderIds = Array.from(leaderChks).map(chk => chk.value);
+ 
+    const ruleNormal = document.getElementById('rule-normal')?.checked;
+    const ruleBackfill = document.getElementById('rule-backfill')?.checked;
+    const ruleSunday = document.getElementById('rule-sunday')?.checked;
+    const ruleCustom = document.getElementById('rule-custom')?.checked;
+ 
+    team.leaderIds = leaderIds;
+    team.leaderId = leaderIds[0] || null;
+    team.autoApproveRules = {
+        normalOT: !!ruleNormal,
+        backfill: !!ruleBackfill,
+        sunday: !!ruleSunday,
+        customActivity: !!ruleCustom
+    };
+
+    try {
+        await api('/api/teams', 'POST', { teams: TEAMS });
+        await loadTeams();
+        
+        // Refresh users list locally
+        const uData = await api('/api/users');
+        modalAllUsers = uData.users || [];
+        
+        showToast('Đã lưu cấu hình team!');
+        refreshModalTeamsView();
+        await populateUserFilter();
+        await refreshAdminUsers();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function addActivityToTeam(teamId) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+
+    const nameInput = document.getElementById('modal-new-act-name');
+    const modeSelect = document.getElementById('modal-new-act-mode');
+    const labelInput = document.getElementById('modal-new-act-label');
+
+    const name = nameInput?.value.trim();
+    const calcMode = modeSelect?.value;
+    const detailLabel = labelInput?.value.trim();
+
+    if (!name) return showToast('Vui lòng nhập tên hoạt động!', 'error');
+
+    if (!team.customActivities) team.customActivities = [];
+    if (team.customActivities.some(a => a.name.toLowerCase() === name.toLowerCase())) {
+        return showToast('Hoạt động này đã tồn tại!', 'error');
+    }
+
+    team.customActivities.push({
+        id: 'act_' + Date.now(),
+        name,
+        calcMode,
+        detailLabel: detailLabel || 'Chi tiết',
+        placeholder: `Nhập ${detailLabel || 'chi tiết'}...`
+    });
+
+    try {
+        await api('/api/teams', 'POST', { teams: TEAMS });
+        await loadTeams();
+        showToast('Đã thêm hoạt động!');
+        if (nameInput) nameInput.value = '';
+        if (labelInput) labelInput.value = '';
+        refreshModalTeamsView();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function deleteActivityFromTeam(teamId, index) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+
+    team.customActivities.splice(index, 1);
+
+    try {
+        await api('/api/teams', 'POST', { teams: TEAMS });
+        await loadTeams();
+        showToast('Đã xóa hoạt động!');
+        refreshModalTeamsView();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function addMemberToTeamFromModal(teamId) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+
+    const select = document.getElementById('modal-add-member-select');
+    if (!select) return;
+    const userId = select.value;
+    if (!userId) return showToast('Vui lòng chọn nhân viên!', 'error');
+
+    const user = modalAllUsers.find(u => u.id === userId);
+    if (!user) return;
+
+    try {
+        await api('/api/users/' + userId, 'PUT', { team: team.name });
+        showToast(`Đã thêm ${user.fullname} vào ${team.name}!`);
+        
+        const uData = await api('/api/users');
+        modalAllUsers = uData.users || [];
+        
+        refreshModalTeamsView();
+        await populateUserFilter();
+        await refreshAdminUsers();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function removeMemberFromTeam(userId) {
+    const user = modalAllUsers.find(u => u.id === userId);
+    if (!user) return;
+
+    try {
+        await api('/api/users/' + userId, 'PUT', { team: '' });
+        showToast(`Đã xóa ${user.fullname} khỏi nhóm!`);
+        
+        const uData = await api('/api/users');
+        modalAllUsers = uData.users || [];
+        
+        refreshModalTeamsView();
+        await populateUserFilter();
+        await refreshAdminUsers();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function addTeamFromModal() {
+    const input = document.getElementById('input-modal-new-team');
+    if (!input) return;
+    const teamName = input.value.trim();
+    if (!teamName) return showToast('Vui lòng nhập tên team!', 'error');
+
+    if (TEAMS.some(t => t.name.toLowerCase() === teamName.toLowerCase())) {
+        return showToast('Team này đã tồn tại!', 'error');
+    }
+
+    const newTeam = {
+        id: 'team_' + Date.now(),
+        name: teamName,
+        leaderId: null,
+        leaderIds: [],
+        customActivities: [],
+        autoApproveRules: {
+            normalOT: false,
+            backfill: false,
+            sunday: false,
+            customActivity: false
+        }
+    };
+    const updatedTeams = [...TEAMS, newTeam];
+    try {
+        await api('/api/teams', 'POST', { teams: updatedTeams });
+        TEAMS = updatedTeams;
+        input.value = '';
+        showToast('Thêm team thành công!');
+        selectedTeamIdForModal = newTeam.id;
+        refreshModalTeamsView();
+        await populateUserFilter();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function renameTeamFromModal(oldName) {
+    const body = `
+    <div style="text-align: left; padding: 10px 0;">
+        <div style="margin-bottom: 12px; font-weight: 500;">Nhập tên team mới cho <strong>${oldName}</strong>:</div>
+        <input type="text" id="modal-rename-team-input" class="input-sm" value="${oldName}" style="width: 100%; box-sizing: border-box; height: 36px; padding: 0 12px; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;">
+    </div>`;
+
+    showModal('Đổi tên Team', body, [
+        {
+            text: 'Hủy',
+            class: 'btn-ghost',
+            action: () => {
+                setTimeout(() => openTeamSettingsModal(), 50);
+            }
+        },
+        {
+            text: 'Lưu',
+            class: 'btn-primary btn-sm',
+            action: async () => {
+                const input = document.getElementById('modal-rename-team-input');
+                if (!input) return;
+                const newName = input.value.trim();
+                if (!newName) {
+                    showToast('Tên team không được để trống!', 'error');
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                    return;
+                }
+                if (newName === oldName) {
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                    return;
+                }
+                if (TEAMS.some(t => t.name.toLowerCase() === newName.toLowerCase())) {
+                    showToast('Tên team này đã tồn tại!', 'error');
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                    return;
+                }
+                const updatedTeams = TEAMS.map(t => {
+                    if (t.name === oldName) {
+                        t.name = newName;
+                    }
+                    return t;
+                });
+                try {
+                    await api('/api/teams', 'POST', { teams: updatedTeams, oldName, newName });
+                    TEAMS = updatedTeams;
+                    showToast('Đổi tên team thành công!');
+                    await Promise.all([
+                        populateUserFilter(),
+                        refreshAdminUsers()
+                    ]);
+                } catch (e) {
+                    showToast(e.message, 'error');
+                }
+                setTimeout(() => openTeamSettingsModal(), 50);
+            }
+        }
+    ]);
+}
+
+async function deleteTeamFromModal(teamName) {
+    try {
+        const uData = await api('/api/users');
+        const userCount = uData.users.filter(u => u.team === teamName).length;
+        
+        let confirmMsg = `Bạn có chắc muốn xóa team "${teamName}"?`;
+        if (userCount > 0) {
+            confirmMsg += `<br><br><span style="color: var(--status-rejected-text); font-weight: bold;">Cảnh báo: Hiện có ${userCount} nhân viên thuộc team này. Họ sẽ bị đưa về trạng thái "Chưa phân team".</span>`;
+        }
+
+        showModal('Xóa Team', confirmMsg, [
+            {
+                text: 'Hủy',
+                class: 'btn-ghost',
+                action: () => {
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                }
+            },
+            {
+                text: 'Xóa',
+                class: 'btn-danger btn-sm',
+                action: async () => {
+                    const updatedTeams = TEAMS.filter(t => t.name !== teamName);
+                    if (selectedTeamIdForModal && !updatedTeams.some(t => t.id === selectedTeamIdForModal)) {
+                        selectedTeamIdForModal = null;
+                    }
+                    try {
+                        await api('/api/teams', 'POST', { teams: updatedTeams, deletedTeam: teamName });
+                        TEAMS = updatedTeams;
+                        showToast('Đã xóa team!');
+                        await Promise.all([
+                            populateUserFilter(),
+                            refreshAdminUsers()
+                        ]);
+                    } catch (e) {
+                        showToast(e.message, 'error');
+                    }
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                }
+            }
+        ]);
+    } catch (e) {
+        showToast('Lỗi khi lấy thông tin nhân viên', 'error');
+        setTimeout(() => openTeamSettingsModal(), 50);
+    }
+}
+
+// Khởi tạo kênh nhận sự kiện thời gian thực (SSE)
+function initSseConnection() {
+    if (window.sseSource) {
+        window.sseSource.close();
+    }
+    
+    const sse = new EventSource(`${API_BASE}/api/events`);
+    window.sseSource = sse;
+    
+    sse.onmessage = function(event) {
+        try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'update') {
+                const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+                if (currentUser && currentUser.role === 'admin') {
+                    // Tự động làm mới dữ liệu khi có cập nhật từ điện thoại
+                    refreshAdminRecords();
+                    refreshAdminStats();
+                    refreshReport();
+                    refreshAdminUsers();
+                }
+            }
+        } catch (e) {
+            console.error('Lỗi xử lý sự kiện SSE:', e);
+        }
+    };
+    
+    sse.onerror = function() {
+        console.warn('Mất kết nối SSE, đang thử kết nối lại...');
+    };
+}
+
+async function loadMobileInfo() {
+    try {
+        const info = await api('/api/server-info');
+        const el = document.getElementById('mobile-url');
+        if (el) el.textContent = info.url;
+        const el2 = document.getElementById('mobile-url-link');
+        if (el2) el2.href = info.url;
+
+        const qrContainer = document.getElementById('mobile-qr-container');
+        const qrImg = document.getElementById('mobile-qr');
+        if (qrContainer && qrImg && info.url) {
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(info.url)}`;
+            qrContainer.style.display = 'flex';
+        }
+    } catch (e) {}
+}
+
+async function populateUserFilter() {
+    const select = document.getElementById('admin-filter-user');
+    const adminOtUser = document.getElementById('admin-ot-user');
+    try {
+        const data = await api('/api/users');
+        const users = data.users;
+        loadedUsers = users;
+        users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
+
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isSuperAdmin = currentUser && currentUser.username === 'admin';
+        const managerTeam = currentUser ? (currentUser.team || '') : '';
+
+        if (select) {
+            select.innerHTML = '<option value="">Tất cả</option>';
+            users.forEach(u => {
+                if (isSuperAdmin) {
+                    select.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                } else {
+                    if ((u.role === 'employee' && u.team === managerTeam) || (currentUser && u.id === currentUser.id)) {
+                        select.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                    }
+                }
+            });
+        }
+        if (adminOtUser) {
+            adminOtUser.innerHTML = '<option value="">-- Chọn nhân viên --</option>';
+            users.filter(u => u.role === 'employee').forEach(u => {
+                if (isSuperAdmin) {
+                    adminOtUser.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                } else {
+                    if (u.team === managerTeam) {
+                        adminOtUser.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                    }
+                }
+            });
+        }
+    } catch (e) {}
+}
+
+async function refreshAdminStats() {
+    try {
+        const stats = await api('/api/stats');
+        document.getElementById('stat-total-users').textContent = stats.totalUsers;
+        
+        // Update Pending OT
+        const pendingOTVal = stats.pendingOT || 0;
+        document.getElementById('stat-pending-ot').textContent = pendingOTVal;
+        const cardPendingOT = document.getElementById('stat-card-pending-ot');
+        const dotPendingOT = document.getElementById('dot-pending-ot');
+        if (cardPendingOT && dotPendingOT) {
+            if (pendingOTVal > 0) {
+                cardPendingOT.classList.add('has-pending');
+                dotPendingOT.style.display = 'inline-block';
+            } else {
+                cardPendingOT.classList.remove('has-pending');
+                dotPendingOT.style.display = 'none';
+            }
+        }
+
+        // Update Pending Unlinks
+        const pendingUnlinksVal = stats.pendingUnlinks || 0;
+        document.getElementById('stat-pending-unlinks').textContent = pendingUnlinksVal;
+        const cardPendingUnlinks = document.getElementById('stat-card-pending-unlinks');
+        const dotPendingUnlinks = document.getElementById('dot-pending-unlinks');
+        if (cardPendingUnlinks && dotPendingUnlinks) {
+            if (pendingUnlinksVal > 0) {
+                cardPendingUnlinks.classList.add('has-pending');
+                dotPendingUnlinks.style.display = 'inline-block';
+            } else {
+                cardPendingUnlinks.classList.remove('has-pending');
+                dotPendingUnlinks.style.display = 'none';
+            }
+        }
+
+        // Update sidebar unlinks badge
+        const badgePendingUnlinks = document.getElementById('badge-pending-unlinks');
+        if (badgePendingUnlinks) {
+            if (pendingUnlinksVal > 0) {
+                badgePendingUnlinks.textContent = pendingUnlinksVal;
+                badgePendingUnlinks.style.display = 'inline-block';
+            } else {
+                badgePendingUnlinks.style.display = 'none';
+            }
+        }
+
+        // Update bell badge count
+        const totalPending = pendingOTVal + pendingUnlinksVal;
+        const bellBadge = document.getElementById('bell-badge-count');
+        if (bellBadge) {
+            if (totalPending > 0) {
+                bellBadge.textContent = totalPending;
+                bellBadge.style.display = 'block';
+            } else {
+                bellBadge.style.display = 'none';
+            }
+        }
+
+        document.getElementById('stat-total-ot').textContent = stats.totalOTMonth.toFixed(1);
+        const tripsEl = document.getElementById('stat-total-trips');
+        if (tripsEl) tripsEl.textContent = stats.totalTripsMonth || 0;
+    } catch (e) {}
+}
+
+async function refreshAdminRecords() {
+    let month = document.getElementById('admin-filter-month').value;
+    const dateFilter = document.getElementById('admin-filter-date') ? document.getElementById('admin-filter-date').value : '';
+    const userId = document.getElementById('admin-filter-user').value;
+    const searchUser = document.getElementById('admin-search-user').value.toLowerCase().trim();
+    const searchNote = document.getElementById('admin-search-note').value.toLowerCase().trim();
+    const filterTeam = document.getElementById('admin-filter-team') ? document.getElementById('admin-filter-team').value : '';
+
+    if (dateFilter) {
+        month = dateFilter.substring(0, 7);
+    }
+
+    try {
+        let url = '/api/records?';
+        if (month) url += `month=${month}&`;
+        if (userId) url += `userId=${userId}&`;
+
+        const data = await api(url);
+        const records = data.records;
+        const usersData = await api('/api/users');
+        const users = usersData.users;
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isAdmin = currentUser && currentUser.username === 'admin';
+
+        const filteredRecords = records.filter(r => {
+            const user = users.find(u => u.id === r.userId);
+            const matchesUser = !searchUser || (user && (
+                user.fullname.toLowerCase().includes(searchUser) ||
+                user.username.toLowerCase().includes(searchUser)
+            ));
+            const matchesNote = !searchNote || (r.note && r.note.toLowerCase().includes(searchNote));
+            
+            // Filter by Team
+            let matchesTeam = true;
+            if (isAdmin) {
+                if (filterTeam) {
+                    const userTeam = user ? (user.team || '') : '';
+                    if (filterTeam === 'unassigned') {
+                        matchesTeam = (userTeam === '' || userTeam === 'unassigned');
+                    } else {
+                        matchesTeam = (userTeam === filterTeam);
+                    }
+                }
+            } else {
+                // Manager: only see members of their own team (and themselves)
+                const managerTeam = currentUser ? (currentUser.team || '') : '';
+                const userTeam = user ? (user.team || '') : '';
+                matchesTeam = (user && user.id === currentUser.id) || (userTeam && userTeam === managerTeam);
+            }
+
+            // Filter by Date
+            const matchesDate = !dateFilter || r.date === dateFilter;
+
+            return matchesUser && matchesNote && matchesTeam && matchesDate;
+        });
+
+        const approvedTbody = document.getElementById('admin-records-approved-body');
+        const pendingTbody = document.getElementById('admin-records-pending-body');
+        const rejectedTbody = document.getElementById('admin-records-rejected-body');
+
+        // Apply Record Type Filter
+        let recordsFiltered = [];
+        if (currentAdminRecType === 'ot') {
+            recordsFiltered = filteredRecords.filter(r => r.totalHours > 0 || r.isBackfill);
+        } else {
+            recordsFiltered = filteredRecords.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '');
+        }
+
+        // Set Table Headers dynamically
+        if (approvedTbody && approvedTbody.previousElementSibling) {
+            if (currentAdminRecType === 'ot') {
+                approvedTbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Nhân viên</th>
+                    <th>Nhóm</th>
+                    <th>Ngày</th>
+                    <th>OT Trưa</th>
+                    <th>OT Chiều</th>
+                    <th>Khung giờ (Chiều)</th>
+                    <th>Tổng OT (giờ)</th>
+                    <th>Ghi chú</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            } else {
+                approvedTbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Nhân viên</th>
+                    <th>Nhóm</th>
+                    <th>Ngày</th>
+                    <th>Đi xe (Tỉnh)</th>
+                    <th>Ghi chú</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            }
+        }
+        if (pendingTbody && pendingTbody.previousElementSibling) {
+            if (currentAdminRecType === 'ot') {
+                pendingTbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Nhân viên</th>
+                    <th>Nhóm</th>
+                    <th>Ngày</th>
+                    <th>OT Trưa</th>
+                    <th>OT Chiều</th>
+                    <th>Khung giờ (Chiều)</th>
+                    <th>Tổng OT (giờ)</th>
+                    <th>Ghi chú</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            } else {
+                pendingTbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Nhân viên</th>
+                    <th>Nhóm</th>
+                    <th>Ngày</th>
+                    <th>Đi xe (Tỉnh)</th>
+                    <th>Ghi chú</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            }
+        }
+        if (rejectedTbody && rejectedTbody.previousElementSibling) {
+            if (currentAdminRecType === 'ot') {
+                rejectedTbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Nhân viên</th>
+                    <th>Nhóm</th>
+                    <th>Ngày</th>
+                    <th>OT Trưa</th>
+                    <th>OT Chiều</th>
+                    <th>Khung giờ (Chiều)</th>
+                    <th>Tổng OT (giờ)</th>
+                    <th>Ghi chú</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            } else {
+                rejectedTbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Nhân viên</th>
+                    <th>Nhóm</th>
+                    <th>Ngày</th>
+                    <th>Đi xe (Tỉnh)</th>
+                    <th>Ghi chú</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            }
+        }
+
+        const approved = recordsFiltered.filter(r => r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
+        const pending = recordsFiltered.filter(r => r.status === 'pending');
+        const rejected = recordsFiltered.filter(r => r.status === 'rejected');
+
+        // Render Approved
+        if (approved.length === 0) {
+            const cols = (currentAdminRecType === 'ot') ? 10 : 7;
+            approvedTbody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color: var(--text-muted); opacity: 0.6;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M8 12h8"/>
+                            </svg>
+                            <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">Không có dữ liệu đã duyệt</span>
+                            <span style="font-size: 13px; color: var(--text-muted);">Không tìm thấy bản ghi ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} nào đã được duyệt trong tháng này.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        } else {
+            approvedTbody.innerHTML = approved.map(r => {
+                const user = users.find(u => u.id === r.userId);
+                const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
+                const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+                const employeeCell = `
+                    <div class="user-profile-cell">
+                        <div class="avatar-mini">${user ? user.fullname.charAt(0).toUpperCase() : 'N'}</div>
+                        <div class="user-details">
+                            <span class="user-fullname">${user ? user.fullname : 'N/A'}</span>
+                            <span class="user-username">@${user ? user.username : 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+                const teamBadge = `<span class="tag-team">${teamName}</span>`;
+                const noteDisplay = r.note ? `<span class="text-note" title="${r.note}">${r.note}</span>` : '<span class="text-muted">—</span>';
+
+                if (currentAdminRecType === 'ot') {
+                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${r.otEnd || '—'}</span>` : '<span class="text-muted">—</span>';
+                    const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
+                    return `<tr>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
+                        <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
+                        <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
+                        <td>${timeRange}</td>
+                        <td>${totalOtBadge}</td>
+                        <td>${noteDisplay}</td>
+                        <td>${isBackfill ? '<span class="tag tag-yes" style="background:rgba(16,185,129,0.1); color:#10b981;">Bù tăng ca</span>' : '<span class="tag tag-no" style="background:rgba(99,102,241,0.1); color:#6366f1;">Thường</span>'}</td>
+                        <td><div class="action-buttons">
+                            <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'admin')" title="Sửa" style="margin-right: 4px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                            <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="Xóa">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div></td>
+                    </tr>`;
+                } else {
+                    return `<tr>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
+                        <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
+                        <td>${noteDisplay}</td>
+                        <td><div class="action-buttons">
+                            <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'admin')" title="Sửa" style="margin-right: 4px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                            <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="Xóa">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div></td>
+                    </tr>`;
+                }
+            }).join('');
+        }
+
+        // Render Pending
+        if (pending.length === 0) {
+            const cols = (currentAdminRecType === 'ot') ? 9 : 6;
+            pendingTbody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color: var(--accent-green-light); opacity: 0.8;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 8v4"/>
+                                <path d="M12 16h.01"/>
+                            </svg>
+                            <span style="font-size: 15px; font-weight: 600; color: var(--text-primary);">Không có yêu cầu chờ duyệt</span>
+                            <span style="font-size: 13px; color: var(--text-muted);">Tất cả yêu cầu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} đã được xử lý xong.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        } else {
+            pendingTbody.innerHTML = pending.map(r => {
+                const user = users.find(u => u.id === r.userId);
+                const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
+                const employeeCell = `
+                    <div class="user-profile-cell">
+                        <div class="avatar-mini">${user ? user.fullname.charAt(0).toUpperCase() : 'N'}</div>
+                        <div class="user-details">
+                            <span class="user-fullname">${user ? user.fullname : 'N/A'}</span>
+                            <span class="user-username">@${user ? user.username : 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+                const teamBadge = `<span class="tag-team">${teamName}</span>`;
+                const noteDisplay = r.note ? `<span class="text-note" title="${r.note}">${r.note}</span>` : '<span class="text-muted">—</span>';
+
+                if (currentAdminRecType === 'ot') {
+                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${r.otEnd || '—'}</span>` : '<span class="text-muted">—</span>';
+                    const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
+                    return `<tr>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
+                        <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
+                        <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
+                        <td>${timeRange}</td>
+                        <td>${totalOtBadge}</td>
+                        <td>${noteDisplay}</td>
+                        <td><div class="action-buttons">
+                            <button class="btn btn-success btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
+                                ✓ Duyệt
+                            </button>
+                            <button class="btn btn-danger btn-xs" onclick="rejectRecord('${r.id}')" title="Từ chối" style="padding: 4px 8px; font-size: 11px;">
+                                ✕ Từ chối
+                            </button>
+                        </div></td>
+                    </tr>`;
+                } else {
+                    return `<tr>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
+                        <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
+                        <td>${noteDisplay}</td>
+                        <td><div class="action-buttons">
+                            <button class="btn btn-success btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
+                                ✓ Duyệt
+                            </button>
+                            <button class="btn btn-danger btn-xs" onclick="rejectRecord('${r.id}')" title="Từ chối" style="padding: 4px 8px; font-size: 11px;">
+                                ✕ Từ chối
+                            </button>
+                        </div></td>
+                    </tr>`;
+                }
+            }).join('');
+        }
+
+        // Render Rejected
+        if (rejected.length === 0) {
+            const cols = (currentAdminRecType === 'ot') ? 9 : 6;
+            rejectedTbody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color: #ef4444; opacity: 0.7;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M15 9l-6 6"/>
+                                <path d="M9 9l6 6"/>
+                            </svg>
+                            <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">Không có bản ghi bị từ chối</span>
+                            <span style="font-size: 13px; color: var(--text-muted);">Không có yêu cầu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} nào bị từ chối duyệt.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        } else {
+            rejectedTbody.innerHTML = rejected.map(r => {
+                const user = users.find(u => u.id === r.userId);
+                const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
+                const employeeCell = `
+                    <div class="user-profile-cell">
+                        <div class="avatar-mini">${user ? user.fullname.charAt(0).toUpperCase() : 'N'}</div>
+                        <div class="user-details">
+                            <span class="user-fullname">${user ? user.fullname : 'N/A'}</span>
+                            <span class="user-username">@${user ? user.username : 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+                const teamBadge = `<span class="tag-team">${teamName}</span>`;
+                const noteDisplay = r.note ? `<span class="text-note" title="${r.note}">${r.note}</span>` : '<span class="text-muted">—</span>';
+ 
+                if (currentAdminRecType === 'ot') {
+                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${r.otEnd || '—'}</span>` : '<span class="text-muted">—</span>';
+                    const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
+                    return `<tr>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
+                        <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
+                        <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">—</span>'}</td>
+                        <td>${timeRange}</td>
+                        <td>${totalOtBadge}</td>
+                        <td>${noteDisplay}</td>
+                        <td><div class="action-buttons" style="display: flex; align-items: center; gap: 8px;">
+                            <button class="btn btn-primary btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt lại" style="padding: 4px 8px; font-size: 11px;">
+                                ✓ Duyệt lại
+                            </button>
+                            <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="Xóa" style="padding: 2px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px; color: #ef4444; cursor: pointer;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div></td>
+                    </tr>`;
+                } else {
+                    return `<tr>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
+                        <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
+                        <td>${noteDisplay}</td>
+                        <td><div class="action-buttons" style="display: flex; align-items: center; gap: 8px;">
+                            <button class="btn btn-primary btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt lại" style="padding: 4px 8px; font-size: 11px;">
+                                ✓ Duyệt lại
+                            </button>
+                            <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="Xóa" style="padding: 2px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px; color: #ef4444; cursor: pointer;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div></td>
+                    </tr>`;
+                }
+            }).join('');
+        }
+
+        // Stats & Badges
+        const approvedAll = filteredRecords.filter(r => r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
+        let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0, totalTrips = 0;
+        approvedAll.forEach(r => {
+            totalLunchOT += r.hasLunchOT ? OT_LUNCH_HOURS : 0;
+            totalEveningOT += r.eveningOTHours;
+            totalHours += r.totalHours;
+            if (r.deliveryProvince && r.deliveryProvince.trim() !== '') {
+                totalTrips++;
+            }
+        });
+
+        const badgePendingRecords = document.getElementById('badge-pending-records');
+        if (badgePendingRecords) {
+            if (pending.length > 0) {
+                badgePendingRecords.textContent = pending.length;
+                badgePendingRecords.style.display = 'inline-block';
+            } else {
+                badgePendingRecords.style.display = 'none';
+            }
+        }
+
+        const badgeSubPending = document.getElementById('badge-sub-pending');
+        if (badgeSubPending) {
+            if (pending.length > 0) {
+                badgeSubPending.textContent = pending.length;
+                badgeSubPending.style.display = 'inline-block';
+            } else {
+                badgeSubPending.style.display = 'none';
+            }
+        }
+
+        const badgeSubRejected = document.getElementById('badge-sub-rejected');
+        if (badgeSubRejected) {
+            if (rejected.length > 0) {
+                badgeSubRejected.textContent = rejected.length;
+                badgeSubRejected.style.display = 'inline-block';
+            } else {
+                badgeSubRejected.style.display = 'none';
+            }
+        }
+
+        document.getElementById('admin-table-summary').innerHTML = `
+            <div class="summary-item"><span class="summary-label">Tổng bản ghi:</span><span class="summary-value">${approvedAll.length}</span></div>
+            <div class="summary-item"><span class="summary-label">OT Trưa:</span><span class="summary-value">${totalLunchOT.toFixed(1)}h</span></div>
+            <div class="summary-item"><span class="summary-label">OT Chiều:</span><span class="summary-value">${totalEveningOT.toFixed(1)}h</span></div>
+            <div class="summary-item"><span class="summary-label">Tổng OT:</span><span class="summary-value">${totalHours.toFixed(1)}h</span></div>
+            <div class="summary-item"><span class="summary-label">Tổng chuyến xe:</span><span class="summary-value">${totalTrips}</span></div>`;
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+async function refreshAdminUsers() {
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin');
+
+        const usersData = await api('/api/users');
+        const users = usersData.users;
+        const currentMonth = getCurrentMonth();
+        const recData = await api(`/api/records?month=${currentMonth}`);
+        const records = recData.records;
+
+        // Filter users
+        const employees = users.filter(u => u.role === 'employee');
+        const managers = users.filter(u => u.role === 'admin');
+
+        // Render employees
+        const tbodyEmp = document.getElementById('admin-users-body');
+        tbodyEmp.innerHTML = employees.map((u, i) => {
+            const userRecords = records.filter(r => r.userId === u.id);
+            const totalOT = userRecords.reduce((sum, r) => sum + r.totalHours, 0);
+
+            // Nút reset liên kết thiết bị
+            let deviceUnlinkBtn = '';
+            if (u.deviceId) {
+                deviceUnlinkBtn = `
+                    <button class="btn-reset btn-reset-mobile" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'mobile')" title="Xóa liên kết App điện thoại" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                            <line x1="12" y1="18" x2="12.01" y2="18"/>
+                        </svg>
+                        Hủy LK Mobile
+                    </button>
+                `;
+            }
+            let browserUnlinkBtn = '';
+            if (u.browserDeviceId) {
+                browserUnlinkBtn = `
+                    <button class="btn-reset btn-reset-browser" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'browser')" title="Xóa liên kết Trình duyệt web" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="2" y1="12" x2="22" y2="12"/>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                        Hủy LK Web
+                    </button>
+                `;
+            }
+            let approveBtn = '';
+            if (u.pendingUnlink) {
+                approveBtn = `
+                    <button class="btn-reset btn-reset-approve" onclick="approveUnlinkDevice('${u.id}', '${u.fullname}')" title="Duyệt yêu cầu huỷ liên kết" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Duyệt Huỷ
+                    </button>
+                `;
+            }
+
+            const unlinkBadge = u.pendingUnlink ? `
+                <span class="unlink-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approveUnlinkDevice('${u.id}', '${u.fullname}')" title="Bấm vào đây để phê duyệt huỷ liên kết thiết bị">
+                    ⚠️ Xin huỷ liên kết
+                </span>
+            ` : '';
+
+            return `<tr>
+                <td>${i + 1}</td>
+                <td><strong>${u.fullname}</strong>${unlinkBadge}</td>
+                <td>${u.username}</td>
+                <td><span style="font-weight:600; color:var(--text-secondary);">${u.team || 'Chưa phân team'}</span></td>
+                <td><span class="tag tag-employee">Nhân viên</span></td>
+                <td><span class="text-purple text-bold">${totalOT.toFixed(1)}h</span></td>
+                <td><div class="action-buttons">
+                    ${approveBtn}
+                    ${deviceUnlinkBtn}
+                    ${browserUnlinkBtn}
+                    ${(!u.team || u.team !== 'admin' || isBelongToAdminTeam || (currentUser && currentUser.id === u.id)) ? `
+                    <button class="btn-icon-only edit" onclick="editUserDialog('${u.id}')" title="Sửa" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </button>
+                    ` : ''}
+                    ${(!u.team || u.team !== 'admin' || isBelongToAdminTeam) ? `
+                    <button class="btn-icon-only delete" onclick="deleteUser('${u.id}')" title="Xóa">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </button>
+                    ` : ''}
+                </div></td>
+            </tr>`;
+        }).join('') || '<tr class="empty-row"><td colspan="7">Không có nhân viên</td></tr>';
+
+        // Render managers (admins)
+        const tbodyMgr = document.getElementById('admin-managers-body');
+        tbodyMgr.innerHTML = managers.map((u, i) => {
+            return `<tr>
+                <td>${i + 1}</td>
+                <td><strong>${u.fullname}</strong></td>
+                <td>${u.username}</td>
+                <td><span style="font-weight:600; color:var(--text-secondary);">${u.team === 'admin' ? 'admin' : (u.team || 'admin')}</span></td>
+                <td><span class="tag tag-admin">Quản lý</span></td>
+                <td><div class="action-buttons">
+                    ${(u.team !== 'admin' || isBelongToAdminTeam || (currentUser && currentUser.id === u.id)) ? `
+                    <button class="btn-icon-only edit" onclick="editUserDialog('${u.id}')" title="Sửa" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </button>
+                    ` : ''}
+                    ${(u.username !== 'admin' && (u.team !== 'admin' || isBelongToAdminTeam)) ? `
+                        <button class="btn-icon-only delete" onclick="deleteUser('${u.id}')" title="Xóa">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    ` : ''}
+                </div></td>
+            </tr>`;
+        }).join('') || '<tr class="empty-row"><td colspan="6">Không có quản lý</td></tr>';
+
+        // Render unassigned employees
+        const tbodyUnassigned = document.getElementById('admin-users-unassigned-body');
+        const unassigned = employees.filter(u => !u.team || u.team === 'unassigned');
+        if (tbodyUnassigned) {
+            tbodyUnassigned.innerHTML = unassigned.map((u, i) => {
+                const userRecords = records.filter(r => r.userId === u.id);
+                const totalOT = userRecords.reduce((sum, r) => sum + r.totalHours, 0);
+
+                let deviceUnlinkBtn = '';
+                if (u.deviceId) {
+                    deviceUnlinkBtn = `
+                        <button class="btn-reset btn-reset-mobile" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'mobile')" title="Xóa liên kết App điện thoại" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                                <line x1="12" y1="18" x2="12.01" y2="18"/>
+                            </svg>
+                            Hủy LK Mobile
+                        </button>
+                    `;
+                }
+                let browserUnlinkBtn = '';
+                if (u.browserDeviceId) {
+                    browserUnlinkBtn = `
+                        <button class="btn-reset btn-reset-browser" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'browser')" title="Xóa liên kết Trình duyệt web" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="2" y1="12" x2="22" y2="12"/>
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                            </svg>
+                            Hủy LK Web
+                        </button>
+                    `;
+                }
+                let approveBtn = '';
+                if (u.pendingUnlink) {
+                    approveBtn = `
+                        <button class="btn-reset btn-reset-approve" onclick="approveUnlinkDevice('${u.id}', '${u.fullname}')" title="Duyệt yêu cầu huỷ liên kết" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Duyệt Huỷ
+                        </button>
+                    `;
+                }
+
+                const unlinkBadge = u.pendingUnlink ? `
+                    <span class="unlink-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approveUnlinkDevice('${u.id}', '${u.fullname}')" title="Bấm vào đây để phê duyệt huỷ liên kết thiết bị">
+                        ⚠️ Xin huỷ liên kết
+                    </span>
+                ` : '';
+
+                return `<tr>
+                    <td>${i + 1}</td>
+                    <td><strong>${u.fullname}</strong>${unlinkBadge}</td>
+                    <td>${u.username}</td>
+                    <td><span style="font-weight:600; color:var(--text-secondary);">${u.team || 'Chưa phân team'}</span></td>
+                    <td><span class="tag tag-employee">Nhân viên</span></td>
+                    <td><span class="text-purple text-bold">${totalOT.toFixed(1)}h</span></td>
+                    <td><div class="action-buttons">
+                        ${approveBtn}
+                        ${deviceUnlinkBtn}
+                        ${browserUnlinkBtn}
+                        ${(!u.team || u.team !== 'admin' || isBelongToAdminTeam || (currentUser && currentUser.id === u.id)) ? `
+                        <button class="btn-icon-only edit" onclick="editUserDialog('${u.id}')" title="Sửa" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        ` : ''}
+                        ${(!u.team || u.team !== 'admin' || isBelongToAdminTeam) ? `
+                        <button class="btn-icon-only delete" onclick="deleteUser('${u.id}')" title="Xóa">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                        ` : ''}
+                    </div></td>
+                </tr>`;
+            }).join('') || '<tr class="empty-row"><td colspan="7">Không có nhân viên chưa phân team</td></tr>';
+        }
+
+        // Show/hide unassigned warning alert
+        const warningAlert = document.getElementById('unassigned-warning-alert');
+        if (warningAlert) {
+            if (unassigned.length > 0) {
+                warningAlert.style.display = 'flex';
+            } else {
+                warningAlert.style.display = 'none';
+            }
+        }
+
+        // Update badge for unassigned sub-tab
+        const badgeUnassigned = document.getElementById('badge-sub-unassigned');
+        if (badgeUnassigned) {
+            if (unassigned.length > 0) {
+                badgeUnassigned.textContent = unassigned.length;
+                badgeUnassigned.style.display = 'inline-block';
+            } else {
+                badgeUnassigned.style.display = 'none';
+            }
+        }
+
+    } catch (e) {}
+}
+
+// SVG Chart Renderers for Report Redesign
+function renderTeamBarChart(teamOTs) {
+    const entries = Object.entries(teamOTs).sort((a, b) => b[1] - a[1]);
+    const totalHours = entries.reduce((sum, e) => sum + e[1], 0);
+    if (entries.length === 0 || totalHours === 0) {
+        return `<div class="chart-empty">Chưa có dữ liệu đội nhóm</div>`;
+    }
+    const maxVal = Math.max(...entries.map(e => e[1])) || 1;
+    const width = 400;
+    const rowHeight = 24;
+    const paddingLeft = 110;
+    const paddingRight = 60;
+    const chartHeight = entries.length * rowHeight + 20;
+    
+    let svgHtml = `<svg width="100%" height="${chartHeight}" viewBox="0 0 ${width} ${chartHeight}" style="font-family: inherit;">`;
+    
+    // Gradients definition
+    svgHtml += `
+        <defs>
+            <linearGradient id="barGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#0dd98b" stop-opacity="0.6"/>
+                <stop offset="100%" stop-color="#0dd98b" stop-opacity="0.95"/>
+            </linearGradient>
+        </defs>`;
+        
+    entries.forEach(([team, val], idx) => {
+        const y = idx * rowHeight + 10;
+        const barMaxWidth = width - paddingLeft - paddingRight;
+        const barWidth = (val / maxVal) * barMaxWidth;
+        const displayTeam = team.length > 14 ? team.substring(0, 12) + '..' : team;
+        
+        // Team label
+        svgHtml += `<text x="${paddingLeft - 10}" y="${y + 15}" fill="var(--text-secondary)" font-size="11" font-weight="500" text-anchor="end">${displayTeam}</text>`;
+        // Background bar track
+        svgHtml += `<rect x="${paddingLeft}" y="${y + 4}" width="${barMaxWidth}" height="12" rx="4" fill="rgba(255,255,255,0.03)" />`;
+        // Value bar
+        svgHtml += `<rect x="${paddingLeft}" y="${y + 4}" width="${barWidth}" height="12" rx="4" fill="url(#barGrad)" />`;
+        // Value text
+        svgHtml += `<text x="${paddingLeft + barWidth + 8}" y="${y + 14}" fill="var(--accent-green)" font-size="11" font-weight="bold">${val.toFixed(1)}h</text>`;
+    });
+    
+    svgHtml += `</svg>`;
+    return svgHtml;
+}
+
+function renderTrendLineChart(dailyOTs, month) {
+    const entries = Object.entries(dailyOTs).sort((a, b) => a[0].localeCompare(b[0]));
+    const values = entries.map(e => e[1]);
+    const maxVal = Math.max(...values) || 1;
+    const width = 480;
+    const height = 120;
+    const paddingLeft = 30;
+    const paddingRight = 15;
+    const paddingTop = 15;
+    const paddingBottom = 22;
+    
+    const chartWidth = width - paddingLeft - paddingRight;
+    const chartHeight = height - paddingTop - paddingBottom;
+    
+    const allZero = values.every(v => v === 0);
+    if (allZero) {
+        return `<div class="chart-empty">Chưa có dữ liệu xu hướng ngày</div>`;
+    }
+    
+    let points = [];
+    entries.forEach(([date, val], idx) => {
+        const x = paddingLeft + (idx / (entries.length - 1)) * chartWidth;
+        const y = paddingTop + chartHeight - (val / maxVal) * chartHeight;
+        points.push(`${x},${y}`);
+    });
+    
+    const pointsStr = points.join(' ');
+    // Area polygon points under the line chart
+    const firstPoint = points[0].split(',');
+    const lastPoint = points[points.length - 1].split(',');
+    const areaPointsStr = `${firstPoint[0]},${paddingTop + chartHeight} ${pointsStr} ${lastPoint[0]},${paddingTop + chartHeight}`;
+    
+    let svgHtml = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" style="font-family: inherit;">`;
+    
+    // Gradients definition
+    svgHtml += `
+        <defs>
+            <linearGradient id="areaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#a855f7" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#a855f7" stop-opacity="0.0"/>
+            </linearGradient>
+            <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#0dd98b"/>
+                <stop offset="50%" stop-color="#a855f7"/>
+                <stop offset="100%" stop-color="#3b82f6"/>
+            </linearGradient>
+        </defs>`;
+        
+    // Horizontal gridlines
+    for (let i = 0; i <= 4; i++) {
+        const y = paddingTop + (i / 4) * chartHeight;
+        const label = (maxVal - (i / 4) * maxVal).toFixed(1) + 'h';
+        svgHtml += `<line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="2,2" />`;
+        svgHtml += `<text x="${paddingLeft - 8}" y="${y + 4}" fill="var(--text-muted)" font-size="9" text-anchor="end">${label}</text>`;
+    }
+    
+    // Area under path
+    svgHtml += `<polygon points="${areaPointsStr}" fill="url(#areaGrad)" />`;
+    
+    // Trend line
+    svgHtml += `<polyline points="${pointsStr}" fill="none" stroke="url(#lineGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`;
+    
+    // Key days (label start, mid, end days)
+    const labelY = height - 10;
+    svgHtml += `<text x="${paddingLeft}" y="${labelY}" fill="var(--text-muted)" font-size="9" text-anchor="start">Ngày 1</text>`;
+    svgHtml += `<text x="${paddingLeft + chartWidth / 2}" y="${labelY}" fill="var(--text-muted)" font-size="9" text-anchor="middle">Ngày 15</text>`;
+    svgHtml += `<text x="${width - paddingRight}" y="${labelY}" fill="var(--text-muted)" font-size="9" text-anchor="end">Ngày ${entries.length}</text>`;
+    
+    svgHtml += `</svg>`;
+    return svgHtml;
+}
+
+// Expandable Detail Row Handler
+window.toggleReportRow = function(row, userId) {
+    const nextRow = row.nextElementSibling;
+    const isExpanded = row.classList.contains('expanded');
+    
+    // Collapse all other detail rows first to keep layout clean
+    document.querySelectorAll('.report-row.expanded').forEach(r => {
+        if (r !== row) {
+            r.classList.remove('expanded');
+            if (r.nextElementSibling && r.nextElementSibling.classList.contains('detail-row')) {
+                r.nextElementSibling.remove();
+            }
+        }
+    });
+    
+    if (isExpanded) {
+        row.classList.remove('expanded');
+        if (nextRow && nextRow.classList.contains('detail-row')) {
+            nextRow.remove();
+        }
+    } else {
+        row.classList.add('expanded');
+        const month = document.getElementById('report-filter-month').value;
+        
+        api(`/api/records?userId=${userId}&month=${month}`).then(data => {
+            const detailedRecords = data.records;
+            const detailRow = document.createElement('tr');
+            detailRow.className = 'detail-row';
+            
+            let recordsHtml = '';
+            if (detailedRecords.length === 0) {
+                recordsHtml = '<div style="padding: 12px; color: var(--text-muted); text-align: center; font-style: italic;">Không có chi tiết tăng ca cho tháng này.</div>';
+            } else {
+                recordsHtml = `
+                    <div class="report-detail-wrapper" style="padding: 16px 24px; background: rgba(0,0,0,0.18); margin: 6px 12px; border-radius: 8px;">
+                        <h5 style="margin-top: 0; margin-bottom: 12px; color: var(--accent-green); font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Chi tiết lịch sử làm thêm giờ</h5>
+                        <table class="detail-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left;">
+                                    <th style="color: var(--text-secondary); font-weight: 600;">Ngày làm việc</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">OT Trưa</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">OT Chiều/Tối (Khung giờ)</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">Tuyến đường (Xe tỉnh)</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">Trạng thái</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${detailedRecords.map(r => {
+                                    const hasLunch = r.hasLunchOT ? '1.0 tiếng' : '-';
+                                    const eveningH = r.eveningOTHours ? `${r.eveningOTHours.toFixed(1)} tiếng (${r.otStart} - ${r.otEnd})` : '-';
+                                    const province = r.deliveryProvince || '-';
+                                    const statusText = r.status === 'approved' ? '<span class="tag tag-success">Đã duyệt</span>' : (r.status === 'pending' ? '<span class="tag tag-warning">Đang chờ</span>' : '<span class="tag tag-danger">Từ chối</span>');
+                                    const isBackfillText = r.isBackfill ? '<span style="font-size: 9px; padding: 2px 5px; background: rgba(245,158,11,0.15); color: var(--accent-orange); border-radius: 4px; font-weight: 800; margin-left: 6px;">BÙ</span>' : '';
+                                    return `
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                                            <td><strong>${r.date}</strong>${isBackfillText}</td>
+                                            <td>${hasLunch}</td>
+                                            <td>${eveningH}</td>
+                                            <td><span style="color: var(--text-primary);">${province}</span></td>
+                                            <td>${statusText}</td>
+                                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${r.note || ''}">${r.note || '-'}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+            
+            const cell = document.createElement('td');
+            cell.colSpan = 8;
+            cell.innerHTML = recordsHtml;
+            detailRow.appendChild(cell);
+            
+            row.parentNode.insertBefore(detailRow, row.nextSibling);
+        }).catch(err => {
+            console.error('Error fetching details:', err);
+            showToast('Lỗi khi tải chi tiết', 'error');
+        });
+    }
+};
+
+async function refreshReport() {
+    const month = document.getElementById('report-filter-month').value;
+    const filterTeam = document.getElementById('report-filter-team') ? document.getElementById('report-filter-team').value : '';
+    const searchVal = document.getElementById('report-search-name') ? document.getElementById('report-search-name').value : '';
+    
+    try {
+        const usersData = await api('/api/users');
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isAdmin = currentUser && currentUser.username === 'admin';
+        
+        let users = usersData.users.filter(u => u.role === 'employee');
+        
+        if (isAdmin) {
+            if (filterTeam) {
+                users = users.filter(u => {
+                    const userTeam = u.team || '';
+                    if (filterTeam === 'unassigned') {
+                        return userTeam === '' || userTeam === 'unassigned';
+                    }
+                    return userTeam === filterTeam;
+                });
+            }
+        } else {
+            const managerTeam = currentUser ? (currentUser.team || '') : '';
+            users = users.filter(u => u.team && u.team === managerTeam);
+        }
+
+        const recData = await api(`/api/records?month=${month}`);
+        const records = recData.records.filter(r => {
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            return r.status === 'approved' || (!isBackfill && r.status !== 'pending' && r.status !== 'rejected');
+        });
+        
+        // --- 1. Compute Overall Dashboard KPI Stats & Charts (prior to search filtration) ---
+        let totalOTHours = 0;
+        let activeEmployeesSet = new Set();
+        const teamOTs = {};
+        const dailyOTs = {};
+        
+        // Initialize daily trend map
+        const year = parseInt(month.substring(0, 4));
+        const monthVal = parseInt(month.substring(5, 7));
+        const daysInMonth = new Date(year, monthVal, 0).getDate();
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dayStr = `${month}-${String(d).padStart(2, '0')}`;
+            dailyOTs[dayStr] = 0;
+        }
+
+        users.forEach(u => {
+            const ur = records.filter(r => r.userId === u.id);
+            const lunchH = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
+            const eveningH = ur.reduce((s, r) => s + r.eveningOTHours, 0);
+            const totalH = lunchH + eveningH;
+            
+            if (totalH > 0) {
+                totalOTHours += totalH;
+                activeEmployeesSet.add(u.id);
+            }
+            
+            // Team stats
+            const teamName = u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team');
+            teamOTs[teamName] = (teamOTs[teamName] || 0) + totalH;
+        });
+        
+        // Sum daily trend
+        records.forEach(r => {
+            const belongsToMatchingUser = users.some(u => u.id === r.userId);
+            if (belongsToMatchingUser && dailyOTs[r.date] !== undefined) {
+                const lunchH = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
+                const eveningH = r.eveningOTHours || 0;
+                dailyOTs[r.date] += (lunchH + eveningH);
+            }
+        });
+        
+        // Find top team
+        let topTeam = '-';
+        let maxTeamHours = 0;
+        Object.entries(teamOTs).forEach(([team, val]) => {
+            if (val > maxTeamHours) {
+                maxTeamHours = val;
+                topTeam = `${team} (${val.toFixed(1)}h)`;
+            }
+        });
+        
+        // Update DOM KPIs
+        const activeCount = activeEmployeesSet.size;
+        const avgHours = activeCount > 0 ? (totalOTHours / activeCount) : 0;
+        
+        document.getElementById('rep-stat-total-hours').textContent = `${totalOTHours.toFixed(1)}h`;
+        document.getElementById('rep-stat-avg-hours').textContent = `${avgHours.toFixed(1)}h`;
+        document.getElementById('rep-stat-active-users').textContent = activeCount.toString();
+        const topTeamEl = document.getElementById('rep-stat-top-team');
+        topTeamEl.textContent = topTeam;
+        topTeamEl.title = topTeam;
+        
+
+
+        // --- 2. Filter list by search query & Calculate Row Data ---
+        let filteredUsers = [...users];
+        if (searchVal) {
+            const query = searchVal.toLowerCase().trim();
+            filteredUsers = filteredUsers.filter(u => u.fullname.toLowerCase().includes(query) || (u.team && u.team.toLowerCase().includes(query)));
+        }
+        
+        const userReportData = filteredUsers.map(u => {
+            const ur = records.filter(r => r.userId === u.id);
+            const days = ur.length;
+            const lunchH = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
+            const eveningH = ur.reduce((s, r) => s + r.eveningOTHours, 0);
+            const totalH = lunchH + eveningH;
+            return { user: u, days, lunchH, eveningH, totalH };
+        });
+        
+        // --- 3. Sorting ---
+        userReportData.sort((a, b) => {
+            let valA, valB;
+            if (reportSortColumn === 'name') {
+                valA = a.user.fullname.toLowerCase();
+                valB = b.user.fullname.toLowerCase();
+            } else if (reportSortColumn === 'days') {
+                valA = a.days;
+                valB = b.days;
+            } else { // 'total'
+                valA = a.totalH;
+                valB = b.totalH;
+            }
+            
+            if (valA < valB) return reportSortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return reportSortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        // Update Sorting Indicators
+        ['name', 'days', 'total'].forEach(col => {
+            const ind = document.getElementById(`sort-ind-${col}`);
+            if (ind) {
+                ind.className = 'sort-indicator';
+                if (reportSortColumn === col) {
+                    ind.classList.add(reportSortOrder);
+                }
+            }
+        });
+
+        // --- 4. Render Table Body ---
+        const tbody = document.getElementById('report-body');
+        if (userReportData.length === 0) {
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Không tìm thấy kết quả phù hợp</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = userReportData.map((data, i) => {
+            const { user: u, days, lunchH, eveningH, totalH } = data;
+            const teamName = u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team');
+
+            return `<tr class="report-row" onclick="toggleReportRow(this, '${u.id}')">
+                <td>${i + 1}</td>
+                <td>
+                    <div class="employee-name-cell">
+                        <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        <strong>${u.fullname}</strong>
+                    </div>
+                </td>
+                <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
+                <td style="text-align: center;">${days} ngày</td>
+                <td style="text-align: center;">${lunchH.toFixed(1)}h</td>
+                <td style="text-align: center;">${eveningH.toFixed(1)}h</td>
+                <td style="text-align: center;"><span class="text-purple text-bold" style="font-size: 13px;">${totalH.toFixed(1)}h</span></td>
+            </tr>`;
+        }).join('');
+        
+        // Vẽ biểu đồ phân tích trực quan
+        try {
+            renderAnalyticsCharts(teamOTs, dailyOTs);
+        } catch (err) {
+            console.error("Lỗi vẽ biểu đồ phân tích:", err);
+        }
+    } catch (e) {
+        console.error('Lỗi khi vẽ báo cáo:', e);
+    }
+}
+
+function renderAnalyticsCharts(teamOTs, dailyOTs) {
+    // 1. Vẽ biểu đồ cột ngang theo Team
+    const teamBarsContainer = document.getElementById('chart-teams-bars');
+    if (teamBarsContainer) {
+        const teamEntries = Object.entries(teamOTs).sort((a, b) => b[1] - a[1]); // Sắp xếp giảm dần
+        const maxHours = teamEntries.length > 0 ? Math.max(...teamEntries.map(e => e[1])) : 0;
+        
+        if (teamEntries.length === 0 || maxHours === 0) {
+            teamBarsContainer.innerHTML = '<div style="text-align: center; color: #71717a; padding: 20px 0; font-size: 0.9rem;">Không có dữ liệu tăng ca</div>';
+        } else {
+            teamBarsContainer.innerHTML = teamEntries.map(([team, hours]) => {
+                const percent = maxHours > 0 ? (hours / maxHours) * 100 : 0;
+                return `
+                    <div class="chart-team-row">
+                        <span class="chart-team-label" title="${team}">${team}</span>
+                        <div class="chart-team-progress-wrapper">
+                            <div class="chart-team-progress" style="width: ${percent}%;"></div>
+                        </div>
+                        <span class="chart-team-value">${hours.toFixed(1)}h</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
+    // 2. Vẽ biểu đồ xu hướng theo ngày của tháng
+    const daysTrendContainer = document.getElementById('chart-days-trend');
+    if (daysTrendContainer) {
+        const dailyEntries = Object.entries(dailyOTs).sort((a, b) => a[0].localeCompare(b[0])); // Ngày tăng dần
+        const maxDailyHours = dailyEntries.length > 0 ? Math.max(...dailyEntries.map(e => e[1])) : 0;
+        
+        if (dailyEntries.length === 0 || maxDailyHours === 0) {
+            daysTrendContainer.innerHTML = '<div style="text-align: center; color: #71717a; width: 100%; font-size: 0.9rem;">Không có dữ liệu biến động</div>';
+        } else {
+            daysTrendContainer.innerHTML = dailyEntries.map(([dateStr, hours]) => {
+                const dayNum = parseInt(dateStr.substring(8, 10));
+                const percent = maxDailyHours > 0 ? (hours / maxDailyHours) * 100 : 0;
+                return `
+                    <div class="chart-day-column">
+                        <div class="chart-day-tooltip">Ngày ${dayNum}: ${hours.toFixed(1)}h</div>
+                        <div class="chart-day-bar" style="--height: ${percent}%;"></div>
+                        <span class="chart-day-label">${dayNum}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+}
+
+function deleteUser(userId) {
+    showModal('Xóa nhân viên', 'Bạn có chắc muốn xóa nhân viên này?<br>Tất cả dữ liệu tăng ca cũng sẽ bị xóa.', [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Xóa', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                await api(`/api/users/${userId}`, 'DELETE');
+                await Promise.all([populateUserFilter(), refreshAdminUsers(), refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+                showToast('Đã xóa nhân viên');
+            } catch (e) { showToast(e.message, 'error'); }
+        }}
+    ]);
+}
+
+function deleteRecord(recordId, source) {
+    showModal('Xóa bản ghi', 'Bạn có chắc muốn xóa bản ghi tăng ca này?', [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Xóa', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                await api(`/api/records/${recordId}`, 'DELETE');
+                if (source === 'admin') {
+                    await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+                } else {
+                    await refreshEmployeeRecords();
+                }
+                showToast('Đã xóa bản ghi');
+            } catch (e) { showToast(e.message, 'error'); }
+        }}
+    ]);
+}
+
+async function approveRecord(recordId) {
+    try {
+        await api(`/api/records/${recordId}`, 'PUT', { status: 'approved' });
+        showToast('Đã duyệt bản ghi tăng ca!');
+        await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function rejectRecord(recordId) {
+    showModal('Từ chối bản ghi', 'Bạn có chắc muốn từ chối bản ghi tăng ca này?', [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Từ chối', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                await api(`/api/records/${recordId}`, 'PUT', { status: 'rejected' });
+                await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+                showToast('Đã từ chối bản ghi');
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+async function exportExcel() {
+    const month = document.getElementById('report-filter-month').value;
+    const parts = month.split('-');
+    const displayMonth = parts.length === 2 ? `${parts[1]}-${parts[0]}` : month;
+    const filterTeam = document.getElementById('report-filter-team') ? document.getElementById('report-filter-team').value : '';
+    try {
+        const usersData = await api('/api/users');
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isAdmin = currentUser && currentUser.username === 'admin';
+        
+        let users = usersData.users;
+        
+        if (isAdmin) {
+            // Filter by selected team
+            if (filterTeam) {
+users = users.filter(u => {
+                    const userTeam = u.team || '';
+                    if (filterTeam === 'unassigned') {
+                        return userTeam === '' || userTeam === 'unassigned';
+                    }
+                    return userTeam === filterTeam;
+                });
+            }
+        } else {
+            // Manager: only export reports of their team and themselves
+            const managerTeam = currentUser ? (currentUser.team || '') : '';
+            users = users.filter(u => u.id === currentUser.id || (u.team && u.team === managerTeam));
+        }
+
+        users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
+
+        const recData = await api(`/api/records?month=${month}`);
+        const records = recData.records.filter(r => {
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            return r.status === 'approved' || (!isBackfill && r.status !== 'pending' && r.status !== 'rejected');
+        });
+
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const exportTime = `${formatDateFull(now)} lúc ${timeStr}`;
+
+        // Khởi tạo workbook mới của ExcelJS
+        const workbook = new ExcelJS.Workbook();
+        
+        // ------------------ SHEET 1: TỔNG HỢP ------------------
+        const wsSummary = workbook.addWorksheet('Tổng Hợp', {
+            views: [{ showGridLines: true }]
+        });
+
+        // 1. Tiêu đề chính
+        wsSummary.mergeCells('A1:G1');
+        const title1 = wsSummary.getCell('A1');
+        title1.value = `BÁO CÁO TĂNG CA - THÁNG ${displayMonth}`;
+        title1.font = { name: 'Times New Roman', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+        title1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } }; // Navy Blue đậm
+        title1.alignment = { vertical: 'middle', horizontal: 'center' };
+        wsSummary.getRow(1).height = 40;
+
+        // 2. Ngày xuất báo cáo
+        wsSummary.mergeCells('A2:G2');
+        const subtitle1 = wsSummary.getCell('A2');
+        subtitle1.value = `Ngày xuất báo cáo: ${exportTime}`;
+        subtitle1.font = { name: 'Times New Roman', size: 10, italic: true, color: { argb: 'FF4B5563' } };
+        subtitle1.alignment = { vertical: 'middle', horizontal: 'center' };
+        wsSummary.getRow(2).height = 20;
+
+        // 3. Dòng trống
+        wsSummary.getRow(3).height = 15;
+
+        // 4. Tiêu đề bảng
+        wsSummary.getCell('A4').value = "I. BẢNG TỔNG HỢP GIỜ TĂNG CA & CHUYẾN ĐI XE";
+        wsSummary.getCell('A4').font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF1F2937' } };
+        wsSummary.getRow(4).height = 22;
+
+        // 5. Headers
+        const headers1 = ["STT", "Họ và tên", "Team", "Mã nhân viên", "Số ngày OT", "Tổng OT (giờ)", "Tổng chuyến xe"];
+        wsSummary.getRow(5).values = headers1;
+        wsSummary.getRow(5).height = 28;
+        wsSummary.getRow(5).font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        
+        for (let col = 1; col <= 7; col++) {
+            const cell = wsSummary.getCell(5, col);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B6CB0' } }; // Medium Navy/Blue
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                left: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                bottom: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                right: { style: 'thin', color: { argb: 'FF9CA3AF' } }
+            };
+        }
+
+        // 6. Dữ liệu nhân viên
+        let summaryStartRow = 6;
+        users.forEach((u, i) => {
+            const ur = records.filter(r => r.userId === u.id);
+            const days = ur.length;
+            const lh = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
+            const eh = ur.reduce((s, r) => s + r.eveningOTHours, 0);
+            const trips = ur.filter(r => r.calcMode === 'trip' || (!r.calcMode && r.deliveryProvince && r.deliveryProvince.trim() !== '')).length;
+
+            const rowNum = summaryStartRow + i;
+            const row = wsSummary.getRow(rowNum);
+            row.values = [
+                i + 1,
+                u.fullname,
+                u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team'),
+                u.username,
+                days,
+                lh + eh,
+                trips
+            ];
+            row.height = 22;
+            row.font = { name: 'Times New Roman', size: 10 };
+
+            for (let col = 1; col <= 7; col++) {
+                const cell = row.getCell(col);
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                };
+
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+                if (col === 1 || col === 5 || col === 7) {
+                    cell.numFmt = '0';
+                } else if (col === 6) {
+                    cell.numFmt = '#,##0.0';
+                }
+            }
+        });
+
+        // Thiết lập bộ lọc tự động cho Summary Sheet
+        wsSummary.autoFilter = 'A5:G' + (summaryStartRow + users.length - 1);
+
+
+
+        // Độ rộng cột
+        wsSummary.columns = [
+            { width: 8 },   // STT
+            { width: 28 },  // Họ và tên
+            { width: 18 },  // Nhóm
+            { width: 16 },  // Mã nhân viên
+            { width: 14 },  // Số ngày OT
+            { width: 18 },  // Tổng OT
+            { width: 18 }   // Tổng chuyến xe
+        ];
+
+        // ------------------ SHEET 2: CHI TIẾT ------------------
+        const wsDetail = workbook.addWorksheet('Chi Tiết', {
+            views: [{ showGridLines: true }]
+        });
+
+        // 1. Tiêu đề chính
+        wsDetail.mergeCells('A1:I1');
+        const title2 = wsDetail.getCell('A1');
+        title2.value = `CHI TIẾT TĂNG CA - THÁNG ${displayMonth}`;
+        title2.font = { name: 'Times New Roman', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+        title2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } }; // Navy Blue đậm
+        title2.alignment = { vertical: 'middle', horizontal: 'center' };
+        wsDetail.getRow(1).height = 40;
+
+        // 2. Ngày xuất báo cáo
+        wsDetail.mergeCells('A2:I2');
+        const subtitle2 = wsDetail.getCell('A2');
+        subtitle2.value = `Ngày xuất báo cáo: ${exportTime}`;
+        subtitle2.font = { name: 'Times New Roman', size: 10, italic: true, color: { argb: 'FF4B5563' } };
+        subtitle2.alignment = { vertical: 'middle', horizontal: 'center' };
+        wsDetail.getRow(2).height = 20;
+
+        // 3. Dòng trống
+        wsDetail.getRow(3).height = 15;
+
+        // 4. Tiêu đề bảng
+        wsDetail.getCell('A4').value = "II. BẢNG CHI TIẾT TĂNG CA TỪNG NGÀY";
+        wsDetail.getCell('A4').font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF1F2937' } };
+        wsDetail.getRow(4).height = 22;
+
+        // 5. Headers
+        const headers2 = ["STT", "Ngày", "Họ và tên", "Team", "Mã nhân viên", "Thời gian OT", "Tổng OT (giờ)", "Hoạt động / Chuyến đi", "Ghi chú"];
+        wsDetail.getRow(5).values = headers2;
+        wsDetail.getRow(5).height = 28;
+        wsDetail.getRow(5).font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        
+        for (let col = 1; col <= 9; col++) {
+            const cell = wsDetail.getCell(5, col);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B6CB0' } }; // Medium Navy/Blue
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                left: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                bottom: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                right: { style: 'thin', color: { argb: 'FF9CA3AF' } }
+            };
+        }
+
+        // 6. Điền dữ liệu chi tiết
+        let currentDetailRow = 6;
+        let detailedIdx = 1;
+        let isFirstUser = true;
+
+        users.forEach(u => {
+            const userRecords = records.filter(r => r.userId === u.id);
+            if (userRecords.length === 0) return;
+            userRecords.sort((a, b) => a.date.localeCompare(b.date));
+
+            // Thêm dòng trống ngăn cách giữa các nhân viên
+            if (!isFirstUser) {
+                wsDetail.addRow([]);
+                wsDetail.getRow(currentDetailRow).height = 14;
+                for (let col = 1; col <= 9; col++) {
+                    const cell = wsDetail.getCell(currentDetailRow, col);
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } }; // Slate 100
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                    };
+                }
+                currentDetailRow++;
+            }
+            isFirstUser = false;
+
+            userRecords.forEach(r => {
+                let timeRange = '—';
+                if (r.hasLunchOT && r.eveningOTHours > 0) {
+                    timeRange = `12:20-13:20, ${r.otStart}-${r.otEnd}`;
+                } else if (r.hasLunchOT) {
+                    timeRange = '12:20-13:20';
+                } else if (r.eveningOTHours > 0) {
+                    timeRange = `${r.otStart}-${r.otEnd}`;
+                }
+
+                let activityVal = '—';
+                if (r.customActivity) {
+                    if (r.calcMode === 'trip') {
+                        activityVal = `${r.customActivity}${r.deliveryProvince ? ': ' + r.deliveryProvince : ''}`;
+                    } else {
+                        activityVal = r.customActivity;
+                    }
+                } else if (r.deliveryProvince && r.deliveryProvince.trim() !== '') {
+                    activityVal = r.deliveryProvince;
+                }
+
+                const row = wsDetail.getRow(currentDetailRow);
+                row.values = [
+                    detailedIdx++,
+                    formatDate(r.date),
+                    u.fullname,
+                    u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team'),
+                    u.username,
+                    timeRange,
+                    r.totalHours,
+                    activityVal,
+                    r.note || '—'
+                ];
+                row.height = 22;
+                row.font = { name: 'Times New Roman', size: 10 };
+
+                for (let col = 1; col <= 9; col++) {
+                    const cell = row.getCell(col);
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                    };
+
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+                    if (col === 1) {
+                        cell.numFmt = '0';
+                    } else if (col === 7) {
+                        cell.numFmt = '#,##0.0';
+                    }
+                }
+                currentDetailRow++;
+            });
+        });
+
+        // 7. Tổng cộng chi tiết
+        if (detailedIdx > 1) {
+            // Áp dụng bộ lọc cho toàn bộ vùng dữ liệu chi tiết (từ dòng 5 đến dòng cuối cùng trước dòng tổng cộng)
+            wsDetail.autoFilter = 'A5:I' + (currentDetailRow - 1);
+        } else {
+            wsDetail.mergeCells(`A${currentDetailRow}:I${currentDetailRow}`);
+            const emptyCell = wsDetail.getCell(`A${currentDetailRow}`);
+            emptyCell.value = "Chưa có dữ liệu chi tiết tăng ca cho tháng này.";
+            emptyCell.alignment = { vertical: 'middle', horizontal: 'center' };
+            wsDetail.getRow(currentDetailRow).height = 30;
+        }
+
+        // Độ rộng cột sheet Chi tiết
+        wsDetail.columns = [
+            { width: 8 },   // STT
+            { width: 14 },  // Ngày
+            { width: 28 },  // Họ và tên
+            { width: 18 },  // Nhóm
+            { width: 16 },  // Mã nhân viên
+            { width: 24 },  // Thời gian OT
+            { width: 16 },  // Tổng OT (giờ)
+            { width: 20 },  // Đi xe (Tỉnh)
+            { width: 35 }   // Ghi chú
+        ];
+
+        // 8. Lưu file Excel
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bao-cao-tang-ca-chi-tiet-${month}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        showToast('Đã xuất file Excel chi tiết có định dạng!');
+    } catch (e) {
+        showToast('Lỗi xuất Excel: ' + e.message, 'error');
+        console.error(e);
+    }
+}
+
+async function handleCloseMonth() {
+    const month = document.getElementById('report-filter-month').value;
+    if (!month) {
+        showToast('Vui lòng chọn tháng cần chốt công!', 'error');
+        return;
+    }
+
+    // Bước 1: Yêu cầu tải báo cáo Excel trước
+    showModal(
+        'Xác nhận Chốt công & Khóa tháng',
+        `<p style="font-size: 14px; line-height: 1.6; color: var(--text-primary);">
+            Hệ thống yêu cầu bạn đã xuất báo cáo Excel lưu trữ về máy tính trước khi thực hiện.<br><br>
+            <strong>Bạn đã tải báo cáo Excel tháng ${month} về chưa?</strong>
+         </p>`,
+        [
+            {
+                text: 'Chưa tải (Tải ngay)',
+                class: 'btn-ghost',
+                action: async () => {
+                    await exportExcel();
+                }
+            },
+            {
+                text: 'Đã tải (Khóa tháng)',
+                class: 'btn-primary',
+                action: () => {
+                    setTimeout(() => {
+                        // Bước 2: Cảnh báo và xác nhận khóa tháng
+                        showModal(
+                            'XÁC NHẬN KHÓA THÁNG',
+                            `<p style="font-size: 14px; line-height: 1.6; color: var(--text-primary);">
+                                Thao tác này sẽ **khóa ghi nhận tăng ca** của tháng ${month}.<br><br>
+                                Sau khi khóa, nhân viên đăng ký OT trong tháng này sẽ phải được **Quản lý phê duyệt** mới được tính.<br><br>
+                                Bạn có chắc chắn muốn khóa tháng ${month}?
+                             </p>`,
+                            [
+                                {
+                                    text: 'Hủy bỏ',
+                                    class: 'btn-ghost',
+                                    action: null
+                                },
+                                {
+                                    text: 'Xác nhận khóa tháng',
+                                    class: 'btn-warning',
+                                    action: async () => {
+                                        try {
+                                            showToast('Đang thực hiện khóa tháng...');
+                                            const res = await api('/api/records/close-month', 'POST', { month });
+                                            showToast('Khóa tháng thành công!');
+                                            await Promise.all([
+                                                refreshAdminRecords(),
+                                                refreshAdminStats(),
+                                                refreshReport()
+                                            ]);
+                                        } catch (err) {
+                                            showToast(err.message, 'error');
+                                        }
+                                    }
+                                }
+                            ]
+                        );
+                    }, 50);
+                }
+            }
+        ]
+    );
+}
+
+async function handleDatabaseCleanup() {
+    const monthInput = document.getElementById('cleanup-month-input');
+    if (!monthInput) return;
+    const month = monthInput.value;
+    if (!month) {
+        showToast('Vui lòng chọn tháng cần dọn dẹp!', 'error');
+        return;
+    }
+
+    // Bước 1: Yêu cầu tải báo cáo Excel trước
+    showModal(
+        'Xác nhận Chốt công & Dọn dẹp',
+        `<p style="font-size: 14px; line-height: 1.6; color: var(--text-primary);">
+            Hệ thống yêu cầu bạn đã xuất báo cáo Excel lưu trữ về máy tính trước khi thực hiện.<br><br>
+            <strong>Bạn đã tải báo cáo Excel tháng ${month} về chưa?</strong>
+         </p>`,
+        [
+            {
+                text: 'Chưa tải (Tải ngay)',
+                class: 'btn-ghost',
+                action: async () => {
+                    const originalFilterVal = document.getElementById('report-filter-month').value;
+                    document.getElementById('report-filter-month').value = month;
+                    await exportExcel();
+                    document.getElementById('report-filter-month').value = originalFilterVal;
+                }
+            },
+            {
+                text: 'Đã tải (Tiếp tục dọn dẹp)',
+                class: 'btn-primary',
+                action: () => {
+                    setTimeout(() => {
+                        // Bước 2: Cảnh báo xóa dữ liệu vĩnh viễn trên Server
+                        showModal(
+                            'CẢNH BÁO QUAN TRỌNG',
+                            `<p style="font-size: 14px; line-height: 1.6; color: var(--accent-red); font-weight: 600;">
+                                CẢNH BÁO: Tất cả dữ liệu tăng ca của tháng ${month} và các tháng cũ hơn sẽ bị xóa sạch khỏi Server.<br><br>
+                                Hệ thống sẽ tự động tạo file sao lưu trên Server và GitHub Gist, tuy nhiên dữ liệu hiển thị hiện tại sẽ bị xóa vĩnh viễn.<br><br>
+                                Thao tác này KHÔNG THỂ HOÀN TÁC! Bạn vẫn muốn tiếp tục?
+                             </p>`,
+                            [
+                                {
+                                    text: 'Hủy bỏ',
+                                    class: 'btn-ghost',
+                                    action: null
+                                },
+                                {
+                                    text: 'Xác nhận xóa dữ liệu',
+                                    class: 'btn-danger',
+                                    action: async () => {
+                                        try {
+                                            showToast('Đang thực hiện dọn dẹp...');
+                                            const res = await api('/api/records/cleanup', 'POST', { month });
+                                            showToast('Dọn dẹp dữ liệu thành công!');
+                                            await Promise.all([
+                                                refreshAdminRecords(),
+                                                refreshAdminStats(),
+                                                refreshReport()
+                                            ]);
+                                        } catch (err) {
+                                            showToast(err.message, 'error');
+                                        }
+                                    }
+                                }
+                            ]
+                        );
+                    }, 50);
+                }
+            }
+        ]
+    );
+}
+
+// ==================== EMPLOYEE DASHBOARD ====================
+async function initEmployeeDashboard(user) {
+    document.getElementById('emp-welcome').textContent = `Xin chào, ${user.fullname}`;
+    document.getElementById('emp-date').textContent = formatDateFull(new Date());
+    const todayStr = new Date().toISOString().split('T')[0];
+    document.getElementById('ot-date').value = todayStr;
+    document.getElementById('ot-date').max = todayStr;
+    document.getElementById('emp-filter-month').value = getCurrentMonth();
+    setupEmployeeCustomActivitiesUI();
+    updateOTPreview();
+    await refreshEmployeeRecords();
+}
+
+function updateOTPreview() {
+    const otBackfill = document.getElementById('ot-backfill');
+    const isBackfill = otBackfill ? otBackfill.checked : false;
+    const previewItems = document.getElementById('preview-items');
+    const previewTotal = document.getElementById('preview-total');
+    let items = [];
+    let total = 0;
+
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
+
+    const checkedChk = document.querySelector('.ot-custom-activity-checkbox:checked');
+    if (checkedChk) {
+        customActivity = checkedChk.dataset.actName;
+        calcMode = checkedChk.dataset.actMode;
+        const input = document.querySelector(`.ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+        customDetail = input ? input.value.trim() : '';
+    }
+
+    const hasTrip = calcMode === 'trip' && !!customActivity;
+    const province = customDetail;
+
+    if (isBackfill) {
+        const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
+        if (hoursVal > 0) {
+            items.push({ label: 'Bù tăng ca', value: `${hoursVal.toFixed(1)} giờ` });
+            total = hoursVal;
+        }
+    } else {
+        const hasLunch = document.getElementById('ot-lunch').checked;
+        const otStart = document.getElementById('ot-start').value;
+        const otEnd = document.getElementById('ot-end').value;
+
+        if (hasLunch) {
+            items.push({ label: 'OT Trưa (12:20 - 13:20)', value: `${OT_LUNCH_HOURS} giờ` });
+            total += OT_LUNCH_HOURS;
+        }
+
+        if (otStart && otEnd) {
+            const eveningHours = calculateEveningOT(otStart, otEnd);
+            if (eveningHours > 0) {
+                items.push({ label: `OT Chiều (${otStart} - ${otEnd})`, value: `${eveningHours.toFixed(1)} giờ` });
+                total += eveningHours;
+            }
+        }
+    }
+
+    if (customActivity && calcMode === 'hour') {
+        items.push({ label: 'Hoạt động', value: customActivity });
+    }
+
+    if (hasTrip && province) {
+        items.push({ label: customActivity, value: province });
+    }
+
+    previewItems.innerHTML = items.length === 0
+        ? '<div class="preview-item"><span>Chưa có OT nào được chọn</span></div>'
+        : items.map(i => `<div class="preview-item"><span>${i.label}</span><span class="preview-item-value">${i.value}</span></div>`).join('');
+    previewTotal.textContent = total.toFixed(1);
+
+    // Cập nhật tính bắt buộc của ghi chú
+    const noteEl = document.getElementById('ot-note');
+    if (noteEl) {
+        if (hasTrip && total === 0) {
+            noteEl.required = false;
+            noteEl.placeholder = "Mặc định: " + customActivity + " " + province;
+        } else {
+            noteEl.required = true;
+            noteEl.placeholder = "Lý do tăng ca, phân công công việc...";
+        }
+    }
+}
+
+function updateAdminOTPreview() {
+    const targetSelf = document.getElementById('admin-ot-target-self');
+    const targetEmp = document.getElementById('admin-ot-target-emp');
+    const userSelect = document.getElementById('admin-ot-user');
+    const otDate = document.getElementById('admin-ot-date');
+    const otBackfill = document.getElementById('admin-ot-backfill');
+    const backfillHours = document.getElementById('admin-ot-backfill-hours');
+    const otLunch = document.getElementById('admin-ot-lunch');
+    const otStart = document.getElementById('admin-ot-start');
+    const otEnd = document.getElementById('admin-ot-end');
+    const otNote = document.getElementById('admin-ot-note');
+
+    // Element bindings
+    const ticketTarget = document.getElementById('preview-ticket-target');
+    const ticketDate = document.getElementById('preview-ticket-date');
+    const ticketLunch = document.getElementById('preview-ticket-lunch');
+    const ticketEvening = document.getElementById('preview-ticket-evening');
+    const ticketTotal = document.getElementById('preview-ticket-total');
+    const ticketNote = document.getElementById('preview-ticket-note');
+
+    if (!ticketTarget) return; // not rendered yet
+
+    // 1. Target
+    if (targetSelf && targetSelf.checked) {
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || '{}');
+        ticketTarget.innerHTML = `<span class="badge badge-admin" style="font-size: 10px;">Cá nhân</span> <strong>${currentUser.fullname || 'Quản lý'}</strong>`;
+    } else if (targetEmp && targetEmp.checked && userSelect) {
+        const selectedText = userSelect.options[userSelect.selectedIndex]?.text || '';
+        ticketTarget.innerHTML = `<span class="badge badge-employee" style="font-size: 10px;">Nhân viên</span> <strong>${selectedText.replace(/^[^-]+-\s*/, '') || 'Chưa chọn'}</strong>`;
+    }
+
+    // 2. Date
+    if (otDate && otDate.value) {
+        const d = new Date(otDate.value);
+        if (!isNaN(d.getTime())) {
+            const formatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            ticketDate.textContent = formatted;
+        } else {
+            ticketDate.textContent = '-';
+        }
+    } else {
+        ticketDate.textContent = 'Chưa chọn ngày';
+    }
+
+    // 3. Custom Activity
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
+
+    const checkedChk = document.querySelector('.admin-ot-custom-activity-checkbox:checked');
+    if (checkedChk) {
+        customActivity = checkedChk.dataset.actName;
+        calcMode = checkedChk.dataset.actMode;
+        const input = document.querySelector(`.admin-ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+        customDetail = input ? input.value.trim() : '';
+    }
+
+    const ticketActGroup = document.getElementById('preview-ticket-activity-group');
+    const ticketActLabel = document.getElementById('preview-ticket-activity-label');
+    const ticketActValue = document.getElementById('preview-ticket-activity');
+
+    if (ticketActGroup && ticketActLabel && ticketActValue) {
+        if (customActivity) {
+            ticketActGroup.style.display = 'flex';
+            ticketActLabel.textContent = customActivity;
+            if (calcMode === 'trip') {
+                ticketActValue.textContent = customDetail || 'Chưa nhập chi tiết';
+            } else {
+                ticketActValue.innerHTML = `<span class="preview-active-badge">✓ Đăng ký</span>`;
+            }
+        } else {
+            ticketActGroup.style.display = 'none';
+        }
+    }
+
+    const hasTrip = calcMode === 'trip' && !!customActivity;
+    const province = customDetail;
+
+    // 4. Lunch, Evening and Total Hours
+    let total = 0;
+    const isBackfill = otBackfill && otBackfill.checked;
+
+    if (isBackfill) {
+        const hours = parseFloat(backfillHours?.value) || 0;
+        ticketLunch.textContent = '-';
+        ticketEvening.textContent = `Bù tăng ca: ${hours.toFixed(1)} giờ`;
+        total = hours;
+    } else {
+        // Lunch
+        if (otLunch && otLunch.checked) {
+            ticketLunch.innerHTML = `<span class="preview-active-badge">✓ Đăng ký</span> (${OT_LUNCH_HOURS} giờ)`;
+            total += OT_LUNCH_HOURS;
+        } else {
+            ticketLunch.textContent = 'Không đăng ký';
+        }
+
+        // Evening
+        if (otStart && otEnd && otStart.value && otEnd.value) {
+            const eveningHours = calculateEveningOT(otStart.value, otEnd.value);
+            if (eveningHours > 0) {
+                ticketEvening.innerHTML = `<span class="preview-active-badge">✓ ${otStart.value} - ${otEnd.value}</span> (${eveningHours.toFixed(1)} giờ)`;
+                total += eveningHours;
+            } else {
+                ticketEvening.textContent = 'Không đăng ký';
+            }
+        } else {
+            ticketEvening.textContent = 'Không đăng ký';
+        }
+    }
+
+    // Total
+    ticketTotal.textContent = `${total.toFixed(1)} giờ`;
+
+    // Cập nhật tính bắt buộc của ghi chú cho Admin
+    if (otNote) {
+        if (hasTrip && total === 0) {
+            otNote.required = false;
+            otNote.placeholder = "Mặc định: " + customActivity + " " + province;
+        } else {
+            otNote.required = true;
+            otNote.placeholder = "Lý do tăng ca, phân công công việc...";
+        }
+    }
+
+    // Note
+    if (otNote && otNote.value.trim()) {
+        ticketNote.textContent = otNote.value.trim();
+    } else if (hasTrip && total === 0) {
+        ticketNote.textContent = "Mặc định: " + customActivity + " " + province;
+    } else {
+        ticketNote.textContent = 'Chưa có ghi chú...';
+    }
+}
+
+async function handleOTSubmit(e) {
+    e.preventDefault();
+    const user = JSON.parse(localStorage.getItem('ot_current_user'));
+    if (!user) return;
+
+    const date = document.getElementById('ot-date').value;
+    const otBackfill = document.getElementById('ot-backfill');
+    const isBackfill = otBackfill ? otBackfill.checked : false;
+    const hasLunch = isBackfill ? false : document.getElementById('ot-lunch').checked;
+    const otStart = document.getElementById('ot-start').value;
+    const otEnd = document.getElementById('ot-end').value;
+    let note = document.getElementById('ot-note').value.trim();
+    const errorEl = document.getElementById('ot-error');
+    const successEl = document.getElementById('ot-success');
+    errorEl.textContent = '';
+    successEl.textContent = '';
+
+    if (!date) { errorEl.textContent = 'Vui lòng chọn ngày!'; return; }
+
+    const todayStr = new Date(Date.now() + 7 * 3600000).toISOString().split('T')[0];
+    const currentMonth = todayStr.substring(0, 7);
+    const selectedMonth = date.substring(0, 7);
+    if (selectedMonth < currentMonth && !isBackfill) {
+        errorEl.textContent = 'Để chọn ngày thuộc tháng cũ, vui lòng tích chọn "Bù tăng ca"!';
+        return;
+    }
+
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
+
+    const checkedChk = document.querySelector('.ot-custom-activity-checkbox:checked');
+    if (checkedChk) {
+        customActivity = checkedChk.dataset.actName;
+        calcMode = checkedChk.dataset.actMode;
+        const input = document.querySelector(`.ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+        customDetail = input ? input.value.trim() : '';
+    }
+
+    const hasTrip = calcMode === 'trip' && !!customActivity;
+    const province = customDetail;
+
+    if (hasTrip && !province) {
+        let detailLabel = 'chi tiết';
+        const userTeam = user.team || '';
+        const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+        const actObj = teamObj?.customActivities?.find(a => a.name === customActivity);
+        if (actObj && actObj.detailLabel) detailLabel = actObj.detailLabel;
+        errorEl.textContent = `Vui lòng nhập ${detailLabel.toLowerCase()}!`;
+        return;
+    }
+
+    let eveningHours = 0;
+    let totalHours = 0;
+
+    if (isBackfill) {
+        const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
+        if (hoursVal <= 0) { errorEl.textContent = 'Vui lòng nhập số giờ bù hợp lệ!'; return; }
+        totalHours = hoursVal;
+        eveningHours = hoursVal;
+        note = '[BÙ THÁNG TRƯỚC] ' + note;
+    } else {
+        eveningHours = calculateEveningOT(otStart, otEnd);
+        const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
+        totalHours = lunchHours + eveningHours;
+        if (totalHours <= 0 && !hasTrip) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT hoặc hoạt động ngoài giờ!'; return; }
+    }
+
+    if (hasTrip && totalHours === 0 && !note) {
+        note = customActivity + ' ' + province;
+    } else if (!note) {
+        errorEl.textContent = 'Vui lòng nhập ghi chú!';
+        return;
+    }
+
+    try {
+        const data = await api('/api/records', 'POST', {
+            userId: user.id, date, hasLunchOT: isBackfill ? false : hasLunch,
+            otStart: (!isBackfill && eveningHours > 0) ? otStart : '',
+            otEnd: (!isBackfill && eveningHours > 0) ? otEnd : '',
+            eveningOTHours: eveningHours, totalHours, note, isBackfill,
+            deliveryProvince: hasTrip ? province : '',
+            customActivity,
+            calcMode,
+            createdMonth: isBackfill ? getCurrentMonth() : date.substring(0, 7)
+        });
+
+        const action = data.updated ? 'Đã cập nhật' : 'Đã lưu';
+        successEl.textContent = `${action} ${totalHours.toFixed(1)} giờ tăng ca!`;
+        showToast(`${action} ${totalHours.toFixed(1)} giờ tăng ca`);
+
+        if (otBackfill) otBackfill.checked = false;
+        const normalInputs = document.getElementById('ot-normal-inputs');
+        const backfillGroup = document.getElementById('ot-backfill-hours-group');
+        if (normalInputs) normalInputs.style.display = 'block';
+        if (backfillGroup) backfillGroup.style.display = 'none';
+        const backfillHoursEl = document.getElementById('ot-backfill-hours');
+        if (backfillHoursEl) backfillHoursEl.value = '';
+
+        document.getElementById('ot-lunch').checked = false;
+        document.getElementById('ot-start').value = '16:30';
+        document.getElementById('ot-end').value = '16:30';
+        document.getElementById('ot-note').value = '';
+        
+        document.querySelectorAll('.ot-custom-activity-checkbox').forEach(chk => {
+            chk.checked = false;
+        });
+        document.querySelectorAll('.ot-custom-activity-detail').forEach(input => {
+            input.value = '';
+        });
+        const otCustomActGroup = document.getElementById('ot-custom-activity-group');
+        if (otCustomActGroup) otCustomActGroup.style.display = 'none';
+
+        updateOTPreview();
+        await refreshEmployeeRecords();
+        setTimeout(() => { successEl.textContent = ''; }, 3000);
+    } catch (err) {
+        errorEl.textContent = err.message;
+    }
+}
+
+async function handleAdminOTSubmit(e) {
+    e.preventDefault();
+    const targetSelf = document.getElementById('admin-ot-target-self');
+    let userId = '';
+    if (targetSelf && targetSelf.checked) {
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        userId = currentUser ? currentUser.id : '';
+    } else {
+        userId = document.getElementById('admin-ot-user').value;
+    }
+    const date = document.getElementById('admin-ot-date').value;
+    const adminOtBackfill = document.getElementById('admin-ot-backfill');
+    const isBackfill = adminOtBackfill ? adminOtBackfill.checked : false;
+    const hasLunch = isBackfill ? false : document.getElementById('admin-ot-lunch').checked;
+    const otStart = document.getElementById('admin-ot-start').value;
+    const otEnd = document.getElementById('admin-ot-end').value;
+    let note = document.getElementById('admin-ot-note').value.trim();
+    const errorEl = document.getElementById('admin-ot-error');
+    const successEl = document.getElementById('admin-ot-success');
+    errorEl.textContent = '';
+    successEl.textContent = '';
+
+    if (!userId) { errorEl.textContent = 'Vui lòng chọn nhân viên!'; return; }
+    if (!date) { errorEl.textContent = 'Vui lòng chọn ngày!'; return; }
+
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
+
+    const checkedChk = document.querySelector('.admin-ot-custom-activity-checkbox:checked');
+    if (checkedChk) {
+        customActivity = checkedChk.dataset.actName;
+        calcMode = checkedChk.dataset.actMode;
+        const input = document.querySelector(`.admin-ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+        customDetail = input ? input.value.trim() : '';
+    }
+
+    const hasTrip = calcMode === 'trip' && !!customActivity;
+    const province = customDetail;
+
+    if (hasTrip && !province) {
+        let detailLabel = 'chi tiết';
+        if (userId) {
+            const foundUser = loadedUsers.find(u => u.id === userId);
+            const userTeam = foundUser ? (foundUser.team || '') : '';
+            const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+            const actObj = teamObj?.customActivities?.find(a => a.name === customActivity);
+            if (actObj && actObj.detailLabel) detailLabel = actObj.detailLabel;
+        }
+        errorEl.textContent = `Vui lòng nhập ${detailLabel.toLowerCase()}!`;
+        return;
+    }
+
+    let eveningHours = 0;
+    let totalHours = 0;
+
+    if (isBackfill) {
+        const hoursVal = parseFloat(document.getElementById('admin-ot-backfill-hours').value) || 0;
+        if (hoursVal <= 0) { errorEl.textContent = 'Vui lòng nhập số giờ bù hợp lệ!'; return; }
+        totalHours = hoursVal;
+        eveningHours = hoursVal;
+        note = '[BÙ THÁNG TRƯỚC] ' + note;
+    } else {
+        eveningHours = calculateEveningOT(otStart, otEnd);
+        const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
+        totalHours = lunchHours + eveningHours;
+        if (totalHours <= 0 && !hasTrip) { errorEl.textContent = 'Vui lòng chọn ít nhất một loại OT hoặc hoạt động ngoài giờ!'; return; }
+    }
+
+    if (hasTrip && totalHours === 0 && !note) {
+        note = customActivity + ' ' + province;
+    } else if (!note) {
+        errorEl.textContent = 'Vui lòng nhập ghi chú!';
+        return;
+    }
+
+    try {
+        const data = await api('/api/records', 'POST', {
+            userId, date, hasLunchOT: isBackfill ? false : hasLunch,
+            otStart: (!isBackfill && eveningHours > 0) ? otStart : '',
+            otEnd: (!isBackfill && eveningHours > 0) ? otEnd : '',
+            eveningOTHours: eveningHours, totalHours, note, isBackfill,
+            deliveryProvince: hasTrip ? province : '',
+            customActivity,
+            calcMode,
+            createdMonth: isBackfill ? getCurrentMonth() : date.substring(0, 7)
+        });
+
+        const action = data.updated ? 'Đã cập nhật' : 'Đã lưu';
+        successEl.textContent = `${action} ${totalHours.toFixed(1)} giờ tăng ca thành công!`;
+        showToast(`${action} ${totalHours.toFixed(1)} giờ tăng ca`);
+
+        document.getElementById('admin-ot-user').value = '';
+        if (targetSelf) {
+            targetSelf.checked = true;
+            const event = new Event('change');
+            targetSelf.dispatchEvent(event);
+        }
+        if (adminOtBackfill) adminOtBackfill.checked = false;
+        const normalInputs = document.getElementById('admin-ot-normal-inputs');
+        const backfillGroup = document.getElementById('admin-ot-backfill-hours-group');
+        if (normalInputs) normalInputs.style.display = 'block';
+        if (backfillGroup) backfillGroup.style.display = 'none';
+        const backfillHoursEl = document.getElementById('admin-ot-backfill-hours');
+        if (backfillHoursEl) backfillHoursEl.value = '';
+
+        document.getElementById('admin-ot-lunch').checked = false;
+        document.getElementById('admin-ot-start').value = '16:30';
+        document.getElementById('admin-ot-end').value = '16:30';
+        document.getElementById('admin-ot-note').value = '';
+        
+        document.querySelectorAll('.admin-ot-custom-activity-checkbox').forEach(chk => {
+            chk.checked = false;
+        });
+        document.querySelectorAll('.admin-ot-custom-activity-detail').forEach(input => {
+            input.value = '';
+        });
+        const adminOtCustomActGroup = document.getElementById('admin-ot-custom-activity-group');
+        if (adminOtCustomActGroup) adminOtCustomActGroup.style.display = 'none';
+
+        const todayStr2 = new Date().toISOString().split('T')[0];
+        const adminOtDateEl = document.getElementById('admin-ot-date');
+        if (adminOtDateEl) adminOtDateEl.value = todayStr2;
+
+        updateAdminOTPreview();
+        setTimeout(() => { successEl.textContent = ''; }, 3000);
+        await refreshAdminStats();
+        await refreshAdminRecords();
+        await refreshReport();
+    } catch (err) {
+        errorEl.textContent = err.message;
+    }
+}
+ async function refreshEmployeeRecords() {
+    const user = JSON.parse(localStorage.getItem('ot_current_user'));
+    if (!user) return;
+
+    const month = document.getElementById('emp-filter-month').value;
+    try {
+        const data = await api(`/api/records?userId=${user.id}&month=${month}`);
+        const records = data.records;
+        const tbody = document.getElementById('emp-records-body');
+
+        // Stats calculation (based on all records of this month)
+        let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0;
+        let totalTrips = 0;
+        records.forEach(r => {
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            const isApproved = r.status !== 'pending' && r.status !== 'rejected';
+            
+            if (isApproved) {
+                const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
+                totalLunchOT += lh;
+                totalEveningOT += isBackfill ? 0 : r.eveningOTHours;
+                totalHours += r.totalHours;
+                if (r.deliveryProvince && r.deliveryProvince.trim() !== '') {
+                    totalTrips += 1;
+                }
+            }
+        });
+
+        // Apply Record Type Filter
+        let recordsFiltered = [];
+        if (currentEmpRecType === 'ot') {
+            recordsFiltered = records.filter(r => r.totalHours > 0 || r.isBackfill);
+        } else {
+            recordsFiltered = records.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '');
+        }
+
+        // Set Table Headers dynamically
+        if (tbody && tbody.previousElementSibling) {
+            if (currentEmpRecType === 'ot') {
+                tbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Ngày</th>
+                    <th>OT Trưa</th>
+                    <th>OT Chiều</th>
+                    <th>Giờ BĐ</th>
+                    <th>Giờ KT</th>
+                    <th>Tổng (giờ)</th>
+                    <th>Trạng thái</th>
+                    <th>Ghi chú</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            } else {
+                tbody.previousElementSibling.innerHTML = `<tr>
+                    <th>Ngày</th>
+                    <th>Đi xe (Tỉnh)</th>
+                    <th>Trạng thái</th>
+                    <th>Ghi chú</th>
+                    <th>Thao tác</th>
+                </tr>`;
+            }
+        }
+
+        if (recordsFiltered.length === 0) {
+            const cols = (currentEmpRecType === 'ot') ? 9 : 5;
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Chưa có dữ liệu ${currentEmpRecType === 'ot' ? 'tăng ca' : 'đi xe'}</td></tr>`;
+            const statsCardsEl = document.getElementById('emp-stats-cards');
+            if (statsCardsEl) {
+                statsCardsEl.innerHTML = `
+                    <div class="stat-card stat-card-purple">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value">${records.length}</span>
+                            <span class="stat-label">Số ngày OT</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-orange">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 6v6l4 2"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value">${totalLunchOT.toFixed(1)}h</span>
+                            <span class="stat-label">OT Trưa</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-blue">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value">${totalEveningOT.toFixed(1)}h</span>
+                            <span class="stat-label">OT Chiều</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-green">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value">${totalHours.toFixed(1)}h</span>
+                            <span class="stat-label">Tổng OT</span>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-orange" style="border-left-color: var(--accent-orange);">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1 .4-1 1v10c0 .6.4 1 1 1h2"/>
+                                <circle cx="7" cy="17" r="2"/>
+                                <circle cx="17" cy="17" r="2"/>
+                            </svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value">${totalTrips}</span>
+                            <span class="stat-label">Tổng chuyến xe</span>
+                        </div>
+                    </div>`;
+            }
+            return;
+        }
+
+        tbody.innerHTML = recordsFiltered.map(r => {
+            let badgeClass = 'status-approved';
+            let badgeText = 'Đã duyệt';
+            if (r.status === 'pending') {
+                badgeClass = 'status-pending';
+                badgeText = 'Chờ duyệt';
+            } else if (r.status === 'rejected') {
+                badgeClass = 'status-rejected';
+                badgeText = 'Từ chối';
+            }
+
+            if (currentEmpRecType === 'ot') {
+                return `<tr>
+                    <td>${formatDate(r.date)}</td>
+                    <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
+                    <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+                    <td>${r.otStart || '—'}</td>
+                    <td>${r.otEnd || '—'}</td>
+                    <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
+                    <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
+                    <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                    <td><div class="action-buttons">
+                        <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'employee')" title="Sửa" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'employee')" title="Xóa">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    </div></td>
+                </tr>`;
+            } else {
+                return `<tr>
+                    <td>${formatDate(r.date)}</td>
+                    <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
+                    <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
+                    <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                    <td><div class="action-buttons">
+                        <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'employee')" title="Sửa" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'employee')" title="Xóa">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    </div></td>
+                </tr>`;
+            }
+        }).join('');
+
+        const statsCardsEl = document.getElementById('emp-stats-cards');
+        if (statsCardsEl) {
+            statsCardsEl.innerHTML = `
+                <div class="stat-card stat-card-purple">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">${records.length}</span>
+                        <span class="stat-label">Số ngày OT</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-orange">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">${totalLunchOT.toFixed(1)}h</span>
+                        <span class="stat-label">OT Trưa</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-blue">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">${totalEveningOT.toFixed(1)}h</span>
+                        <span class="stat-label">OT Chiều</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-green">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">${totalHours.toFixed(1)}h</span>
+                        <span class="stat-label">Tổng OT</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-card-orange" style="border-left-color: var(--accent-orange);">
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1 .4-1 1v10c0 .6.4 1 1 1h2"/>
+                            <circle cx="7" cy="17" r="2"/>
+                            <circle cx="17" cy="17" r="2"/>
+                        </svg>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">${totalTrips}</span>
+                        <span class="stat-label">Tổng chuyến xe</span>
+                    </div>
+                </div>`;
+        }
+    } catch (e) {}
+}
+
+// ==================== CLOUD WAKING & SYNC CONFIG ====================
+async function initCloudConfig() {
+    try {
+        if (window.OT_CLOUD_URL) {
+            API_BASE = window.OT_CLOUD_URL;
+        } else {
+            API_BASE = 'https://api.otmanager.id.vn';
+        }
+        if (API_BASE.endsWith('/')) {
+            API_BASE = API_BASE.slice(0, -1);
+        }
+        console.log("[Desktop App] API Base trỏ tới Cloud:", API_BASE);
+
+        if (isElectron) {
+            // Thử kết nối nhanh xem server có đang hoạt động không
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5s timeout cho ping nhanh
+                const res = await fetch(`${API_BASE}/api/server-info`, { 
+                    method: 'GET', 
+                    mode: 'cors',
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                if (res.ok) {
+                    console.log("[Cloud] Server is already awake. Direct entry.");
+                    initSseConnection();
+                    return;
+                }
+            } catch (e) {
+                console.log("[Cloud] Server seems asleep or network slow, showing wakeup loader.");
+            }
+
+            showCloudWakeupOverlay();
+            await wakeupCloudServer();
+        } else {
+            initSseConnection();
+        }
+    } catch (e) {
+        console.error("Lỗi cấu hình kết nối Cloud:", e);
+    }
+}
+
+function showCloudWakeupOverlay() {
+    if (document.getElementById('cloud-wakeup-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'cloud-wakeup-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.backgroundColor = 'rgba(15, 15, 26, 0.95)';
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.zIndex = '99999';
+    overlay.style.color = '#ffffff';
+    overlay.style.fontFamily = 'Inter, sans-serif';
+    overlay.style.transition = 'opacity 0.5s ease';
+
+    overlay.innerHTML = `
+        <div style="text-align: center; max-width: 400px; padding: 20px;">
+            <div style="width: 50px; height: 50px; border: 3px solid rgba(16, 185, 129, 0.2); border-top: 3px solid #10b981; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+            <h3 style="margin-top: 0; color: #10b981; font-size: 1.3rem; margin-bottom: 10px;">Đang kết nối đến hệ thống...</h3>
+            <p style="font-size: 0.9rem; color: #a1a1aa; line-height: 1.5; margin-bottom: 8px;">Hệ thống đang chuẩn bị tài nguyên và thiết lập đường truyền bảo mật.</p>
+            <p style="font-size: 0.8rem; color: #71717a; font-style: italic;">Vui lòng đợi trong giây lát...</p>
+        </div>
+        <style>
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        </style>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function hideCloudWakeupOverlay() {
+    const overlay = document.getElementById('cloud-wakeup-overlay');
+    if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.remove(), 500);
+    }
+}
+
+async function wakeupCloudServer() {
+    let attempts = 0;
+    const maxAttempts = 30; // Thử tối đa 30 lần (~60 giây)
+    
+    while (attempts < maxAttempts) {
+        try {
+            console.log(`[Cloud] Thử kết nối đến Cloud Server (Lần ${attempts + 1})...`);
+            const res = await fetch(`${API_BASE}/api/server-info`, { method: 'GET', mode: 'cors' });
+            if (res.ok) {
+                console.log("[Cloud] Kết nối thành công! Server đã hoạt động.");
+                hideCloudWakeupOverlay();
+                initSseConnection();
+                return true;
+            }
+        } catch (e) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        attempts++;
+    }
+    
+    const overlay = document.getElementById('cloud-wakeup-overlay');
+    if (overlay) {
+        overlay.innerHTML = `
+            <div style="text-align: center; max-width: 400px; padding: 20px;">
+                <div style="font-size: 3rem; margin-bottom: 20px;">⚠️</div>
+                <h3 style="margin-top: 0; color: #ef4444; font-size: 1.3rem; margin-bottom: 10px;">Lỗi Kết Nối</h3>
+                <p style="font-size: 0.9rem; color: #a1a1aa; line-height: 1.5; margin-bottom: 20px;">Không thể kết nối đến Cloud Server. Vui lòng kiểm tra lại kết nối mạng hoặc trạng thái dịch vụ của Render.</p>
+                <div style="display:flex; gap: 10px; justify-content: center;">
+                    <button onclick="window.location.reload()" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-right: 10px;">Thử lại</button>
+                    <button onclick="document.getElementById('cloud-wakeup-overlay').remove()" style="background: #27272a; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Dùng Offline</button>
+                </div>
+            </div>
+        `;
+    }
+    return false;
+}
+
+function compareVersions(v1, v2) {
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+        const p1 = parts1[i] || 0;
+        const p2 = parts2[i] || 0;
+        if (p1 < p2) return -1;
+        if (p1 > p2) return 1;
+    }
+    return 0;
+}
+
+async function checkUpdateManual() {
+    if (!isElectron) return;
+    showToast('Đang kiểm tra bản cập nhật...', 'info');
+    try {
+        const cloudUrl = window.OT_CLOUD_URL || API_BASE;
+
+        if (!cloudUrl) {
+            showModal(
+                'Kiểm tra cập nhật',
+                `<p style="color: var(--text-secondary); line-height: 1.6;">
+                    Ứng dụng đang hoạt động ở chế độ Offline (không kết nối Cloud Server).<br><br>
+                    Để sử dụng tính năng kiểm tra cập nhật, vui lòng cấu hình <strong>serverUrl</strong> (đường dẫn Cloud Server Render) trong file <code>config.json</code> ở thư mục gốc của ứng dụng.
+                </p>`,
+                [{ text: 'Đóng', class: 'btn-ghost' }]
+            );
+            return;
+        }
+
+        // 2. Lấy version hiện tại của ứng dụng local
+        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.4.2';
+        const localBuildTime = window.OT_LOCAL_BUILD_TIME || parseInt(localStorage.getItem('ot_app_build_time')) || 0;
+
+        // 3. Lấy version mới nhất trên Cloud Server
+        const cloudRes = await fetch(`${cloudUrl}/api/version`);
+        const cloudData = await cloudRes.json();
+        const cloudVer = cloudData.version || '1.0.0';
+        const cloudBuildTime = cloudData.buildTime || 0;
+
+        const cmp = compareVersions(localVer, cloudVer);
+        const hasHotfix = cmp === 0 && localBuildTime > 0 && cloudBuildTime > (localBuildTime + 60000); // Có bản vá lỗi mới hơn ít nhất 1 phút
+
+        if (cmp < 0 || hasHotfix) {
+            const checkRes = await fetch(`${cloudUrl}/download/desktop?check=true`);
+            const checkData = await checkRes.json();
+
+            if (checkData.ready) {
+                const title = hasHotfix ? 'Có bản vá lỗi mới!' : 'Có phiên bản mới!';
+                const bodyText = hasHotfix ?
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        Phát hiện bản vá lỗi (hotfix) mới cho phiên bản hiện tại:<br>
+                        • Phiên bản: <strong style="color: var(--accent-green-light);">v${localVer}</strong><br>
+                        • Bản vá mới hơn bản đang cài trên máy.
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        Bạn có muốn tải về và cập nhật bản vá lỗi này ngay không?
+                    </p>` :
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        Phát hiện phiên bản mới của ứng dụng trên hệ thống Cloud:<br>
+                        • Phiên bản hiện tại: <strong style="color: var(--accent-orange);">v${localVer}</strong><br>
+                        • Phiên bản mới nhất: <strong style="color: var(--accent-green-light);">v${cloudVer}</strong>
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        Bạn có muốn tải xuống phiên bản mới nhất ngay trong ứng dụng không?
+                    </p>`;
+
+                showModal(
+                    title,
+                    bodyText,
+                    [
+                        { text: 'Để sau', class: 'btn-ghost' },
+                        { 
+                            text: hasHotfix ? 'Vá lỗi ngay' : 'Tải về ngay', 
+                            class: 'btn btn-primary btn-sm', 
+                            action: async () => {
+                                if (hasHotfix) {
+                                    showToast('Đang tải và áp dụng bản vá nhanh...', 'info');
+                                    try {
+                                        const res = await fetch(`${localServerUrl}/api/apply-hotfix`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ cloudUrl, buildTime: cloudBuildTime })
+                                        });
+                                        const result = await res.json();
+                                        if (result.success) {
+                                            showToast('Đã áp dụng bản vá thành công! Đang tự khởi động lại...', 'success');
+                                            setTimeout(() => {
+                                                window.location.reload();
+                                            }, 1500);
+                                        } else {
+                                            throw new Error(result.message || 'Lỗi không xác định');
+                                        }
+                                    } catch (err) {
+                                        showToast(`Lỗi khi vá: ${err.message}. Đang mở link tải thủ công...`, 'error');
+                                        window.open(`${cloudUrl}/desktop/app.js`, '_blank');
+                                    }
+                                } else {
+                                    const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
+                                    try {
+                                        showToast('Đang chuẩn bị tải bản cập nhật...', 'info');
+                                        const res = await fetch(`${localServerUrl}/api/trigger-update`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ downloadUrl, version: cloudVer })
+                                        });
+                                        if (!res.ok) {
+                                            const errData = await res.json().catch(() => ({}));
+                                            throw new Error(errData.message || `HTTP ${res.status}`);
+                                        }
+                                        showToast('Bắt đầu tải xuống bản cập nhật!', 'success');
+                                    } catch (e) {
+                                        console.error('Lỗi khi kích hoạt cập nhật:', e);
+                                        showToast('Không thể tự động tải xuống. Đang mở trình duyệt để tải...', 'warning');
+                                        window.open(downloadUrl, '_blank');
+                                    }
+                                }
+                            } 
+                        }
+                    ]
+                );
+            } else {
+                showModal(
+                    'Bản cập nhật chưa sẵn sàng',
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        Phiên bản <strong style="color: var(--accent-green-light);">v${cloudVer}</strong> đã được phát hành nhưng file cài đặt (.exe) chưa sẵn sàng để tải.<br><br>
+                        • Phiên bản hiện tại: <strong>v${localVer}</strong>
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        File bộ cài đặt (.exe) có thể chưa được upload lên GitHub Releases. Vui lòng thử lại sau hoặc mở GitHub Releases để kiểm tra.
+                    </p>`,
+                    [
+                        { text: 'Đóng', class: 'btn-ghost' },
+                        { 
+                            text: 'Mở GitHub Releases', 
+                            class: 'btn btn-primary btn-sm', 
+                            action: () => {
+                                window.open('https://github.com/hieuto706-max/OT/releases', '_blank');
+                            } 
+                        }
+                    ]
+                );
+            }
+        } else {
+            showModal(
+                'Kiểm tra cập nhật',
+                `<p style="color: var(--accent-green-light); font-weight: 600; font-size: 15px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    ✓ Bạn đang dùng phiên bản mới nhất
+                </p>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    • Phiên bản hiện tại: <strong>v${localVer}</strong><br>
+                    Ứng dụng của bạn hoàn toàn tương thích và đã được cập nhật đầy đủ.
+                </p>`,
+                [{ text: 'Đóng', class: 'btn-ghost' }]
+            );
+        }
+    } catch (err) {
+        showToast('Không thể kết nối đến Cloud Server. Máy chủ đám mây có thể đang khởi động (mất khoảng 1 phút) hoặc tạm ngưng hoạt động. Vui lòng thử lại sau!', 'error');
+        console.error('Lỗi check cập nhật:', err);
+    }
+}
+
+async function checkUpdateSilent() {
+    if (!isElectron) return;
+    try {
+        const cloudUrl = window.OT_CLOUD_URL || API_BASE;
+        if (!cloudUrl) return;
+
+        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.4.2';
+        const localBuildTime = window.OT_LOCAL_BUILD_TIME || parseInt(localStorage.getItem('ot_app_build_time')) || 0;
+
+        const cloudRes = await fetch(`${cloudUrl}/api/version`);
+        const cloudData = await cloudRes.json();
+        const cloudVer = cloudData.version || '1.0.0';
+        const cloudBuildTime = cloudData.buildTime || 0;
+
+        const cmp = compareVersions(localVer, cloudVer);
+        const hasHotfix = cmp === 0 && localBuildTime > 0 && cloudBuildTime > (localBuildTime + 60000); // Có bản vá lỗi mới hơn ít nhất 1 phút
+
+        if (cmp < 0 || hasHotfix) {
+            const checkRes = await fetch(`${cloudUrl}/download/desktop?check=true`);
+            const checkData = await checkRes.json();
+
+            if (checkData.ready) {
+                const title = hasHotfix ? 'Có bản vá lỗi mới!' : 'Có phiên bản mới!';
+                const bodyText = hasHotfix ?
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        Phát hiện bản vá lỗi (hotfix) mới cho phiên bản hiện tại:<br>
+                        • Phiên bản: <strong style="color: var(--accent-green-light);">v${localVer}</strong><br>
+                        • Bản vá mới hơn bản đang cài trên máy.
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        Bạn có muốn tải về và cập nhật bản vá lỗi này ngay không?
+                    </p>` :
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        Phát hiện phiên bản mới của ứng dụng trên hệ thống Cloud:<br>
+                        • Phiên bản hiện tại: <strong style="color: var(--accent-orange);">v${localVer}</strong><br>
+                        • Phiên bản mới nhất: <strong style="color: var(--accent-green-light);">v${cloudVer}</strong>
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        Bạn có muốn tải xuống phiên bản mới nhất ngay trong ứng dụng không?
+                    </p>`;
+
+                showModal(
+                    title,
+                    bodyText,
+                    [
+                        { text: 'Để sau', class: 'btn-ghost' },
+                        { 
+                            text: hasHotfix ? 'Vá lỗi ngay' : 'Tải về ngay', 
+                            class: 'btn btn-primary btn-sm', 
+                            action: async () => {
+                                if (hasHotfix) {
+                                    showToast('Đang tải và áp dụng bản vá nhanh...', 'info');
+                                    try {
+                                        const res = await fetch(`${localServerUrl}/api/apply-hotfix`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ cloudUrl, buildTime: cloudBuildTime })
+                                        });
+                                        const result = await res.json();
+                                        if (result.success) {
+                                            showToast('Đã áp dụng bản vá thành công! Đang tự khởi động lại...', 'success');
+                                            setTimeout(() => {
+                                                window.location.reload();
+                                            }, 1500);
+                                        } else {
+                                            throw new Error(result.message || 'Lỗi không xác định');
+                                        }
+                                    } catch (err) {
+                                        showToast(`Lỗi khi vá: ${err.message}. Đang mở link tải thủ công...`, 'error');
+                                        window.open(`${cloudUrl}/desktop/app.js`, '_blank');
+                                    }
+                                } else {
+                                    const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
+                                    try {
+                                        showToast('Đang chuẩn bị tải bản cập nhật...', 'info');
+                                        const res = await fetch(`${localServerUrl}/api/trigger-update`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ downloadUrl, version: cloudVer })
+                                        });
+                                        if (!res.ok) {
+                                            const errData = await res.json().catch(() => ({}));
+                                            throw new Error(errData.message || `HTTP ${res.status}`);
+                                        }
+                                        showToast('Bắt đầu tải xuống bản cập nhật!', 'success');
+                                    } catch (e) {
+                                        console.error('Lỗi khi kích hoạt cập nhật:', e);
+                                        showToast('Không thể tự động tải xuống. Đang mở trình duyệt để tải...', 'warning');
+                                        window.open(downloadUrl, '_blank');
+                                    }
+                                }
+                            } 
+                        }
+                    ]
+                );
+            } else {
+                showModal(
+                    'Bản cập nhật chưa sẵn sàng',
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        Phiên bản <strong style="color: var(--accent-green-light);">v${cloudVer}</strong> đã được phát hành nhưng file cài đặt (.exe) chưa sẵn sàng để tải.<br><br>
+                        • Phiên bản hiện tại: <strong>v${localVer}</strong>
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        File bộ cài đặt (.exe) có thể chưa được upload lên GitHub Releases. Vui lòng thử lại sau hoặc mở GitHub Releases để kiểm tra.
+                    </p>`,
+                    [
+                        { text: 'Đóng', class: 'btn-ghost' },
+                        { 
+                            text: 'Mở GitHub Releases', 
+                            class: 'btn btn-primary btn-sm', 
+                            action: () => {
+                                window.open('https://github.com/hieuto706-max/OT/releases', '_blank');
+                            } 
+                        }
+                    ]
+                );
+            }
+        }
+    } catch (err) {
+        console.error('Lỗi check cập nhật ngầm:', err);
+    }
+}
+
+// ==================== EVENT LISTENERS ====================
+document.addEventListener('DOMContentLoaded', () => {
+    if (!isElectron) {
+        document.body.classList.add('is-web-browser');
+    }
+
+    // Admin record type tab selector click handlers
+    const btnAdminRecTypeOt = document.getElementById('btn-admin-rec-type-ot');
+    const btnAdminRecTypeTrips = document.getElementById('btn-admin-rec-type-trips');
+    if (btnAdminRecTypeOt && btnAdminRecTypeTrips) {
+        btnAdminRecTypeOt.addEventListener('click', () => {
+            currentAdminRecType = 'ot';
+            btnAdminRecTypeOt.classList.remove('btn-ghost');
+            btnAdminRecTypeOt.classList.add('btn-primary');
+            btnAdminRecTypeTrips.classList.remove('btn-primary');
+            btnAdminRecTypeTrips.classList.add('btn-ghost');
+            refreshAdminRecords();
+        });
+        btnAdminRecTypeTrips.addEventListener('click', () => {
+            currentAdminRecType = 'trips';
+            btnAdminRecTypeTrips.classList.remove('btn-ghost');
+            btnAdminRecTypeTrips.classList.add('btn-primary');
+            btnAdminRecTypeOt.classList.remove('btn-primary');
+            btnAdminRecTypeOt.classList.add('btn-ghost');
+            refreshAdminRecords();
+        });
+    }
+
+    // Employee record type tab selector click handlers
+    const btnEmpRecTypeOt = document.getElementById('btn-emp-rec-type-ot');
+    const btnEmpRecTypeTrips = document.getElementById('btn-emp-rec-type-trips');
+    if (btnEmpRecTypeOt && btnEmpRecTypeTrips) {
+        btnEmpRecTypeOt.addEventListener('click', () => {
+            currentEmpRecType = 'ot';
+            btnEmpRecTypeOt.classList.remove('btn-ghost');
+            btnEmpRecTypeOt.classList.add('btn-primary');
+            btnEmpRecTypeTrips.classList.remove('btn-primary');
+            btnEmpRecTypeTrips.classList.add('btn-ghost');
+            refreshEmployeeRecords();
+        });
+        btnEmpRecTypeTrips.addEventListener('click', () => {
+            currentEmpRecType = 'trips';
+            btnEmpRecTypeTrips.classList.remove('btn-ghost');
+            btnEmpRecTypeTrips.classList.add('btn-primary');
+            btnEmpRecTypeOt.classList.remove('btn-primary');
+            btnEmpRecTypeOt.classList.add('btn-ghost');
+            refreshEmployeeRecords();
+        });
+    }
+    const otDateEl = document.getElementById('ot-date');
+    if (otDateEl) otDateEl.max = new Date().toISOString().split('T')[0];
+
+    // Populate provinces-datalist
+    const provincesDatalist = document.getElementById('provinces-datalist');
+    if (provincesDatalist) {
+        provincesDatalist.innerHTML = PROVINCES.map(p => `<option value="${p}"></option>`).join('');
+    }
+
+    // Bind change/input listeners for Employee trip fields
+    const otHasTrip = document.getElementById('ot-has-trip');
+    const otProvinceGroup = document.getElementById('ot-province-group');
+    const otProvinceInput = document.getElementById('ot-province');
+    if (otHasTrip) {
+        otHasTrip.addEventListener('change', function() {
+            if (this.checked) {
+                if (otProvinceGroup) otProvinceGroup.style.display = 'block';
+                if (otProvinceInput) otProvinceInput.required = true;
+            } else {
+                if (otProvinceGroup) otProvinceGroup.style.display = 'none';
+                if (otProvinceInput) {
+                    otProvinceInput.required = false;
+                    otProvinceInput.value = '';
+                }
+            }
+            updateOTPreview();
+        });
+    }
+    if (otProvinceInput) {
+        otProvinceInput.addEventListener('input', updateOTPreview);
+        otProvinceInput.addEventListener('change', updateOTPreview);
+    }
+
+    // Bind change/input listeners for Admin trip fields
+    const adminOtHasTrip = document.getElementById('admin-ot-has-trip');
+    const adminOtProvinceGroup = document.getElementById('admin-ot-province-group');
+    const adminOtProvinceInput = document.getElementById('admin-ot-province');
+    if (adminOtHasTrip) {
+        adminOtHasTrip.addEventListener('change', function() {
+            if (this.checked) {
+                if (adminOtProvinceGroup) adminOtProvinceGroup.style.display = 'block';
+                if (adminOtProvinceInput) adminOtProvinceInput.required = true;
+            } else {
+                if (adminOtProvinceGroup) adminOtProvinceGroup.style.display = 'none';
+                if (adminOtProvinceInput) {
+                    adminOtProvinceInput.required = false;
+                    adminOtProvinceInput.value = '';
+                }
+            }
+            updateAdminOTPreview();
+        });
+    }
+    if (adminOtProvinceInput) {
+        adminOtProvinceInput.addEventListener('input', updateAdminOTPreview);
+        adminOtProvinceInput.addEventListener('change', updateAdminOTPreview);
+    }
+
+    // Hide check update button on Web (non-Electron)
+    const btnCheckUpdate = document.getElementById('btn-check-update');
+    if (btnCheckUpdate) {
+        if (!isElectron) {
+            btnCheckUpdate.style.display = 'none';
+        } else {
+            btnCheckUpdate.style.display = 'flex';
+        }
+    }
+
+    if (isElectron) {
+        // Tự động kiểm tra cập nhật ngầm khi khởi động
+        checkUpdateSilent();
+        // Định kỳ mỗi 30 phút kiểm tra cập nhật một lần
+        setInterval(checkUpdateSilent, 30 * 60 * 1000);
+    }
+
+    // Kiểm tra qua 00h (đăng nhập ngày mới)
+    checkMidnightLogout();
+
+    // Thêm lắng nghe sự kiện focus cửa sổ để kiểm tra qua 00h
+    window.addEventListener('focus', checkMidnightLogout);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            checkMidnightLogout();
+        }
+    });
+
+    // Hàm khởi chạy bất đồng bộ để cấu hình Cloud, check version và tải dữ liệu dashboard
+    async function runAsyncInit() {
+        // 1. Cấu hình và đồng bộ hóa Cloud Server trước khi tải trang dashboard
+        await initCloudConfig();
+
+        // 2. Kiểm tra phiên bản và trạng thái session để quyết định tự động đăng nhập
+        try {
+            const versionRes = await fetch(`${localServerUrl}/api/version`);
+            const versionData = await versionRes.json();
+            const currentVersion = versionData.version || '1.0.0';
+
+            const verEl = document.getElementById('login-version');
+            if (verEl) {
+                const valEl = verEl.querySelector('.login-ver-val');
+                if (valEl) {
+                    valEl.textContent = 'v' + currentVersion;
+                } else {
+                    verEl.textContent = 'Phiên bản v' + currentVersion;
+                }
+            }
+
+            const storedVersion = localStorage.getItem('ot_app_version');
+            const isSessionActive = sessionStorage.getItem('ot_session_active');
+
+            // Nếu là phiên làm việc mới (app bị tắt hoàn toàn và bật lại)
+            if (isElectron && !isSessionActive) {
+                // Nếu không phải là cập nhật (phiên bản cũ và mới giống nhau)
+                if (storedVersion === currentVersion) {
+                    // Tắt app hoàn toàn và bật lại bản cũ -> bắt đăng nhập lại, dọn sạch session cũ
+                    localStorage.removeItem('ot_current_user');
+                    localStorage.removeItem('ot_login_date');
+                    localStorage.removeItem('ot_mobile_user');
+                    localStorage.removeItem('ot_login_time');
+                    localStorage.removeItem('ot_auth_token');
+                } else {
+                    // Đây là cập nhật phiên bản -> giữ nguyên login, chỉ cập nhật version lưu trữ
+                    localStorage.setItem('ot_app_version', currentVersion);
+                }
+                // Đánh dấu session hiện tại là active
+                sessionStorage.setItem('ot_session_active', 'true');
+            } else if (!isElectron) {
+                // Trên web, chỉ cần cập nhật version lưu trữ, không log out
+                localStorage.setItem('ot_app_version', currentVersion);
+            }
+        } catch (e) {
+            console.error('Lỗi kiểm tra phiên bản:', e);
+            const verEl = document.getElementById('login-version');
+            if (verEl) {
+                const valEl = verEl.querySelector('.login-ver-val');
+                if (valEl) {
+                    valEl.textContent = 'v1.4.2';
+                } else {
+                    verEl.textContent = 'Phiên bản v1.4.2';
+                }
+            }
+        }
+
+        // Force logout after 5 AM check
+        const token = localStorage.getItem('ot_auth_token');
+        if (token) {
+            const parts = token.split('.');
+            if (parts.length === 3) {
+                try {
+                    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+                    if (payload.iat) {
+                        const now = new Date();
+                        const today5AM = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 5, 0, 0, 0);
+                        if (now.getTime() < today5AM.getTime()) {
+                            today5AM.setDate(today5AM.getDate() - 1);
+                        }
+                        if ((payload.iat * 1000) < today5AM.getTime()) {
+                            localStorage.removeItem('ot_auth_token');
+                            localStorage.removeItem('ot_current_user');
+                            window.location.reload();
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    localStorage.removeItem('ot_auth_token');
+                    localStorage.removeItem('ot_current_user');
+                    window.location.reload();
+                    return;
+                }
+            }
+        }
+
+        // Tải dữ liệu dashboard nếu có user đã đăng nhập (Đọc lại sau khi đã dọn dẹp session mới nếu có)
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        if (currentUser) {
+            if (currentUser.role === 'admin') {
+                await initAdminDashboard(currentUser);
+                showScreen('screen-admin');
+            } else {
+                await initEmployeeDashboard(currentUser);
+                showScreen('screen-employee');
+            }
+        }
+
+        // Kết nối SSE để nhận sự kiện thời gian thực
+        initSseConnection();
+    }
+
+    // Chạy các tác vụ Cloud & Data ngầm không làm block giao diện đăng nhập
+    runAsyncInit();
+
+    // Click events for stat cards
+    const cardPendingOt = document.getElementById('stat-card-pending-ot');
+    if (cardPendingOt) {
+        cardPendingOt.addEventListener('click', () => {
+            const recordsTab = document.querySelector('.admin-tab[data-admin-tab="records"]');
+            if (recordsTab) recordsTab.click();
+            const pendingSubTab = document.querySelector('.sub-tab[data-subtab="subtab-content-records-pending"]');
+            if (pendingSubTab) pendingSubTab.click();
+        });
+    }
+
+    const cardPendingUnlinks = document.getElementById('stat-card-pending-unlinks');
+    if (cardPendingUnlinks) {
+        cardPendingUnlinks.addEventListener('click', () => {
+            const usersTab = document.querySelector('.admin-tab[data-admin-tab="users"]');
+            if (usersTab) usersTab.click();
+            const employeesSubTab = document.querySelector('.sub-tab[data-subtab="subtab-content-employees"]');
+            if (employeesSubTab) employeesSubTab.click();
+        });
+    }
+
+    // Login tabs (Nhân viên / Quản lý)
+    const tabEmployeeBtn = document.getElementById('btn-tab-employee');
+    const tabAdminBtn = document.getElementById('btn-tab-admin');
+    const formLoginEmployee = document.getElementById('form-login-employee');
+    const formLoginAdmin = document.getElementById('form-login-admin');
+
+    if (tabEmployeeBtn && tabAdminBtn && formLoginEmployee && formLoginAdmin) {
+        tabEmployeeBtn.addEventListener('click', () => {
+            tabEmployeeBtn.classList.add('active');
+            tabAdminBtn.classList.remove('active');
+            formLoginEmployee.classList.add('active');
+            formLoginAdmin.classList.remove('active');
+            formLoginEmployee.style.display = 'block';
+            formLoginAdmin.style.display = 'none';
+            const errorEl = document.getElementById('login-error-emp');
+            if (errorEl) errorEl.textContent = '';
+        });
+
+        tabAdminBtn.addEventListener('click', () => {
+            tabAdminBtn.classList.add('active');
+            tabEmployeeBtn.classList.remove('active');
+            formLoginAdmin.classList.add('active');
+            formLoginEmployee.classList.remove('active');
+            formLoginAdmin.style.display = 'block';
+            formLoginEmployee.style.display = 'none';
+            const errorEl = document.getElementById('login-error-admin');
+            if (errorEl) errorEl.textContent = '';
+        });
+    }
+
+    // Admin tabs
+    document.querySelectorAll('.admin-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(`admin-tab-${tab.dataset.adminTab}`).classList.add('active');
+        });
+    });
+
+    // Employee tabs
+    document.querySelectorAll('.emp-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.emp-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.emp-tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            const targetContent = document.getElementById(`emp-tab-${tab.dataset.empTab}`);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+        });
+    });
+
+    // Employee tabs
+    document.querySelectorAll('.emp-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.emp-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.emp-tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            const targetContent = document.getElementById(`emp-tab-${tab.dataset.empTab}`);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+        });
+    });
+
+    // User sub-tabs
+    document.querySelectorAll('.sub-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const parent = tab.closest('.panel');
+            parent.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+            parent.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
+            
+            tab.classList.add('active');
+            const target = tab.dataset.subtab;
+            parent.querySelector(`#subtab-content-${target}`).classList.add('active');
+        });
+    });
+
+    // Show/hide password toggle
+    const btnTogglePassword = document.getElementById('btn-toggle-password');
+    const inputPassword = document.getElementById('login-password');
+    if (btnTogglePassword && inputPassword) {
+        btnTogglePassword.addEventListener('click', () => {
+            const isPassword = inputPassword.getAttribute('type') === 'password';
+            inputPassword.setAttribute('type', isPassword ? 'text' : 'password');
+            btnTogglePassword.innerHTML = isPassword 
+                ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                   </svg>`
+                : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                   </svg>`;
+        });
+    }
+
+    // Forms
+    const formEmp = document.getElementById('form-login-employee');
+    if (formEmp) formEmp.addEventListener('submit', handleEmployeeLogin);
+
+    const formAdm = document.getElementById('form-login-admin');
+    if (formAdm) formAdm.addEventListener('submit', handleAdminLogin);
+    document.getElementById('form-ot').addEventListener('submit', handleOTSubmit);
+
+    // Admin Add OT form
+    const adminFormOt = document.getElementById('admin-form-ot');
+    if (adminFormOt) {
+        adminFormOt.addEventListener('submit', handleAdminOTSubmit);
+        const adminOtStart = document.getElementById('admin-ot-start');
+        if (adminOtStart) {
+            const syncAdminOtEnd = () => {
+                const startVal = adminOtStart.value;
+                const endVal = document.getElementById('admin-ot-end').value;
+                if (startVal && endVal) {
+                    const s = timeToMinutes(startVal);
+                    const e = timeToMinutes(endVal);
+                    if (e <= s) {
+                        document.getElementById('admin-ot-end').value = startVal;
+                    }
+                }
+            };
+            adminOtStart.addEventListener('change', syncAdminOtEnd);
+            adminOtStart.addEventListener('input', syncAdminOtEnd);
+        }
+        const adminOtBackfill = document.getElementById('admin-ot-backfill');
+        if (adminOtBackfill) {
+            adminOtBackfill.addEventListener('change', function() {
+                const normalInputs = document.getElementById('admin-ot-normal-inputs');
+                const backfillGroup = document.getElementById('admin-ot-backfill-hours-group');
+                const customActGroup = document.getElementById('admin-ot-custom-activity-group');
+                if (this.checked) {
+                    if (normalInputs) normalInputs.style.display = 'none';
+                    if (backfillGroup) backfillGroup.style.display = 'block';
+                    if (customActGroup) customActGroup.style.display = 'none';
+                    const lunchEl = document.getElementById('admin-ot-lunch');
+                    if (lunchEl) lunchEl.checked = false;
+                    const startEl = document.getElementById('admin-ot-start');
+                    if (startEl) startEl.value = '16:30';
+                    const endEl = document.getElementById('admin-ot-end');
+                    if (endEl) endEl.value = '16:30';
+                } else {
+                    if (normalInputs) normalInputs.style.display = 'block';
+                    if (backfillGroup) backfillGroup.style.display = 'none';
+                    const targetSelf = document.getElementById('admin-ot-target-self');
+                    let userId = '';
+                    if (targetSelf && !targetSelf.checked) {
+                        userId = document.getElementById('admin-ot-user').value;
+                    }
+                    setupAdminCustomActivitiesUI(userId);
+                }
+            });
+        }
+        const adminOtTargetSelf = document.getElementById('admin-ot-target-self');
+        const adminOtTargetEmp = document.getElementById('admin-ot-target-emp');
+        if (adminOtTargetSelf && adminOtTargetEmp) {
+            const userGroup = document.getElementById('admin-ot-user-group');
+            const userSelect = document.getElementById('admin-ot-user');
+            adminOtTargetSelf.addEventListener('change', function() {
+                if (this.checked) {
+                    if (userGroup) userGroup.style.display = 'none';
+                    if (userSelect) {
+                        userSelect.required = false;
+                        userSelect.value = '';
+                    }
+                    setupAdminCustomActivitiesUI('');
+                }
+            });
+            adminOtTargetEmp.addEventListener('change', function() {
+                if (this.checked) {
+                    if (userGroup) userGroup.style.display = 'block';
+                    if (userSelect) {
+                        userSelect.required = true;
+                    }
+                    setupAdminCustomActivitiesUI(userSelect.value);
+                }
+            });
+            if (userSelect) {
+                userSelect.addEventListener('change', function() {
+                    setupAdminCustomActivitiesUI(this.value);
+                });
+            }
+        }
+
+        // Live preview listeners
+        const previewTriggerEls = [
+            'admin-ot-target-self', 'admin-ot-target-emp', 'admin-ot-user',
+            'admin-ot-date', 'admin-ot-backfill', 'admin-ot-backfill-hours',
+            'admin-ot-lunch', 'admin-ot-start', 'admin-ot-end', 'admin-ot-note'
+        ];
+        previewTriggerEls.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', updateAdminOTPreview);
+                el.addEventListener('input', updateAdminOTPreview);
+            }
+        });
+        
+        // Initial preview render call
+        setTimeout(updateAdminOTPreview, 100);
+    }
+
+    // Logout
+    document.getElementById('btn-logout-admin').addEventListener('click', logout);
+    document.getElementById('btn-logout-emp').addEventListener('click', logout);
+
+    // Update Check
+    if (btnCheckUpdate) {
+        btnCheckUpdate.addEventListener('click', checkUpdateManual);
+    }
+
+    // OT Preview
+    document.getElementById('ot-lunch').addEventListener('change', updateOTPreview);
+    document.getElementById('ot-lunch').addEventListener('input', updateOTPreview);
+    document.getElementById('ot-start').addEventListener('change', updateOTPreview);
+    document.getElementById('ot-start').addEventListener('input', updateOTPreview);
+    document.getElementById('ot-end').addEventListener('change', updateOTPreview);
+    document.getElementById('ot-end').addEventListener('input', updateOTPreview);
+
+    const syncOtEnd = () => {
+        const startVal = document.getElementById('ot-start').value;
+        const endVal = document.getElementById('ot-end').value;
+        if (startVal && endVal) {
+            const s = timeToMinutes(startVal);
+            const e = timeToMinutes(endVal);
+            if (e <= s) {
+                document.getElementById('ot-end').value = startVal;
+                updateOTPreview();
+            }
+        }
+    };
+    document.getElementById('ot-start').addEventListener('change', syncOtEnd);
+    document.getElementById('ot-start').addEventListener('input', syncOtEnd);
+
+    const otBackfill = document.getElementById('ot-backfill');
+    if (otBackfill) {
+        otBackfill.addEventListener('change', function() {
+            const normalInputs = document.getElementById('ot-normal-inputs');
+            const backfillGroup = document.getElementById('ot-backfill-hours-group');
+            const customActGroup = document.getElementById('ot-custom-activity-group');
+            if (this.checked) {
+                if (normalInputs) normalInputs.style.display = 'none';
+                if (backfillGroup) backfillGroup.style.display = 'block';
+                if (customActGroup) customActGroup.style.display = 'none';
+                const lunchEl = document.getElementById('ot-lunch');
+                if (lunchEl) lunchEl.checked = false;
+                const startEl = document.getElementById('ot-start');
+                if (startEl) startEl.value = '16:30';
+                const endEl = document.getElementById('ot-end');
+                if (endEl) endEl.value = '16:30';
+            } else {
+                if (normalInputs) normalInputs.style.display = 'block';
+                if (backfillGroup) backfillGroup.style.display = 'none';
+                setupEmployeeCustomActivitiesUI();
+            }
+            updateOTPreview();
+        });
+    }
+    const otBackfillHours = document.getElementById('ot-backfill-hours');
+    if (otBackfillHours) {
+        otBackfillHours.addEventListener('input', updateOTPreview);
+        otBackfillHours.addEventListener('change', updateOTPreview);
+    }
+
+    // Filters
+    document.getElementById('admin-filter-month').addEventListener('change', refreshAdminRecords);
+    const adminFilterDate = document.getElementById('admin-filter-date');
+    if (adminFilterDate) {
+        adminFilterDate.addEventListener('change', refreshAdminRecords);
+    }
+    document.getElementById('admin-filter-user').addEventListener('change', refreshAdminRecords);
+    document.getElementById('admin-search-user').addEventListener('input', refreshAdminRecords);
+    document.getElementById('admin-search-note').addEventListener('input', refreshAdminRecords);
+    document.getElementById('emp-filter-month').addEventListener('change', refreshEmployeeRecords);
+    document.getElementById('report-filter-month').addEventListener('change', refreshReport);
+
+    const adminFilterTeam = document.getElementById('admin-filter-team');
+    if (adminFilterTeam) {
+        adminFilterTeam.addEventListener('change', refreshAdminRecords);
+    }
+    const reportFilterTeam = document.getElementById('report-filter-team');
+    if (reportFilterTeam) {
+        reportFilterTeam.addEventListener('change', refreshReport);
+    }
+
+    const reportSearch = document.getElementById('report-search-name');
+    if (reportSearch) {
+        reportSearch.addEventListener('input', (e) => {
+            reportSearchQuery = e.target.value;
+            refreshReport();
+        });
+    }
+
+    const handleReportSort = (column) => {
+        if (reportSortColumn === column) {
+            reportSortOrder = reportSortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+            reportSortColumn = column;
+            reportSortOrder = 'desc';
+        }
+        refreshReport();
+    };
+
+    const thName = document.getElementById('th-report-name');
+    if (thName) thName.addEventListener('click', () => handleReportSort('name'));
+
+    const thDays = document.getElementById('th-report-days');
+    if (thDays) thDays.addEventListener('click', () => handleReportSort('days'));
+
+    const thTotal = document.getElementById('th-report-total');
+    if (thTotal) thTotal.addEventListener('click', () => handleReportSort('total'));
+
+    // Export & Cleanup
+    document.getElementById('btn-export').addEventListener('click', exportExcel);
+    document.getElementById('btn-close-month').addEventListener('click', handleCloseMonth);
+
+    // Toggle Report Charts
+    const btnToggleCharts = document.getElementById('btn-toggle-charts');
+    const chartsPanel = document.getElementById('charts-panel');
+    if (btnToggleCharts && chartsPanel) {
+        // Restore state on load
+        const savedShowCharts = localStorage.getItem('ot_show_report_charts') === 'true';
+        if (savedShowCharts) {
+            chartsPanel.style.display = 'block';
+            btnToggleCharts.style.backgroundColor = '#10b981';
+            btnToggleCharts.style.borderColor = '#10b981';
+            btnToggleCharts.style.color = '#ffffff';
+        }
+        
+        btnToggleCharts.addEventListener('click', () => {
+            const isHidden = chartsPanel.style.display === 'none' || !chartsPanel.style.display;
+            if (isHidden) {
+                chartsPanel.style.display = 'block';
+                btnToggleCharts.style.backgroundColor = '#10b981';
+                btnToggleCharts.style.borderColor = '#10b981';
+                btnToggleCharts.style.color = '#ffffff';
+                localStorage.setItem('ot_show_report_charts', 'true');
+            } else {
+                chartsPanel.style.display = 'none';
+                btnToggleCharts.style.backgroundColor = '#27272a';
+                btnToggleCharts.style.borderColor = '#3f3f46';
+                btnToggleCharts.style.color = '#e4e4e7';
+                localStorage.setItem('ot_show_report_charts', 'false');
+            }
+        });
+    }
+    const btnCleanupDatabase = document.getElementById('btn-cleanup-database');
+    if (btnCleanupDatabase) {
+        btnCleanupDatabase.addEventListener('click', handleDatabaseCleanup);
+    }
+
+    // Modal
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('modal-overlay').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeModal();
+    });
+
+    // Add User trigger
+    const btnAddUser = document.getElementById('btn-add-user');
+    if (btnAddUser) {
+        btnAddUser.addEventListener('click', addUserDialog);
+    }
+
+    // Team Settings trigger
+    const btnTeamSettings = document.getElementById('btn-team-settings');
+    if (btnTeamSettings) {
+        btnTeamSettings.addEventListener('click', openTeamSettingsModal);
+    }
+
+});
+
+// ==================== DYNAMIC DIALOGS (ADD/EDIT) ====================
+async function editRecordDialog(recordId, source) {
+    try {
+        const data = await api(`/api/records`);
+        const record = data.records.find(r => r.id === recordId);
+        if (!record) return showToast('Không tìm thấy bản ghi', 'error');
+
+        const isBackfill = record.isBackfill || (record.note && (record.note.includes('[BÙ THÁNG TRƯỚC]') || record.note.includes('[TĂNG THÁNG NÀY]')));
+        const cleanedNote = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
+
+        const body = `
+        <form id="modal-form-record" class="login-form active" style="text-align: left; padding: 0;">
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Ngày tăng ca</label>
+                <div class="input-wrapper">
+                    <input type="date" id="modal-rec-date" value="${record.date}" max="${new Date().toISOString().split('T')[0]}" style="padding-left:12px; height:38px; border-radius:8px;" required>
+                </div>
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
+                <input type="checkbox" id="modal-rec-backfill" ${isBackfill ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;">
+                <label for="modal-rec-backfill" style="margin-bottom: 0; cursor: pointer; user-select:none; font-weight:600;">Bù tăng ca</label>
+            </div>
+
+            <!-- Backfill hours input -->
+            <div class="form-group" id="modal-rec-backfill-hours-group" style="display: ${isBackfill ? 'block' : 'none'}; margin-bottom: 15px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Số giờ tăng ca cần bù</label>
+                <input type="number" id="modal-rec-backfill-hours" step="0.1" min="0.1" max="24" value="${isBackfill ? record.totalHours : ''}" placeholder="Nhập số giờ bù (ví dụ: 8.0)" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+            </div>
+
+            <!-- Normal OT inputs -->
+            <div id="modal-rec-normal-inputs" style="display: ${isBackfill ? 'none' : 'block'};">
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
+                    <input type="checkbox" id="modal-rec-lunch" ${record.hasLunchOT ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;">
+                    <label for="modal-rec-lunch" style="margin-bottom: 0; cursor: pointer; user-select:none; font-weight:600;">Tăng ca trưa (12:20 - 13:20)</label>
+                </div>
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;">Bắt đầu OT chiều</label>
+                        <input type="time" id="modal-rec-start" value="${record.otStart || '16:30'}" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;">Kết thúc OT chiều</label>
+                        <input type="time" id="modal-rec-end" value="${record.otEnd || '16:30'}" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trip inputs -->
+            <div class="form-group" style="margin-bottom: 15px; text-align: left;">
+                <label style="display:flex; align-items:center; gap:8px; margin-bottom: 0; cursor: pointer; user-select:none; font-weight:600;">
+                    <input type="checkbox" id="modal-rec-has-trip" ${record.deliveryProvince ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;">
+                    Đi xe tăng cường
+                </label>
+            </div>
+            <div class="form-group" id="modal-rec-province-group" style="display: ${record.deliveryProvince ? 'block' : 'none'}; margin-bottom: 15px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Tỉnh đi xe</label>
+                <input type="text" id="modal-rec-province" list="provinces-datalist" value="${record.deliveryProvince || ''}" placeholder="Nhập để tìm kiếm tỉnh..." class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Ghi chú</label>
+                <textarea id="modal-rec-note" class="input-sm" style="width:100%; height:60px; resize:none; box-sizing:border-box; padding:10px;" ${record.deliveryProvince && record.totalHours === 0 ? '' : 'required'}>${cleanedNote}</textarea>
+            </div>
+        </form>`;
+
+        showModal('Chỉnh sửa tăng ca', body, [
+            { text: 'Hủy', class: 'btn-ghost' },
+            { text: 'Lưu', class: 'btn btn-primary btn-sm', action: async () => {
+                const date = document.getElementById('modal-rec-date').value;
+                const recBackfill = document.getElementById('modal-rec-backfill');
+                const isRecBackfill = recBackfill ? recBackfill.checked : false;
+                const hasLunch = isRecBackfill ? false : (document.getElementById('modal-rec-lunch') ? document.getElementById('modal-rec-lunch').checked : false);
+                const otStart = document.getElementById('modal-rec-start') ? document.getElementById('modal-rec-start').value : '';
+                const otEnd = document.getElementById('modal-rec-end') ? document.getElementById('modal-rec-end').value : '';
+                let note = document.getElementById('modal-rec-note').value.trim();
+
+                if (!date) return showToast('Vui lòng chọn ngày!', 'error');
+
+                const hasTrip = document.getElementById('modal-rec-has-trip')?.checked;
+                const province = document.getElementById('modal-rec-province')?.value.trim() || '';
+
+                if (hasTrip && !province) return showToast('Vui lòng chọn hoặc nhập tỉnh đi xe!', 'error');
+
+                let eveningHours = 0;
+                let totalHours = 0;
+
+                if (isRecBackfill) {
+                    const hoursVal = parseFloat(document.getElementById('modal-rec-backfill-hours').value) || 0;
+                    if (hoursVal <= 0) return showToast('Vui lòng nhập số giờ bù hợp lệ!', 'error');
+                    totalHours = hoursVal;
+                    eveningHours = hoursVal;
+                    note = '[BÙ THÁNG TRƯỚC] ' + note;
+                } else {
+                    eveningHours = calculateEveningOT(otStart, otEnd);
+                    const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
+                    totalHours = lunchHours + eveningHours;
+                    if (totalHours <= 0 && !hasTrip) return showToast('Vui lòng chọn ít nhất một loại OT hoặc đi xe tăng cường!', 'error');
+                }
+
+                if (hasTrip && totalHours === 0 && !note) {
+                    note = 'Đi xe tăng cường ' + province;
+                } else if (!note) {
+                    return showToast('Vui lòng nhập ghi chú!', 'error');
+                }
+
+                try {
+                    await api(`/api/records/${recordId}`, 'PUT', {
+                        date,
+                        hasLunchOT: isRecBackfill ? false : hasLunch,
+                        otStart: (!isRecBackfill && eveningHours > 0) ? otStart : '',
+                        otEnd: (!isRecBackfill && eveningHours > 0) ? otEnd : '',
+                        eveningOTHours: eveningHours,
+                        totalHours,
+                        deliveryProvince: hasTrip ? province : '',
+                        customActivity: record.customActivity || '',
+                        calcMode: record.calcMode || '',
+                        note,
+                        isBackfill: isRecBackfill,
+                        createdMonth: isRecBackfill ? getCurrentMonth() : date.substring(0, 7)
+                    });
+                    showToast('Đã cập nhật bản ghi tăng ca!');
+                    if (source === 'admin') {
+                        await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+                    } else {
+                        await refreshEmployeeRecords();
+                    }
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            }}
+        ]);
+
+        const modalBackfill = document.getElementById('modal-rec-backfill');
+        if (modalBackfill) {
+            modalBackfill.addEventListener('change', function() {
+                const normalInputs = document.getElementById('modal-rec-normal-inputs');
+                const backfillGroup = document.getElementById('modal-rec-backfill-hours-group');
+                if (this.checked) {
+                    if (normalInputs) normalInputs.style.display = 'none';
+                    if (backfillGroup) backfillGroup.style.display = 'block';
+                    const lunchEl = document.getElementById('modal-rec-lunch');
+                    if (lunchEl) lunchEl.checked = false;
+                    const startEl = document.getElementById('modal-rec-start');
+                    if (startEl) startEl.value = '16:30';
+                    const endEl = document.getElementById('modal-rec-end');
+                    if (endEl) endEl.value = '16:30';
+                } else {
+                    if (normalInputs) normalInputs.style.display = 'block';
+                    if (backfillGroup) backfillGroup.style.display = 'none';
+                }
+            });
+        }
+
+        const modalStart = document.getElementById('modal-rec-start');
+        const modalEnd = document.getElementById('modal-rec-end');
+        if (modalStart && modalEnd) {
+            const syncModalEnd = () => {
+                const s = timeToMinutes(modalStart.value);
+                const e = timeToMinutes(modalEnd.value);
+                if (e <= s) {
+                    modalEnd.value = modalStart.value;
+                }
+            };
+            modalStart.addEventListener('change', syncModalEnd);
+            modalStart.addEventListener('input', syncModalEnd);
+        }
+
+        const modalHasTrip = document.getElementById('modal-rec-has-trip');
+        if (modalHasTrip) {
+            modalHasTrip.addEventListener('change', function() {
+                const provGroup = document.getElementById('modal-rec-province-group');
+                const provInput = document.getElementById('modal-rec-province');
+                const noteEl = document.getElementById('modal-rec-note');
+                if (this.checked) {
+                    if (provGroup) provGroup.style.display = 'block';
+                    if (noteEl) {
+                        noteEl.required = false;
+                        noteEl.placeholder = "Mặc định: Đi xe tăng cường...";
+                    }
+                } else {
+                    if (provGroup) provGroup.style.display = 'none';
+                    if (provInput) provInput.value = '';
+                    if (noteEl) {
+                        noteEl.required = true;
+                        noteEl.placeholder = "Lý do tăng ca, phân công công việc...";
+                    }
+                }
+            });
+        }
+    } catch (e) {
+        showToast('Lỗi tải dữ liệu bản ghi', 'error');
+    }
+}
+
+async function addUserDialog() {
+    let admins = [];
+    try {
+        const uData = await api('/api/users');
+        admins = uData.users.filter(u => u.role === 'admin');
+    } catch (e) {
+        console.error('Lỗi lấy danh sách admin:', e);
+    }
+    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+    const isAdmin = currentUser && currentUser.username === 'admin';
+
+    const body = `
+    <form id="modal-form-add-user" class="login-form active" style="text-align: left; padding: 0;">
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">Họ và tên</label>
+            <input type="text" id="modal-user-fullname" placeholder="Nguyễn Văn A" class="input-sm" style="width:100%; box-sizing:border-box;" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">Tên đăng nhập</label>
+            <input type="text" id="modal-user-username" placeholder="Chỉ viết liền, không dấu" class="input-sm" style="width:100%; box-sizing:border-box;" required>
+        </div>
+        <div class="form-group" id="modal-user-password-group" style="margin-bottom: 15px;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">Mật khẩu</label>
+            <input type="password" id="modal-user-password" placeholder="Mật khẩu (bỏ trống đối với nhân viên)" class="input-sm" style="width:100%; box-sizing:border-box;">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">Vai trò</label>
+            <select id="modal-user-role" class="input-sm" style="width:100%; box-sizing:border-box;">
+                <option value="employee">Nhân viên (Điện thoại)</option>
+                <option value="admin">Quản lý (Desktop)</option>
+            </select>
+        </div>
+        <div class="form-group" id="modal-user-manager-group" style="margin-bottom: 0;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">Team</label>
+            <select id="modal-user-team" class="input-sm" style="width:100%; box-sizing:border-box;">
+                <option value="">-- Chưa phân team --</option>
+                ${isAdmin ? '<option value="admin">admin</option>' : ''}
+                ${TEAMS.map(t => {
+                    const name = typeof t === 'string' ? t : (t.name || '');
+                    return `<option value="${name}">${name}</option>`;
+                }).join('')}
+            </select>
+        </div>
+    </form>`;
+
+    showModal('Thêm nhân viên mới', body, [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Thêm', class: 'btn btn-primary btn-sm', action: async () => {
+            const fullname = document.getElementById('modal-user-fullname').value.trim();
+            const username = document.getElementById('modal-user-username').value.trim();
+            const password = document.getElementById('modal-user-password').value;
+            const role = document.getElementById('modal-user-role').value;
+            const team = document.getElementById('modal-user-team') ? document.getElementById('modal-user-team').value : '';
+
+            if (!fullname || !username) return showToast('Vui lòng điền họ tên và tên đăng nhập!', 'error');
+            if (username.length < 3) return showToast('Tên đăng nhập tối thiểu 3 ký tự!', 'error');
+            
+            if (role === 'admin') {
+                if (!password) return showToast('Tài khoản quản lý bắt buộc phải nhập mật khẩu!', 'error');
+                if (password.length < 4) return showToast('Mật khẩu tối thiểu 4 ký tự!', 'error');
+            }
+
+            try {
+                await api('/api/auth/register', 'POST', { fullname, username, password: password || '123', role, team });
+                showToast('Thêm nhân viên thành công!');
+                await Promise.all([populateUserFilter(), refreshAdminUsers(), refreshAdminStats(), refreshReport()]);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }}
+    ]);
+
+    const roleSelect = document.getElementById('modal-user-role');
+    const passwordGroup = document.getElementById('modal-user-password-group');
+    if (roleSelect && passwordGroup) {
+        const togglePassword = () => {
+            if (roleSelect.value === 'employee') {
+                passwordGroup.style.display = 'none';
+                document.getElementById('modal-user-password').value = '';
+            } else {
+                passwordGroup.style.display = 'block';
+            }
+        };
+        roleSelect.addEventListener('change', togglePassword);
+        togglePassword();
+    }
+}
+
+async function editUserDialog(userId) {
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin');
+
+        const data = await api('/api/users');
+        const user = data.users.find(u => u.id === userId);
+        if (!user) return showToast('Không tìm thấy nhân viên', 'error');
+
+        // Phân quyền: chỉ có thuộc team admin mới được chỉnh sửa thông tin admin
+        const targetIsAdmin = user.team === 'admin' || user.username === 'admin';
+        if (targetIsAdmin && !isBelongToAdminTeam) {
+            return showToast('Chỉ có tài khoản thuộc team admin mới được chỉnh sửa thông tin của quản trị viên!', 'error');
+        }
+
+        const body = `
+        <form id="modal-form-edit-user" class="login-form active" style="text-align: left; padding: 0;">
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Họ và tên</label>
+                <input type="text" id="modal-user-fullname" value="${user.fullname}" class="input-sm" style="width:100%; box-sizing:border-box;" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Tên đăng nhập</label>
+                <input type="text" id="modal-user-username" value="${user.username}" class="input-sm" style="width:100%; box-sizing:border-box;" ${user.username === 'admin' ? 'readonly style="background:var(--bg-glass); opacity:0.7; cursor:not-allowed;"' : ''} required>
+            </div>
+            <div class="form-group" id="modal-user-password-group" style="margin-bottom: 15px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Mật khẩu mới (Để trống nếu giữ nguyên)</label>
+                <input type="password" id="modal-user-password" placeholder="Nhập mật khẩu mới nếu muốn đổi" class="input-sm" style="width:100%; box-sizing:border-box;">
+            </div>
+            <div id="modal-edit-user-role-team-group" style="${user.username === 'admin' ? 'display: none;' : ''}">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display:block;margin-bottom:6px;font-weight:600;">Vai trò</label>
+                    <select id="modal-user-role" class="input-sm" style="width:100%; box-sizing:border-box;">
+                        <option value="employee" ${user.role === 'employee' ? 'selected' : ''}>Nhân viên (Điện thoại)</option>
+                        <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Quản lý (Desktop)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="modal-edit-user-manager-group" style="margin-bottom: 0;">
+                    <label style="display:block;margin-bottom:6px;font-weight:600;">Team</label>
+                    <select id="modal-user-team" class="input-sm" style="width:100%; box-sizing:border-box;">
+                        <option value="">-- Chưa phân team --</option>
+                        ${isBelongToAdminTeam ? `<option value="admin" ${user.team === 'admin' ? 'selected' : ''}>admin</option>` : ''}
+                        ${TEAMS.map(t => {
+                            const name = typeof t === 'string' ? t : (t.name || '');
+                            return `<option value="${name}" ${user.team === name ? 'selected' : ''}>${name}</option>`;
+                        }).join('')}
+                    </select>
+                </div>
+            </div>
+        </form>`;
+
+        showModal('Sửa thông tin nhân viên', body, [
+            { text: 'Hủy', class: 'btn-ghost' },
+            { text: 'Lưu', class: 'btn btn-primary btn-sm', action: async () => {
+                const fullname = document.getElementById('modal-user-fullname').value.trim();
+                const username = document.getElementById('modal-user-username').value.trim();
+                const password = document.getElementById('modal-user-password').value;
+                const role = document.getElementById('modal-user-role') ? document.getElementById('modal-user-role').value : user.role;
+                const team = document.getElementById('modal-user-team') ? document.getElementById('modal-user-team').value : user.team;
+
+                if (!fullname || !username) return showToast('Vui lòng điền họ tên và tên đăng nhập!', 'error');
+                if (username.length < 3) return showToast('Tên đăng nhập tối thiểu 3 ký tự!', 'error');
+
+                const payload = { fullname, username, role, team };
+                if (password) {
+                    if (password.length < 4) return showToast('Mật khẩu tối thiểu 4 ký tự!', 'error');
+                    payload.password = password;
+                }
+
+                try {
+                    await api(`/api/users/${userId}`, 'PUT', payload);
+                    showToast('Cập nhật nhân viên thành công!');
+                    await Promise.all([populateUserFilter(), refreshAdminUsers(), refreshAdminRecords(), refreshReport(), refreshAdminStats()]);
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            }}
+        ]);
+
+        const roleSelect = document.getElementById('modal-user-role');
+        const passwordGroup = document.getElementById('modal-user-password-group');
+        if (roleSelect && passwordGroup) {
+            const togglePassword = () => {
+                if (roleSelect.value === 'employee') {
+                    passwordGroup.style.display = 'none';
+                    document.getElementById('modal-user-password').value = '';
+                } else {
+                    passwordGroup.style.display = 'block';
+                }
+            };
+            roleSelect.addEventListener('change', togglePassword);
+            togglePassword();
+        }
+    } catch (e) {
+        showToast('Lỗi tải dữ liệu người dùng', 'error');
+    }
+}
+
+async function resetUserDevice(userId, fullname, type = 'mobile') {
+    const label = type === 'mobile' ? 'App điện thoại' : 'Trình duyệt web';
+    const payload = type === 'mobile' ? { deviceId: null } : { browserDeviceId: null };
+    showModal('Xóa liên kết thiết bị', `Bạn có chắc muốn xóa liên kết <strong>${label}</strong> của nhân viên <strong>${fullname}</strong>?<br>Sau khi xóa, nhân viên này có thể đăng nhập trên thiết bị/trình duyệt mới.`, [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Xóa liên kết', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                await api(`/api/users/${userId}`, 'PUT', payload);
+                await refreshAdminUsers();
+                showToast(`Đã xóa liên kết ${label}!`);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+async function approveUnlinkDevice(userId, fullname) {
+    showModal('Duyệt huỷ liên kết thiết bị', `Bạn có chắc muốn phê duyệt yêu cầu huỷ liên kết thiết bị của nhân viên <strong>${fullname}</strong>?<br>Thao tác này sẽ reset liên kết cả App điện thoại và Trình duyệt, nhân viên sẽ tự động đăng xuất.`, [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Duyệt', class: 'btn btn-primary btn-sm', action: async () => {
+            try {
+                await api(`/api/users/${userId}`, 'PUT', { deviceId: null, browserDeviceId: null, pendingUnlink: false });
+                await refreshAdminUsers();
+                showToast('Đã duyệt yêu cầu huỷ liên kết thiết bị!');
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+
+// ==================== CUSTOM ACTIVITIES UI FOR DESKTOP ====================
+function setupAdminCustomActivitiesUI(userId) {
+    const listContainer = document.getElementById('admin-ot-custom-activities-list');
+    const activityGroup = document.getElementById('admin-ot-custom-activity-group');
+    if (!listContainer) return;
+
+    // Reset container first
+    listContainer.innerHTML = '';
+    
+    // Find the user's team
+    let userTeam = '';
+    if (userId) {
+        const foundUser = loadedUsers.find(u => u.id === userId);
+        userTeam = foundUser ? (foundUser.team || '') : '';
+    } else {
+        // Target is self
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        userTeam = currentUser ? (currentUser.team || '') : '';
+    }
+
+    if (!userTeam || userTeam === 'admin') {
+        if (activityGroup) activityGroup.style.display = 'none';
+        return;
+    }
+
+    // Find the team settings of userTeam in TEAMS
+    const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+    const activities = (teamObj && teamObj.customActivities) ? teamObj.customActivities : [];
+
+    const isBackfillChecked = document.getElementById('admin-ot-backfill')?.checked || false;
+
+    if (activities.length > 0) {
+        if (activityGroup) activityGroup.style.display = isBackfillChecked ? 'none' : 'block';
+
+        listContainer.innerHTML = activities.map(act => `
+            <div class="custom-activity-item toggle-row" style="margin-bottom: 14px; text-align: left;">
+                <label class="toggle-label" for="admin-chk-${act.id}" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                    <span class="toggle-text">
+                        <strong>${act.name}</strong>
+                        <small>Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}</small>
+                    </span>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="admin-chk-${act.id}" class="admin-ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleAdminCustomActivityInput('${act.id}')">
+                        <span class="toggle-slider"></span>
+                    </div>
+                </label>
+                <div class="form-group" id="admin-ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding: 0 4px; margin-bottom: 0;">
+                    <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiết'}</label>
+                    <input type="text" class="admin-ot-custom-activity-detail" data-act-id="${act.id}" placeholder="${act.placeholder || 'Nhập chi tiết...'}" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
+                </div>
+            </div>
+        `).join('');
+
+        // Bind input listeners for new text inputs to update preview dynamically
+        document.querySelectorAll('.admin-ot-custom-activity-detail').forEach(input => {
+            input.addEventListener('input', updateAdminOTPreview);
+        });
+    } else {
+        if (activityGroup) activityGroup.style.display = 'none';
+    }
+}
+
+window.toggleAdminCustomActivityInput = function(actId) {
+    const chk = document.querySelector(`.admin-ot-custom-activity-checkbox[data-act-id="${actId}"]`);
+    if (chk && chk.checked) {
+        // Tự động bỏ chọn các checkbox hoạt động khác (chỉ cho phép chọn tối đa 1 hoạt động)
+        document.querySelectorAll('.admin-ot-custom-activity-checkbox').forEach(other => {
+            if (other !== chk) {
+                other.checked = false;
+                // Ẩn chi tiết của checkbox kia đi
+                const otherDetailGroup = document.getElementById(`admin-ot-custom-activity-detail-group-${other.dataset.actId}`);
+                if (otherDetailGroup) otherDetailGroup.style.display = 'none';
+            }
+        });
+        
+        // Hiển thị khung nhập chi tiết của hoạt động này
+        const detailGroup = document.getElementById(`admin-ot-custom-activity-detail-group-${actId}`);
+        if (detailGroup) detailGroup.style.display = 'block';
+    } else {
+        // Ẩn khung nhập chi tiết
+        const detailGroup = document.getElementById(`admin-ot-custom-activity-detail-group-${actId}`);
+        if (detailGroup) detailGroup.style.display = 'none';
+    }
+    updateAdminOTPreview();
+};
+
+function setupEmployeeCustomActivitiesUI() {
+    const listContainer = document.getElementById('ot-custom-activities-list');
+    const activityGroup = document.getElementById('ot-custom-activity-group');
+    if (!listContainer) return;
+
+    // Reset container first
+    listContainer.innerHTML = '';
+    
+    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+    const userTeam = currentUser ? (currentUser.team || '') : '';
+
+    if (!userTeam || userTeam === 'admin') {
+        if (activityGroup) activityGroup.style.display = 'none';
+        return;
+    }
+
+    // Find the team settings of userTeam in TEAMS
+    const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+    const activities = (teamObj && teamObj.customActivities) ? teamObj.customActivities : [];
+
+    const isBackfillChecked = document.getElementById('ot-backfill')?.checked || false;
+
+    if (activities.length > 0) {
+        if (activityGroup) activityGroup.style.display = isBackfillChecked ? 'none' : 'block';
+
+        listContainer.innerHTML = activities.map(act => `
+            <div class="custom-activity-item toggle-row" style="margin-bottom: 14px; text-align: left;">
+                <label class="toggle-label" for="chk-${act.id}" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                    <span class="toggle-text">
+                        <strong>${act.name}</strong>
+                        <small>Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}</small>
+                    </span>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="chk-${act.id}" class="ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleEmployeeCustomActivityInput('${act.id}')">
+                        <span class="toggle-slider"></span>
+                    </div>
+                </label>
+                <div class="form-group" id="ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding: 0 4px; margin-bottom: 0;">
+                    <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiết'}</label>
+                    <input type="text" class="ot-custom-activity-detail" data-act-id="${act.id}" placeholder="${act.placeholder || 'Nhập chi tiết...'}" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
+                </div>
+            </div>
+        `).join('');
+
+        // Bind input listeners for new text inputs to update preview dynamically
+        document.querySelectorAll('.ot-custom-activity-detail').forEach(input => {
+            input.addEventListener('input', updateOTPreview);
+        });
+    } else {
+        if (activityGroup) activityGroup.style.display = 'none';
+    }
+}
+
+window.toggleEmployeeCustomActivityInput = function(actId) {
+    const chk = document.querySelector(`.ot-custom-activity-checkbox[data-act-id="${actId}"]`);
+    if (chk && chk.checked) {
+        // Tự động bỏ chọn các checkbox hoạt động khác (chỉ cho phép chọn tối đa 1 hoạt động)
+        document.querySelectorAll('.ot-custom-activity-checkbox').forEach(other => {
+            if (other !== chk) {
+                other.checked = false;
+                // Ẩn chi tiết của checkbox kia đi
+                const otherDetailGroup = document.getElementById(`ot-custom-activity-detail-group-${other.dataset.actId}`);
+                if (otherDetailGroup) otherDetailGroup.style.display = 'none';
+            }
+        });
+        
+        // Hiển thị khung nhập chi tiết của hoạt động này
+        const detailGroup = document.getElementById(`ot-custom-activity-detail-group-${actId}`);
+        if (detailGroup) detailGroup.style.display = 'block';
+    } else {
+        // Ẩn khung nhập chi tiết
+        const detailGroup = document.getElementById(`ot-custom-activity-detail-group-${actId}`);
+        if (detailGroup) detailGroup.style.display = 'none';
+    }
+    updateOTPreview();
+};
+
+// Expose global methods for inline HTML onclick handlers
+window.editRecordDialog = editRecordDialog;
+window.deleteRecord = deleteRecord;
+window.approveRecord = approveRecord;
+window.rejectRecord = rejectRecord;
+window.resetUserDevice = resetUserDevice;
+window.approveUnlinkDevice = approveUnlinkDevice;
+window.editUserDialog = editUserDialog;
+window.deleteUser = deleteUser;
+window.addTeamFromModal = addTeamFromModal;
+window.renameTeamFromModal = renameTeamFromModal;
+window.deleteTeamFromModal = deleteTeamFromModal;
+window.handleDatabaseCleanup = handleDatabaseCleanup;
+

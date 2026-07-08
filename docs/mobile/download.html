@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tải ứng dụng | OT Manager</title>
+    <meta name="description" content="Trang tải về ứng dụng quản lý tăng ca OT Manager dành cho Windows Desktop và Android Mobile.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0b14;
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --card-bg: rgba(25, 25, 40, 0.45);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-glow-purple: rgba(139, 92, 246, 0.15);
+            --card-glow-green: rgba(16, 185, 129, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Background Glows */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            top: -150px;
+            left: -150px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, transparent 70%);
+            bottom: -200px;
+            right: -200px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        header {
+            width: 100%;
+            padding: 40px 24px 20px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        .logo-container {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--primary-gradient);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .logo-icon svg {
+            width: 26px;
+            height: 26px;
+            fill: none;
+            stroke: white;
+            stroke-width: 2.5;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #ffffff, #d8b4fe, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            font-weight: 400;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            z-index: 10;
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 32px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 40px 32px;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 24px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        .card-purple:hover {
+            transform: translateY(-8px);
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 30px var(--card-glow-purple);
+        }
+
+        .card-green:hover {
+            transform: translateY(-8px);
+            border-color: rgba(16, 185, 129, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 30px var(--card-glow-green);
+        }
+
+        .card-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .card-purple .card-icon {
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+            border: 1px solid rgba(139, 92, 246, 0.25);
+        }
+
+        .card-green .card-icon {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .card-icon svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #ffffff;
+        }
+
+        .card-desc {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            line-height: 1.5;
+            max-width: 260px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px 28px;
+            border-radius: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+        }
+
+        .btn-purple:hover {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);
+        }
+
+        .btn-green:hover {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 6px 20px rgba(5, 150, 105, 0.5);
+        }
+
+        .btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* QR Code Styling */
+        .qr-section {
+            margin-top: 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .qr-container {
+            background: white;
+            padding: 10px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 140px;
+            height: 140px;
+        }
+
+        .qr-container img {
+            width: 120px;
+            height: 120px;
+        }
+
+        .qr-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        footer {
+            width: 100%;
+            padding: 30px 24px;
+            text-align: center;
+            color: #4b5563;
+            font-size: 0.85rem;
+            z-index: 10;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            .cards-container {
+                grid-template-columns: 1fr;
+                max-width: 400px;
+            }
+            .qr-section {
+                display: none; /* Hide QR code on mobile devices since they are already viewing on mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+            </div>
+            <h1>OT Manager</h1>
+        </div>
+        <p class="subtitle">Trang tải ứng dụng chính thức dành cho Quản lý và Nhân viên</p>
+    </header>
+
+    <main>
+        <div class="cards-container">
+            <!-- Desktop App Card -->
+            <div class="card card-purple">
+                <div>
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                            <line x1="8" y1="21" x2="16" y2="21" />
+                            <line x1="12" y1="17" x2="12" y2="21" />
+                        </svg>
+                    </div>
+                    <h2 class="card-title">Bản cho Quản lý<span id="desktop-ver" style="font-size: 0.95rem; color: #a78bfa; font-weight: 500; margin-left: 6px;"></span></h2>
+                    <p class="card-desc">Ứng dụng quản trị trên máy tính Windows. Xem báo cáo, thống kê và duyệt tăng ca.</p>
+                </div>
+                <a id="desktop-download-btn" class="btn btn-purple" style="cursor: pointer;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    <span>Tải Windows (.EXE)</span>
+                </a>
+            </div>
+
+            <!-- Mobile App Card -->
+            <div class="card card-green">
+                <div>
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                            <line x1="12" y1="18" x2="12.01" y2="18" />
+                        </svg>
+                    </div>
+                    <h2 class="card-title">Bản cho Nhân viên<span id="mobile-ver" style="font-size: 0.95rem; color: #34d399; font-weight: 500; margin-left: 6px;"></span></h2>
+                    <p class="card-desc">Ứng dụng báo cáo giờ tăng ca hàng ngày dành cho điện thoại di động Android.</p>
+                </div>
+                
+                <div style="width: 100%;">
+                    <a id="apk-download-btn" class="btn btn-green" style="cursor: pointer;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        <span>Tải Android (.APK)</span>
+                    </a>
+
+                    <!-- QR code scan section for desktop users -->
+                    <div class="qr-section">
+                        <div class="qr-container">
+                            <img id="apk-qr-code" src="" alt="Quét mã QR để tải APK">
+                        </div>
+                        <span class="qr-label">Quét mã QR để cài đặt nhanh</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 OT Manager. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Thiết lập link tải động dựa vào host hiện tại
+        const host = window.location.origin;
+        const isGitHubPages = window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
+        const MOBILE_VERSION = '1.3.8';
+        
+        // Link tải APK: trỏ thẳng tới GitHub Pages nếu chạy trên GitHub Pages để tải nhanh hơn
+        const apkUrl = isGitHubPages ? 'OT-Manager-mobile.apk' : (API_SERVER + '/OT-Manager-mobile.apk');
+        const apkBtn = document.getElementById('apk-download-btn');
+        apkBtn.setAttribute('data-url', apkUrl);
+        apkBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const downloadUrl = this.getAttribute('data-url');
+            if (downloadUrl) window.location.href = downloadUrl;
+        });
+
+        // Link tải Desktop EXE: trỏ thẳng tới server Render để proxy tải từ private GitHub Releases dùng GITHUB_TOKEN
+        const desktopBtn = document.getElementById('desktop-download-btn');
+        desktopBtn.setAttribute('data-url', API_SERVER + '/download/desktop');
+        desktopBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const downloadUrl = this.getAttribute('data-url');
+            if (downloadUrl) window.open(downloadUrl, '_blank');
+        });
+        
+        // Tạo mã QR QR Code kết nối tới link tải APK trực tiếp (phải là URL tuyệt đối để quét được)
+        const needsOtPrefix = window.location.hostname.includes('github.io');
+        const prefix = needsOtPrefix ? '/OT' : '';
+        const absoluteApkUrl = isGitHubPages 
+            ? (window.location.origin + prefix + '/mobile/OT-Manager-mobile.apk') 
+            : (API_SERVER + '/OT-Manager-mobile.apk');
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0b0b14&data=${encodeURIComponent(absoluteApkUrl)}`;
+        document.getElementById('apk-qr-code').src = qrApiUrl;
+ 
+        fetch(API_SERVER + '/api/version')
+            .then(res => res.json())
+            .then(data => {
+                if (data.version) {
+                    document.getElementById('desktop-ver').textContent = `v${data.version}`;
+                    document.getElementById('mobile-ver').textContent = `v${data.version}`;
+                }
+                if (data.desktopDownloadUrl) {
+                    document.getElementById('desktop-download-btn').setAttribute('data-url', data.desktopDownloadUrl);
+                }
+                if (data.mobileDownloadUrl) {
+                    document.getElementById('apk-download-btn').setAttribute('data-url', data.mobileDownloadUrl);
+                    document.getElementById('apk-qr-code').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=0b0b14&data=${encodeURIComponent(data.mobileDownloadUrl)}`;
+                }
+            })
+            .catch(err => console.error('Lỗi lấy version:', err));
+    </script>
+</body>
+</html>

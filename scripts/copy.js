@@ -117,4 +117,30 @@ try {
     console.error('Lỗi khi ghi build.json:', e.message);
 }
 
+// Sao chép toàn bộ thư mục desktop và mobile vào thư mục docs phục vụ chạy web trên GitHub Pages
+function copyFolderSync(from, to) {
+    if (!fs.existsSync(to)) {
+        fs.mkdirSync(to, { recursive: true });
+    }
+    fs.readdirSync(from).forEach(element => {
+        const fromPath = path.join(from, element);
+        const toPath = path.join(to, element);
+        const stat = fs.lstatSync(fromPath);
+        if (stat.isFile()) {
+            fs.copyFileSync(fromPath, toPath);
+        } else if (stat.isDirectory()) {
+            copyFolderSync(fromPath, toPath);
+        }
+    });
+}
+
+console.log('Copying desktop & mobile directories to docs/ for GitHub Pages...');
+try {
+    copyFolderSync('desktop', 'docs/desktop');
+    copyFolderSync('mobile', 'docs/mobile');
+    console.log('Successfully copied desktop & mobile directories to docs/');
+} catch (e) {
+    console.error('Lỗi khi sao chép thư mục sang docs/:', e.message);
+}
+
 console.log('Sync and obfuscation completed successfully!');
