@@ -115,7 +115,7 @@
                     </defs>
                 </svg>
                 <span class="logo-text">OT Manager</span>
-                <span class="web-version-badge">v1.4.0</span>
+                <span class="web-version-badge">v1.4.2</span>
             </div>
             <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle navigation">
                 <div class="hamburger-bar"></div>
@@ -545,7 +545,7 @@
                                 <div class="qr-box-large">
                                     <div class="qr-bg-large">
                                         <div class="qr-scanner-line"></div>
-                                        <img id="apk-qr-code-landing" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=020806&data=https%3A%2F%2Fgithub.com%2Fhieuto706-max%2FOT%2Freleases%2Fdownload%2Fv1.4.0%2FOT-Manager-mobile.apk" alt="QR Code">
+                                        <img id="apk-qr-code-landing" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=020806&data=https%3A%2F%2Fgithub.com%2Fhieuto706-max%2FOT%2Freleases%2Fdownload%2Fv1.4.2%2FOT-Manager-mobile.apk" alt="QR Code">
                                     </div>
                                     <span class="qr-hint">Quét mã QR bằng điện thoại để tải nhanh</span>
                                 </div>
@@ -609,7 +609,29 @@
                     <h2 class="section-title text-center">Nhật ký cập nhật hệ thống</h2>
                     <div class="changelog-timeline">
                         
-                        <!-- Item 0: v1.4.0 -->
+                        <!-- Item 0: v1.4.2 -->
+                        <div class="changelog-item">
+                            <div class="changelog-header-btn">
+                                <span class="changelog-badge">v1.4.2</span>
+                                <span class="changelog-date">08/07/2026</span>
+                                <span class="changelog-chevron">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="changelog-body-expand">
+                                <ul class="changelog-list">
+                                    <li>Tích hợp hệ thống thông báo đẩy Firebase Cloud Messaging (FCM) chuẩn quốc tế, giúp nhận thông báo nhắc nhở OT tức thì.</li>
+                                    <li>Bảo toàn hệ thống Web Push cũ làm phương án dự phòng thông minh (hybrid fallback) để tránh xung đột thiết bị.</li>
+                                    <li>Tối ưu hóa chỉ mục kết hợp database (Composite Index) tăng tốc độ lọc và hiển thị lịch sử tăng ca nhanh chóng.</li>
+                                    <li>Tích hợp cơ chế tắt dịch vụ an toàn (Graceful Shutdown) và chuẩn hóa nhật ký lỗi PostgreSQL.</li>
+                                    <li>Tự động đóng gói và xuất bản ứng dụng Desktop Windows (.EXE) và Android Mobile (.APK) trực tiếp lên GitHub Releases.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Item 1: v1.4.0 -->
                         <div class="changelog-item">
                             <div class="changelog-header-btn">
                                 <span class="changelog-badge">v1.4.0</span>
@@ -849,7 +871,7 @@
                                 <li><strong>Chính sách chặn tab ẩn danh:</strong> Nhằm bảo vệ mã định danh bảo mật thiết bị được lưu trữ trong Local Storage (hoặc OPFS) khỏi việc bị trình duyệt tự động xóa khi đóng tab, đồng thời ngăn chặn các hành vi gian lận đăng nhập chéo thiết bị, hệ thống bắt buộc kiểm tra và chặn tất cả kết nối từ chế độ ẩn danh.</li>
                                 <li><strong>Bảo mật phiên đăng nhập:</strong> Mã token xác thực JWT lưu tại Client sẽ tự động hết hiệu lực sau 5 giờ sáng mỗi ngày. Logic kiểm tra này hoạt động đồng thời trên cả thiết bị của người dùng và hệ thống máy chủ xác thực.</li>
                                 <li><strong>Sử dụng dữ liệu:</strong> Dữ liệu giờ làm thêm (OT) và dữ liệu đăng ký bù tăng ca chỉ được sử dụng cho việc quản lý chấm công, theo dõi đối chiếu dữ liệu tính lương nội bộ của công ty.</li>
-                                <li><strong>Bảo mật:</strong> Dữ liệu lưu trữ được mã hóa an toàn trên server công ty và không chia sẻ cho bất kỳ bên thứ ba nào.</li>
+                                <li><strong>Bảo mật:</strong> Dữ liệu lưu trữ được mã hóa an toàn trên server công ty và không chia sẻ cho bất kỳ bên thứ ba nào. Hệ thống sử dụng dịch vụ thông báo đẩy bảo mật Firebase Cloud Messaging (FCM) của Google để gửi tin nhắc nhở OT trực tiếp tới thiết bị của bạn mà không thu thập thêm thông tin cá nhân.</li>
                             </ul>
                         </div>
                     </div>
