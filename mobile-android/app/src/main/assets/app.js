@@ -729,14 +729,6 @@ async function handleEmployeeLogin(e) {
         safeStorage.setItem('ot_mobile_user', JSON.stringify(currentUser));
         safeStorage.setItem('ot_login_time', Date.now().toString());
         if (data.token) safeStorage.setItem('ot_auth_token', data.token);
-        
-        // Push notification token sync
-        if (window.AndroidBridge && typeof window.AndroidBridge.getFcmToken === 'function') {
-            const fcmToken = window.AndroidBridge.getFcmToken();
-            if (fcmToken) {
-                api('/api/auth/fcm-token', 'POST', { token: fcmToken }, true).catch(console.error);
-            }
-        }
 
         cacheUsernames();
         enterApp();
@@ -870,6 +862,7 @@ function enterApp() {
     updateConnectionStatus(true, API);
     updateSyncBanner();
     refreshCurrentUserInfo();
+    checkAndRegisterPushNotifications();
 }
 
 function getGreeting() {
