@@ -392,7 +392,7 @@ let deviceId = '';
 
 function getDeviceId(username) {
     let id = safeStorage.getItem('ot_device_id') || '';
-    const isWebBrowser = window.location.protocol !== 'file:';
+    const isWebBrowser = window.location.protocol !== 'file:' && !window.AndroidBridge;
     
     // Đối với trình duyệt Web (hoặc Web Clip), kiểm tra xem có tham số device_id trên URL không
     if (isWebBrowser) {
@@ -672,12 +672,12 @@ async function handleEmployeeLogin(e) {
     const errEl = document.getElementById('login-error-emp');
     errEl.textContent = '';
 
-    if (window.location.protocol !== 'file:' && await isPrivateMode()) {
+    if (window.location.protocol !== 'file:' && !window.AndroidBridge && await isPrivateMode()) {
         errEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
         return;
     }
 
-    const isBrowser = window.location.protocol !== 'file:';
+    const isBrowser = window.location.protocol !== 'file:' && !window.AndroidBridge;
 
     if (!API) {
         const cachedUsernames = JSON.parse(safeStorage.getItem('ot_cached_usernames') || '[]');
@@ -1911,7 +1911,7 @@ async function syncOfflineData() {
 
 // ==================== INIT ====================
 function initApp() {
-    const isBrowser = window.location.protocol !== 'file:';
+    const isBrowser = window.location.protocol !== 'file:' && !window.AndroidBridge;
     if (isBrowser) {
         document.body.classList.add('is-web-browser');
     }
