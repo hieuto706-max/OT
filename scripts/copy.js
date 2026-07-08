@@ -62,7 +62,7 @@ function obfuscateAndSave(srcPath, destPath) {
 }
 
 // 1. Obfuscate các file nguồn chính ra thư mục chạy ứng dụng
-obfuscateAndSave('landing.src.js', 'landing.js');
+obfuscateAndSave('docs/landing.src.js', 'docs/landing.js');
 obfuscateAndSave('mobile/app.src.js', 'mobile/app.js');
 obfuscateAndSave('desktop/app.src.js', 'desktop/app.js');
 
