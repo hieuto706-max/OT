@@ -550,6 +550,8 @@ async function initPGTable() {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+
+        // Bảng blob cũ (giữ lại làm backup)
         await client.query(`
             CREATE TABLE IF NOT EXISTS ot_state (
                 key VARCHAR(50) PRIMARY KEY,
@@ -557,16 +559,218 @@ async function initPGTable() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        // Bảng nhân viên
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS pg_users (
+                id VARCHAR(100) PRIMARY KEY,
+                username VARCHAR(100) UNIQUE NOT NULL,
+                fullname VARCHAR(200),
+                password TEXT,
+                role VARCHAR(20) DEFAULT 'user',
+                team VARCHAR(100),
+                device_id TEXT,
+                browser_device_id TEXT,
+                push_subscriptions JSONB,
+                pending_unlink BOOLEAN DEFAULT false,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Bảng bản ghi tăng ca
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS pg_records (
+                id VARCHAR(100) PRIMARY KEY,
+                user_id VARCHAR(100) REFERENCES pg_users(id) ON DELETE CASCADE,
+                date VARCHAR(20) NOT NULL,
+                has_lunch_ot BOOLEAN DEFAULT false,
+                ot_start VARCHAR(10),
+                ot_end VARCHAR(10),
+                evening_ot_hours REAL DEFAULT 0,
+                total_hours REAL DEFAULT 0,
+                note TEXT,
+                status VARCHAR(30),
+                is_backfill BOOLEAN DEFAULT false,
+                created_month VARCHAR(10),
+                delivery_province TEXT,
+                extra_data JSONB,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Bảng đội/tổ
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS pg_teams (
+                id VARCHAR(100) PRIMARY KEY,
+                data JSONB NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Bảng tháng đã chốt
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS pg_closed_months (
+                month VARCHAR(20) PRIMARY KEY,
+                closed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Tạo index tăng tốc truy vấn
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_records_user_id ON pg_records(user_id)`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_records_date ON pg_records(date)`);
+
         await client.query('COMMIT');
-        console.log('[Database PG] Khởi tạo hoặc xác nhận bảng ot_state thành công.');
+        console.log('[Database PG] Khởi tạo thành công 4 bảng: pg_users, pg_records, pg_teams, pg_closed_months.');
+
+        // Tự động di trú dữ liệu từ blob cũ sang bảng mới (chỉ chạy 1 lần)
+        await migrateFromBlobToTables();
     } catch (err) {
         try {
             await client.query('ROLLBACK');
         } catch (rollbackErr) {}
-        console.error('[Database PG] Lỗi khởi tạo bảng ot_state:', err.message);
+        console.error('[Database PG] Lỗi khởi tạo bảng:', err.message);
     } finally {
         client.release();
     }
+}
+
+// Di trú dữ liệu từ blob JSON cũ (ot_state) sang các bảng mới
+async function migrateFromBlobToTables() {
+    const pool = getPGPool();
+    if (!pool) return;
+    const client = await pool.connect();
+    try {
+        // Kiểm tra xem bảng mới đã có dữ liệu chưa
+        const usersCheck = await client.query('SELECT COUNT(*) as cnt FROM pg_users');
+        if (parseInt(usersCheck.rows[0].cnt) > 0) {
+            return; // Đã có dữ liệu, không cần di trú
+        }
+
+        // Đọc blob cũ
+        const blobRes = await client.query("SELECT data FROM ot_state WHERE key = 'db_state'");
+        if (blobRes.rows.length === 0) return;
+        const data = JSON.parse(blobRes.rows[0].data);
+        if (!data) return;
+
+        console.log('[Database PG] Bắt đầu di trú dữ liệu từ blob JSON sang bảng tách riêng...');
+        await client.query('BEGIN');
+
+        // Di trú Users
+        if (data.users && data.users.length > 0) {
+            for (const u of data.users) {
+                await client.query(`
+                    INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, created_at, updated_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                    ON CONFLICT (id) DO NOTHING
+                `, [
+                    u.id, u.username, u.fullname || '', u.password || '',
+                    u.role || 'user', u.team || null,
+                    u.deviceId || null, u.browserDeviceId || null,
+                    u.pushSubscriptions ? JSON.stringify(u.pushSubscriptions) : null,
+                    u.pendingUnlink || false,
+                    u.createdAt || new Date().toISOString(),
+                    u.updatedAt || new Date().toISOString()
+                ]);
+            }
+            console.log(`[Database PG] Di trú ${data.users.length} nhân viên thành công.`);
+        }
+
+        // Di trú Records
+        if (data.records && data.records.length > 0) {
+            for (const r of data.records) {
+                // Lưu các trường không xác định vào extra_data
+                const knownFields = ['id','userId','date','hasLunchOT','otStart','otEnd','eveningOTHours','totalHours','note','status','isBackfill','createdMonth','deliveryProvince','createdAt','updatedAt'];
+                const extraData = {};
+                for (const key of Object.keys(r)) {
+                    if (!knownFields.includes(key)) extraData[key] = r[key];
+                }
+                await client.query(`
+                    INSERT INTO pg_records (id, user_id, date, has_lunch_ot, ot_start, ot_end, evening_ot_hours, total_hours, note, status, is_backfill, created_month, delivery_province, extra_data, created_at, updated_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                    ON CONFLICT (id) DO NOTHING
+                `, [
+                    r.id, r.userId, r.date,
+                    r.hasLunchOT || false, r.otStart || null, r.otEnd || null,
+                    r.eveningOTHours || 0, r.totalHours || 0,
+                    r.note || '', r.status || null,
+                    r.isBackfill || false, r.createdMonth || null,
+                    r.deliveryProvince || null,
+                    Object.keys(extraData).length > 0 ? JSON.stringify(extraData) : null,
+                    r.createdAt || new Date().toISOString(),
+                    r.updatedAt || new Date().toISOString()
+                ]);
+            }
+            console.log(`[Database PG] Di trú ${data.records.length} bản ghi tăng ca thành công.`);
+        }
+
+        // Di trú Teams
+        if (data.teams && data.teams.length > 0) {
+            for (const t of data.teams) {
+                await client.query(`
+                    INSERT INTO pg_teams (id, data) VALUES ($1, $2)
+                    ON CONFLICT (id) DO NOTHING
+                `, [t.id, JSON.stringify(t)]);
+            }
+            console.log(`[Database PG] Di trú ${data.teams.length} đội/tổ thành công.`);
+        }
+
+        // Di trú Closed Months
+        if (data.closedMonths && data.closedMonths.length > 0) {
+            for (const m of data.closedMonths) {
+                await client.query(`
+                    INSERT INTO pg_closed_months (month) VALUES ($1)
+                    ON CONFLICT (month) DO NOTHING
+                `, [m]);
+            }
+            console.log(`[Database PG] Di trú ${data.closedMonths.length} tháng đã chốt thành công.`);
+        }
+
+        await client.query('COMMIT');
+        console.log('[Database PG] ✅ Di trú hoàn tất! Dữ liệu đã được tách sang 4 bảng riêng biệt.');
+    } catch (err) {
+        try {
+            await client.query('ROLLBACK');
+        } catch (rollbackErr) {}
+        console.error('[Database PG] Lỗi di trú dữ liệu:', err.message);
+    } finally {
+        client.release();
+    }
+}
+
+// Chuyển đổi row PostgreSQL -> object JavaScript (camelCase)
+function pgUserToJS(row) {
+    return {
+        id: row.id, username: row.username, fullname: row.fullname,
+        password: row.password, role: row.role, team: row.team || undefined,
+        deviceId: row.device_id || undefined, browserDeviceId: row.browser_device_id || undefined,
+        pushSubscriptions: row.push_subscriptions || undefined,
+        pendingUnlink: row.pending_unlink || undefined,
+        createdAt: row.created_at ? row.created_at.toISOString() : undefined,
+        updatedAt: row.updated_at ? row.updated_at.toISOString() : undefined
+    };
+}
+
+function pgRecordToJS(row) {
+    const obj = {
+        id: row.id, userId: row.user_id, date: row.date,
+        hasLunchOT: row.has_lunch_ot, otStart: row.ot_start, otEnd: row.ot_end,
+        eveningOTHours: row.evening_ot_hours, totalHours: row.total_hours,
+        note: row.note, status: row.status || undefined,
+        isBackfill: row.is_backfill || undefined,
+        createdMonth: row.created_month || undefined,
+        deliveryProvince: row.delivery_province || undefined,
+        createdAt: row.created_at ? row.created_at.toISOString() : undefined,
+        updatedAt: row.updated_at ? row.updated_at.toISOString() : undefined
+    };
+    // Gộp lại các trường mở rộng từ extra_data
+    if (row.extra_data) {
+        Object.assign(obj, row.extra_data);
+    }
+    // Xóa các giá trị undefined
+    Object.keys(obj).forEach(k => obj[k] === undefined && delete obj[k]);
+    return obj;
 }
 
 async function loadDBFromPG() {
@@ -575,9 +779,35 @@ async function loadDBFromPG() {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+
+        // Kiểm tra xem bảng mới có dữ liệu không
+        const usersCheck = await client.query('SELECT COUNT(*) as cnt FROM pg_users');
+        const hasNewTables = parseInt(usersCheck.rows[0].cnt) > 0;
+
+        if (hasNewTables) {
+            // Tải từ bảng tách riêng
+            const usersRes = await client.query('SELECT * FROM pg_users ORDER BY created_at');
+            const recordsRes = await client.query('SELECT * FROM pg_records ORDER BY date DESC, created_at');
+            const teamsRes = await client.query('SELECT data FROM pg_teams');
+            const closedRes = await client.query('SELECT month FROM pg_closed_months');
+
+            await client.query('COMMIT');
+
+            const result = {
+                users: usersRes.rows.map(pgUserToJS),
+                records: recordsRes.rows.map(pgRecordToJS),
+                teams: teamsRes.rows.map(r => r.data),
+                closedMonths: closedRes.rows.map(r => r.month)
+            };
+            console.log(`[Database PG] Tải từ bảng tách riêng: ${result.users.length} nhân viên, ${result.records.length} bản ghi, ${result.teams.length} đội.`);
+            return result;
+        }
+
+        // Fallback: tải từ blob cũ
         const res = await client.query("SELECT data FROM ot_state WHERE key = 'db_state'");
         await client.query('COMMIT');
         if (res.rows.length > 0) {
+            console.log('[Database PG] Tải từ bảng blob cũ (ot_state) — sẽ di trú sang bảng mới khi lưu lần tiếp.');
             return JSON.parse(res.rows[0].data);
         }
     } catch (err) {
@@ -597,6 +827,96 @@ async function saveDBToPG(data) {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+
+        // === Đồng bộ bảng pg_users ===
+        const existingUsers = await client.query('SELECT id FROM pg_users');
+        const existingUserIds = new Set(existingUsers.rows.map(r => r.id));
+        const currentUserIds = new Set((data.users || []).map(u => u.id));
+
+        // Xóa users không còn tồn tại
+        for (const id of existingUserIds) {
+            if (!currentUserIds.has(id)) {
+                await client.query('DELETE FROM pg_users WHERE id = $1', [id]);
+            }
+        }
+
+        // Upsert users
+        for (const u of (data.users || [])) {
+            await client.query(`
+                INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                ON CONFLICT (id) DO UPDATE SET
+                    username = $2, fullname = $3, password = $4, role = $5, team = $6,
+                    device_id = $7, browser_device_id = $8, push_subscriptions = $9,
+                    pending_unlink = $10, updated_at = $12
+            `, [
+                u.id, u.username, u.fullname || '', u.password || '',
+                u.role || 'user', u.team || null,
+                u.deviceId || null, u.browserDeviceId || null,
+                u.pushSubscriptions ? JSON.stringify(u.pushSubscriptions) : null,
+                u.pendingUnlink || false,
+                u.createdAt || new Date().toISOString(),
+                u.updatedAt || new Date().toISOString()
+            ]);
+        }
+
+        // === Đồng bộ bảng pg_records ===
+        const existingRecords = await client.query('SELECT id FROM pg_records');
+        const existingRecordIds = new Set(existingRecords.rows.map(r => r.id));
+        const currentRecordIds = new Set((data.records || []).map(r => r.id));
+
+        // Xóa records không còn tồn tại
+        for (const id of existingRecordIds) {
+            if (!currentRecordIds.has(id)) {
+                await client.query('DELETE FROM pg_records WHERE id = $1', [id]);
+            }
+        }
+
+        // Upsert records
+        for (const r of (data.records || [])) {
+            const knownFields = ['id','userId','date','hasLunchOT','otStart','otEnd','eveningOTHours','totalHours','note','status','isBackfill','createdMonth','deliveryProvince','createdAt','updatedAt'];
+            const extraData = {};
+            for (const key of Object.keys(r)) {
+                if (!knownFields.includes(key)) extraData[key] = r[key];
+            }
+            await client.query(`
+                INSERT INTO pg_records (id, user_id, date, has_lunch_ot, ot_start, ot_end, evening_ot_hours, total_hours, note, status, is_backfill, created_month, delivery_province, extra_data, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                ON CONFLICT (id) DO UPDATE SET
+                    user_id = $2, date = $3, has_lunch_ot = $4, ot_start = $5, ot_end = $6,
+                    evening_ot_hours = $7, total_hours = $8, note = $9, status = $10,
+                    is_backfill = $11, created_month = $12, delivery_province = $13,
+                    extra_data = $14, updated_at = $16
+            `, [
+                r.id, r.userId, r.date,
+                r.hasLunchOT || false, r.otStart || null, r.otEnd || null,
+                r.eveningOTHours || 0, r.totalHours || 0,
+                r.note || '', r.status || null,
+                r.isBackfill || false, r.createdMonth || null,
+                r.deliveryProvince || null,
+                Object.keys(extraData).length > 0 ? JSON.stringify(extraData) : null,
+                r.createdAt || new Date().toISOString(),
+                r.updatedAt || new Date().toISOString()
+            ]);
+        }
+
+        // === Đồng bộ bảng pg_teams ===
+        await client.query('DELETE FROM pg_teams');
+        for (const t of (data.teams || [])) {
+            await client.query(`
+                INSERT INTO pg_teams (id, data) VALUES ($1, $2)
+            `, [t.id, JSON.stringify(t)]);
+        }
+
+        // === Đồng bộ bảng pg_closed_months ===
+        await client.query('DELETE FROM pg_closed_months');
+        for (const m of (data.closedMonths || [])) {
+            await client.query(`
+                INSERT INTO pg_closed_months (month) VALUES ($1)
+            `, [m]);
+        }
+
+        // === Backup blob (giữ lại bản sao an toàn) ===
         const jsonStr = JSON.stringify(data);
         await client.query(`
             INSERT INTO ot_state (key, data, updated_at)
@@ -604,8 +924,9 @@ async function saveDBToPG(data) {
             ON CONFLICT (key) DO UPDATE
             SET data = $1, updated_at = CURRENT_TIMESTAMP
         `, [jsonStr]);
+
         await client.query('COMMIT');
-        console.log('[Database PG] Đã đồng bộ dữ liệu thành công lên Cloud PostgreSQL.');
+        console.log('[Database PG] Đồng bộ thành công lên 4 bảng + backup blob.');
     } catch (err) {
         try {
             await client.query('ROLLBACK');
