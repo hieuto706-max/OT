@@ -47,8 +47,8 @@ public class MainActivity extends AppCompatActivity {
         // Initialize Firebase Messaging programmatically
         try {
             com.google.firebase.FirebaseOptions options = new com.google.firebase.FirebaseOptions.Builder()
-                    .setApiKey("AIzaSyD8W_NVkhL-7uSfR6aNigLDHXtLN7fO6cI")
-                    .setApplicationId("1:75783850598:web:274a61bee43b65c2343ba7")
+                    .setApiKey("AIzaSyD2rY1Ynh7daGxKtb3NkPIRscYGeXTAZm4")
+                    .setApplicationId("1:75783850598:android:b3c42a44eece1948343ba7")
                     .setProjectId("ot-manager-4a0eb")
                     .setGcmSenderId("75783850598")
                     .build();

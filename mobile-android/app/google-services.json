@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "75783850598",
+    "project_id": "ot-manager-4a0eb",
+    "storage_bucket": "ot-manager-4a0eb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:75783850598:android:b3c42a44eece1948343ba7",
+        "android_client_info": {
+          "package_name": "com.hieuto.otmanager"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2rY1Ynh7daGxKtb3NkPIRscYGeXTAZm4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
