@@ -524,6 +524,7 @@ async function initPGTable() {
     });
     try {
         await client.connect();
+        await client.query('BEGIN');
         await client.query(`
             CREATE TABLE IF NOT EXISTS ot_state (
                 key VARCHAR(50) PRIMARY KEY,
@@ -531,8 +532,12 @@ async function initPGTable() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        await client.query('COMMIT');
         console.log('[Database PG] Khởi tạo hoặc xác nhận bảng ot_state thành công.');
     } catch (err) {
+        try {
+            await client.query('ROLLBACK');
+        } catch (rollbackErr) {}
         console.error('[Database PG] Lỗi khởi tạo bảng ot_state:', err.message);
     } finally {
         await client.end();
@@ -548,11 +553,16 @@ async function loadDBFromPG() {
     });
     try {
         await client.connect();
+        await client.query('BEGIN');
         const res = await client.query("SELECT data FROM ot_state WHERE key = 'db_state'");
+        await client.query('COMMIT');
         if (res.rows.length > 0) {
             return JSON.parse(res.rows[0].data);
         }
     } catch (err) {
+        try {
+            await client.query('ROLLBACK');
+        } catch (rollbackErr) {}
         console.error('[Database PG] Lỗi nạp dữ liệu từ PostgreSQL:', err.message);
     } finally {
         await client.end();
@@ -569,6 +579,7 @@ async function saveDBToPG(data) {
     });
     try {
         await client.connect();
+        await client.query('BEGIN');
         const jsonStr = JSON.stringify(data);
         await client.query(`
             INSERT INTO ot_state (key, data, updated_at)
@@ -576,8 +587,12 @@ async function saveDBToPG(data) {
             ON CONFLICT (key) DO UPDATE
             SET data = $1, updated_at = CURRENT_TIMESTAMP
         `, [jsonStr]);
+        await client.query('COMMIT');
         console.log('[Database PG] Đã đồng bộ dữ liệu thành công lên Cloud PostgreSQL.');
     } catch (err) {
+        try {
+            await client.query('ROLLBACK');
+        } catch (rollbackErr) {}
         console.error('[Database PG] Lỗi đồng bộ lên PostgreSQL:', err.message);
     } finally {
         await client.end();
