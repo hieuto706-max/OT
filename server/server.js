@@ -515,6 +515,17 @@ function updateGist(data) {
 let dbCache = null;
 let dbLoadingPromise = null;
 
+// Structured Logging helpers
+function logInfo(message, ...args) {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] [INFO] ${message}`, ...args);
+}
+
+function logError(message, ...args) {
+    const timestamp = new Date().toISOString();
+    console.error(`[${timestamp}] [ERROR] ${message}`, ...args);
+}
+
 // Connection Pool singleton — tái sử dụng kết nối thay vì tạo mới mỗi lần (tiết kiệm tài nguyên, ổn định hơn)
 let pgPool = null;
 
@@ -532,9 +543,9 @@ function getPGPool() {
             connectionTimeoutMillis: 10000 // Timeout kết nối sau 10 giây
         });
         pgPool.on('error', (err) => {
-            console.error('[Database PG] Lỗi kết nối Pool (sẽ tự kết nối lại):', err.message);
+            logError('[Database PG] Lỗi kết nối Pool (sẽ tự kết nối lại):', err.message);
         });
-        console.log('[Database PG] Đã khởi tạo Connection Pool (max=5, idle=30s, timeout=10s).');
+        logInfo('[Database PG] Đã khởi tạo Connection Pool (max=5, idle=30s, timeout=10s).');
     }
     return pgPool;
 }
@@ -543,7 +554,7 @@ async function closePGPool() {
     if (pgPool) {
         await pgPool.end();
         pgPool = null;
-        console.log('[Database PG] Đã đóng Connection Pool.');
+        logInfo('[Database PG] Đã đóng Connection Pool.');
     }
 }
 
@@ -614,14 +625,15 @@ async function initPGTable() {
         // Tạo index tăng tốc truy vấn
         await client.query(`CREATE INDEX IF NOT EXISTS idx_records_user_id ON pg_records(user_id)`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_records_date ON pg_records(date)`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_records_user_date ON pg_records(user_id, date DESC)`);
 
         await client.query('COMMIT');
-        console.log('[Database PG] Khởi tạo thành công 4 bảng: pg_users, pg_records, pg_teams, pg_closed_months.');
+        logInfo('[Database PG] Khởi tạo thành công 4 bảng và các chỉ mục (bao gồm composite index).');
     } catch (err) {
         try {
             await client.query('ROLLBACK');
         } catch (rollbackErr) {}
-        console.error('[Database PG] Lỗi khởi tạo bảng:', err.message);
+        logError('[Database PG] Lỗi khởi tạo bảng:', err.message);
     } finally {
         client.release();
     }
@@ -693,7 +705,7 @@ async function loadDBFromPG() {
                 teams: teamsRes.rows.map(r => r.data),
                 closedMonths: closedRes.rows.map(r => r.month)
             };
-            console.log(`[Database PG] Tải từ bảng tách riêng: ${result.users.length} nhân viên, ${result.records.length} bản ghi, ${result.teams.length} đội.`);
+            logInfo(`[Database PG] Tải từ bảng tách riêng: ${result.users.length} nhân viên, ${result.records.length} bản ghi, ${result.teams.length} đội.`);
             return result;
         } else {
             await client.query('COMMIT');
@@ -702,7 +714,7 @@ async function loadDBFromPG() {
         try {
             await client.query('ROLLBACK');
         } catch (rollbackErr) {}
-        console.error('[Database PG] Lỗi nạp dữ liệu từ PostgreSQL:', err.message);
+        logError('[Database PG] Lỗi nạp dữ liệu từ PostgreSQL:', err.message);
     } finally {
         client.release();
     }
@@ -805,12 +817,12 @@ async function saveDBToPG(data) {
         }
 
         await client.query('COMMIT');
-        console.log('[Database PG] Đồng bộ thành công lên 4 bảng.');
+        logInfo('[Database PG] Đồng bộ thành công lên 4 bảng.');
     } catch (err) {
         try {
             await client.query('ROLLBACK');
         } catch (rollbackErr) {}
-        console.error('[Database PG] Lỗi đồng bộ lên PostgreSQL:', err.message);
+        logError('[Database PG] Lỗi đồng bộ lên PostgreSQL:', err.message);
     } finally {
         client.release();
     }
@@ -1105,13 +1117,13 @@ async function syncDiffToPG(oldData, newData) {
 
         await client.query('COMMIT');
         if (changesCount > 0) {
-            console.log(`[Database PG] Đồng bộ thành công ${changesCount} thay đổi (Direct CRUD).`);
+            logInfo(`[Database PG] Đồng bộ thành công ${changesCount} thay đổi (Direct CRUD).`);
         }
     } catch (err) {
         try {
             await client.query('ROLLBACK');
         } catch (rollbackErr) {}
-        console.error('[Database PG] Lỗi đồng bộ trực tiếp:', err.message);
+        logError('[Database PG] Lỗi đồng bộ trực tiếp:', err.message);
     } finally {
         client.release();
     }
@@ -1128,7 +1140,7 @@ function saveDB(data) {
         // Cập nhật bất đồng bộ lên PostgreSQL (Direct CRUD qua Diffing)
         if (process.env.DATABASE_URL) {
             syncDiffToPG(oldData, data).catch(e => {
-                console.error('[Database PG] Lỗi cập nhật lên PostgreSQL:', e.message);
+                logError('[Database PG] Lỗi cập nhật lên PostgreSQL:', e.message);
             });
         }
 
@@ -3472,12 +3484,26 @@ function startServer() {
 }
 
 function stopServer() {
-    console.log('[Server] Stopping OT Manager Server...');
+    logInfo('[Server] Đang tắt máy chủ OT Manager...');
     stopTunnel();
     closePGPool().catch(() => {});
     if (server) {
         server.close();
     }
+}
+
+// Lắng nghe các tín hiệu tắt hệ thống để ngắt kết nối an toàn (Graceful Shutdown)
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+function gracefulShutdown(signal) {
+    logInfo(`[Server] Nhận tín hiệu ${signal}. Bắt đầu tắt hệ thống an toàn...`);
+    stopServer();
+    // Chờ 1 giây để các request cuối cùng và DB kết thúc rồi mới tắt tiến trình
+    setTimeout(() => {
+        logInfo('[Server] Tắt hệ thống hoàn tất. Tạm biệt!');
+        process.exit(0);
+    }, 1000);
 }
 
 // If run directly (not imported)
