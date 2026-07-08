@@ -520,7 +520,10 @@ let pgPool = null;
 
 function getPGPool() {
     if (!pgPool && process.env.DATABASE_URL) {
-        const { Pool } = require('pg');
+        const { Pool, types } = require('pg');
+        // DATE OID = 1082. Giữ nguyên chuỗi YYYY-MM-DD từ DB, tránh sai lệch múi giờ trong JS
+        types.setTypeParser(1082, (val) => val);
+
         pgPool = new Pool({
             connectionString: process.env.DATABASE_URL,
             ssl: { rejectUnauthorized: false },
@@ -573,11 +576,11 @@ async function initPGTable() {
         await client.query(`
             CREATE TABLE IF NOT EXISTS pg_records (
                 id VARCHAR(100) PRIMARY KEY,
-                user_id VARCHAR(100) REFERENCES pg_users(id) ON DELETE CASCADE,
-                date VARCHAR(20) NOT NULL,
+                user_id VARCHAR(100) NOT NULL REFERENCES pg_users(id) ON DELETE CASCADE,
+                date DATE NOT NULL,
                 has_lunch_ot BOOLEAN DEFAULT false,
-                ot_start VARCHAR(10),
-                ot_end VARCHAR(10),
+                ot_start TIME,
+                ot_end TIME,
                 evening_ot_hours REAL DEFAULT 0,
                 total_hours REAL DEFAULT 0,
                 note TEXT,
@@ -639,10 +642,16 @@ function pgUserToJS(row) {
 
 function pgRecordToJS(row) {
     const obj = {
-        id: row.id, userId: row.user_id, date: row.date,
-        hasLunchOT: row.has_lunch_ot, otStart: row.ot_start, otEnd: row.ot_end,
-        eveningOTHours: row.evening_ot_hours, totalHours: row.total_hours,
-        note: row.note, status: row.status || undefined,
+        id: row.id,
+        userId: row.user_id,
+        date: row.date,
+        hasLunchOT: row.has_lunch_ot,
+        otStart: row.ot_start ? row.ot_start.substring(0, 5) : undefined,
+        otEnd: row.ot_end ? row.ot_end.substring(0, 5) : undefined,
+        eveningOTHours: row.evening_ot_hours,
+        totalHours: row.total_hours,
+        note: row.note,
+        status: row.status || undefined,
         isBackfill: row.is_backfill || undefined,
         createdMonth: row.created_month || undefined,
         deliveryProvince: row.delivery_province || undefined,
@@ -653,8 +662,8 @@ function pgRecordToJS(row) {
     if (row.extra_data) {
         Object.assign(obj, row.extra_data);
     }
-    // Xóa các giá trị undefined
-    Object.keys(obj).forEach(k => obj[k] === undefined && delete obj[k]);
+    // Xóa các giá trị undefined và null
+    Object.keys(obj).forEach(k => (obj[k] === undefined || obj[k] === null) && delete obj[k]);
     return obj;
 }
 
@@ -928,16 +937,197 @@ async function loadDB() {
     }
 }
 
+function isUserEqual(u1, u2) {
+    return u1.username === u2.username &&
+           u1.fullname === u2.fullname &&
+           u1.password === u2.password &&
+           u1.role === u2.role &&
+           u1.team === u2.team &&
+           u1.deviceId === u2.deviceId &&
+           u1.browserDeviceId === u2.browserDeviceId &&
+           JSON.stringify(u1.pushSubscriptions) === JSON.stringify(u2.pushSubscriptions) &&
+           u1.pendingUnlink === u2.pendingUnlink;
+}
+
+function isRecordEqual(r1, r2) {
+    const keys1 = Object.keys(r1);
+    const keys2 = Object.keys(r2);
+    if (keys1.length !== keys2.length) return false;
+    for (const key of keys1) {
+        if (typeof r1[key] === 'object' && r1[key] !== null) {
+            if (JSON.stringify(r1[key]) !== JSON.stringify(r2[key])) return false;
+        } else {
+            if (r1[key] !== r2[key]) return false;
+        }
+    }
+    return true;
+}
+
+async function syncDiffToPG(oldData, newData) {
+    if (!oldData) {
+        // Fallback: Nếu không có dữ liệu cũ để so sánh, thực hiện đồng bộ toàn bộ (Full Sync)
+        return saveDBToPG(newData);
+    }
+
+    const pool = getPGPool();
+    if (!pool) return;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        let changesCount = 0;
+
+        // === 1. Đồng bộ bảng pg_users ===
+        const oldUsersMap = new Map((oldData.users || []).map(u => [u.id, u]));
+        const newUsersMap = new Map((newData.users || []).map(u => [u.id, u]));
+
+        // Xóa những user bị xóa
+        for (const [id] of oldUsersMap) {
+            if (!newUsersMap.has(id)) {
+                await client.query('DELETE FROM pg_users WHERE id = $1', [id]);
+                changesCount++;
+            }
+        }
+
+        // Thêm/Sửa những user thay đổi hoặc mới
+        for (const [id, nu] of newUsersMap) {
+            const ou = oldUsersMap.get(id);
+            if (!ou || !isUserEqual(ou, nu)) {
+                await client.query(`
+                    INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, created_at, updated_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                    ON CONFLICT (id) DO UPDATE SET
+                        username = $2, fullname = $3, password = $4, role = $5, team = $6,
+                        device_id = $7, browser_device_id = $8, push_subscriptions = $9,
+                        pending_unlink = $10, updated_at = $12
+                `, [
+                    nu.id, nu.username, nu.fullname || '', nu.password || '',
+                    nu.role || 'user', nu.team || null,
+                    nu.deviceId || null, nu.browserDeviceId || null,
+                    nu.pushSubscriptions ? JSON.stringify(nu.pushSubscriptions) : null,
+                    nu.pendingUnlink || false,
+                    nu.createdAt || new Date().toISOString(),
+                    nu.updatedAt || new Date().toISOString()
+                ]);
+                changesCount++;
+            }
+        }
+
+        // === 2. Đồng bộ bảng pg_records ===
+        const oldRecordsMap = new Map((oldData.records || []).map(r => [r.id, r]));
+        const newRecordsMap = new Map((newData.records || []).map(r => [r.id, r]));
+
+        // Xóa những record bị xóa
+        for (const [id] of oldRecordsMap) {
+            if (!newRecordsMap.has(id)) {
+                await client.query('DELETE FROM pg_records WHERE id = $1', [id]);
+                changesCount++;
+            }
+        }
+
+        // Thêm/Sửa những record thay đổi hoặc mới
+        for (const [id, nr] of newRecordsMap) {
+            const or = oldRecordsMap.get(id);
+            if (!or || !isRecordEqual(or, nr)) {
+                const knownFields = ['id','userId','date','hasLunchOT','otStart','otEnd','eveningOTHours','totalHours','note','status','isBackfill','createdMonth','deliveryProvince','createdAt','updatedAt'];
+                const extraData = {};
+                for (const key of Object.keys(nr)) {
+                    if (!knownFields.includes(key)) extraData[key] = nr[key];
+                }
+                await client.query(`
+                    INSERT INTO pg_records (id, user_id, date, has_lunch_ot, ot_start, ot_end, evening_ot_hours, total_hours, note, status, is_backfill, created_month, delivery_province, extra_data, created_at, updated_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                    ON CONFLICT (id) DO UPDATE SET
+                        user_id = $2, date = $3, has_lunch_ot = $4, ot_start = $5, ot_end = $6,
+                        evening_ot_hours = $7, total_hours = $8, note = $9, status = $10,
+                        is_backfill = $11, created_month = $12, delivery_province = $13,
+                        extra_data = $14, updated_at = $16
+                `, [
+                    nr.id, nr.userId, nr.date,
+                    nr.hasLunchOT || false, nr.otStart || null, nr.otEnd || null,
+                    nr.eveningOTHours || 0, nr.totalHours || 0,
+                    nr.note || '', nr.status || null,
+                    nr.isBackfill || false, nr.createdMonth || null,
+                    nr.deliveryProvince || null,
+                    Object.keys(extraData).length > 0 ? JSON.stringify(extraData) : null,
+                    nr.createdAt || new Date().toISOString(),
+                    nr.updatedAt || new Date().toISOString()
+                ]);
+                changesCount++;
+            }
+        }
+
+        // === 3. Đồng bộ bảng pg_teams ===
+        const oldTeamsMap = new Map((oldData.teams || []).map(t => [t.id, t]));
+        const newTeamsMap = new Map((newData.teams || []).map(t => [t.id, t]));
+
+        // Xóa team bị xóa
+        for (const [id] of oldTeamsMap) {
+            if (!newTeamsMap.has(id)) {
+                await client.query('DELETE FROM pg_teams WHERE id = $1', [id]);
+                changesCount++;
+            }
+        }
+
+        // Thêm/Sửa team thay đổi hoặc mới
+        for (const [id, nt] of newTeamsMap) {
+            const ot = oldTeamsMap.get(id);
+            if (!ot || JSON.stringify(ot) !== JSON.stringify(nt)) {
+                await client.query(`
+                    INSERT INTO pg_teams (id, data) VALUES ($1, $2)
+                    ON CONFLICT (id) DO UPDATE SET data = $2
+                `, [nt.id, JSON.stringify(nt)]);
+                changesCount++;
+            }
+        }
+
+        // === 4. Đồng bộ bảng pg_closed_months ===
+        const oldMonthsSet = new Set(oldData.closedMonths || []);
+        const newMonthsSet = new Set(newData.closedMonths || []);
+
+        // Xóa tháng bị bỏ chốt
+        for (const m of oldMonthsSet) {
+            if (!newMonthsSet.has(m)) {
+                await client.query('DELETE FROM pg_closed_months WHERE month = $1', [m]);
+                changesCount++;
+            }
+        }
+
+        // Thêm tháng mới được chốt
+        for (const m of newMonthsSet) {
+            if (!oldMonthsSet.has(m)) {
+                await client.query(`
+                    INSERT INTO pg_closed_months (month) VALUES ($1)
+                    ON CONFLICT (month) DO NOTHING
+                `, [m]);
+                changesCount++;
+            }
+        }
+
+        await client.query('COMMIT');
+        if (changesCount > 0) {
+            console.log(`[Database PG] Đồng bộ thành công ${changesCount} thay đổi (Direct CRUD).`);
+        }
+    } catch (err) {
+        try {
+            await client.query('ROLLBACK');
+        } catch (rollbackErr) {}
+        console.error('[Database PG] Lỗi đồng bộ trực tiếp:', err.message);
+    } finally {
+        client.release();
+    }
+}
+
 function saveDB(data) {
+    const oldData = dbCache ? JSON.parse(JSON.stringify(dbCache)) : null;
     dbCache = data;
     // Sử dụng Write Queue để đảm bảo tuần tự ghi
     enqueueWrite(() => {
         fs.writeFileSync(getDbPath(), JSON.stringify(data, null, 2), 'utf-8');
         notifySseClients({ type: 'update' });
 
-        // Cập nhật bất đồng bộ lên PostgreSQL
+        // Cập nhật bất đồng bộ lên PostgreSQL (Direct CRUD qua Diffing)
         if (process.env.DATABASE_URL) {
-            saveDBToPG(data).catch(e => {
+            syncDiffToPG(oldData, data).catch(e => {
                 console.error('[Database PG] Lỗi cập nhật lên PostgreSQL:', e.message);
             });
         }
