@@ -1142,9 +1142,9 @@ function saveDB(data) {
         fs.writeFileSync(getDbPath(), JSON.stringify(data, null, 2), 'utf-8');
         notifySseClients({ type: 'update' });
 
-        // Cập nhật bất đồng bộ lên PostgreSQL (Direct CRUD qua Diffing)
+        // Cập nhật bất đồng bộ lên PostgreSQL (Direct CRUD qua Full Sync để tránh lỗi so sánh vùng nhớ cache)
         if (process.env.DATABASE_URL) {
-            syncDiffToPG(oldData, data).catch(e => {
+            saveDBToPG(data).catch(e => {
                 logError('[Database PG] Lỗi cập nhật lên PostgreSQL:', e.message);
             });
         }
