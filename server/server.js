@@ -551,15 +551,6 @@ async function initPGTable() {
     try {
         await client.query('BEGIN');
 
-        // Bảng blob cũ (giữ lại làm backup)
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS ot_state (
-                key VARCHAR(50) PRIMARY KEY,
-                data TEXT,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-
         // Bảng nhân viên
         await client.query(`
             CREATE TABLE IF NOT EXISTS pg_users (
@@ -623,117 +614,11 @@ async function initPGTable() {
 
         await client.query('COMMIT');
         console.log('[Database PG] Khởi tạo thành công 4 bảng: pg_users, pg_records, pg_teams, pg_closed_months.');
-
-        // Tự động di trú dữ liệu từ blob cũ sang bảng mới (chỉ chạy 1 lần)
-        await migrateFromBlobToTables();
     } catch (err) {
         try {
             await client.query('ROLLBACK');
         } catch (rollbackErr) {}
         console.error('[Database PG] Lỗi khởi tạo bảng:', err.message);
-    } finally {
-        client.release();
-    }
-}
-
-// Di trú dữ liệu từ blob JSON cũ (ot_state) sang các bảng mới
-async function migrateFromBlobToTables() {
-    const pool = getPGPool();
-    if (!pool) return;
-    const client = await pool.connect();
-    try {
-        // Kiểm tra xem bảng mới đã có dữ liệu chưa
-        const usersCheck = await client.query('SELECT COUNT(*) as cnt FROM pg_users');
-        if (parseInt(usersCheck.rows[0].cnt) > 0) {
-            return; // Đã có dữ liệu, không cần di trú
-        }
-
-        // Đọc blob cũ
-        const blobRes = await client.query("SELECT data FROM ot_state WHERE key = 'db_state'");
-        if (blobRes.rows.length === 0) return;
-        const data = JSON.parse(blobRes.rows[0].data);
-        if (!data) return;
-
-        console.log('[Database PG] Bắt đầu di trú dữ liệu từ blob JSON sang bảng tách riêng...');
-        await client.query('BEGIN');
-
-        // Di trú Users
-        if (data.users && data.users.length > 0) {
-            for (const u of data.users) {
-                await client.query(`
-                    INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, created_at, updated_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-                    ON CONFLICT (id) DO NOTHING
-                `, [
-                    u.id, u.username, u.fullname || '', u.password || '',
-                    u.role || 'user', u.team || null,
-                    u.deviceId || null, u.browserDeviceId || null,
-                    u.pushSubscriptions ? JSON.stringify(u.pushSubscriptions) : null,
-                    u.pendingUnlink || false,
-                    u.createdAt || new Date().toISOString(),
-                    u.updatedAt || new Date().toISOString()
-                ]);
-            }
-            console.log(`[Database PG] Di trú ${data.users.length} nhân viên thành công.`);
-        }
-
-        // Di trú Records
-        if (data.records && data.records.length > 0) {
-            for (const r of data.records) {
-                // Lưu các trường không xác định vào extra_data
-                const knownFields = ['id','userId','date','hasLunchOT','otStart','otEnd','eveningOTHours','totalHours','note','status','isBackfill','createdMonth','deliveryProvince','createdAt','updatedAt'];
-                const extraData = {};
-                for (const key of Object.keys(r)) {
-                    if (!knownFields.includes(key)) extraData[key] = r[key];
-                }
-                await client.query(`
-                    INSERT INTO pg_records (id, user_id, date, has_lunch_ot, ot_start, ot_end, evening_ot_hours, total_hours, note, status, is_backfill, created_month, delivery_province, extra_data, created_at, updated_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-                    ON CONFLICT (id) DO NOTHING
-                `, [
-                    r.id, r.userId, r.date,
-                    r.hasLunchOT || false, r.otStart || null, r.otEnd || null,
-                    r.eveningOTHours || 0, r.totalHours || 0,
-                    r.note || '', r.status || null,
-                    r.isBackfill || false, r.createdMonth || null,
-                    r.deliveryProvince || null,
-                    Object.keys(extraData).length > 0 ? JSON.stringify(extraData) : null,
-                    r.createdAt || new Date().toISOString(),
-                    r.updatedAt || new Date().toISOString()
-                ]);
-            }
-            console.log(`[Database PG] Di trú ${data.records.length} bản ghi tăng ca thành công.`);
-        }
-
-        // Di trú Teams
-        if (data.teams && data.teams.length > 0) {
-            for (const t of data.teams) {
-                await client.query(`
-                    INSERT INTO pg_teams (id, data) VALUES ($1, $2)
-                    ON CONFLICT (id) DO NOTHING
-                `, [t.id, JSON.stringify(t)]);
-            }
-            console.log(`[Database PG] Di trú ${data.teams.length} đội/tổ thành công.`);
-        }
-
-        // Di trú Closed Months
-        if (data.closedMonths && data.closedMonths.length > 0) {
-            for (const m of data.closedMonths) {
-                await client.query(`
-                    INSERT INTO pg_closed_months (month) VALUES ($1)
-                    ON CONFLICT (month) DO NOTHING
-                `, [m]);
-            }
-            console.log(`[Database PG] Di trú ${data.closedMonths.length} tháng đã chốt thành công.`);
-        }
-
-        await client.query('COMMIT');
-        console.log('[Database PG] ✅ Di trú hoàn tất! Dữ liệu đã được tách sang 4 bảng riêng biệt.');
-    } catch (err) {
-        try {
-            await client.query('ROLLBACK');
-        } catch (rollbackErr) {}
-        console.error('[Database PG] Lỗi di trú dữ liệu:', err.message);
     } finally {
         client.release();
     }
@@ -801,14 +686,8 @@ async function loadDBFromPG() {
             };
             console.log(`[Database PG] Tải từ bảng tách riêng: ${result.users.length} nhân viên, ${result.records.length} bản ghi, ${result.teams.length} đội.`);
             return result;
-        }
-
-        // Fallback: tải từ blob cũ
-        const res = await client.query("SELECT data FROM ot_state WHERE key = 'db_state'");
-        await client.query('COMMIT');
-        if (res.rows.length > 0) {
-            console.log('[Database PG] Tải từ bảng blob cũ (ot_state) — sẽ di trú sang bảng mới khi lưu lần tiếp.');
-            return JSON.parse(res.rows[0].data);
+        } else {
+            await client.query('COMMIT');
         }
     } catch (err) {
         try {
@@ -916,17 +795,8 @@ async function saveDBToPG(data) {
             `, [m]);
         }
 
-        // === Backup blob (giữ lại bản sao an toàn) ===
-        const jsonStr = JSON.stringify(data);
-        await client.query(`
-            INSERT INTO ot_state (key, data, updated_at)
-            VALUES ('db_state', $1, CURRENT_TIMESTAMP)
-            ON CONFLICT (key) DO UPDATE
-            SET data = $1, updated_at = CURRENT_TIMESTAMP
-        `, [jsonStr]);
-
         await client.query('COMMIT');
-        console.log('[Database PG] Đồng bộ thành công lên 4 bảng + backup blob.');
+        console.log('[Database PG] Đồng bộ thành công lên 4 bảng.');
     } catch (err) {
         try {
             await client.query('ROLLBACK');
