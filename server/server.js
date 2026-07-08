@@ -515,15 +515,40 @@ function updateGist(data) {
 let dbCache = null;
 let dbLoadingPromise = null;
 
+// Connection Pool singleton — tái sử dụng kết nối thay vì tạo mới mỗi lần (tiết kiệm tài nguyên, ổn định hơn)
+let pgPool = null;
+
+function getPGPool() {
+    if (!pgPool && process.env.DATABASE_URL) {
+        const { Pool } = require('pg');
+        pgPool = new Pool({
+            connectionString: process.env.DATABASE_URL,
+            ssl: { rejectUnauthorized: false },
+            max: 5,                        // Tối đa 5 kết nối đồng thời
+            idleTimeoutMillis: 30000,      // Đóng kết nối rảnh sau 30 giây
+            connectionTimeoutMillis: 10000 // Timeout kết nối sau 10 giây
+        });
+        pgPool.on('error', (err) => {
+            console.error('[Database PG] Lỗi kết nối Pool (sẽ tự kết nối lại):', err.message);
+        });
+        console.log('[Database PG] Đã khởi tạo Connection Pool (max=5, idle=30s, timeout=10s).');
+    }
+    return pgPool;
+}
+
+async function closePGPool() {
+    if (pgPool) {
+        await pgPool.end();
+        pgPool = null;
+        console.log('[Database PG] Đã đóng Connection Pool.');
+    }
+}
+
 async function initPGTable() {
-    if (!process.env.DATABASE_URL) return;
-    const { Client } = require('pg');
-    const client = new Client({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false }
-    });
+    const pool = getPGPool();
+    if (!pool) return;
+    const client = await pool.connect();
     try {
-        await client.connect();
         await client.query('BEGIN');
         await client.query(`
             CREATE TABLE IF NOT EXISTS ot_state (
@@ -540,19 +565,15 @@ async function initPGTable() {
         } catch (rollbackErr) {}
         console.error('[Database PG] Lỗi khởi tạo bảng ot_state:', err.message);
     } finally {
-        await client.end();
+        client.release();
     }
 }
 
 async function loadDBFromPG() {
-    if (!process.env.DATABASE_URL) return null;
-    const { Client } = require('pg');
-    const client = new Client({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false }
-    });
+    const pool = getPGPool();
+    if (!pool) return null;
+    const client = await pool.connect();
     try {
-        await client.connect();
         await client.query('BEGIN');
         const res = await client.query("SELECT data FROM ot_state WHERE key = 'db_state'");
         await client.query('COMMIT');
@@ -565,20 +586,16 @@ async function loadDBFromPG() {
         } catch (rollbackErr) {}
         console.error('[Database PG] Lỗi nạp dữ liệu từ PostgreSQL:', err.message);
     } finally {
-        await client.end();
+        client.release();
     }
     return null;
 }
 
 async function saveDBToPG(data) {
-    if (!process.env.DATABASE_URL) return;
-    const { Client } = require('pg');
-    const client = new Client({
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false }
-    });
+    const pool = getPGPool();
+    if (!pool) return;
+    const client = await pool.connect();
     try {
-        await client.connect();
         await client.query('BEGIN');
         const jsonStr = JSON.stringify(data);
         await client.query(`
@@ -595,7 +612,7 @@ async function saveDBToPG(data) {
         } catch (rollbackErr) {}
         console.error('[Database PG] Lỗi đồng bộ lên PostgreSQL:', err.message);
     } finally {
-        await client.end();
+        client.release();
     }
 }
 
@@ -3076,6 +3093,7 @@ function startServer() {
 function stopServer() {
     console.log('[Server] Stopping OT Manager Server...');
     stopTunnel();
+    closePGPool().catch(() => {});
     if (server) {
         server.close();
     }
