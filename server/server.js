@@ -513,9 +513,10 @@ function updateGist(data) {
 
 // ==================== DATABASE ====================
 let dbCache = null;
+let dbLoadingPromise = null;
 
-async function loadDBFromPG() {
-    if (!process.env.DATABASE_URL) return null;
+async function initPGTable() {
+    if (!process.env.DATABASE_URL) return;
     const { Client } = require('pg');
     const client = new Client({
         connectionString: process.env.DATABASE_URL,
@@ -530,6 +531,23 @@ async function loadDBFromPG() {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        console.log('[Database PG] Khởi tạo hoặc xác nhận bảng ot_state thành công.');
+    } catch (err) {
+        console.error('[Database PG] Lỗi khởi tạo bảng ot_state:', err.message);
+    } finally {
+        await client.end();
+    }
+}
+
+async function loadDBFromPG() {
+    if (!process.env.DATABASE_URL) return null;
+    const { Client } = require('pg');
+    const client = new Client({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+    });
+    try {
+        await client.connect();
         const res = await client.query("SELECT data FROM ot_state WHERE key = 'db_state'");
         if (res.rows.length > 0) {
             return JSON.parse(res.rows[0].data);
@@ -568,113 +586,123 @@ async function saveDBToPG(data) {
 
 async function loadDB() {
     if (dbCache) return dbCache;
+    if (dbLoadingPromise) return dbLoadingPromise;
 
-    // 0. Nếu có cấu hình PostgreSQL, ưu tiên nạp từ PostgreSQL trước!
-    if (process.env.DATABASE_URL) {
-        try {
-            console.log('[Database PG] Đang kết nối tải cơ sở dữ liệu từ Cloud PostgreSQL...');
-            const pgData = await loadDBFromPG();
-            if (pgData) {
-                if (!pgData.users) pgData.users = [];
-                if (!pgData.records) pgData.records = [];
-                if (!pgData.closedMonths) pgData.closedMonths = [];
-                
-                const migratedTeams = migrateTeams(pgData);
-                const migratedPass = await migratePasswords(pgData);
-                if (migratedTeams || migratedPass) {
-                    await saveDBToPG(pgData);
+    dbLoadingPromise = (async () => {
+        // 0. Nếu có cấu hình PostgreSQL, ưu tiên nạp từ PostgreSQL trước!
+        if (process.env.DATABASE_URL) {
+            try {
+                console.log('[Database PG] Đang kết nối tải cơ sở dữ liệu từ Cloud PostgreSQL...');
+                const pgData = await loadDBFromPG();
+                if (pgData) {
+                    if (!pgData.users) pgData.users = [];
+                    if (!pgData.records) pgData.records = [];
+                    if (!pgData.closedMonths) pgData.closedMonths = [];
+                    
+                    const migratedTeams = migrateTeams(pgData);
+                    const migratedPass = await migratePasswords(pgData);
+                    if (migratedTeams || migratedPass) {
+                        await saveDBToPG(pgData);
+                    }
+                    console.log('[Database PG] Tải dữ liệu từ PostgreSQL thành công!');
+                    dbCache = pgData;
+                    return pgData;
                 }
-                console.log('[Database PG] Tải dữ liệu từ PostgreSQL thành công!');
-                dbCache = pgData;
-                return pgData;
+            } catch (e) {
+                console.error('[Database PG] Lỗi khi tải dữ liệu khởi động từ PostgreSQL:', e.message);
+            }
+        }
+
+        const dbFile = getDbPath();
+        let fileLoaded = false;
+        let localDB = null;
+
+        // 1. Nếu có cấu hình Gist, luôn ưu tiên đồng bộ tải dữ liệu mới nhất từ Gist về trước (tránh bị ghi đè bởi db.json mặc định từ Git)
+        if (process.env.GIST_ID && process.env.GITHUB_TOKEN) {
+            try {
+                console.log('[Gist] Đang kết nối tải cơ sở dữ liệu từ GitHub Gist...');
+                const gistData = await fetchGist();
+                if (gistData) {
+                    if (!gistData.users) gistData.users = [];
+                    if (!gistData.records) gistData.records = [];
+                    if (!gistData.closedMonths) gistData.closedMonths = [];
+                    
+                    const migratedTeams = migrateTeams(gistData);
+                    const migratedPass = await migratePasswords(gistData);
+                    if (migratedTeams || migratedPass) {
+                        saveDB(gistData);
+                    } else {
+                        // Ghi đè vào file local làm cache
+                        fs.writeFileSync(dbFile, JSON.stringify(gistData, null, 2), 'utf-8');
+                    }
+                    console.log('[Gist] Tải dữ liệu từ Gist thành công!');
+                    if (process.env.DATABASE_URL) {
+                        saveDBToPG(gistData).catch(e => console.error('[Database PG] Lỗi đồng bộ từ Gist lên PG:', e.message));
+                    }
+                    dbCache = gistData;
+                    return gistData;
+                }
+            } catch (e) {
+                console.error('[Gist] Lỗi khi tải dữ liệu khởi động từ Gist (sẽ dùng file local):', e.message);
+            }
+        }
+
+        // 2. Thử tải dữ liệu từ file local (Đặc biệt tối ưu khi có Persistent Disk hoặc chạy local offline)
+        try {
+            if (fs.existsSync(dbFile)) {
+                const data = fs.readFileSync(dbFile, 'utf-8').trim();
+                if (data) {
+                    localDB = JSON.parse(data);
+                    if (!localDB.users) localDB.users = [];
+                    if (!localDB.records) localDB.records = [];
+                    if (!localDB.closedMonths) localDB.closedMonths = [];
+                    dbCache = localDB;
+                    fileLoaded = true;
+                    console.log('[Database] Tải dữ liệu thành công từ file local db.json.');
+                }
             }
         } catch (e) {
-            console.error('[Database PG] Lỗi khi tải dữ liệu khởi động từ PostgreSQL:', e.message);
+            console.error('[Database] Lỗi khi đọc file local db.json:', e.message);
         }
-    }
 
-    const dbFile = getDbPath();
-    let fileLoaded = false;
-    let localDB = null;
-
-    // 1. Nếu có cấu hình Gist, luôn ưu tiên đồng bộ tải dữ liệu mới nhất từ Gist về trước (tránh bị ghi đè bởi db.json mặc định từ Git)
-    if (process.env.GIST_ID && process.env.GITHUB_TOKEN) {
-        try {
-            console.log('[Gist] Đang kết nối tải cơ sở dữ liệu từ GitHub Gist...');
-            const gistData = await fetchGist();
-            if (gistData) {
-                if (!gistData.users) gistData.users = [];
-                if (!gistData.records) gistData.records = [];
-                if (!gistData.closedMonths) gistData.closedMonths = [];
-                
-                const migratedTeams = migrateTeams(gistData);
-                const migratedPass = await migratePasswords(gistData);
-                if (migratedTeams || migratedPass) {
-                    saveDB(gistData);
-                } else {
-                    // Ghi đè vào file local làm cache
-                    fs.writeFileSync(dbFile, JSON.stringify(gistData, null, 2), 'utf-8');
-                }
-                console.log('[Gist] Tải dữ liệu từ Gist thành công!');
-                if (process.env.DATABASE_URL) {
-                    saveDBToPG(gistData).catch(e => console.error('[Database PG] Lỗi đồng bộ từ Gist lên PG:', e.message));
-                }
-                dbCache = gistData;
-                return gistData;
+        // 3. Nếu file local đã tồn tại và tải thành công, ta tin tưởng nó là bản mới nhất
+        if (fileLoaded && localDB) {
+            // Tự động băm mật khẩu plaintext cũ và di trú cấu hình team
+            const migratedPass = await migratePasswords(localDB);
+            const migratedTeams = migrateTeams(localDB);
+            if (migratedPass || migratedTeams) {
+                saveDB(localDB);
+                console.log('[Migration] Đã tự động di trú cơ sở dữ liệu (Passwords/Teams).');
+            } else if (process.env.DATABASE_URL) {
+                saveDBToPG(localDB).catch(e => console.error('[Database PG] Lỗi đồng bộ từ local lên PG:', e.message));
             }
-        } catch (e) {
-            console.error('[Gist] Lỗi khi tải dữ liệu khởi động từ Gist (sẽ dùng file local):', e.message);
+            return localDB;
         }
-    }
 
-    // 2. Thử tải dữ liệu từ file local (Đặc biệt tối ưu khi có Persistent Disk hoặc chạy local offline)
+        // 4. Nếu cả local và Gist đều không có dữ liệu, khởi tạo database mặc định
+        const defaultDB = {
+            users: [{
+                id: generateId(),
+                username: 'admin',
+                password: hashPassword('admin123'),
+                fullname: 'Quản trị viên',
+                role: 'admin',
+                createdAt: new Date().toISOString()
+            }],
+            records: [],
+            closedMonths: []
+        };
+        
+        saveDB(defaultDB);
+        return defaultDB;
+    })();
+
     try {
-        if (fs.existsSync(dbFile)) {
-            const data = fs.readFileSync(dbFile, 'utf-8').trim();
-            if (data) {
-                localDB = JSON.parse(data);
-                if (!localDB.users) localDB.users = [];
-                if (!localDB.records) localDB.records = [];
-                if (!localDB.closedMonths) localDB.closedMonths = [];
-                dbCache = localDB;
-                fileLoaded = true;
-                console.log('[Database] Tải dữ liệu thành công từ file local db.json.');
-            }
-        }
-    } catch (e) {
-        console.error('[Database] Lỗi khi đọc file local db.json:', e.message);
+        const result = await dbLoadingPromise;
+        return result;
+    } finally {
+        dbLoadingPromise = null;
     }
-
-    // 3. Nếu file local đã tồn tại và tải thành công, ta tin tưởng nó là bản mới nhất
-    if (fileLoaded && localDB) {
-        // Tự động băm mật khẩu plaintext cũ và di trú cấu hình team
-        const migratedPass = await migratePasswords(localDB);
-        const migratedTeams = migrateTeams(localDB);
-        if (migratedPass || migratedTeams) {
-            saveDB(localDB);
-            console.log('[Migration] Đã tự động di trú cơ sở dữ liệu (Passwords/Teams).');
-        } else if (process.env.DATABASE_URL) {
-            saveDBToPG(localDB).catch(e => console.error('[Database PG] Lỗi đồng bộ từ local lên PG:', e.message));
-        }
-        return localDB;
-    }
-
-    // 4. Nếu cả local và Gist đều không có dữ liệu, khởi tạo database mặc định
-    const defaultDB = {
-        users: [{
-            id: generateId(),
-            username: 'admin',
-            password: hashPassword('admin123'),
-            fullname: 'Quản trị viên',
-            role: 'admin',
-            createdAt: new Date().toISOString()
-        }],
-        records: [],
-        closedMonths: []
-    };
-    
-    saveDB(defaultDB);
-    return defaultDB;
 }
 
 function saveDB(data) {
@@ -2967,9 +2995,12 @@ function startServer() {
             console.log(`📱 Mobile (Nhân viên): http://${ip}:${activePort}`);
             console.log(`🖥️  Desktop: http://localhost:${activePort}/desktop/`);
             
-            // Nạp DB ngay lúc khởi động để đồng bộ PostgreSQL/Gist nếu cần
-            loadDB().catch(err => {
-                console.error('[Server] Lỗi nạp Database lúc khởi động:', err.message);
+            // Khởi tạo bảng PostgreSQL trước (nếu có config), sau đó nạp DB
+            (async () => {
+                await initPGTable();
+                await loadDB();
+            })().catch(err => {
+                console.error('[Server] Lỗi khởi tạo/nạp Database lúc khởi động:', err.message);
             });
             
             // Khởi chạy đường hầm tunnel kết nối từ xa qua internet (chỉ chạy khi không ở môi trường Cloud)
