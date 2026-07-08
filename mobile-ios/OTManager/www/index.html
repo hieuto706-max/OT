@@ -54,7 +54,7 @@
             }
           }
           const isStandaloneWeb = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
-          if (window.location.protocol !== 'file:' && !isStandaloneWeb) {
+          if (window.location.protocol !== 'file:' && !isStandaloneWeb && !window.AndroidBridge) {
             document.documentElement.classList.add('is-web-browser');
           }
         } catch(e) {}
