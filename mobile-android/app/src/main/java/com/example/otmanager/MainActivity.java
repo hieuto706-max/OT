@@ -63,10 +63,15 @@ public class MainActivity extends AppCompatActivity {
                     if (task.isSuccessful() && task.getResult() != null) {
                         this.nativeFcmToken = task.getResult();
                         android.util.Log.d("FCM", "Prefetched native token: " + this.nativeFcmToken);
+                    } else {
+                        String errMsg = task.getException() != null ? task.getException().getMessage() : "Unknown error";
+                        android.util.Log.e("FCM", "Prefetch failed: " + errMsg);
+                        showToastOnUI("FCM Prefetch Error: " + errMsg);
                     }
                 });
         } catch (Exception e) {
             e.printStackTrace();
+            showToastOnUI("FCM Init Error: " + e.getMessage());
         }
 
         // Ép tăng tốc phần cứng cho cửa sổ (Window) ứng dụng
@@ -422,6 +427,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             } catch (Exception e) {
                 e.printStackTrace();
+                activity.showToastOnUI("FCM getFcmToken Error: " + e.getMessage());
             }
             return "";
         }
