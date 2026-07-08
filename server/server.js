@@ -577,6 +577,7 @@ async function initPGTable() {
                 device_id TEXT,
                 browser_device_id TEXT,
                 push_subscriptions JSONB,
+                fcm_tokens JSONB DEFAULT '[]'::jsonb,
                 pending_unlink BOOLEAN DEFAULT false,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -646,6 +647,7 @@ function pgUserToJS(row) {
         password: row.password, role: row.role, team: row.team || undefined,
         deviceId: row.device_id || undefined, browserDeviceId: row.browser_device_id || undefined,
         pushSubscriptions: row.push_subscriptions || undefined,
+        fcmTokens: row.fcm_tokens || [],
         pendingUnlink: row.pending_unlink || undefined,
         createdAt: row.created_at ? row.created_at.toISOString() : undefined,
         updatedAt: row.updated_at ? row.updated_at.toISOString() : undefined
@@ -743,18 +745,19 @@ async function saveDBToPG(data) {
         // Upsert users
         for (const u of (data.users || [])) {
             await client.query(`
-                INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, fcm_tokens, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
                 ON CONFLICT (id) DO UPDATE SET
                     username = $2, fullname = $3, password = $4, role = $5, team = $6,
                     device_id = $7, browser_device_id = $8, push_subscriptions = $9,
-                    pending_unlink = $10, updated_at = $12
+                    pending_unlink = $10, fcm_tokens = $11, updated_at = $13
             `, [
                 u.id, u.username, u.fullname || '', u.password || '',
                 u.role || 'user', u.team || null,
                 u.deviceId || null, u.browserDeviceId || null,
                 u.pushSubscriptions ? JSON.stringify(u.pushSubscriptions) : null,
                 u.pendingUnlink || false,
+                u.fcmTokens ? JSON.stringify(u.fcmTokens) : '[]',
                 u.createdAt || new Date().toISOString(),
                 u.updatedAt || new Date().toISOString()
             ]);
@@ -958,6 +961,7 @@ function isUserEqual(u1, u2) {
            u1.deviceId === u2.deviceId &&
            u1.browserDeviceId === u2.browserDeviceId &&
            JSON.stringify(u1.pushSubscriptions) === JSON.stringify(u2.pushSubscriptions) &&
+           JSON.stringify(u1.fcmTokens) === JSON.stringify(u2.fcmTokens) &&
            u1.pendingUnlink === u2.pendingUnlink;
 }
 
@@ -1005,18 +1009,19 @@ async function syncDiffToPG(oldData, newData) {
             const ou = oldUsersMap.get(id);
             if (!ou || !isUserEqual(ou, nu)) {
                 await client.query(`
-                    INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, created_at, updated_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                    INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, fcm_tokens, created_at, updated_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
                     ON CONFLICT (id) DO UPDATE SET
                         username = $2, fullname = $3, password = $4, role = $5, team = $6,
                         device_id = $7, browser_device_id = $8, push_subscriptions = $9,
-                        pending_unlink = $10, updated_at = $12
+                        pending_unlink = $10, fcm_tokens = $11, updated_at = $13
                 `, [
                     nu.id, nu.username, nu.fullname || '', nu.password || '',
                     nu.role || 'user', nu.team || null,
                     nu.deviceId || null, nu.browserDeviceId || null,
                     nu.pushSubscriptions ? JSON.stringify(nu.pushSubscriptions) : null,
                     nu.pendingUnlink || false,
+                    nu.fcmTokens ? JSON.stringify(nu.fcmTokens) : '[]',
                     nu.createdAt || new Date().toISOString(),
                     nu.updatedAt || new Date().toISOString()
                 ]);
@@ -2123,10 +2128,7 @@ async function handleAPI(req, res, urlPath, method) {
     if (urlPath === '/api/notifications/subscribe' && method === 'POST') {
         try {
             const body = await parseBody(req);
-            const { subscription } = body;
-            if (!subscription || !subscription.endpoint) {
-                return sendError(res, 400, 'Thiếu thông tin đăng ký subscription.', req);
-            }
+            const { subscription, fcmToken } = body;
             
             // Lấy user đăng nhập hiện tại
             const user = db.users.find(u => u.id === reqUserId);
@@ -2134,21 +2136,40 @@ async function handleAPI(req, res, urlPath, method) {
                 return sendError(res, 404, 'Không tìm thấy người dùng.', req);
             }
             
-            if (!user.pushSubscriptions) {
-                user.pushSubscriptions = [];
+            let updated = false;
+
+            // 1. Xử lý Web Push cũ
+            if (subscription && subscription.endpoint) {
+                if (!user.pushSubscriptions) {
+                    user.pushSubscriptions = [];
+                }
+                const exists = user.pushSubscriptions.some(sub => sub.endpoint === subscription.endpoint);
+                if (!exists) {
+                    user.pushSubscriptions.push(subscription);
+                    updated = true;
+                    logInfo(`[Web Push] Đăng ký thông báo mới thành công cho nhân viên ${user.username}`);
+                }
+            }
+
+            // 2. Xử lý Firebase FCM mới
+            if (fcmToken) {
+                if (!user.fcmTokens) {
+                    user.fcmTokens = [];
+                }
+                if (!user.fcmTokens.includes(fcmToken)) {
+                    user.fcmTokens.push(fcmToken);
+                    updated = true;
+                    logInfo(`[FCM] Đăng ký token mới thành công cho nhân viên ${user.username}`);
+                }
             }
             
-            // Tránh lưu trùng lặp bằng cách kiểm tra endpoint
-            const exists = user.pushSubscriptions.some(sub => sub.endpoint === subscription.endpoint);
-            if (!exists) {
-                user.pushSubscriptions.push(subscription);
+            if (updated) {
                 saveDB(db);
-                console.log(`[Web Push] Đăng ký thông báo mới thành công cho nhân viên ${user.username}`);
             }
             
             return sendJSON(res, 200, { success: true }, req);
         } catch (e) {
-            console.error('[Web Push Subscribe] Lỗi:', e.message);
+            logError('[Notifications Subscribe] Lỗi:', e.message);
             return sendError(res, 500, 'Lỗi lưu thông tin đăng ký thông báo.', req);
         }
     }
@@ -2160,13 +2181,19 @@ async function handleAPI(req, res, urlPath, method) {
             if (!user) {
                 return sendError(res, 404, 'Không tìm thấy người dùng.', req);
             }
-            if (!user.pushSubscriptions || user.pushSubscriptions.length === 0) {
-                return sendError(res, 400, 'Thiếu thông tin đăng ký subscription hoặc thiết bị chưa được cấp quyền nhận thông báo.', req);
+            
+            const hasWebPush = user.pushSubscriptions && user.pushSubscriptions.length > 0;
+            const hasFCM = user.fcmTokens && user.fcmTokens.length > 0;
+
+            if (!hasWebPush && !hasFCM) {
+                return sendError(res, 400, 'Thiết bị chưa được cấp quyền nhận thông báo (Thiếu Web Push và FCM tokens).', req);
             }
             
+            const title = 'Kiểm tra thông báo 🔔';
+            const bodyText = 'Thông báo đẩy từ hệ thống OT Manager đã hoạt động thành công!';
             const payload = JSON.stringify({
-                title: 'Kiểm tra thông báo 🔔',
-                body: 'Thông báo đẩy từ hệ thống OT Manager đã hoạt động thành công!',
+                title: title,
+                body: bodyText,
                 data: { url: '/mobile/' },
                 actions: [
                     { action: 'log', title: 'Ghi nhận ngay' },
@@ -2175,30 +2202,67 @@ async function handleAPI(req, res, urlPath, method) {
             });
             
             let successCount = 0;
+
+            // 1. Gửi qua Firebase FCM
+            const activeFcmTokens = [];
+            if (fcmInitialized && hasFCM) {
+                for (const token of user.fcmTokens) {
+                    try {
+                        const message = {
+                            notification: { title, body: bodyText },
+                            data: { url: '/mobile/' },
+                            token: token
+                        };
+                        await admin.messaging().send(message);
+                        successCount++;
+                        activeFcmTokens.push(token);
+                    } catch (err) {
+                        if (err.code === 'messaging/registration-token-not-registered' || err.code === 'messaging/invalid-argument') {
+                            logInfo(`[FCM Test] Xóa token không hợp lệ của ${user.username}`);
+                        } else {
+                            logError(`[FCM Test] Lỗi gửi token cho ${user.username}:`, err.message);
+                            activeFcmTokens.push(token);
+                        }
+                    }
+                }
+            }
+
+            // 2. Gửi qua Web Push (Dự phòng / Fallback)
             const activeSubscriptions = [];
-            for (const sub of user.pushSubscriptions) {
-                try {
-                    await webpush.sendNotification(sub, payload);
-                    successCount++;
-                    activeSubscriptions.push(sub);
-                } catch (err) {
-                    if (err.statusCode === 410 || err.statusCode === 404) {
-                        console.log(`[Web Push Test] Xóa subscription hết hạn của nhân viên ${user.username}`);
-                    } else {
-                        console.error(`[Web Push Test] Lỗi gửi thông báo cho ${user.username}:`, err.message);
+            if (hasWebPush) {
+                for (const sub of user.pushSubscriptions) {
+                    try {
+                        await webpush.sendNotification(sub, payload);
+                        successCount++;
                         activeSubscriptions.push(sub);
+                    } catch (err) {
+                        if (err.statusCode === 410 || err.statusCode === 404) {
+                            logInfo(`[Web Push Test] Xóa subscription hết hạn của nhân viên ${user.username}`);
+                        } else {
+                            logError(`[Web Push Test] Lỗi gửi thông báo cho ${user.username}:`, err.message);
+                            activeSubscriptions.push(sub);
+                        }
                     }
                 }
             }
             
-            if (activeSubscriptions.length !== user.pushSubscriptions.length) {
+            // Cập nhật lại các token sạch nếu có xóa
+            let dbUpdated = false;
+            if (hasFCM && activeFcmTokens.length !== user.fcmTokens.length) {
+                user.fcmTokens = activeFcmTokens;
+                dbUpdated = true;
+            }
+            if (hasWebPush && activeSubscriptions.length !== user.pushSubscriptions.length) {
                 user.pushSubscriptions = activeSubscriptions;
+                dbUpdated = true;
+            }
+            if (dbUpdated) {
                 saveDB(db);
             }
             
             return sendJSON(res, 200, { success: true, count: successCount }, req);
         } catch (e) {
-            console.error('[Web Push Test] Lỗi:', e.message);
+            logError('[Notifications Test] Lỗi:', e.message);
             return sendError(res, 500, 'Lỗi kiểm tra gửi thông báo đẩy.', req);
         }
     }
@@ -2990,7 +3054,34 @@ const server = http.createServer(async (req, res) => {
     }
 });
 
-// ==================== WEB PUSH NOTIFICATION SYSTEM ====================
+// ==================== FIREBASE CLOUD MESSAGING & WEB PUSH SYSTEM ====================
+const admin = require('firebase-admin');
+let fcmInitialized = false;
+
+try {
+    let serviceAccount = null;
+    if (process.env.FIREBASE_CONFIG_JSON) {
+        serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG_JSON);
+    } else {
+        const keyPath = path.join(__dirname, 'firebase-key.json');
+        if (fs.existsSync(keyPath)) {
+            serviceAccount = require(keyPath);
+        }
+    }
+
+    if (serviceAccount) {
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        fcmInitialized = true;
+        logInfo('[Firebase] Khởi tạo Firebase Admin SDK thành công.');
+    } else {
+        logInfo('[Firebase] Không tìm thấy file key hoặc cấu hình môi trường, bỏ qua khởi chạy Firebase.');
+    }
+} catch (err) {
+    logError('[Firebase] Lỗi khởi tạo Firebase Admin SDK:', err.message);
+}
+
 const webpush = require('web-push');
 
 function initWebPush() {
@@ -3009,7 +3100,7 @@ function initWebPush() {
             config.vapidPublicKey = keys.publicKey;
             config.vapidPrivateKey = keys.privateKey;
             fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
-            console.log('[Web Push] Đã tự sinh cặp khóa VAPID mới và lưu vào config.json');
+            logInfo('[Web Push] Đã tự sinh cặp khóa VAPID mới và lưu vào config.json');
         }
         
         webpush.setVapidDetails(
@@ -3020,7 +3111,7 @@ function initWebPush() {
         
         return config.vapidPublicKey;
     } catch (err) {
-        console.error('[Web Push] Lỗi khởi tạo:', err.message);
+        logError('[Web Push] Lỗi khởi tạo:', err.message);
         return null;
     }
 }
@@ -3048,15 +3139,15 @@ function startDailyReminderJob() {
                 // 1. Kiểm tra ngày Chủ Nhật (getDay() === 0)
                 const dayOfWeek = vnTime.getUTCDay(); // 0: Chủ Nhật, 1: Thứ 2...
                 if (dayOfWeek === 0) {
-                    console.log('[Daily Reminder] Hôm nay là Chủ Nhật, bỏ qua nhắc nhở.');
+                    logInfo('[Daily Reminder] Hôm nay là Chủ Nhật, bỏ qua nhắc nhở.');
                     return;
                 }
                 
-                console.log(`[Daily Reminder] Đang bắt đầu quét nhắc nhở OT lúc 22:00 cho ngày ${dateStr}...`);
+                logInfo(`[Daily Reminder] Đang bắt đầu quét nhắc nhở OT lúc 22:00 cho ngày ${dateStr}...`);
                 sendDailyPushReminders(dateStr);
             }
         } catch (e) {
-            console.error('[Daily Reminder] Lỗi chu kỳ nhắc nhở:', e.message);
+            logError('[Daily Reminder] Lỗi chu kỳ nhắc nhở:', e.message);
         }
     }, 30000); // Kiểm tra mỗi 30 giây
 }
@@ -3073,19 +3164,57 @@ async function sendDailyPushReminders(dateStr) {
             continue; // Đã note rồi -> bỏ qua
         }
         
-        // Chưa note -> gửi thông báo nếu có đăng ký thiết bị
-        if (emp.pushSubscriptions && emp.pushSubscriptions.length > 0) {
-            const payload = JSON.stringify({
-                title: 'Nhắc nhở OT Manager 📝',
-                body: `Hôm nay (${dateStr}) bạn chưa ghi nhận tăng ca. Hãy note giờ OT nhé!`,
-                data: { url: '/mobile/' },
-                actions: [
-                    { action: 'log', title: 'Ghi nhận ngay' },
-                    { action: 'skip', title: 'Bỏ qua' }
-                ]
-            });
-            
-            // Gửi tới tất cả thiết bị đã đăng ký của nhân viên này
+        const hasWebPush = emp.pushSubscriptions && emp.pushSubscriptions.length > 0;
+        const hasFCM = emp.fcmTokens && emp.fcmTokens.length > 0;
+
+        if (!hasWebPush && !hasFCM) {
+            continue; // Không đăng ký nhận tin -> bỏ qua
+        }
+
+        const title = 'Nhắc nhở OT Manager 📝';
+        const bodyText = `Hôm nay (${dateStr}) bạn chưa ghi nhận tăng ca. Hãy note giờ OT nhé!`;
+        const payload = JSON.stringify({
+            title: title,
+            body: bodyText,
+            data: { url: '/mobile/' },
+            actions: [
+                { action: 'log', title: 'Ghi nhận ngay' },
+                { action: 'skip', title: 'Bỏ qua' }
+            ]
+        });
+
+        let dbUpdated = false;
+
+        // 1. Gửi qua Firebase FCM (Ưu tiên hàng đầu)
+        if (fcmInitialized && hasFCM) {
+            const activeFcmTokens = [];
+            for (const token of emp.fcmTokens) {
+                try {
+                    const message = {
+                        notification: { title, body: bodyText },
+                        data: { url: '/mobile/' },
+                        token: token
+                    };
+                    await admin.messaging().send(message);
+                    notifyCount++;
+                    activeFcmTokens.push(token);
+                } catch (err) {
+                    if (err.code === 'messaging/registration-token-not-registered' || err.code === 'messaging/invalid-argument') {
+                        logInfo(`[Daily Reminder FCM] Xóa token không hợp lệ của ${emp.username}`);
+                        dbUpdated = true;
+                    } else {
+                        logError(`[Daily Reminder FCM] Lỗi gửi token cho ${emp.username}:`, err.message);
+                        activeFcmTokens.push(token);
+                    }
+                }
+            }
+            if (activeFcmTokens.length !== emp.fcmTokens.length) {
+                emp.fcmTokens = activeFcmTokens;
+            }
+        }
+
+        // 2. Gửi qua Web Push (Fallback)
+        if (hasWebPush) {
             const activeSubscriptions = [];
             for (const sub of emp.pushSubscriptions) {
                 try {
@@ -3095,22 +3224,25 @@ async function sendDailyPushReminders(dateStr) {
                 } catch (err) {
                     // Nếu lỗi do thiết bị không còn tồn tại hoặc hết hạn (410 Gone / 404 Not Found), xóa subscription đó
                     if (err.statusCode === 410 || err.statusCode === 404) {
-                        console.log(`[Web Push] Xóa subscription hết hạn của nhân viên ${emp.username}`);
+                        logInfo(`[Daily Reminder Web Push] Xóa subscription hết hạn của nhân viên ${emp.username}`);
+                        dbUpdated = true;
                     } else {
-                        console.error(`[Web Push] Lỗi gửi thông báo cho ${emp.username}:`, err.message);
+                        logError(`[Daily Reminder Web Push] Lỗi gửi thông báo cho ${emp.username}:`, err.message);
                         activeSubscriptions.push(sub); // Giữ lại nếu lỗi mạng khác
                     }
                 }
             }
-            
-            // Cập nhật lại list subscription sạch
             if (activeSubscriptions.length !== emp.pushSubscriptions.length) {
                 emp.pushSubscriptions = activeSubscriptions;
-                saveDB(db);
             }
         }
+
+        // Lưu cập nhật nếu có dọn dẹp token hết hạn
+        if (dbUpdated) {
+            saveDB(db);
+        }
     }
-    console.log(`[Daily Reminder] Hoàn thành quét nhắc nhở. Đã gửi thành công ${notifyCount} thông báo.`);
+    logInfo(`[Daily Reminder] Hoàn thành quét nhắc nhở. Đã gửi thành công ${notifyCount} thông báo.`);
 }
 
 function getCloudUrl() {

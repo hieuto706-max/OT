@@ -19,3 +19,4 @@ scratch/
 *.log
 subagent_logs.txt
 *.pem
+server/firebase-key.json

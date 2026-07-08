@@ -1,3 +1,29 @@
+importScripts('https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.22.1/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey: "AIzaSyD8W_NVkhL-7uSfR6aNigLDHXtLN7fO6cI",
+  authDomain: "ot-manager-4a0eb.firebaseapp.com",
+  projectId: "ot-manager-4a0eb",
+  storageBucket: "ot-manager-4a0eb.firebasestorage.app",
+  messagingSenderId: "75783850598",
+  appId: "1:75783850598:web:274a61bee43b65c2343ba7"
+});
+
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage((payload) => {
+  console.log('[Service Worker] Nhận tin nhắn ngầm FCM:', payload);
+  const notificationTitle = payload.notification.title || 'OT Manager';
+  const notificationOptions = {
+    body: payload.notification.body,
+    icon: './favicon.png',
+    badge: './favicon.png',
+    data: payload.data || {}
+  };
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
 const CACHE_NAME = 'ot-manager-v17';
 const ASSETS = [
       './',
