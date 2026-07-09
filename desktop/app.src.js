@@ -4743,22 +4743,14 @@ async function editRecordDialog(recordId, source) {
                 </div>
             </div>
 
-            <!-- Trip inputs -->
-            <div class="form-group" style="margin-bottom: 15px; text-align: left;">
-                <label class="switch-label" for="modal-rec-has-trip">
-                    <input type="checkbox" id="modal-rec-has-trip" ${record.deliveryProvince ? 'checked' : ''}>
-                    <span class="switch-slider"></span>
-                    <span class="switch-text">Đi xe tăng cường</span>
-                </label>
-            </div>
-            <div class="form-group" id="modal-rec-province-group" style="display: ${record.deliveryProvince ? 'block' : 'none'}; margin-bottom: 15px;">
-                <label style="display:block;margin-bottom:6px;font-weight:600;">Tỉnh đi xe</label>
-                <input type="text" id="modal-rec-province" list="provinces-datalist" value="${record.deliveryProvince || ''}" placeholder="Nhập để tìm kiếm tỉnh..." class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+            <!-- Nhóm Hoạt động ngoài giờ tùy chỉnh (Sửa) -->
+            <div id="modal-rec-custom-activity-group" style="display: none; margin-bottom: 15px;">
+                <div id="modal-rec-custom-activities-list"></div>
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
                 <label style="display:block;margin-bottom:6px;font-weight:600;">Ghi chú</label>
-                <textarea id="modal-rec-note" class="input-sm" style="width:100%; height:60px; resize:none; box-sizing:border-box; padding:10px;" ${record.deliveryProvince && record.totalHours === 0 ? '' : 'required'}>${cleanedNote}</textarea>
+                <textarea id="modal-rec-note" class="input-sm" style="width:100%; height:60px; resize:none; box-sizing:border-box; padding:10px;" required>${cleanedNote}</textarea>
             </div>
         </form>`;
 
@@ -4775,10 +4767,18 @@ async function editRecordDialog(recordId, source) {
 
                 if (!date) return showToast('Vui lòng chọn ngày!', 'error');
 
-                const hasTrip = document.getElementById('modal-rec-has-trip')?.checked;
-                const province = document.getElementById('modal-rec-province')?.value.trim() || '';
+                // Get selected custom activity info
+                const checkedAct = document.querySelector('.modal-rec-custom-activity-checkbox:checked');
+                const customActivity = checkedAct ? checkedAct.dataset.actName : '';
+                const customActivityMode = checkedAct ? checkedAct.dataset.actMode : '';
+                
+                const detailGroup = checkedAct ? document.getElementById(`modal-rec-custom-activity-detail-group-${checkedAct.dataset.actId}`) : null;
+                const detailInput = detailGroup ? detailGroup.querySelector('.modal-rec-custom-activity-detail') : null;
+                const detailValue = detailInput ? detailInput.value.trim() : '';
 
-                if (hasTrip && !province) return showToast('Vui lòng chọn hoặc nhập tỉnh đi xe!', 'error');
+                if (checkedAct && !detailValue) {
+                    return showToast('Vui lòng nhập chi tiết cho hoạt động ngoài giờ!', 'error');
+                }
 
                 let eveningHours = 0;
                 let totalHours = 0;
@@ -4793,11 +4793,13 @@ async function editRecordDialog(recordId, source) {
                     eveningHours = calculateEveningOT(otStart, otEnd);
                     const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
                     totalHours = lunchHours + eveningHours;
-                    if (totalHours <= 0 && !hasTrip) return showToast('Vui lòng chọn ít nhất một loại OT hoặc đi xe tăng cường!', 'error');
+                    if (totalHours <= 0 && !checkedAct) return showToast('Vui lòng chọn ít nhất một loại OT hoặc hoạt động ngoài giờ!', 'error');
                 }
 
-                if (hasTrip && totalHours === 0 && !note) {
-                    note = 'Đi xe tăng cường ' + province;
+                const deliveryProvince = checkedAct && customActivityMode === 'trip' ? detailValue : '';
+
+                if (checkedAct && totalHours === 0 && !note) {
+                    note = `${customActivity} ${detailValue}`;
                 } else if (!note) {
                     return showToast('Vui lòng nhập ghi chú!', 'error');
                 }
@@ -4810,9 +4812,9 @@ async function editRecordDialog(recordId, source) {
                         otEnd: (!isRecBackfill && eveningHours > 0) ? otEnd : '',
                         eveningOTHours: eveningHours,
                         totalHours,
-                        deliveryProvince: hasTrip ? province : '',
-                        customActivity: record.customActivity || '',
-                        calcMode: record.calcMode || '',
+                        deliveryProvince,
+                        customActivity,
+                        calcMode: customActivityMode || (record.calcMode || ''),
                         note,
                         isBackfill: isRecBackfill,
                         createdMonth: isRecBackfill ? getCurrentMonth() : date.substring(0, 7)
@@ -4829,14 +4831,81 @@ async function editRecordDialog(recordId, source) {
             }}
         ]);
 
+        // Load custom activities list in edit modal
+        const listContainer = document.getElementById('modal-rec-custom-activities-list');
+        const activityGroup = document.getElementById('modal-rec-custom-activity-group');
+        
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        let userTeam = '';
+        if (currentUser && currentUser.role === 'employee') {
+            userTeam = currentUser.team || '';
+        } else {
+            const foundUser = loadedUsers.find(u => u.id === record.userId);
+            userTeam = foundUser ? (foundUser.team || '') : '';
+        }
+        
+        const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+        const activities = (teamObj && teamObj.customActivities) ? teamObj.customActivities : [];
+        
+        if (activities.length > 0) {
+            if (activityGroup) activityGroup.style.display = isBackfill ? 'none' : 'block';
+            
+            let activeActName = record.customActivity || '';
+            // Backward compatibility: map legacy travel record to the first trip activity
+            if (!activeActName && record.deliveryProvince) {
+                const firstTripAct = activities.find(a => a.calcMode === 'trip');
+                activeActName = firstTripAct ? firstTripAct.name : (activities[0]?.name || '');
+            }
+            
+            if (listContainer) {
+                listContainer.innerHTML = activities.map(act => {
+                    const isSelected = act.name === activeActName;
+                    const detailValue = isSelected ? (record.deliveryProvince || '') : '';
+                    
+                    return `
+                    <div class="custom-activity-item" style="margin-bottom: 14px; text-align: left;">
+                        <label class="switch-label" for="modal-chk-${act.id}" style="display: inline-flex; align-items: center; gap: 12px; cursor: pointer;">
+                            <input type="checkbox" id="modal-chk-${act.id}" class="modal-rec-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleModalCustomActivityInput('${act.id}')" ${isSelected ? 'checked' : ''}>
+                            <span class="switch-slider"></span>
+                            <span class="switch-text" style="display: flex; flex-direction: column; gap: 2px;">
+                                <strong>${act.name}</strong>
+                                <small style="font-size: 11px; color: var(--text-secondary);">Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}</small>
+                            </span>
+                        </label>
+                        <div class="form-group" id="modal-rec-custom-activity-detail-group-${act.id}" style="display: ${isSelected ? 'block' : 'none'}; margin-top: 8px; padding: 0 4px; margin-bottom: 0;">
+                            <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiết'}</label>
+                            <input type="text" class="modal-rec-custom-activity-detail" data-act-id="${act.id}" placeholder="${act.placeholder || 'Nhập chi tiết...'}" value="${detailValue}" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
+                        </div>
+                    </div>
+                `}).join('');
+            }
+            
+            // Adjust note requirement based on whether any activity is selected initially
+            const noteEl = document.getElementById('modal-rec-note');
+            if (activeActName && noteEl) {
+                noteEl.required = false;
+                noteEl.placeholder = `Mặc định: ${activeActName}...`;
+            }
+        } else {
+            if (activityGroup) activityGroup.style.display = 'none';
+        }
+
         const modalBackfill = document.getElementById('modal-rec-backfill');
         if (modalBackfill) {
             modalBackfill.addEventListener('change', function() {
                 const normalInputs = document.getElementById('modal-rec-normal-inputs');
                 const backfillGroup = document.getElementById('modal-rec-backfill-hours-group');
+                const customActGroup = document.getElementById('modal-rec-custom-activity-group');
                 if (this.checked) {
                     if (normalInputs) normalInputs.style.display = 'none';
                     if (backfillGroup) backfillGroup.style.display = 'block';
+                    if (customActGroup) customActGroup.style.display = 'none';
+                    // Uncheck custom activities
+                    document.querySelectorAll('.modal-rec-custom-activity-checkbox').forEach(c => {
+                        c.checked = false;
+                        const dg = document.getElementById(`modal-rec-custom-activity-detail-group-${c.dataset.actId}`);
+                        if (dg) dg.style.display = 'none';
+                    });
                     const lunchEl = document.getElementById('modal-rec-lunch');
                     if (lunchEl) lunchEl.checked = false;
                     const startEl = document.getElementById('modal-rec-start');
@@ -4845,6 +4914,7 @@ async function editRecordDialog(recordId, source) {
                     if (endEl) endEl.value = '16:30';
                 } else {
                     if (normalInputs) normalInputs.style.display = 'block';
+                    if (customActGroup && activities.length > 0) customActGroup.style.display = 'block';
                     if (backfillGroup) backfillGroup.style.display = 'none';
                 }
             });
@@ -4862,29 +4932,6 @@ async function editRecordDialog(recordId, source) {
             };
             modalStart.addEventListener('change', syncModalEnd);
             modalStart.addEventListener('input', syncModalEnd);
-        }
-
-        const modalHasTrip = document.getElementById('modal-rec-has-trip');
-        if (modalHasTrip) {
-            modalHasTrip.addEventListener('change', function() {
-                const provGroup = document.getElementById('modal-rec-province-group');
-                const provInput = document.getElementById('modal-rec-province');
-                const noteEl = document.getElementById('modal-rec-note');
-                if (this.checked) {
-                    if (provGroup) provGroup.style.display = 'block';
-                    if (noteEl) {
-                        noteEl.required = false;
-                        noteEl.placeholder = "Mặc định: Đi xe tăng cường...";
-                    }
-                } else {
-                    if (provGroup) provGroup.style.display = 'none';
-                    if (provInput) provInput.value = '';
-                    if (noteEl) {
-                        noteEl.required = true;
-                        noteEl.placeholder = "Lý do tăng ca, phân công công việc...";
-                    }
-                }
-            });
         }
     } catch (e) {
         showToast('Lỗi tải dữ liệu bản ghi', 'error');
@@ -5193,6 +5240,51 @@ window.toggleAdminCustomActivityInput = function(actId) {
     }
     updateAdminOTPreview();
 };
+
+window.toggleModalCustomActivityInput = function(actId) {
+    const chk = document.querySelector(`.modal-rec-custom-activity-checkbox[data-act-id="${actId}"]`);
+    const noteEl = document.getElementById('modal-rec-note');
+    if (chk && chk.checked) {
+        // Tự động bỏ chọn các checkbox hoạt động khác
+        document.querySelectorAll('.modal-rec-custom-activity-checkbox').forEach(other => {
+            if (other !== chk) {
+                other.checked = false;
+                const otherDetailGroup = document.getElementById(`modal-rec-custom-activity-detail-group-${other.dataset.actId}`);
+                if (otherDetailGroup) otherDetailGroup.style.display = 'none';
+            }
+        });
+        
+        // Hiển thị khung nhập chi tiết của hoạt động này
+        const detailGroup = document.getElementById(`modal-rec-custom-activity-detail-group-${actId}`);
+        if (detailGroup) {
+            detailGroup.style.display = 'block';
+            const detailInput = detailGroup.querySelector('.modal-rec-custom-activity-detail');
+            if (detailInput) detailInput.required = true;
+        }
+        if (noteEl) {
+            noteEl.required = false;
+            noteEl.placeholder = `Mặc định: ${chk.dataset.actName}...`;
+        }
+    } else {
+        // Ẩn khung nhập chi tiết
+        const detailGroup = document.getElementById(`modal-rec-custom-activity-detail-group-${actId}`);
+        if (detailGroup) {
+            detailGroup.style.display = 'none';
+            const detailInput = detailGroup.querySelector('.modal-rec-custom-activity-detail');
+            if (detailInput) {
+                detailInput.required = false;
+                detailInput.value = '';
+            }
+        }
+        // Kiểm tra xem còn checkbox nào khác được chọn không
+        const anyChecked = document.querySelector('.modal-rec-custom-activity-checkbox:checked');
+        if (!anyChecked && noteEl) {
+            noteEl.required = true;
+            noteEl.placeholder = "Lý do tăng ca, phân công công việc...";
+        }
+    }
+};
+
 
 function setupEmployeeCustomActivitiesUI() {
     const listContainer = document.getElementById('ot-custom-activities-list');
