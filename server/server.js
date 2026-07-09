@@ -934,6 +934,7 @@ async function loadDB() {
                 password: hashPassword('admin123'),
                 fullname: 'Quản trị viên',
                 role: 'admin',
+                isSuperAdmin: true,
                 createdAt: new Date().toISOString()
             }],
             records: [],
@@ -946,6 +947,14 @@ async function loadDB() {
 
     try {
         const result = await dbLoadingPromise;
+        if (result && result.users) {
+            const superAdmin = result.users.find(u => u.username === 'admin');
+            if (superAdmin && !superAdmin.isSuperAdmin) {
+                superAdmin.isSuperAdmin = true;
+                saveDB(result);
+                console.log('[Migration] Đã thiết lập cờ isSuperAdmin cho tài khoản admin mặc định.');
+            }
+        }
         return JSON.parse(JSON.stringify(result));
     } finally {
         dbLoadingPromise = null;
@@ -1452,7 +1461,7 @@ async function handleAPI(req, res, urlPath, method) {
         let userTeam = body.team || '';
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
-            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin' && reqUser.team !== 'admin') {
+            if (reqUser && reqUser.role === 'admin' && !reqUser.isSuperAdmin && reqUser.team !== 'admin') {
                 // Nếu là sub-admin tạo, mặc định gán nhân viên vào team của sub-admin này
                 userTeam = reqUser.team || '';
             }
@@ -1481,7 +1490,7 @@ async function handleAPI(req, res, urlPath, method) {
         let filteredUsers = db.users;
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
-            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin' && reqUser.team !== 'admin') {
+            if (reqUser && reqUser.role === 'admin' && !reqUser.isSuperAdmin && reqUser.team !== 'admin') {
                 const reqUserTeam = reqUser.team || '';
                 // Sub-admin: chỉ xem các quản trị viên, nhân viên thuộc team mình, và nhân viên chưa phân team
                 filteredUsers = db.users.filter(u => u.role === 'admin' || (reqUserTeam && u.team === reqUserTeam) || !u.team);
@@ -1510,12 +1519,12 @@ async function handleAPI(req, res, urlPath, method) {
         const userId = urlPath.split('/api/users/')[1];
         const user = db.users.find(u => u.id === userId);
         if (!user) return sendError(res, 404, 'Không tìm thấy người dùng!');
-        if (user.username === 'admin') return sendError(res, 403, 'Không thể xóa tài khoản admin!');
+        if (user.isSuperAdmin) return sendError(res, 403, 'Không thể xóa tài khoản Quản trị viên tối cao!');
 
         // Phân quyền theo Team
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
-            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin' && reqUser.team !== 'admin') {
+            if (reqUser && reqUser.role === 'admin' && !reqUser.isSuperAdmin && reqUser.team !== 'admin') {
                 const reqUserTeam = reqUser.team || '';
                 if (user.team && user.team !== reqUserTeam) {
                     return sendError(res, 403, 'Bạn không có quyền xóa tài khoản của team khác!');
@@ -1537,10 +1546,14 @@ async function handleAPI(req, res, urlPath, method) {
         if (userIdx < 0) return sendError(res, 404, 'Không tìm thấy người dùng!');
 
         const targetUser = db.users[userIdx];
+        if (targetUser.isSuperAdmin && reqUserId !== targetUser.id) {
+            return sendError(res, 403, 'Chỉ có Quản trị viên tối cao mới được chỉnh sửa tài khoản này!');
+        }
+
         // Phân quyền theo Team
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
-            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin' && reqUser.team !== 'admin') {
+            if (reqUser && reqUser.role === 'admin' && !reqUser.isSuperAdmin && reqUser.team !== 'admin') {
                 const reqUserTeam = reqUser.team || '';
                 if (targetUser.id !== reqUserId && targetUser.team && targetUser.team !== reqUserTeam) {
                     return sendError(res, 403, 'Bạn không có quyền sửa tài khoản của team khác!');
@@ -1558,9 +1571,6 @@ async function handleAPI(req, res, urlPath, method) {
             if (existing) {
                 return sendError(res, 409, 'Tên đăng nhập đã tồn tại!');
             }
-            if (targetUser.username === 'admin' && lowercaseUsername !== 'admin') {
-                return sendError(res, 403, 'Không thể đổi tên đăng nhập của admin mặc định!');
-            }
             db.users[userIdx].username = username.trim();
         }
         if (password) db.users[userIdx].password = password;
@@ -1571,7 +1581,7 @@ async function handleAPI(req, res, urlPath, method) {
         if (team !== undefined) {
             if (reqUserId) {
                 const reqUser = db.users.find(u => u.id === reqUserId);
-                if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin' && reqUser.team !== 'admin') {
+                if (reqUser && reqUser.role === 'admin' && !reqUser.isSuperAdmin && reqUser.team !== 'admin') {
                     // Sub-admin chỉ được gán về team của mình hoặc để trống
                     const reqUserTeam = reqUser.team || '';
                     if (team && team !== reqUserTeam) {
@@ -1588,8 +1598,8 @@ async function handleAPI(req, res, urlPath, method) {
         }
 
         if (role) {
-            if (db.users[userIdx].username === 'admin' && role !== 'admin') {
-                return sendError(res, 403, 'Không thể thay đổi vai trò của admin mặc định!');
+            if (db.users[userIdx].isSuperAdmin && role !== 'admin') {
+                return sendError(res, 403, 'Không thể thay đổi vai trò của Quản trị viên tối cao!');
             }
             db.users[userIdx].role = role;
         }
@@ -1614,7 +1624,7 @@ async function handleAPI(req, res, urlPath, method) {
         // Lọc records theo team nếu requester là Sub-admin
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
-            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin' && reqUser.team !== 'admin') {
+            if (reqUser && reqUser.role === 'admin' && !reqUser.isSuperAdmin && reqUser.team !== 'admin') {
                 const reqUserTeam = reqUser.team || '';
                 const allowedUserIds = db.users
                     .filter(u => u.role === 'admin' || (reqUserTeam && u.team === reqUserTeam) || !u.team)
@@ -1959,7 +1969,7 @@ async function handleAPI(req, res, urlPath, method) {
 
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
-            if (reqUser && reqUser.role === 'admin' && reqUser.username !== 'admin' && reqUser.team !== 'admin') {
+            if (reqUser && reqUser.role === 'admin' && !reqUser.isSuperAdmin && reqUser.team !== 'admin') {
                 const adminTeam = reqUser.team || '';
                 // Sub-admin: chỉ thống kê nhân viên thuộc team của mình
                 employees = db.users.filter(u => u.role === 'employee' && u.team === adminTeam);
@@ -1982,8 +1992,8 @@ async function handleAPI(req, res, urlPath, method) {
             totalUsers: employees.length,
             pendingOT: pendingRecords.length,
             pendingUnlinks: pendingUnlinksCount,
-            totalOTMonth: approvedRecords.reduce((s, r) => s + r.totalHours, 0),
-            totalTripsMonth: approvedRecords.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '').length
+            totalOTMonth: approvedRecords.filter(r => !r.customActivity).reduce((s, r) => s + r.totalHours, 0),
+            totalTripsMonth: approvedRecords.filter(r => r.customActivity && r.customActivity.trim() !== '').length
         });
     }
 
@@ -2026,16 +2036,21 @@ async function handleAPI(req, res, urlPath, method) {
             });
         }
 
-        // Đồng bộ gán tên team tương ứng cho Leader
-        teams.forEach(t => {
-            if (t && typeof t === 'object') {
-                const leaderIds = t.leaderIds || (t.leaderId ? [t.leaderId] : []);
-                leaderIds.forEach(leaderId => {
-                    const leader = db.users.find(u => u.id === leaderId);
-                    if (leader) {
-                        leader.team = t.name;
+        // Đồng bộ gán tên team tương ứng cho các Leader và xoá team cho các cựu Leader
+        db.users.forEach(u => {
+            if (u.role === 'admin') {
+                const ledTeam = teams.find(t => {
+                    if (t && typeof t === 'object') {
+                        const ids = t.leaderIds || (t.leaderId ? [t.leaderId] : []);
+                        return ids.includes(u.id);
                     }
+                    return false;
                 });
+                if (ledTeam) {
+                    u.team = ledTeam.name;
+                } else {
+                    u.team = u.isSuperAdmin ? 'admin' : '';
+                }
             }
         });
 

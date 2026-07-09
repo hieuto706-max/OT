@@ -565,7 +565,7 @@ async function initAdminDashboard(user) {
         cleanupMonthInput.value = currentMonth;
     }
 
-    const isAdmin = user && user.username === 'admin';
+    const isAdmin = user && (user.username === 'admin' || user.isSuperAdmin);
     const adminTeamGroup = document.getElementById('admin-filter-team-group');
     const reportTeamGroup = document.getElementById('report-filter-team-group');
     if (adminTeamGroup) {
@@ -674,7 +674,7 @@ function renderModalTeamsRows() {
         const isSelected = selectedTeamIdForModal === team.id;
         const bg = isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
         const border = isSelected ? '1px solid var(--accent-blue)' : '1px solid transparent';
-        const memberCount = modalAllUsers.filter(u => u.team === team.name).length;
+        const memberCount = modalAllUsers.filter(u => u.team === team.name && u.role === 'employee').length;
         
         return `
         <div onclick="selectTeamInModal('${team.id}')" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; cursor: pointer; background: ${bg}; border: ${border}; transition: all 0.2s;">
@@ -728,8 +728,8 @@ function renderSelectedTeamDetails() {
         </div>`;
     }
 
-    // Thành viên hiện tại
-    const members = modalAllUsers.filter(u => u.team === team.name);
+    // Thành viên hiện tại (chỉ lấy Nhân viên, loại trừ Quản lý/Trưởng nhóm)
+    const members = modalAllUsers.filter(u => u.team === team.name && u.role === 'employee');
     // Danh sách ứng viên Trưởng nhóm (Chỉ các tài khoản có role === 'admin')
     const potentialLeaders = modalAllUsers.filter(u => u.role === 'admin');
     const activeLeaderIds = team.leaderIds || (team.leaderId ? [team.leaderId] : []);
@@ -1200,7 +1200,7 @@ async function populateUserFilter() {
         users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
 
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
-        const isSuperAdmin = currentUser && currentUser.username === 'admin';
+        const isSuperAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
         const managerTeam = currentUser ? (currentUser.team || '') : '';
 
         if (select) {
@@ -1291,6 +1291,27 @@ async function refreshAdminStats() {
         document.getElementById('stat-total-ot').textContent = stats.totalOTMonth.toFixed(1);
         const tripsEl = document.getElementById('stat-total-trips');
         if (tripsEl) tripsEl.textContent = stats.totalTripsMonth || 0;
+
+        let statsLabel = 'Tổng chuyến xe (Đã duyệt)';
+        if (isAdmin) {
+            const hasCustomActivities = typeof TEAMS !== 'undefined' && TEAMS.some(t => typeof t === 'object' && t.customActivities && t.customActivities.length > 0);
+            if (hasCustomActivities) {
+                statsLabel = 'Tổng hoạt động khác (Đã duyệt)';
+            }
+        } else {
+            const managerTeam = currentUser ? (currentUser.team || '') : '';
+            if (managerTeam && typeof TEAMS !== 'undefined') {
+                const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === managerTeam);
+                const hasCustomActivities = !!(teamObj && teamObj.customActivities && teamObj.customActivities.length > 0);
+                if (hasCustomActivities) {
+                    const activityNames = teamObj.customActivities.map(a => a.name).join(' / ');
+                    statsLabel = `Tổng ${activityNames} (Đã duyệt)`;
+                }
+            }
+        }
+
+        const labelEl = document.getElementById('stat-total-trips-label');
+        if (labelEl) labelEl.textContent = statsLabel;
     } catch (e) {}
 }
 
@@ -1316,7 +1337,58 @@ async function refreshAdminRecords() {
         const usersData = await api('/api/users');
         const users = usersData.users;
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
-        const isAdmin = currentUser && currentUser.username === 'admin';
+        const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
+
+        let hasCustomActivities = false;
+        let adminBtnText = '2. Hoạt động khác';
+        if (isAdmin) {
+            if (filterTeam && filterTeam !== 'unassigned' && typeof TEAMS !== 'undefined') {
+                const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === filterTeam);
+                hasCustomActivities = !!(teamObj && teamObj.customActivities && teamObj.customActivities.length > 0);
+                if (hasCustomActivities) {
+                    adminBtnText = '2. ' + teamObj.customActivities.map(a => a.name).join(' / ');
+                }
+            } else if (typeof TEAMS !== 'undefined') {
+                hasCustomActivities = TEAMS.some(t => typeof t === 'object' && t.customActivities && t.customActivities.length > 0);
+                if (hasCustomActivities) {
+                    const allActs = [];
+                    TEAMS.forEach(t => {
+                        if (typeof t === 'object' && t.customActivities) {
+                            t.customActivities.forEach(a => {
+                                if (!allActs.includes(a.name)) allActs.push(a.name);
+                            });
+                        }
+                    });
+                    if (allActs.length > 0 && allActs.length <= 3) {
+                        adminBtnText = '2. ' + allActs.join(' / ');
+                    } else {
+                        adminBtnText = '2. Hoạt động khác';
+                    }
+                }
+            }
+        } else {
+            const managerTeam = currentUser ? (currentUser.team || '') : '';
+            if (managerTeam && typeof TEAMS !== 'undefined') {
+                const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === managerTeam);
+                hasCustomActivities = !!(teamObj && teamObj.customActivities && teamObj.customActivities.length > 0);
+                if (hasCustomActivities) {
+                    adminBtnText = '2. ' + teamObj.customActivities.map(a => a.name).join(' / ');
+                }
+            }
+        }
+
+        const adminRecTypeSelector = document.getElementById('admin-rec-type-selector');
+        const btnAdminRecTypeTrips = document.getElementById('btn-admin-rec-type-trips');
+        if (hasCustomActivities) {
+            if (adminRecTypeSelector) adminRecTypeSelector.style.display = 'flex';
+            if (btnAdminRecTypeTrips) {
+                btnAdminRecTypeTrips.style.display = 'inline-block';
+                btnAdminRecTypeTrips.textContent = adminBtnText;
+            }
+        } else {
+            if (adminRecTypeSelector) adminRecTypeSelector.style.display = 'none';
+            currentAdminRecType = 'ot';
+        }
 
         const filteredRecords = records.filter(r => {
             const user = users.find(u => u.id === r.userId);
@@ -1357,9 +1429,9 @@ async function refreshAdminRecords() {
         // Apply Record Type Filter
         let recordsFiltered = [];
         if (currentAdminRecType === 'ot') {
-            recordsFiltered = filteredRecords.filter(r => r.totalHours > 0 || r.isBackfill);
+            recordsFiltered = filteredRecords.filter(r => (!r.customActivity || r.customActivity.trim() === '') && (r.totalHours > 0 || r.isBackfill));
         } else {
-            recordsFiltered = filteredRecords.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '');
+            recordsFiltered = filteredRecords.filter(r => r.customActivity && r.customActivity.trim() !== '');
         }
 
         // Set Table Headers dynamically
@@ -1382,8 +1454,10 @@ async function refreshAdminRecords() {
                     <th>Nhân viên</th>
                     <th>Nhóm</th>
                     <th>Ngày</th>
-                    <th>Đi xe (Tỉnh)</th>
+                    <th>Hoạt động</th>
+                    <th>Hình thức / Chi tiết</th>
                     <th>Ghi chú</th>
+                    <th>Trạng thái</th>
                     <th>Thao tác</th>
                 </tr>`;
             }
@@ -1391,6 +1465,7 @@ async function refreshAdminRecords() {
         if (pendingTbody && pendingTbody.previousElementSibling) {
             if (currentAdminRecType === 'ot') {
                 pendingTbody.previousElementSibling.innerHTML = `<tr>
+                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="chk-pending-select-all" style="width: 14px; height: 14px; margin: 0; cursor: pointer;"></th>
                     <th>Nhân viên</th>
                     <th>Nhóm</th>
                     <th>Ngày</th>
@@ -1403,10 +1478,12 @@ async function refreshAdminRecords() {
                 </tr>`;
             } else {
                 pendingTbody.previousElementSibling.innerHTML = `<tr>
+                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="chk-pending-select-all" style="width: 14px; height: 14px; margin: 0; cursor: pointer;"></th>
                     <th>Nhân viên</th>
                     <th>Nhóm</th>
                     <th>Ngày</th>
-                    <th>Đi xe (Tỉnh)</th>
+                    <th>Hoạt động</th>
+                    <th>Hình thức / Chi tiết</th>
                     <th>Ghi chú</th>
                     <th>Thao tác</th>
                 </tr>`;
@@ -1415,6 +1492,7 @@ async function refreshAdminRecords() {
         if (rejectedTbody && rejectedTbody.previousElementSibling) {
             if (currentAdminRecType === 'ot') {
                 rejectedTbody.previousElementSibling.innerHTML = `<tr>
+                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="chk-rejected-select-all" style="width: 14px; height: 14px; margin: 0; cursor: pointer;"></th>
                     <th>Nhân viên</th>
                     <th>Nhóm</th>
                     <th>Ngày</th>
@@ -1427,10 +1505,12 @@ async function refreshAdminRecords() {
                 </tr>`;
             } else {
                 rejectedTbody.previousElementSibling.innerHTML = `<tr>
+                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="chk-rejected-select-all" style="width: 14px; height: 14px; margin: 0; cursor: pointer;"></th>
                     <th>Nhân viên</th>
                     <th>Nhóm</th>
                     <th>Ngày</th>
-                    <th>Đi xe (Tỉnh)</th>
+                    <th>Hoạt động</th>
+                    <th>Hình thức / Chi tiết</th>
                     <th>Ghi chú</th>
                     <th>Thao tác</th>
                 </tr>`;
@@ -1443,7 +1523,7 @@ async function refreshAdminRecords() {
 
         // Render Approved
         if (approved.length === 0) {
-            const cols = (currentAdminRecType === 'ot') ? 10 : 7;
+            const cols = (currentAdminRecType === 'ot') ? 10 : 8;
             approvedTbody.innerHTML = `
                 <tr class="empty-row">
                     <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
@@ -1453,7 +1533,7 @@ async function refreshAdminRecords() {
                                 <path d="M8 12h8"/>
                             </svg>
                             <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">Không có dữ liệu đã duyệt</span>
-                            <span style="font-size: 13px; color: var(--text-muted);">Không tìm thấy bản ghi ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} nào đã được duyệt trong tháng này.</span>
+                            <span style="font-size: 13px; color: var(--text-muted);">Không tìm thấy bản ghi ${currentAdminRecType === 'ot' ? 'tăng ca' : 'hoạt động tùy chọn'} nào đã được duyệt trong tháng này.</span>
                         </div>
                     </td>
                 </tr>
@@ -1503,12 +1583,28 @@ async function refreshAdminRecords() {
                         </div></td>
                     </tr>`;
                 } else {
+                    const detail = r.calcMode === 'trip' 
+                        ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince || 'Chưa rõ'}</span>` 
+                        : `<span class="tag" style="background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.3); font-weight: 500;">⏱️ ${r.totalHours.toFixed(1)}h</span>`;
+                    
+                    let badgeClass = 'status-approved';
+                    let badgeText = 'Đã duyệt';
+                    if (r.status === 'pending') {
+                        badgeClass = 'status-pending';
+                        badgeText = 'Chờ duyệt';
+                    } else if (r.status === 'rejected') {
+                        badgeClass = 'status-rejected';
+                        badgeText = 'Từ chối';
+                    }
+
                     return `<tr>
                         <td>${employeeCell}</td>
                         <td>${teamBadge}</td>
                         <td><span class="text-date">${formatDate(r.date)}</span></td>
-                        <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
+                        <td><strong>${r.customActivity}</strong></td>
+                        <td>${detail}</td>
                         <td>${noteDisplay}</td>
+                        <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
                         <td><div class="action-buttons">
                             <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'admin')" title="Sửa" style="margin-right: 4px;">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -1518,7 +1614,7 @@ async function refreshAdminRecords() {
                             </button>
                             <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="Xóa">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                                 </svg>
                             </button>
                         </div></td>
@@ -1529,7 +1625,7 @@ async function refreshAdminRecords() {
 
         // Render Pending
         if (pending.length === 0) {
-            const cols = (currentAdminRecType === 'ot') ? 9 : 6;
+            const cols = (currentAdminRecType === 'ot') ? 10 : 8;
             pendingTbody.innerHTML = `
                 <tr class="empty-row">
                     <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
@@ -1540,7 +1636,7 @@ async function refreshAdminRecords() {
                                 <path d="M12 16h.01"/>
                             </svg>
                             <span style="font-size: 15px; font-weight: 600; color: var(--text-primary);">Không có yêu cầu chờ duyệt</span>
-                            <span style="font-size: 13px; color: var(--text-muted);">Tất cả yêu cầu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} đã được xử lý xong.</span>
+                            <span style="font-size: 13px; color: var(--text-muted);">Tất cả yêu cầu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'hoạt động tùy chọn'} đã được xử lý xong.</span>
                         </div>
                     </td>
                 </tr>
@@ -1565,6 +1661,7 @@ async function refreshAdminRecords() {
                     const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${r.otEnd || '—'}</span>` : '<span class="text-muted">—</span>';
                     const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
                     return `<tr>
+                        <td style="text-align: center;"><input type="checkbox" class="chk-pending-record" value="${r.id}" style="width: 14px; height: 14px; margin: 0; cursor: pointer;" onchange="updatePendingBulkActionsVisibility()"></td>
                         <td>${employeeCell}</td>
                         <td>${teamBadge}</td>
                         <td><span class="text-date">${formatDate(r.date)}</span></td>
@@ -1583,11 +1680,16 @@ async function refreshAdminRecords() {
                         </div></td>
                     </tr>`;
                 } else {
+                    const detail = r.calcMode === 'trip' 
+                        ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince || 'Chưa rõ'}</span>` 
+                        : `<span class="tag" style="background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.3); font-weight: 500;">⏱️ ${r.totalHours.toFixed(1)}h</span>`;
                     return `<tr>
+                        <td style="text-align: center;"><input type="checkbox" class="chk-pending-record" value="${r.id}" style="width: 14px; height: 14px; margin: 0; cursor: pointer;" onchange="updatePendingBulkActionsVisibility()"></td>
                         <td>${employeeCell}</td>
                         <td>${teamBadge}</td>
                         <td><span class="text-date">${formatDate(r.date)}</span></td>
-                        <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
+                        <td><strong>${r.customActivity}</strong></td>
+                        <td>${detail}</td>
                         <td>${noteDisplay}</td>
                         <td><div class="action-buttons">
                             <button class="btn btn-success btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
@@ -1604,7 +1706,7 @@ async function refreshAdminRecords() {
 
         // Render Rejected
         if (rejected.length === 0) {
-            const cols = (currentAdminRecType === 'ot') ? 9 : 6;
+            const cols = (currentAdminRecType === 'ot') ? 10 : 8;
             rejectedTbody.innerHTML = `
                 <tr class="empty-row">
                     <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
@@ -1615,7 +1717,7 @@ async function refreshAdminRecords() {
                                 <path d="M9 9l6 6"/>
                             </svg>
                             <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">Không có bản ghi bị từ chối</span>
-                            <span style="font-size: 13px; color: var(--text-muted);">Không có yêu cầu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'đi xe'} nào bị từ chối duyệt.</span>
+                            <span style="font-size: 13px; color: var(--text-muted);">Không có yêu cầu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'hoạt động tùy chọn'} nào bị từ chối duyệt.</span>
                         </div>
                     </td>
                 </tr>
@@ -1640,6 +1742,7 @@ async function refreshAdminRecords() {
                     const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${r.otEnd || '—'}</span>` : '<span class="text-muted">—</span>';
                     const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
                     return `<tr>
+                        <td style="text-align: center;"><input type="checkbox" class="chk-rejected-record" value="${r.id}" style="width: 14px; height: 14px; margin: 0; cursor: pointer;" onchange="updateRejectedBulkActionsVisibility()"></td>
                         <td>${employeeCell}</td>
                         <td>${teamBadge}</td>
                         <td><span class="text-date">${formatDate(r.date)}</span></td>
@@ -1660,11 +1763,16 @@ async function refreshAdminRecords() {
                         </div></td>
                     </tr>`;
                 } else {
+                    const detail = r.calcMode === 'trip' 
+                        ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince || 'Chưa rõ'}</span>` 
+                        : `<span class="tag" style="background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.3); font-weight: 500;">⏱️ ${r.totalHours.toFixed(1)}h</span>`;
                     return `<tr>
+                        <td style="text-align: center;"><input type="checkbox" class="chk-rejected-record" value="${r.id}" style="width: 14px; height: 14px; margin: 0; cursor: pointer;" onchange="updateRejectedBulkActionsVisibility()"></td>
                         <td>${employeeCell}</td>
                         <td>${teamBadge}</td>
                         <td><span class="text-date">${formatDate(r.date)}</span></td>
-                        <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
+                        <td><strong>${r.customActivity}</strong></td>
+                        <td>${detail}</td>
                         <td>${noteDisplay}</td>
                         <td><div class="action-buttons" style="display: flex; align-items: center; gap: 8px;">
                             <button class="btn btn-primary btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt lại" style="padding: 4px 8px; font-size: 11px;">
@@ -1729,6 +1837,31 @@ async function refreshAdminRecords() {
             <div class="summary-item"><span class="summary-label">OT Chiều:</span><span class="summary-value">${totalEveningOT.toFixed(1)}h</span></div>
             <div class="summary-item"><span class="summary-label">Tổng OT:</span><span class="summary-value">${totalHours.toFixed(1)}h</span></div>
             <div class="summary-item"><span class="summary-label">Tổng chuyến xe:</span><span class="summary-value">${totalTrips}</span></div>`;
+
+        // Setup select-all checkbox event listener and hide bulk bar initially
+        setTimeout(() => {
+            const selectAllPendingChk = document.getElementById('chk-pending-select-all');
+            if (selectAllPendingChk) {
+                selectAllPendingChk.onclick = (e) => {
+                    const chks = document.querySelectorAll('.chk-pending-record');
+                    chks.forEach(chk => chk.checked = e.target.checked);
+                    updatePendingBulkActionsVisibility();
+                };
+            }
+            const pendingBulkBar = document.getElementById('pending-bulk-actions');
+            if (pendingBulkBar) pendingBulkBar.style.display = 'none';
+
+            const selectAllRejectedChk = document.getElementById('chk-rejected-select-all');
+            if (selectAllRejectedChk) {
+                selectAllRejectedChk.onclick = (e) => {
+                    const chks = document.querySelectorAll('.chk-rejected-record');
+                    chks.forEach(chk => chk.checked = e.target.checked);
+                    updateRejectedBulkActionsVisibility();
+                };
+            }
+            const rejectedBulkBar = document.getElementById('rejected-bulk-actions');
+            if (rejectedBulkBar) rejectedBulkBar.style.display = 'none';
+        }, 50);
     } catch (e) {
         console.error(e);
     }
@@ -1737,7 +1870,7 @@ async function refreshAdminRecords() {
 async function refreshAdminUsers() {
     try {
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
-        const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin');
+        const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin' || currentUser.isSuperAdmin);
 
         const usersData = await api('/api/users');
         const users = usersData.users;
@@ -1790,6 +1923,13 @@ async function refreshAdminUsers() {
                         </svg>
                         Duyệt Huỷ
                     </button>
+                    <button class="btn-reset btn-reset-reject" onclick="rejectUnlinkDevice('${u.id}', '${u.fullname}')" title="Từ chối yêu cầu huỷ liên kết" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                        Từ Chối
+                    </button>
                 `;
             }
 
@@ -1839,7 +1979,7 @@ async function refreshAdminUsers() {
                 <td><span style="font-weight:600; color:var(--text-secondary);">${u.team === 'admin' ? 'admin' : (u.team || 'admin')}</span></td>
                 <td><span class="tag tag-admin">Quản lý</span></td>
                 <td><div class="action-buttons">
-                    ${(u.team !== 'admin' || isBelongToAdminTeam || (currentUser && currentUser.id === u.id)) ? `
+                    ${((!u.isSuperAdmin && (u.team !== 'admin' || isBelongToAdminTeam)) || (currentUser && currentUser.id === u.id)) ? `
                     <button class="btn-icon-only edit" onclick="editUserDialog('${u.id}')" title="Sửa" style="margin-right: 4px;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -1847,7 +1987,7 @@ async function refreshAdminUsers() {
                         </svg>
                     </button>
                     ` : ''}
-                    ${(u.username !== 'admin' && (u.team !== 'admin' || isBelongToAdminTeam)) ? `
+                    ${(!u.isSuperAdmin && (u.team !== 'admin' || isBelongToAdminTeam)) ? `
                         <button class="btn-icon-only delete" onclick="deleteUser('${u.id}')" title="Xóa">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                                 <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -1899,6 +2039,13 @@ async function refreshAdminUsers() {
                                 <polyline points="20 6 9 17 4 12"/>
                             </svg>
                             Duyệt Huỷ
+                        </button>
+                        <button class="btn-reset btn-reset-reject" onclick="rejectUnlinkDevice('${u.id}', '${u.fullname}')" title="Từ chối yêu cầu huỷ liên kết" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                            Từ Chối
                         </button>
                     `;
                 }
@@ -2173,7 +2320,7 @@ async function refreshReport() {
     try {
         const usersData = await api('/api/users');
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
-        const isAdmin = currentUser && currentUser.username === 'admin';
+        const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
         
         let users = usersData.users.filter(u => u.role === 'employee');
         
@@ -2450,6 +2597,130 @@ async function rejectRecord(recordId) {
     ]);
 }
 
+function updatePendingBulkActionsVisibility() {
+    const chks = document.querySelectorAll('.chk-pending-record');
+    const checkedChks = document.querySelectorAll('.chk-pending-record:checked');
+    const selectAllChk = document.getElementById('chk-pending-select-all');
+    
+    if (selectAllChk) {
+        selectAllChk.checked = chks.length > 0 && chks.length === checkedChks.length;
+    }
+    
+    const bulkBar = document.getElementById('pending-bulk-actions');
+    const countText = document.getElementById('pending-selected-count');
+    
+    if (bulkBar && countText) {
+        if (checkedChks.length > 0) {
+            bulkBar.style.display = 'flex';
+            countText.textContent = `Đã chọn ${checkedChks.length} bản ghi`;
+        } else {
+            bulkBar.style.display = 'none';
+        }
+    }
+}
+
+async function bulkApproveRecords() {
+    const checkedChks = document.querySelectorAll('.chk-pending-record:checked');
+    const recordIds = Array.from(checkedChks).map(chk => chk.value);
+    if (recordIds.length === 0) return;
+
+    showModal('Duyệt hàng loạt', `Bạn có chắc chắn muốn duyệt ${recordIds.length} bản ghi đã chọn không?`, [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Duyệt', class: 'btn btn-primary btn-sm', action: async () => {
+            try {
+                showToast(`Đang duyệt ${recordIds.length} bản ghi...`, 'info');
+                await Promise.all(recordIds.map(id => api(`/api/records/${id}`, 'PUT', { status: 'approved' })));
+                showToast(`Đã duyệt thành công ${recordIds.length} bản ghi!`);
+                await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+async function bulkRejectRecords() {
+    const checkedChks = document.querySelectorAll('.chk-pending-record:checked');
+    const recordIds = Array.from(checkedChks).map(chk => chk.value);
+    if (recordIds.length === 0) return;
+
+    showModal('Từ chối hàng loạt', `Bạn có chắc chắn muốn từ chối ${recordIds.length} bản ghi đã chọn không?`, [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Từ chối', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                showToast(`Đang từ chối ${recordIds.length} bản ghi...`, 'info');
+                await Promise.all(recordIds.map(id => api(`/api/records/${id}`, 'PUT', { status: 'rejected' })));
+                showToast(`Đã từ chối thành công ${recordIds.length} bản ghi!`);
+                await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+function updateRejectedBulkActionsVisibility() {
+    const chks = document.querySelectorAll('.chk-rejected-record');
+    const checkedChks = document.querySelectorAll('.chk-rejected-record:checked');
+    const selectAllChk = document.getElementById('chk-rejected-select-all');
+    
+    if (selectAllChk) {
+        selectAllChk.checked = chks.length > 0 && chks.length === checkedChks.length;
+    }
+    
+    const bulkBar = document.getElementById('rejected-bulk-actions');
+    const countText = document.getElementById('rejected-selected-count');
+    
+    if (bulkBar && countText) {
+        if (checkedChks.length > 0) {
+            bulkBar.style.display = 'flex';
+            countText.textContent = `Đã chọn ${checkedChks.length} bản ghi`;
+        } else {
+            bulkBar.style.display = 'none';
+        }
+    }
+}
+
+async function bulkApproveRejectedRecords() {
+    const checkedChks = document.querySelectorAll('.chk-rejected-record:checked');
+    const recordIds = Array.from(checkedChks).map(chk => chk.value);
+    if (recordIds.length === 0) return;
+
+    showModal('Duyệt lại hàng loạt', `Bạn có chắc chắn muốn duyệt lại ${recordIds.length} bản ghi đã chọn không?`, [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Duyệt lại', class: 'btn btn-primary btn-sm', action: async () => {
+            try {
+                showToast(`Đang duyệt lại ${recordIds.length} bản ghi...`, 'info');
+                await Promise.all(recordIds.map(id => api(`/api/records/${id}`, 'PUT', { status: 'approved' })));
+                showToast(`Đã duyệt lại thành công ${recordIds.length} bản ghi!`);
+                await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+async function bulkDeleteRejectedRecords() {
+    const checkedChks = document.querySelectorAll('.chk-rejected-record:checked');
+    const recordIds = Array.from(checkedChks).map(chk => chk.value);
+    if (recordIds.length === 0) return;
+
+    showModal('Xóa hàng loạt', `Bạn có chắc chắn muốn xóa vĩnh viễn ${recordIds.length} bản ghi đã chọn không?`, [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Xóa', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                showToast(`Đang xóa ${recordIds.length} bản ghi...`, 'info');
+                await Promise.all(recordIds.map(id => api(`/api/records/${id}`, 'DELETE')));
+                showToast(`Đã xóa thành công ${recordIds.length} bản ghi!`);
+                await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
 async function exportExcel() {
     const month = document.getElementById('report-filter-month').value;
     const parts = month.split('-');
@@ -2458,7 +2729,7 @@ async function exportExcel() {
     try {
         const usersData = await api('/api/users');
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
-        const isAdmin = currentUser && currentUser.username === 'admin';
+        const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
         
         let users = usersData.users;
         
@@ -3395,6 +3666,31 @@ async function handleAdminOTSubmit(e) {
     const user = JSON.parse(localStorage.getItem('ot_current_user'));
     if (!user) return;
 
+    // Check custom activities setup for user's team
+    const userTeam = user.team || '';
+    let hasCustomActivities = false;
+    let empBtnText = '2. Hoạt động khác';
+    if (userTeam && userTeam !== 'admin' && typeof TEAMS !== 'undefined') {
+        const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+        if (teamObj && teamObj.customActivities && teamObj.customActivities.length > 0) {
+            hasCustomActivities = true;
+            empBtnText = '2. ' + teamObj.customActivities.map(a => a.name).join(' / ');
+        }
+    }
+
+    const recTypeSelector = document.getElementById('emp-rec-type-selector');
+    const btnEmpRecTypeTrips = document.getElementById('btn-emp-rec-type-trips');
+    if (hasCustomActivities) {
+        if (recTypeSelector) recTypeSelector.style.display = 'flex';
+        if (btnEmpRecTypeTrips) {
+            btnEmpRecTypeTrips.style.display = 'inline-block';
+            btnEmpRecTypeTrips.textContent = empBtnText;
+        }
+    } else {
+        if (recTypeSelector) recTypeSelector.style.display = 'none';
+        currentEmpRecType = 'ot';
+    }
+
     const month = document.getElementById('emp-filter-month').value;
     try {
         const data = await api(`/api/records?userId=${user.id}&month=${month}`);
@@ -3403,18 +3699,16 @@ async function handleAdminOTSubmit(e) {
 
         // Stats calculation (based on all records of this month)
         let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0;
-        let totalTrips = 0;
         records.forEach(r => {
             const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
             const isApproved = r.status !== 'pending' && r.status !== 'rejected';
             
             if (isApproved) {
-                const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
-                totalLunchOT += lh;
-                totalEveningOT += isBackfill ? 0 : r.eveningOTHours;
-                totalHours += r.totalHours;
-                if (r.deliveryProvince && r.deliveryProvince.trim() !== '') {
-                    totalTrips += 1;
+                if (!r.customActivity || r.calcMode === 'hour') {
+                    const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
+                    totalLunchOT += lh;
+                    totalEveningOT += isBackfill ? 0 : (r.eveningOTHours || 0);
+                    totalHours += r.totalHours;
                 }
             }
         });
@@ -3422,9 +3716,9 @@ async function handleAdminOTSubmit(e) {
         // Apply Record Type Filter
         let recordsFiltered = [];
         if (currentEmpRecType === 'ot') {
-            recordsFiltered = records.filter(r => r.totalHours > 0 || r.isBackfill);
+            recordsFiltered = records.filter(r => (!r.customActivity || r.customActivity.trim() === '') && (r.totalHours > 0 || r.isBackfill));
         } else {
-            recordsFiltered = records.filter(r => r.deliveryProvince && r.deliveryProvince.trim() !== '');
+            recordsFiltered = records.filter(r => r.customActivity && r.customActivity.trim() !== '');
         }
 
         // Set Table Headers dynamically
@@ -3444,7 +3738,8 @@ async function handleAdminOTSubmit(e) {
             } else {
                 tbody.previousElementSibling.innerHTML = `<tr>
                     <th>Ngày</th>
-                    <th>Đi xe (Tỉnh)</th>
+                    <th>Hoạt động</th>
+                    <th>Hình thức / Chi tiết</th>
                     <th>Trạng thái</th>
                     <th>Ghi chú</th>
                     <th>Thao tác</th>
@@ -3452,73 +3747,79 @@ async function handleAdminOTSubmit(e) {
             }
         }
 
+        const totalCustom = records.filter(r => r.customActivity && r.status !== 'rejected').length;
+        const customCardHTML = hasCustomActivities ? `
+            <div class="stat-card stat-card-orange" style="border-left-color: var(--accent-orange);">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">${totalCustom}</span>
+                    <span class="stat-label">Hoạt động khác</span>
+                </div>
+            </div>
+        ` : '';
+
+        const statsHtml = `
+            <div class="stat-card stat-card-purple">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">${records.filter(r => !r.customActivity || r.calcMode === 'hour').length}</span>
+                    <span class="stat-label">Số ngày OT</span>
+                </div>
+            </div>
+            <div class="stat-card stat-card-orange">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">${totalLunchOT.toFixed(1)}h</span>
+                    <span class="stat-label">OT Trưa</span>
+                </div>
+            </div>
+            <div class="stat-card stat-card-blue">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">${totalEveningOT.toFixed(1)}h</span>
+                    <span class="stat-label">OT Chiều</span>
+                </div>
+            </div>
+            <div class="stat-card stat-card-green">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">${totalHours.toFixed(1)}h</span>
+                    <span class="stat-label">Tổng OT</span>
+                </div>
+            </div>
+            ${customCardHTML}
+        `;
+
         if (recordsFiltered.length === 0) {
-            const cols = (currentEmpRecType === 'ot') ? 9 : 5;
-            tbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Chưa có dữ liệu ${currentEmpRecType === 'ot' ? 'tăng ca' : 'đi xe'}</td></tr>`;
+            const cols = (currentEmpRecType === 'ot') ? 9 : 6;
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">Chưa có dữ liệu ${currentEmpRecType === 'ot' ? 'tăng ca' : 'hoạt động tùy chọn'}</td></tr>`;
             const statsCardsEl = document.getElementById('emp-stats-cards');
             if (statsCardsEl) {
-                statsCardsEl.innerHTML = `
-                    <div class="stat-card stat-card-purple">
-                        <div class="stat-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                                <line x1="16" y1="2" x2="16" y2="6"/>
-                                <line x1="8" y1="2" x2="8" y2="6"/>
-                                <line x1="3" y1="10" x2="21" y2="10"/>
-                            </svg>
-                        </div>
-                        <div class="stat-info">
-                            <span class="stat-value">${records.length}</span>
-                            <span class="stat-label">Số ngày OT</span>
-                        </div>
-                    </div>
-                    <div class="stat-card stat-card-orange">
-                        <div class="stat-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <path d="M12 6v6l4 2"/>
-                            </svg>
-                        </div>
-                        <div class="stat-info">
-                            <span class="stat-value">${totalLunchOT.toFixed(1)}h</span>
-                            <span class="stat-label">OT Trưa</span>
-                        </div>
-                    </div>
-                    <div class="stat-card stat-card-blue">
-                        <div class="stat-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                            </svg>
-                        </div>
-                        <div class="stat-info">
-                            <span class="stat-value">${totalEveningOT.toFixed(1)}h</span>
-                            <span class="stat-label">OT Chiều</span>
-                        </div>
-                    </div>
-                    <div class="stat-card stat-card-green">
-                        <div class="stat-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                            </svg>
-                        </div>
-                        <div class="stat-info">
-                            <span class="stat-value">${totalHours.toFixed(1)}h</span>
-                            <span class="stat-label">Tổng OT</span>
-                        </div>
-                    </div>
-                    <div class="stat-card stat-card-orange" style="border-left-color: var(--accent-orange);">
-                        <div class="stat-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1 .4-1 1v10c0 .6.4 1 1 1h2"/>
-                                <circle cx="7" cy="17" r="2"/>
-                                <circle cx="17" cy="17" r="2"/>
-                            </svg>
-                        </div>
-                        <div class="stat-info">
-                            <span class="stat-value">${totalTrips}</span>
-                            <span class="stat-label">Tổng chuyến xe</span>
-                        </div>
-                    </div>`;
+                statsCardsEl.innerHTML = statsHtml;
             }
             return;
         }
@@ -3559,9 +3860,13 @@ async function handleAdminOTSubmit(e) {
                     </div></td>
                 </tr>`;
             } else {
+                const detail = r.calcMode === 'trip' 
+                    ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince || 'Chưa rõ'}</span>` 
+                    : `<span class="tag" style="background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.3); font-weight: 500;">⏱️ ${r.totalHours.toFixed(1)}h</span>`;
                 return `<tr>
                     <td>${formatDate(r.date)}</td>
-                    <td><span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince}</span></td>
+                    <td><strong>${r.customActivity}</strong></td>
+                    <td>${detail}</td>
                     <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
                     <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
                     <td><div class="action-buttons">
@@ -3583,68 +3888,7 @@ async function handleAdminOTSubmit(e) {
 
         const statsCardsEl = document.getElementById('emp-stats-cards');
         if (statsCardsEl) {
-            statsCardsEl.innerHTML = `
-                <div class="stat-card stat-card-purple">
-                    <div class="stat-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                            <line x1="16" y1="2" x2="16" y2="6"/>
-                            <line x1="8" y1="2" x2="8" y2="6"/>
-                            <line x1="3" y1="10" x2="21" y2="10"/>
-                        </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value">${records.length}</span>
-                        <span class="stat-label">Số ngày OT</span>
-                    </div>
-                </div>
-                <div class="stat-card stat-card-orange">
-                    <div class="stat-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M12 6v6l4 2"/>
-                        </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value">${totalLunchOT.toFixed(1)}h</span>
-                        <span class="stat-label">OT Trưa</span>
-                    </div>
-                </div>
-                <div class="stat-card stat-card-blue">
-                    <div class="stat-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                        </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value">${totalEveningOT.toFixed(1)}h</span>
-                        <span class="stat-label">OT Chiều</span>
-                    </div>
-                </div>
-                <div class="stat-card stat-card-green">
-                    <div class="stat-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                        </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value">${totalHours.toFixed(1)}h</span>
-                        <span class="stat-label">Tổng OT</span>
-                    </div>
-                </div>
-                <div class="stat-card stat-card-orange" style="border-left-color: var(--accent-orange);">
-                    <div class="stat-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1 .4-1 1v10c0 .6.4 1 1 1h2"/>
-                            <circle cx="7" cy="17" r="2"/>
-                            <circle cx="17" cy="17" r="2"/>
-                        </svg>
-                    </div>
-                    <div class="stat-info">
-                        <span class="stat-value">${totalTrips}</span>
-                        <span class="stat-label">Tổng chuyến xe</span>
-                    </div>
-                </div>`;
+            statsCardsEl.innerHTML = statsHtml;
         }
     } catch (e) {}
 }
@@ -4947,7 +5191,7 @@ async function addUserDialog() {
         console.error('Lỗi lấy danh sách admin:', e);
     }
     const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
-    const isAdmin = currentUser && currentUser.username === 'admin';
+    const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
 
     const body = `
     <form id="modal-form-add-user" class="login-form active" style="text-align: left; padding: 0;">
@@ -5029,14 +5273,19 @@ async function addUserDialog() {
 async function editUserDialog(userId) {
     try {
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
-        const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin');
+        const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin' || currentUser.isSuperAdmin);
 
         const data = await api('/api/users');
         const user = data.users.find(u => u.id === userId);
         if (!user) return showToast('Không tìm thấy nhân viên', 'error');
 
+        // Chỉ có bản thân Quản trị viên tối cao mới được sửa thông tin của chính mình
+        if (user.isSuperAdmin && currentUser.id !== user.id) {
+            return showToast('Bạn không có quyền chỉnh sửa tài khoản Quản trị viên tối cao!', 'error');
+        }
+
         // Phân quyền: chỉ có thuộc team admin mới được chỉnh sửa thông tin admin
-        const targetIsAdmin = user.team === 'admin' || user.username === 'admin';
+        const targetIsAdmin = user.team === 'admin' || user.username === 'admin' || user.isSuperAdmin;
         if (targetIsAdmin && !isBelongToAdminTeam) {
             return showToast('Chỉ có tài khoản thuộc team admin mới được chỉnh sửa thông tin của quản trị viên!', 'error');
         }
@@ -5049,13 +5298,13 @@ async function editUserDialog(userId) {
             </div>
             <div class="form-group" style="margin-bottom: 15px;">
                 <label style="display:block;margin-bottom:6px;font-weight:600;">Tên đăng nhập</label>
-                <input type="text" id="modal-user-username" value="${user.username}" class="input-sm" style="width:100%; box-sizing:border-box;" ${user.username === 'admin' ? 'readonly style="background:var(--bg-glass); opacity:0.7; cursor:not-allowed;"' : ''} required>
+                <input type="text" id="modal-user-username" value="${user.username}" class="input-sm" style="width:100%; box-sizing:border-box;" required>
             </div>
             <div class="form-group" id="modal-user-password-group" style="margin-bottom: 15px;">
                 <label style="display:block;margin-bottom:6px;font-weight:600;">Mật khẩu mới (Để trống nếu giữ nguyên)</label>
                 <input type="password" id="modal-user-password" placeholder="Nhập mật khẩu mới nếu muốn đổi" class="input-sm" style="width:100%; box-sizing:border-box;">
             </div>
-            <div id="modal-edit-user-role-team-group" style="${user.username === 'admin' ? 'display: none;' : ''}">
+            <div id="modal-edit-user-role-team-group" style="${user.isSuperAdmin ? 'display: none;' : ''}">
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label style="display:block;margin-bottom:6px;font-weight:600;">Vai trò</label>
                     <select id="modal-user-role" class="input-sm" style="width:100%; box-sizing:border-box;">
@@ -5098,6 +5347,12 @@ async function editUserDialog(userId) {
                 try {
                     await api(`/api/users/${userId}`, 'PUT', payload);
                     showToast('Cập nhật nhân viên thành công!');
+                    if (currentUser && currentUser.id === userId) {
+                        const updatedUser = { ...currentUser, fullname, username, role, team };
+                        localStorage.setItem('ot_current_user', JSON.stringify(updatedUser));
+                        const elUserName = document.getElementById('user-fullname');
+                        if (elUserName) elUserName.textContent = fullname;
+                    }
                     await Promise.all([populateUserFilter(), refreshAdminUsers(), refreshAdminRecords(), refreshReport(), refreshAdminStats()]);
                 } catch (err) {
                     showToast(err.message, 'error');
@@ -5149,6 +5404,20 @@ async function approveUnlinkDevice(userId, fullname) {
                 await api(`/api/users/${userId}`, 'PUT', { deviceId: null, browserDeviceId: null, pendingUnlink: false });
                 await refreshAdminUsers();
                 showToast('Đã duyệt yêu cầu huỷ liên kết thiết bị!');
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+async function rejectUnlinkDevice(userId, fullname) {
+    showModal('Từ chối huỷ liên kết thiết bị', `Bạn có chắc muốn từ chối yêu cầu huỷ liên kết thiết bị của nhân viên <strong>${fullname}</strong>?`, [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Từ chối', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                await api(`/api/users/${userId}`, 'PUT', { pendingUnlink: false });
+                await refreshAdminUsers();
+                showToast('Đã từ chối yêu cầu huỷ liên kết thiết bị!');
             } catch (e) {
                 showToast(e.message, 'error');
             }
@@ -5368,6 +5637,7 @@ window.approveRecord = approveRecord;
 window.rejectRecord = rejectRecord;
 window.resetUserDevice = resetUserDevice;
 window.approveUnlinkDevice = approveUnlinkDevice;
+window.rejectUnlinkDevice = rejectUnlinkDevice;
 window.editUserDialog = editUserDialog;
 window.deleteUser = deleteUser;
 window.addTeamFromModal = addTeamFromModal;

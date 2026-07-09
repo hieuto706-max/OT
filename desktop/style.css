@@ -882,7 +882,7 @@ html.user-employee-logged-in .admin-layout {
 /* ==================== STATS CARDS ==================== */
 .stats-row {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 12px;
     padding: 16px 24px;
     background: var(--bg-primary);
@@ -2020,6 +2020,17 @@ body.is-web-browser #btn-check-update {
     background: rgba(16, 185, 129, 0.12);
     border-color: var(--accent-green-light);
     box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}
+
+.btn-reset-reject {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.25);
+}
+
+.btn-reset-reject:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: #ef4444;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
 }
 
 .btn-reset svg {

@@ -1385,6 +1385,24 @@ async function loadHistory() {
     const list = document.getElementById('history-list');
     const summary = document.getElementById('history-summary');
 
+    // Dynamic segment buttons visibility
+    const teamSettings = currentUser ? currentUser.teamSettings : null;
+    const hasCustomActivities = !!(teamSettings && teamSettings.customActivities && teamSettings.customActivities.length > 0);
+
+    const segmentControl = document.getElementById('mobile-history-segment-control');
+    const btnMobileHistoryTrips = document.getElementById('btn-mobile-history-trips');
+    if (hasCustomActivities) {
+        if (segmentControl) segmentControl.style.display = 'flex';
+        if (btnMobileHistoryTrips) {
+            btnMobileHistoryTrips.style.display = 'inline-block';
+            const activityNames = teamSettings.customActivities.map(a => a.name).join(' / ');
+            btnMobileHistoryTrips.textContent = activityNames;
+        }
+    } else {
+        if (segmentControl) segmentControl.style.display = 'none';
+        currentMobileHistoryType = 'ot';
+    }
+
     try {
         let closedMonths = [];
         if (API) {
@@ -1434,9 +1452,9 @@ async function loadHistory() {
         // Apply Record Type Filter
         let historyFiltered = [];
         if (currentMobileHistoryType === 'ot') {
-            historyFiltered = mergedRecords.filter(r => r.totalHours > 0 || r.isBackfill || r.calcMode === 'hour');
+            historyFiltered = mergedRecords.filter(r => (!r.customActivity || r.customActivity.trim() === '') && (r.totalHours > 0 || r.isBackfill));
         } else {
-            historyFiltered = mergedRecords.filter(r => r.calcMode === 'trip' || (!r.calcMode && r.deliveryProvince && r.deliveryProvince.trim() !== ''));
+            historyFiltered = mergedRecords.filter(r => r.customActivity && r.customActivity.trim() !== '');
         }
 
         if (historyFiltered.length === 0) {
@@ -1446,7 +1464,7 @@ async function loadHistory() {
                         <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
                         <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                     </svg>
-                    <p>Chưa có dữ liệu ${currentMobileHistoryType === 'ot' ? 'tăng ca' : 'chuyến xe'}</p>
+                    <p>Chưa có dữ liệu ${currentMobileHistoryType === 'ot' ? 'tăng ca' : 'hoạt động tùy chọn'}</p>
                 </div>`;
             summary.innerHTML = '';
             return;
@@ -1457,13 +1475,14 @@ async function loadHistory() {
             const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
             const isApproved = r.status !== 'pending' && r.status !== 'rejected';
             if (isApproved) {
-                const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
-                tLunch += lh;
-                tEvening += isBackfill ? 0 : r.eveningOTHours;
-                tTotal += r.totalHours;
+                if (!r.customActivity || r.calcMode === 'hour') {
+                    const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
+                    tLunch += lh;
+                    tEvening += isBackfill ? 0 : (r.eveningOTHours || 0);
+                    tTotal += r.totalHours;
+                }
             }
         });
-        const tTrips = mergedRecords.filter(r => r.status !== 'pending' && r.status !== 'rejected' && (r.calcMode === 'trip' || (!r.calcMode && r.deliveryProvince && r.deliveryProvince.trim() !== ''))).length;
 
         list.innerHTML = historyFiltered.map((r, i) => {
             const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
@@ -1472,12 +1491,13 @@ async function loadHistory() {
             if (currentMobileHistoryType === 'ot') {
                 if (r.hasLunchOT) tags += '<span class="htag htag-lunch">OT Trưa 1h</span>';
                 if (r.eveningOTHours > 0 && !isBackfill) tags += `<span class="htag htag-evening">OT Chiều ${r.eveningOTHours.toFixed(1)}h</span>`;
-                if (r.customActivity) tags += `<span class="htag" style="background:rgba(59,130,246,0.15); color:#3b82f6; border:1px solid rgba(59,130,246,0.3); margin-left: 4px;">📋 ${r.customActivity}${r.deliveryProvince ? ': ' + r.deliveryProvince : ''}</span>`;
             } else {
                 if (r.customActivity) {
-                    tags += `<span class="htag" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">📋 ${r.customActivity}${r.deliveryProvince ? ': ' + r.deliveryProvince : ''}</span>`;
-                } else if (r.deliveryProvince) {
-                    tags += `<span class="htag" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">🚚 ${r.deliveryProvince}</span>`;
+                    if (r.calcMode === 'trip') {
+                        tags += `<span class="htag" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">📋 ${r.customActivity}${r.deliveryProvince ? ': ' + r.deliveryProvince : ''}</span>`;
+                    } else {
+                        tags += `<span class="htag" style="background:rgba(99,102,241,0.15); color:#6366f1; border:1px solid rgba(99,102,241,0.3);">📋 ${r.customActivity}: ${r.totalHours.toFixed(1)}h</span>`;
+                    }
                 }
             }
 
@@ -1530,7 +1550,9 @@ async function loadHistory() {
 
             const rightDisplay = currentMobileHistoryType === 'ot'
                 ? `<span class="history-total">${r.totalHours.toFixed(1)}h</span>`
-                : `<span class="history-total" style="color: var(--green);">🚚 Xe</span>`;
+                : (r.calcMode === 'trip' 
+                    ? `<span class="history-total" style="color: var(--green);">🚚 Xe</span>` 
+                    : `<span class="history-total" style="color: var(--accent-purple); font-size: 0.8rem; font-weight: bold;">⏱️ ${r.totalHours.toFixed(1)}h</span>`);
 
             return `
                 <div class="history-item" style="animation-delay:${i * 0.04}s">
@@ -1551,12 +1573,21 @@ async function loadHistory() {
                 </div>`;
         }).join('');
 
-        summary.innerHTML = `
-            <div class="summary-item"><span class="summary-label">Ngày:</span><span class="summary-val">${mergedRecords.length}</span></div>
-            <div class="summary-item"><span class="summary-label">Trưa:</span><span class="summary-val">${tLunch.toFixed(1)}h</span></div>
-            <div class="summary-item"><span class="summary-label">Chiều:</span><span class="summary-val">${tEvening.toFixed(1)}h</span></div>
-            <div class="summary-item"><span class="summary-label">Tổng:</span><span class="summary-val">${tTotal.toFixed(1)}h</span></div>
-            <div class="summary-item"><span class="summary-label">Chuyến xe:</span><span class="summary-val">${tTrips}</span></div>`;
+        if (hasCustomActivities) {
+            const totalCustom = mergedRecords.filter(r => r.status !== 'pending' && r.status !== 'rejected' && r.customActivity && r.customActivity.trim() !== '').length;
+            summary.innerHTML = `
+                <div class="summary-item"><span class="summary-label">Ngày OT:</span><span class="summary-val">${mergedRecords.filter(r => !r.customActivity).length}</span></div>
+                <div class="summary-item"><span class="summary-label">Trưa:</span><span class="summary-val">${tLunch.toFixed(1)}h</span></div>
+                <div class="summary-item"><span class="summary-label">Chiều:</span><span class="summary-val">${tEvening.toFixed(1)}h</span></div>
+                <div class="summary-item"><span class="summary-label">Tổng:</span><span class="summary-val">${tTotal.toFixed(1)}h</span></div>
+                <div class="summary-item"><span class="summary-label">Khác:</span><span class="summary-val">${totalCustom}</span></div>`;
+        } else {
+            summary.innerHTML = `
+                <div class="summary-item"><span class="summary-label">Ngày:</span><span class="summary-val">${mergedRecords.filter(r => !r.customActivity).length}</span></div>
+                <div class="summary-item"><span class="summary-label">Trưa:</span><span class="summary-val">${tLunch.toFixed(1)}h</span></div>
+                <div class="summary-item"><span class="summary-label">Chiều:</span><span class="summary-val">${tEvening.toFixed(1)}h</span></div>
+                <div class="summary-item"><span class="summary-label">Tổng:</span><span class="summary-val">${tTotal.toFixed(1)}h</span></div>`;
+        }
     } catch (err) {
         list.innerHTML = `<div class="empty-state"><p>Lỗi tải dữ liệu</p></div>`;
     }
@@ -1653,24 +1684,44 @@ async function loadProfileStats() {
 
         const approvedRecords = mergedRecords.filter(r => r.status !== 'pending' && r.status !== 'rejected');
 
-        const days = mergedRecords.length;
-        const lunch = approvedRecords.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
-        const evening = approvedRecords.reduce((s, r) => s + ((r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')))) ? 0 : r.eveningOTHours), 0);
+        const days = mergedRecords.filter(r => !r.customActivity || r.calcMode === 'hour').length;
+        const lunch = approvedRecords.filter(r => (!r.customActivity || r.calcMode === 'hour') && r.hasLunchOT).length * OT_LUNCH_HOURS;
+        const evening = approvedRecords.reduce((s, r) => s + (((r.customActivity && r.calcMode !== 'hour') || r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')))) ? 0 : (r.eveningOTHours || 0)), 0);
         const total = lunch + evening + approvedRecords.reduce((s, r) => {
+            if (r.customActivity && r.calcMode !== 'hour') return s;
             const isBF = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
-            if (isBF) {
+            const isHourCustom = !!(r.customActivity && r.calcMode === 'hour');
+            if (isBF || isHourCustom) {
                 return s + r.totalHours;
             }
             return s;
         }, 0);
-        const trips = approvedRecords.filter(r => r.calcMode === 'trip' || (!r.calcMode && r.deliveryProvince && r.deliveryProvince.trim() !== '')).length;
+        
+        const teamSettings = currentUser ? currentUser.teamSettings : null;
+        const hasCustomActivities = !!(teamSettings && teamSettings.customActivities && teamSettings.customActivities.length > 0);
+        const totalCustom = approvedRecords.filter(r => r.customActivity && r.customActivity.trim() !== '').length;
 
         document.getElementById('stat-days').textContent = days;
         document.getElementById('stat-lunch').textContent = lunch.toFixed(1);
         document.getElementById('stat-evening').textContent = evening.toFixed(1);
         document.getElementById('stat-total').textContent = total.toFixed(1);
+        
         const tripsEl = document.getElementById('stat-trips');
-        if (tripsEl) tripsEl.textContent = trips;
+        const tripsWrapper = document.getElementById('mobile-stat-trips-wrapper');
+        const tripsText = document.getElementById('mobile-stat-trips-text');
+        const totalWrapper = document.getElementById('mobile-stat-total-wrapper');
+
+        if (tripsWrapper && totalWrapper) {
+            if (hasCustomActivities) {
+                tripsWrapper.style.display = 'block';
+                if (tripsText) tripsText.textContent = 'Hoạt động khác';
+                if (tripsEl) tripsEl.textContent = totalCustom;
+                totalWrapper.style.borderRight = '1px solid rgba(255,255,255,0.08)';
+            } else {
+                tripsWrapper.style.display = 'none';
+                totalWrapper.style.borderRight = 'none';
+            }
+        }
     } catch (err) {
         // Silent fail
     }

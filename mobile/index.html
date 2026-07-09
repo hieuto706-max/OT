@@ -308,7 +308,7 @@
                         <input type="month" id="filter-month" class="input-sm">
                     </div>
 
-                    <div class="segmented-control" style="display: flex; background: rgba(255,255,255,0.05); padding: 3px; border-radius: 8px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                    <div class="segmented-control" id="mobile-history-segment-control" style="display: flex; background: rgba(255,255,255,0.05); padding: 3px; border-radius: 8px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05);">
                         <button id="btn-mobile-history-ot" class="segment-btn active" style="flex: 1; border: none; background: var(--green, #0dd98b); color: #020805; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s;">Tăng ca (OT)</button>
                         <button id="btn-mobile-history-trips" class="segment-btn" style="flex: 1; border: none; background: transparent; color: #94a3b8; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 13px; transition: all 0.2s;">Chuyến xe</button>
                     </div>
@@ -353,13 +353,13 @@
                             <span class="stat-number" id="stat-evening">0</span>
                             <span class="stat-text">OT Chiều (giờ)</span>
                         </div>
-                        <div class="stat-item" style="flex: 1; max-width: 200px; text-align: center;">
+                        <div class="stat-item" id="mobile-stat-total-wrapper" style="flex: 1; max-width: 200px; text-align: center;">
                             <span class="stat-number stat-highlight" id="stat-total" style="color: var(--accent-purple) !important;">0</span>
                             <span class="stat-text">Tổng OT (giờ)</span>
                         </div>
-                        <div class="stat-item" style="flex: 1; max-width: 200px; text-align: center; border-left: 1px solid rgba(255,255,255,0.08);">
+                        <div class="stat-item" id="mobile-stat-trips-wrapper" style="flex: 1; max-width: 200px; text-align: center; border-left: 1px solid rgba(255,255,255,0.08);">
                             <span class="stat-number stat-highlight" id="stat-trips" style="color: var(--accent-orange) !important;">0</span>
-                            <span class="stat-text">Tổng chuyến xe</span>
+                            <span class="stat-text" id="mobile-stat-trips-text">Tổng chuyến xe</span>
                         </div>
                     </div>
                 </div>
