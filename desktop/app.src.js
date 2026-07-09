@@ -4524,14 +4524,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Tải dữ liệu dashboard nếu có user đã đăng nhập (Đọc lại sau khi đã dọn dẹp session mới nếu có)
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
-        if (currentUser) {
-            if (currentUser.role === 'admin') {
-                await initAdminDashboard(currentUser);
-                showScreen('screen-admin');
-            } else {
-                await initEmployeeDashboard(currentUser);
-                showScreen('screen-employee');
+        if (currentUser && token) {
+            try {
+                if (currentUser.role === 'admin') {
+                    await initAdminDashboard(currentUser);
+                    showScreen('screen-admin');
+                } else {
+                    await initEmployeeDashboard(currentUser);
+                    showScreen('screen-employee');
+                }
+            } catch (err) {
+                console.error('[Dashboard] Lỗi khởi tạo dữ liệu, đăng xuất:', err);
+                logout();
             }
+        } else {
+            logout();
         }
 
         // Kết nối SSE để nhận sự kiện thời gian thực

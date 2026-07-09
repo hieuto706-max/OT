@@ -1228,7 +1228,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const formEmp = document.getElementById('form-login-employee');
     const formAdmin = document.getElementById('form-login-admin');
 
-    if (saved && loginTime && !isSessionExpired(loginTime)) {
+    if (saved && loginTime && !isSessionExpired(loginTime) && safeStorage.getItem('ot_auth_token')) {
         try {
             const user = JSON.parse(saved);
             if (welcomeBox) {
