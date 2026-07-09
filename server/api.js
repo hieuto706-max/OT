@@ -3,7 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const config = require('./config');
 const { logInfo, logError, hashPassword, verifyPassword, generateId, getCorsOrigin, getSecurityHeaders, signJWT, verifyJWT, authenticateToken, getLocalIP } = require('./utils');
-const { loadDB, saveDB, getPGPool, initPGTable } = require('./db');
+const { loadDB, saveDB, getPGPool, initPGTable, fetchGist } = require('./db');
 const { VAPID_PUBLIC_KEY, sendPushNotification } = require('./notifications');
 const webpush = require('web-push');
 

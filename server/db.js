@@ -836,5 +836,6 @@ module.exports = {
     saveDB,
     getDBCache,
     setDBCache,
-    onUpdate
+    onUpdate,
+    fetchGist
 };
