@@ -941,7 +941,7 @@ async function handleAPI(req, res, urlPath, method) {
         const baseUrl = `${proto}://${req.headers.host}`;
         const desktopDownloadUrl = `${baseUrl}/download/desktop`;
         const mobileDownloadUrl = `${baseUrl}/OT-Manager-mobile.apk`;
-        return sendJSON(res, 200, { version, buildTime, desktopDownloadUrl, mobileDownloadUrl });
+        return sendJSON(res, 200, { version, buildTime, desktopDownloadUrl, mobileDownloadUrl, databaseType: config.DATABASE_URL ? 'PostgreSQL' : 'Local db.json' });
     }
 
     // --- VAPID PUBLIC KEY ---
