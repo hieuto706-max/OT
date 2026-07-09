@@ -3896,7 +3896,11 @@ async function handleAdminOTSubmit(e) {
 // ==================== CLOUD WAKING & SYNC CONFIG ====================
 async function initCloudConfig() {
     try {
-        if (window.OT_CLOUD_URL) {
+        if (isGitHubPages) {
+            // Khi chạy trên web (otmanager.id.vn / GitHub Pages), luôn dùng API Cloud
+            API_BASE = 'https://api.otmanager.id.vn';
+        } else if (window.OT_CLOUD_URL) {
+            // Chỉ Electron mới dùng URL từ server-config.js (localhost)
             API_BASE = window.OT_CLOUD_URL;
         } else {
             API_BASE = 'https://api.otmanager.id.vn';
