@@ -134,11 +134,12 @@ function copyFolderSync(from, to) {
     });
 }
 
-console.log('Copying desktop & mobile directories to docs/ for GitHub Pages...');
+console.log('Copying desktop, mobile & resources directories to docs/ for GitHub Pages...');
 try {
     copyFolderSync('desktop', 'docs/desktop');
     copyFolderSync('mobile', 'docs/mobile');
-    console.log('Successfully copied desktop & mobile directories to docs/');
+    copyFolderSync('resources', 'docs/resources');
+    console.log('Successfully copied desktop, mobile & resources directories to docs/');
 } catch (e) {
     console.error('Lỗi khi sao chép thư mục sang docs/:', e.message);
 }
