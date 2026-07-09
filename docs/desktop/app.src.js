@@ -50,7 +50,7 @@ document.addEventListener('keydown', e => {
 const isElectron = navigator.userAgent.toLowerCase().includes('electron');
 const isGitHubPages = window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
 const localServerUrl = isGitHubPages 
-    ? (localStorage.getItem('ot_server_ip') || 'https://ot-manager-server-jbxd.onrender.com') 
+    ? (localStorage.getItem('ot_server_ip') || 'https://api.otmanager.id.vn') 
     : window.location.origin;
 let API_BASE = localServerUrl;
 const OT_LUNCH_HOURS = 1;
@@ -4534,11 +4534,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     showScreen('screen-employee');
                 }
             } catch (err) {
-                console.error('[Dashboard] Lỗi khởi tạo dữ liệu, đăng xuất:', err);
-                logout();
+                console.error('[Dashboard] Lỗi khởi tạo dữ liệu:', err);
+                showScreen('screen-login');
             }
-        } else {
-            logout();
         }
 
         // Kết nối SSE để nhận sự kiện thời gian thực
