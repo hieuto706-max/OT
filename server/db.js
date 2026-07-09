@@ -3,6 +3,10 @@ const path = require('path');
 const https = require('https');
 const config = require('./config');
 const { logInfo, logError, generateId, hashPassword, decryptData, encryptData } = require('./utils');
+const pg = require('pg');
+
+// Parse PostgreSQL DATE type (OID 1082) as a raw string 'YYYY-MM-DD' to prevent converting to ISO format
+pg.types.setTypeParser(1082, (val) => val);
 
 let dbCache = null;
 let dbLoadingPromise = null;
