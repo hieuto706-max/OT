@@ -1742,6 +1742,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Save desktop admin compatible keys
                     safeStorage.setItem('ot_mobile_user', JSON.stringify(data.user), remember);
                     safeStorage.setItem('ot_current_user', JSON.stringify(data.user), remember);
+                    if (data.token) {
+                        safeStorage.setItem('ot_auth_token', data.token, remember);
+                    }
                     safeStorage.setItem('ot_login_time', Date.now().toString(), remember);
                     safeStorage.setItem('ot_login_date', new Date().toISOString().split('T')[0], remember);
 

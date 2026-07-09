@@ -9,6 +9,21 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" type="image/png" sizes="192x192" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">
+    <script id="anti-flash-script">
+      (function() {
+        try {
+          const userStr = localStorage.getItem('ot_current_user');
+          if (userStr) {
+            const user = JSON.parse(userStr);
+            if (user && user.role === 'admin') {
+              document.documentElement.classList.add('user-admin-logged-in');
+            } else if (user && user.role === 'employee') {
+              document.documentElement.classList.add('user-employee-logged-in');
+            }
+          }
+        } catch(e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
