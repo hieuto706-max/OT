@@ -4708,9 +4708,12 @@ async function editRecordDialog(recordId, source) {
                     <input type="date" id="modal-rec-date" value="${record.date}" max="${new Date().toISOString().split('T')[0]}" style="padding-left:12px; height:38px; border-radius:8px;" required>
                 </div>
             </div>
-            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
-                <input type="checkbox" id="modal-rec-backfill" ${isBackfill ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;">
-                <label for="modal-rec-backfill" style="margin-bottom: 0; cursor: pointer; user-select:none; font-weight:600;">Bù tăng ca</label>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label class="switch-label" for="modal-rec-backfill">
+                    <input type="checkbox" id="modal-rec-backfill" ${isBackfill ? 'checked' : ''}>
+                    <span class="switch-slider"></span>
+                    <span class="switch-text">Bù tăng ca</span>
+                </label>
             </div>
 
             <!-- Backfill hours input -->
@@ -4721,9 +4724,12 @@ async function editRecordDialog(recordId, source) {
 
             <!-- Normal OT inputs -->
             <div id="modal-rec-normal-inputs" style="display: ${isBackfill ? 'none' : 'block'};">
-                <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
-                    <input type="checkbox" id="modal-rec-lunch" ${record.hasLunchOT ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;">
-                    <label for="modal-rec-lunch" style="margin-bottom: 0; cursor: pointer; user-select:none; font-weight:600;">Tăng ca trưa (12:20 - 13:20)</label>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label class="switch-label" for="modal-rec-lunch">
+                        <input type="checkbox" id="modal-rec-lunch" ${record.hasLunchOT ? 'checked' : ''}>
+                        <span class="switch-slider"></span>
+                        <span class="switch-text">Tăng ca trưa (12:20 - 13:20)</span>
+                    </label>
                 </div>
                 <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
                     <div>
@@ -4739,9 +4745,10 @@ async function editRecordDialog(recordId, source) {
 
             <!-- Trip inputs -->
             <div class="form-group" style="margin-bottom: 15px; text-align: left;">
-                <label style="display:flex; align-items:center; gap:8px; margin-bottom: 0; cursor: pointer; user-select:none; font-weight:600;">
-                    <input type="checkbox" id="modal-rec-has-trip" ${record.deliveryProvince ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;">
-                    Đi xe tăng cường
+                <label class="switch-label" for="modal-rec-has-trip">
+                    <input type="checkbox" id="modal-rec-has-trip" ${record.deliveryProvince ? 'checked' : ''}>
+                    <span class="switch-slider"></span>
+                    <span class="switch-text">Đi xe tăng cường</span>
                 </label>
             </div>
             <div class="form-group" id="modal-rec-province-group" style="display: ${record.deliveryProvince ? 'block' : 'none'}; margin-bottom: 15px;">
@@ -5138,16 +5145,14 @@ function setupAdminCustomActivitiesUI(userId) {
         if (activityGroup) activityGroup.style.display = isBackfillChecked ? 'none' : 'block';
 
         listContainer.innerHTML = activities.map(act => `
-            <div class="custom-activity-item toggle-row" style="margin-bottom: 14px; text-align: left;">
-                <label class="toggle-label" for="admin-chk-${act.id}" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-                    <span class="toggle-text">
+            <div class="custom-activity-item" style="margin-bottom: 14px; text-align: left;">
+                <label class="switch-label" for="admin-chk-${act.id}" style="display: inline-flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <input type="checkbox" id="admin-chk-${act.id}" class="admin-ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleAdminCustomActivityInput('${act.id}')">
+                    <span class="switch-slider"></span>
+                    <span class="switch-text" style="display: flex; flex-direction: column; gap: 2px;">
                         <strong>${act.name}</strong>
-                        <small>Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}</small>
+                        <small style="font-size: 11px; color: var(--text-secondary);">Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}</small>
                     </span>
-                    <div class="toggle-switch">
-                        <input type="checkbox" id="admin-chk-${act.id}" class="admin-ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleAdminCustomActivityInput('${act.id}')">
-                        <span class="toggle-slider"></span>
-                    </div>
                 </label>
                 <div class="form-group" id="admin-ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding: 0 4px; margin-bottom: 0;">
                     <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiết'}</label>
@@ -5215,16 +5220,14 @@ function setupEmployeeCustomActivitiesUI() {
         if (activityGroup) activityGroup.style.display = isBackfillChecked ? 'none' : 'block';
 
         listContainer.innerHTML = activities.map(act => `
-            <div class="custom-activity-item toggle-row" style="margin-bottom: 14px; text-align: left;">
-                <label class="toggle-label" for="chk-${act.id}" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-                    <span class="toggle-text">
+            <div class="custom-activity-item" style="margin-bottom: 14px; text-align: left;">
+                <label class="switch-label" for="chk-${act.id}" style="display: inline-flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <input type="checkbox" id="chk-${act.id}" class="ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleEmployeeCustomActivityInput('${act.id}')">
+                    <span class="switch-slider"></span>
+                    <span class="switch-text" style="display: flex; flex-direction: column; gap: 2px;">
                         <strong>${act.name}</strong>
-                        <small>Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}</small>
+                        <small style="font-size: 11px; color: var(--text-secondary);">Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'}</small>
                     </span>
-                    <div class="toggle-switch">
-                        <input type="checkbox" id="chk-${act.id}" class="ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleEmployeeCustomActivityInput('${act.id}')">
-                        <span class="toggle-slider"></span>
-                    </div>
                 </label>
                 <div class="form-group" id="ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding: 0 4px; margin-bottom: 0;">
                     <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiết'}</label>
