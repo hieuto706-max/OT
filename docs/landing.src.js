@@ -1231,11 +1231,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saved && loginTime && !isSessionExpired(loginTime)) {
         try {
             const user = JSON.parse(saved);
-            // Tự động chuyển hướng thẳng vào ứng dụng nếu đã đăng nhập từ trước
-            const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            const targetUrl = (user.role === 'admin' || !isMobileDevice) ? '/desktop/' : '/mobile/?cleared=1';
-            window.location.replace(getRedirectPrefix() + targetUrl);
-            return;
+            if (welcomeBox) {
+                welcomeBox.style.display = 'block';
+                const welcomeTitle = document.getElementById('welcome-user-title');
+                const welcomeDesc = document.getElementById('welcome-user-desc');
+                if (welcomeTitle) welcomeTitle.textContent = `Chào mừng trở lại, ${user.fullname || user.username}!`;
+                if (welcomeDesc) welcomeDesc.textContent = `Đang đăng nhập với vai trò: ${user.role === 'admin' ? 'Quản lý' : 'Nhân viên'}`;
+                
+                const btnEnter = document.getElementById('btn-enter-app');
+                if (btnEnter) {
+                    btnEnter.onclick = () => {
+                        const targetUrl = (user.role === 'admin' || !isMobileDevice) ? '/desktop/' : '/mobile/?cleared=1';
+                        window.location.replace(getRedirectPrefix() + targetUrl);
+                    };
+                }
+                
+                const btnLogout = document.getElementById('btn-logout-portal');
+                if (btnLogout) {
+                    btnLogout.onclick = () => {
+                        safeStorage.removeItem('ot_mobile_user');
+                        safeStorage.removeItem('ot_current_user');
+                        safeStorage.removeItem('ot_login_time');
+                        safeStorage.removeItem('ot_auth_token');
+                        window.location.reload();
+                    };
+                }
+                
+                // Ẩn các tabs và form đăng nhập thường
+                const loginTabsWrapper = document.querySelector('.login-tabs-container-wrapper');
+                if (loginTabsWrapper) loginTabsWrapper.style.display = 'none';
+                if (loginTabs) loginTabs.style.display = 'none';
+                if (formEmp) formEmp.style.display = 'none';
+                if (formAdmin) formAdmin.style.display = 'none';
+            }
         } catch (e) {
             console.error('Lỗi phân tích user đã lưu:', e);
         }
