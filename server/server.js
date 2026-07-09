@@ -727,6 +727,9 @@ const server = http.createServer(async (req, res) => {
                     res.writeHead(200, {
                         'Content-Type': 'application/vnd.android.package-archive',
                         'Content-Disposition': `attachment; filename="${apkFile}"`,
+                        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+                        'Pragma': 'no-cache',
+                        'Expires': '0',
                         'Access-Control-Allow-Origin': '*',
                     });
                     res.end(data);
