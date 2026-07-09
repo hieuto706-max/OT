@@ -579,10 +579,12 @@ async function initPGTable() {
                 push_subscriptions JSONB,
                 fcm_tokens JSONB DEFAULT '[]'::jsonb,
                 pending_unlink BOOLEAN DEFAULT false,
+                is_super_admin BOOLEAN DEFAULT false,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        await client.query('ALTER TABLE pg_users ADD COLUMN IF NOT EXISTS is_super_admin BOOLEAN DEFAULT false');
 
         // Bảng bản ghi tăng ca
         await client.query(`
@@ -649,6 +651,7 @@ function pgUserToJS(row) {
         pushSubscriptions: row.push_subscriptions || undefined,
         fcmTokens: row.fcm_tokens || [],
         pendingUnlink: row.pending_unlink || undefined,
+        isSuperAdmin: !!row.is_super_admin,
         createdAt: row.created_at ? row.created_at.toISOString() : undefined,
         updatedAt: row.updated_at ? row.updated_at.toISOString() : undefined
     };
@@ -745,12 +748,12 @@ async function saveDBToPG(data) {
         // Upsert users
         for (const u of (data.users || [])) {
             await client.query(`
-                INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, fcm_tokens, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, fcm_tokens, is_super_admin, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
                 ON CONFLICT (id) DO UPDATE SET
                     username = $2, fullname = $3, password = $4, role = $5, team = $6,
                     device_id = $7, browser_device_id = $8, push_subscriptions = $9,
-                    pending_unlink = $10, fcm_tokens = $11, updated_at = $13
+                    pending_unlink = $10, fcm_tokens = $11, is_super_admin = $12, updated_at = $14
             `, [
                 u.id, u.username, u.fullname || '', u.password || '',
                 u.role || 'user', u.team || null,
@@ -758,6 +761,7 @@ async function saveDBToPG(data) {
                 u.pushSubscriptions ? JSON.stringify(u.pushSubscriptions) : null,
                 u.pendingUnlink || false,
                 u.fcmTokens ? JSON.stringify(u.fcmTokens) : '[]',
+                u.isSuperAdmin || false,
                 u.createdAt || new Date().toISOString(),
                 u.updatedAt || new Date().toISOString()
             ]);
@@ -1018,12 +1022,12 @@ async function syncDiffToPG(oldData, newData) {
             const ou = oldUsersMap.get(id);
             if (!ou || !isUserEqual(ou, nu)) {
                 await client.query(`
-                    INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, fcm_tokens, created_at, updated_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                    INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, fcm_tokens, is_super_admin, created_at, updated_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
                     ON CONFLICT (id) DO UPDATE SET
                         username = $2, fullname = $3, password = $4, role = $5, team = $6,
                         device_id = $7, browser_device_id = $8, push_subscriptions = $9,
-                        pending_unlink = $10, fcm_tokens = $11, updated_at = $13
+                        pending_unlink = $10, fcm_tokens = $11, is_super_admin = $12, updated_at = $14
                 `, [
                     nu.id, nu.username, nu.fullname || '', nu.password || '',
                     nu.role || 'user', nu.team || null,
@@ -1031,6 +1035,7 @@ async function syncDiffToPG(oldData, newData) {
                     nu.pushSubscriptions ? JSON.stringify(nu.pushSubscriptions) : null,
                     nu.pendingUnlink || false,
                     nu.fcmTokens ? JSON.stringify(nu.fcmTokens) : '[]',
+                    nu.isSuperAdmin || false,
                     nu.createdAt || new Date().toISOString(),
                     nu.updatedAt || new Date().toISOString()
                 ]);
