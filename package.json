@@ -52,7 +52,8 @@
       "!OT-Manager-mobile.apk",
       "!.git/**",
       "!.vscode/**",
-      "!docs/**"
+      "!docs/**",
+      "!server/config.json"
     ],
     "win": {
       "target": "nsis",
