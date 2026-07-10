@@ -4115,8 +4115,7 @@ async function checkUpdateManual() {
                                             throw new Error(result.message || 'Lỗi không xác định');
                                         }
                                     } catch (err) {
-                                        showToast(`Lỗi khi vá: ${err.message}. Đang mở link tải thủ công...`, 'error');
-                                        window.open(`${cloudUrl}/desktop/app.js`, '_blank');
+                                        showToast(`Lỗi khi vá: ${err.message}. Vui lòng thử lại sau hoặc tải bản cài đặt mới.`, 'error');
                                     }
                                 } else {
                                     const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
@@ -4251,8 +4250,7 @@ async function checkUpdateSilent() {
                                             throw new Error(result.message || 'Lỗi không xác định');
                                         }
                                     } catch (err) {
-                                        showToast(`Lỗi khi vá: ${err.message}. Đang mở link tải thủ công...`, 'error');
-                                        window.open(`${cloudUrl}/desktop/app.js`, '_blank');
+                                        showToast(`Lỗi khi vá: ${err.message}. Vui lòng thử lại sau hoặc tải bản cài đặt mới.`, 'error');
                                     }
                                 } else {
                                     const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
