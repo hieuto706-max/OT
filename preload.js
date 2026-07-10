@@ -6,18 +6,26 @@ let cloudUrl = 'https://api.otmanager.id.vn';
 let localVersion = '1.4.4';
 let localBuildTime = 0;
 
+// Phát hiện app đã được đóng gói (.asar) hay đang chạy dev
+const isPackaged = __dirname.includes('app.asar');
+
 // Xác định đường dẫn file cấu hình config.json
 let configPath = null;
 
-// Khi đóng gói (app.isPackaged), đọc config.json nằm cùng cấp với file exe.
-// Khi chạy dev, đọc config.json trong thư mục server.
-const exeConfig = path.join(path.dirname(process.execPath), 'config.json');
-const devConfig = path.join(__dirname, 'server', 'config.json');
-
-if (fs.existsSync(exeConfig)) {
-    configPath = exeConfig;
-} else if (fs.existsSync(devConfig)) {
-    configPath = devConfig;
+if (isPackaged) {
+    // Khi đóng gói: CHỈ đọc config.json nằm cùng cấp với file .exe (cấu hình người dùng tùy chỉnh)
+    // KHÔNG đọc server/config.json bên trong .asar (vì nó chứa URL localhost cho dev)
+    const exeConfig = path.join(path.dirname(process.execPath), 'config.json');
+    if (fs.existsSync(exeConfig)) {
+        configPath = exeConfig;
+    }
+    // Nếu không có config.json bên ngoài → dùng URL mặc định (https://api.otmanager.id.vn)
+} else {
+    // Khi chạy dev: đọc config.json trong thư mục server (localhost)
+    const devConfig = path.join(__dirname, 'server', 'config.json');
+    if (fs.existsSync(devConfig)) {
+        configPath = devConfig;
+    }
 }
 
 if (configPath) {
@@ -51,4 +59,5 @@ contextBridge.exposeInMainWorld('OT_CLOUD_URL', cloudUrl);
 contextBridge.exposeInMainWorld('OT_LOCAL_VERSION', localVersion);
 contextBridge.exposeInMainWorld('OT_LOCAL_BUILD_TIME', localBuildTime);
 
-console.log(`[Preload] Đã nạp cấu hình thành công: URL=${cloudUrl}, Version=${localVersion}`);
+console.log(`[Preload] Mode=${isPackaged ? 'PACKAGED' : 'DEV'}, URL=${cloudUrl}, Version=${localVersion}`);
+
