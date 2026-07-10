@@ -42,16 +42,22 @@ function isLocalHostOrIP(hostname) {
 async function createWindow() {
     let cloudUrl = 'https://api.otmanager.id.vn';
 
-    // Đọc file config.json: Ưu tiên kế bên file exe khi đóng gói, sau đó mới đến file trong asar/dev
-    let configPath = path.join(__dirname, 'server', 'config.json');
+    // Đọc file config.json: Khi đóng gói, chỉ đọc nếu có file config.json nằm cùng cấp với file exe. 
+    // Khi chạy dev, đọc file config.json trong thư mục server.
+    let configPath = null;
     if (app.isPackaged) {
         const exeConfig = path.join(path.dirname(process.execPath), 'config.json');
         if (fs.existsSync(exeConfig)) {
             configPath = exeConfig;
         }
+    } else {
+        const devConfig = path.join(__dirname, 'server', 'config.json');
+        if (fs.existsSync(devConfig)) {
+            configPath = devConfig;
+        }
     }
 
-    if (fs.existsSync(configPath)) {
+    if (configPath && fs.existsSync(configPath)) {
         try {
             const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
             if (config.serverUrl) {
