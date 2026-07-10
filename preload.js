@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 let cloudUrl = 'https://api.otmanager.id.vn';
-let localVersion = '1.4.3';
+let localVersion = '1.4.4';
 let localBuildTime = 0;
 
 // Xác định đường dẫn file cấu hình config.json
