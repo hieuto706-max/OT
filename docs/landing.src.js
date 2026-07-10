@@ -1220,6 +1220,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Tự động điền tài khoản/mật khẩu đã lưu nếu người dùng chọn Ghi nhớ ở lần trước
+    try {
+        const savedEmpUser = localStorage.getItem('ot_saved_emp_user');
+        const inputEmpUser = document.getElementById('login-user');
+        const rememberCheckboxEmp = document.getElementById('login-remember-emp');
+        if (savedEmpUser && inputEmpUser) {
+            inputEmpUser.value = savedEmpUser;
+            if (rememberCheckboxEmp) rememberCheckboxEmp.checked = true;
+        }
+
+        const savedAdminUser = localStorage.getItem('ot_saved_admin_user');
+        const savedAdminPass = localStorage.getItem('ot_saved_admin_pass');
+        const inputAdminUser = document.getElementById('login-admin-user');
+        const inputAdminPass = document.getElementById('login-password');
+        const rememberCheckboxAdmin = document.getElementById('login-remember-admin');
+        if (savedAdminUser && inputAdminUser) {
+            inputAdminUser.value = savedAdminUser;
+            if (rememberCheckboxAdmin) rememberCheckboxAdmin.checked = true;
+        }
+        if (savedAdminPass && inputAdminPass) {
+            inputAdminPass.value = savedAdminPass;
+        }
+    } catch (e) {
+        console.error('Lỗi tự động điền tài khoản/mật khẩu đã lưu:', e);
+    }
+
     // Kiểm tra session hiện có để hiển thị Welcome Box
     const saved = safeStorage.getItem('ot_mobile_user');
     const loginTime = safeStorage.getItem('ot_login_time');
@@ -1656,6 +1682,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     safeStorage.setItem('ot_current_user', JSON.stringify(data.user), remember);
                     const todayStr = new Date().toISOString().split('T')[0];
                     safeStorage.setItem('ot_login_date', todayStr, remember);
+                    
+                    if (remember) {
+                        localStorage.setItem('ot_saved_emp_user', username);
+                    } else {
+                        localStorage.removeItem('ot_saved_emp_user');
+                    }
 
                     showToast('Đăng nhập Nhân viên thành công!', 'success');
                     setTimeout(() => {
@@ -1752,6 +1784,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     safeStorage.setItem('ot_login_time', Date.now().toString(), remember);
                     safeStorage.setItem('ot_login_date', new Date().toISOString().split('T')[0], remember);
+                    
+                    if (remember) {
+                        localStorage.setItem('ot_saved_admin_user', username);
+                        localStorage.setItem('ot_saved_admin_pass', password);
+                    } else {
+                        localStorage.removeItem('ot_saved_admin_user');
+                        localStorage.removeItem('ot_saved_admin_pass');
+                    }
 
                     showToast('Đăng nhập Quản trị thành công!', 'success');
                     setTimeout(() => {
