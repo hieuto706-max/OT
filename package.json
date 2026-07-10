@@ -37,7 +37,8 @@
       {
         "provider": "github",
         "owner": "hieuto706-max",
-        "repo": "OT"
+        "repo": "OT",
+        "releaseType": "release"
       }
     ],
     "files": [
