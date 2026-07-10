@@ -1266,7 +1266,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) {
             console.error('Lỗi phân tích user đã lưu:', e);
+            document.documentElement.classList.remove('user-logged-in');
+            if (welcomeBox) welcomeBox.style.display = 'none';
         }
+    } else {
+        document.documentElement.classList.remove('user-logged-in');
+        if (welcomeBox) welcomeBox.style.display = 'none';
     }
 
     function isLocalNetworkUrl(urlStr) {

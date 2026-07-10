@@ -45,7 +45,8 @@
         try {
           const saved = localStorage.getItem('ot_mobile_user') || sessionStorage.getItem('ot_mobile_user');
           const loginTime = localStorage.getItem('ot_login_time') || sessionStorage.getItem('ot_login_time');
-          if (saved && loginTime) {
+          const token = localStorage.getItem('ot_auth_token') || sessionStorage.getItem('ot_auth_token');
+          if (saved && loginTime && token) {
             const loginDate = new Date(parseInt(loginTime, 10));
             const cutoff = new Date(loginDate.getFullYear(), loginDate.getMonth(), loginDate.getDate() + 1, 5, 0, 0, 0);
             if (Date.now() < cutoff.getTime()) {
