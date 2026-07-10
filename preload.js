@@ -1,4 +1,4 @@
-const { contextBridge } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -44,7 +44,19 @@ if (configPath) {
 
 // Đọc version và buildTime từ build.json
 try {
-    const buildJsonPath = path.join(__dirname, 'server', 'build.json');
+    let buildJsonPath = null;
+    const userDataPath = process.env.USER_DATA_PATH;
+    if (userDataPath) {
+        const hotfixBuildPath = path.join(userDataPath, 'hotfixes', 'build.json');
+        if (fs.existsSync(hotfixBuildPath)) {
+            buildJsonPath = hotfixBuildPath;
+        }
+    }
+    
+    if (!buildJsonPath) {
+        buildJsonPath = path.join(__dirname, 'server', 'build.json');
+    }
+
     if (fs.existsSync(buildJsonPath)) {
         const buildInfo = JSON.parse(fs.readFileSync(buildJsonPath, 'utf-8'));
         if (buildInfo.buildTime) localBuildTime = buildInfo.buildTime;
@@ -58,6 +70,13 @@ try {
 contextBridge.exposeInMainWorld('OT_CLOUD_URL', cloudUrl);
 contextBridge.exposeInMainWorld('OT_LOCAL_VERSION', localVersion);
 contextBridge.exposeInMainWorld('OT_LOCAL_BUILD_TIME', localBuildTime);
+
+// Expose IPC APIs cho cập nhật & vá lỗi không cần local Express server
+contextBridge.exposeInMainWorld('electronAPI', {
+    triggerUpdate: (downloadUrl, version) => ipcRenderer.send('trigger-update', { downloadUrl, version }),
+    applyHotfix: (cloudUrl, buildTime) => ipcRenderer.invoke('apply-hotfix', { cloudUrl, buildTime }),
+    isElectron: true
+});
 
 console.log(`[Preload] Mode=${isPackaged ? 'PACKAGED' : 'DEV'}, URL=${cloudUrl}, Version=${localVersion}`);
 

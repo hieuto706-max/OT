@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Tray, dialog, shell } = require('electron');
+const { app, BrowserWindow, Menu, Tray, dialog, shell, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 // Không require server local nữa vì chạy client cloud thuần túy
@@ -39,7 +39,38 @@ function isLocalHostOrIP(hostname) {
            /^169\.254\./.test(hostname);
 }
 
+function cleanObsoleteHotfixes() {
+    try {
+        const updatesDir = path.join(app.getPath('userData'), 'hotfixes');
+        if (!fs.existsSync(updatesDir)) return;
+        
+        const hotfixBuildPath = path.join(updatesDir, 'build.json');
+        const internalBuildPath = path.join(__dirname, 'server', 'build.json');
+        
+        let hotfixBuildTime = 0;
+        let internalBuildTime = 0;
+        
+        if (fs.existsSync(hotfixBuildPath)) {
+            const hotfixBuild = JSON.parse(fs.readFileSync(hotfixBuildPath, 'utf-8'));
+            hotfixBuildTime = hotfixBuild.buildTime || 0;
+        }
+        if (fs.existsSync(internalBuildPath)) {
+            const internalBuild = JSON.parse(fs.readFileSync(internalBuildPath, 'utf-8'));
+            internalBuildTime = internalBuild.buildTime || 0;
+        }
+        
+        if (internalBuildTime >= hotfixBuildTime) {
+            console.log(`[Hotfix] Bản cài đặt gốc mới hơn hoặc bằng bản vá (${internalBuildTime} >= ${hotfixBuildTime}). Tiến hành dọn dẹp bản vá cũ.`);
+            fs.rmSync(updatesDir, { recursive: true, force: true });
+        }
+    } catch (e) {
+        console.error('[Hotfix] Lỗi dọn dẹp bản vá cũ:', e.message);
+    }
+}
+
 async function createWindow() {
+    process.env.USER_DATA_PATH = app.getPath('userData');
+    cleanObsoleteHotfixes();
     let cloudUrl = 'https://api.otmanager.id.vn';
 
     // Đọc file config.json: Khi đóng gói, chỉ đọc nếu có file config.json nằm cùng cấp với file exe. 
@@ -114,8 +145,14 @@ async function createWindow() {
         show: false,
     });
 
-    // Nạp giao diện trực tiếp từ file tĩnh trên máy tính
-    mainWindow.loadFile(path.join(__dirname, 'desktop', 'index.html'));
+    // Nạp giao diện trực tiếp từ file tĩnh trên máy tính (ưu tiên từ thư mục hotfixes nếu có bản vá)
+    const hotfixIndex = path.join(app.getPath('userData'), 'hotfixes', 'index.html');
+    if (fs.existsSync(hotfixIndex)) {
+        console.log(`[Main] Nạp giao diện từ bản vá nhanh: ${hotfixIndex}`);
+        mainWindow.loadFile(hotfixIndex);
+    } else {
+        mainWindow.loadFile(path.join(__dirname, 'desktop', 'index.html'));
+    }
 
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
@@ -560,4 +597,66 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', () => {
     // Không chạy server local nữa nên không cần dừng
+});
+
+// --- IPC HANDLERS FOR HOTFIX & UPDATE (WITHOUT LOCAL EXPRESS SERVER) ---
+ipcMain.on('trigger-update', (event, { downloadUrl, version }) => {
+    console.log(`[Main] Nhận yêu cầu tải bản cập nhật: v${version} từ URL: ${downloadUrl}`);
+    global.startElectronUpdate(downloadUrl, version);
+});
+
+ipcMain.handle('apply-hotfix', async (event, { cloudUrl, buildTime }) => {
+    try {
+        console.log(`[Main] Nhận yêu cầu áp dụng bản vá nhanh (hotfix) từ: ${cloudUrl}`);
+        const updatesDir = path.join(app.getPath('userData'), 'hotfixes');
+        if (!fs.existsSync(updatesDir)) {
+            fs.mkdirSync(updatesDir, { recursive: true });
+        }
+
+        const filesToDownload = ['index.html', 'app.js', 'style.css'];
+        const https = require('https');
+        const http = require('http');
+        
+        const downloadPromises = filesToDownload.map(file => {
+            return new Promise((resolve, reject) => {
+                const fileUrl = `${cloudUrl}/desktop/${file}`;
+                const destPath = path.join(updatesDir, file);
+                const fileStream = fs.createWriteStream(destPath);
+                
+                const client = cloudUrl.startsWith('https') ? https : http;
+                const options = cloudUrl.startsWith('https') ? { rejectUnauthorized: false } : {};
+                
+                client.get(fileUrl, options, (response) => {
+                    if (response.statusCode !== 200) {
+                        fileStream.close();
+                        return reject(new Error(`Tải file ${file} thất bại: HTTP ${response.statusCode}`));
+                    }
+                    response.pipe(fileStream);
+                    fileStream.on('finish', () => {
+                        fileStream.close();
+                        resolve();
+                    });
+                }).on('error', (err) => {
+                    fileStream.close();
+                    fs.unlink(destPath, () => {});
+                    reject(err);
+                });
+            });
+        });
+
+        await Promise.all(downloadPromises);
+
+        // Ghi tệp build.json mới vào thư mục hotfixes
+        fs.writeFileSync(
+            path.join(updatesDir, 'build.json'),
+            JSON.stringify({ buildTime: buildTime || Date.now() }, null, 2),
+            'utf8'
+        );
+
+        console.log(`[Hotfix] Đã áp dụng thành công bản vá mới tại: ${updatesDir}`);
+        return { success: true };
+    } catch (err) {
+        console.error('[Hotfix] Lỗi khi áp dụng bản vá:', err.message);
+        return { success: false, message: err.message };
+    }
 });

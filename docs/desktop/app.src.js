@@ -4100,12 +4100,17 @@ async function checkUpdateManual() {
                                 if (hasHotfix) {
                                     showToast('Đang tải và áp dụng bản vá nhanh...', 'info');
                                     try {
-                                        const res = await fetch(`${localServerUrl}/api/apply-hotfix`, {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ cloudUrl, buildTime: cloudBuildTime })
-                                        });
-                                        const result = await res.json();
+                                        let result;
+                                        if (window.electronAPI && window.electronAPI.applyHotfix) {
+                                            result = await window.electronAPI.applyHotfix(cloudUrl, cloudBuildTime);
+                                        } else {
+                                            const res = await fetch(`${localServerUrl}/api/apply-hotfix`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ cloudUrl, buildTime: cloudBuildTime })
+                                            });
+                                            result = await res.json();
+                                        }
                                         if (result.success) {
                                             showToast('Đã áp dụng bản vá thành công! Đang tự khởi động lại...', 'success');
                                             setTimeout(() => {
@@ -4121,16 +4126,21 @@ async function checkUpdateManual() {
                                     const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
                                     try {
                                         showToast('Đang chuẩn bị tải bản cập nhật...', 'info');
-                                        const res = await fetch(`${localServerUrl}/api/trigger-update`, {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ downloadUrl, version: cloudVer })
-                                        });
-                                        if (!res.ok) {
-                                            const errData = await res.json().catch(() => ({}));
-                                            throw new Error(errData.message || `HTTP ${res.status}`);
+                                        if (window.electronAPI && window.electronAPI.triggerUpdate) {
+                                            window.electronAPI.triggerUpdate(downloadUrl, cloudVer);
+                                            showToast('Bắt đầu tải xuống bản cập nhật!', 'success');
+                                        } else {
+                                            const res = await fetch(`${localServerUrl}/api/trigger-update`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ downloadUrl, version: cloudVer })
+                                            });
+                                            if (!res.ok) {
+                                                const errData = await res.json().catch(() => ({}));
+                                                throw new Error(errData.message || `HTTP ${res.status}`);
+                                            }
+                                            showToast('Bắt đầu tải xuống bản cập nhật!', 'success');
                                         }
-                                        showToast('Bắt đầu tải xuống bản cập nhật!', 'success');
                                     } catch (e) {
                                         console.error('Lỗi khi kích hoạt cập nhật:', e);
                                         showToast('Không thể tự động tải xuống. Đang mở trình duyệt để tải...', 'warning');
@@ -4235,12 +4245,17 @@ async function checkUpdateSilent() {
                                 if (hasHotfix) {
                                     showToast('Đang tải và áp dụng bản vá nhanh...', 'info');
                                     try {
-                                        const res = await fetch(`${localServerUrl}/api/apply-hotfix`, {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ cloudUrl, buildTime: cloudBuildTime })
-                                        });
-                                        const result = await res.json();
+                                        let result;
+                                        if (window.electronAPI && window.electronAPI.applyHotfix) {
+                                            result = await window.electronAPI.applyHotfix(cloudUrl, cloudBuildTime);
+                                        } else {
+                                            const res = await fetch(`${localServerUrl}/api/apply-hotfix`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ cloudUrl, buildTime: cloudBuildTime })
+                                            });
+                                            result = await res.json();
+                                        }
                                         if (result.success) {
                                             showToast('Đã áp dụng bản vá thành công! Đang tự khởi động lại...', 'success');
                                             setTimeout(() => {
@@ -4256,16 +4271,21 @@ async function checkUpdateSilent() {
                                     const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
                                     try {
                                         showToast('Đang chuẩn bị tải bản cập nhật...', 'info');
-                                        const res = await fetch(`${localServerUrl}/api/trigger-update`, {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ downloadUrl, version: cloudVer })
-                                        });
-                                        if (!res.ok) {
-                                            const errData = await res.json().catch(() => ({}));
-                                            throw new Error(errData.message || `HTTP ${res.status}`);
+                                        if (window.electronAPI && window.electronAPI.triggerUpdate) {
+                                            window.electronAPI.triggerUpdate(downloadUrl, cloudVer);
+                                            showToast('Bắt đầu tải xuống bản cập nhật!', 'success');
+                                        } else {
+                                            const res = await fetch(`${localServerUrl}/api/trigger-update`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ downloadUrl, version: cloudVer })
+                                            });
+                                            if (!res.ok) {
+                                                const errData = await res.json().catch(() => ({}));
+                                                throw new Error(errData.message || `HTTP ${res.status}`);
+                                            }
+                                            showToast('Bắt đầu tải xuống bản cập nhật!', 'success');
                                         }
-                                        showToast('Bắt đầu tải xuống bản cập nhật!', 'success');
                                     } catch (e) {
                                         console.error('Lỗi khi kích hoạt cập nhật:', e);
                                         showToast('Không thể tự động tải xuống. Đang mở trình duyệt để tải...', 'warning');
