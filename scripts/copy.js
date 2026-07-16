@@ -47,13 +47,13 @@ function obfuscateAndSave(srcPath, destPath) {
         const disableObfuscation = process.env.DISABLE_OBFUSCATION === 'true' || srcPath.includes('mobile');
         if (disableObfuscation) {
             console.log(`Copying raw code (No obfuscation): ${srcPath} -> ${destPath}`);
-            fs.writeFileSync(destPath, code, 'utf8');
+            fs.writeFileSync(destPath, '/* eslint-disable */\n/*jshint ignore:start*/\n// @ts-nocheck\n' + code, 'utf8');
             return true;
         }
         
         console.log(`Obfuscating (Light): ${srcPath} -> ${destPath}`);
         const obfuscationResult = JavaScriptObfuscator.obfuscate(code, obfuscateConfig);
-        fs.writeFileSync(destPath, obfuscationResult.getObfuscatedCode(), 'utf8');
+        fs.writeFileSync(destPath, '/* eslint-disable */\n/*jshint ignore:start*/\n// @ts-nocheck\n' + obfuscationResult.getObfuscatedCode(), 'utf8');
         return true;
     } catch (e) {
         console.error(`[Error] Processing failed for ${srcPath}:`, e.message);

@@ -1,3 +1,4 @@
+(function() {
 /**
  * OT Manager - Desktop App (Admin)
  * Giờ làm chính: 7:00 - 16:30
@@ -84,9 +85,12 @@ function populateTeamFilters() {
     const adminFilter = document.getElementById('admin-filter-team');
     const reportFilter = document.getElementById('report-filter-team');
     
+    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+    const isSuperAdmin = currentUser && (currentUser.isSuperAdmin || currentUser.username === 'admin');
+    
     const optionsHtml = `
         <option value="">Tất cả Team</option>
-        <option value="admin">admin</option>
+        ${isSuperAdmin ? '<option value="admin">admin</option>' : ''}
         <option value="unassigned">Chưa phân team</option>
         ${TEAMS.map(t => {
             const name = typeof t === 'string' ? t : (t.name || '');
@@ -408,20 +412,29 @@ async function handleEmployeeLogin(e) {
             return;
         }
 
-        localStorage.setItem('ot_current_user', JSON.stringify(user));
-        if (data.token) localStorage.setItem('ot_auth_token', data.token);
-        const todayStr = new Date().toISOString().split('T')[0];
-        localStorage.setItem('ot_login_date', todayStr);
-        try {
-            const versionRes = await fetch(`${localServerUrl}/api/version`);
-            const versionData = await versionRes.json();
-            localStorage.setItem('ot_app_version', versionData.version || '1.0.0');
-        } catch (e) {}
+        const proceedLogin = (finalUser) => {
+            localStorage.setItem('ot_current_user', JSON.stringify(finalUser));
+            if (data.token) localStorage.setItem('ot_auth_token', data.token);
+            const todayStr = new Date().toISOString().split('T')[0];
+            localStorage.setItem('ot_login_date', todayStr);
+            fetch(`${localServerUrl}/api/version`).then(r => r.json()).then(v => {
+                localStorage.setItem('ot_app_version', v.version || '1.0.0');
+            }).catch(() => {});
 
-        initEmployeeDashboard(user);
-        showScreen('screen-employee');
-        showToast(`Xin chào, ${user.fullname}!`, 'info');
-        e.target.reset();
+            initEmployeeDashboard(finalUser);
+            showScreen('screen-employee');
+            showToast(`Xin chào, ${finalUser.fullname}!`, 'info');
+            e.target.reset();
+        };
+
+        if (data.requireEmailSetup) {
+            showEmailSetupOverlay(username, (verifiedEmail) => {
+                user.email = verifiedEmail;
+                proceedLogin(user);
+            });
+        } else {
+            proceedLogin(user);
+        }
     } catch (err) {
         errorEl.textContent = err.message;
     }
@@ -448,20 +461,29 @@ async function handleAdminLogin(e) {
             return;
         }
 
-        localStorage.setItem('ot_current_user', JSON.stringify(user));
-        if (data.token) localStorage.setItem('ot_auth_token', data.token);
-        const todayStr = new Date().toISOString().split('T')[0];
-        localStorage.setItem('ot_login_date', todayStr);
-        try {
-            const versionRes = await fetch(`${localServerUrl}/api/version`);
-            const versionData = await versionRes.json();
-            localStorage.setItem('ot_app_version', versionData.version || '1.0.0');
-        } catch (e) {}
+        const proceedLogin = (finalUser) => {
+            localStorage.setItem('ot_current_user', JSON.stringify(finalUser));
+            if (data.token) localStorage.setItem('ot_auth_token', data.token);
+            const todayStr = new Date().toISOString().split('T')[0];
+            localStorage.setItem('ot_login_date', todayStr);
+            fetch(`${localServerUrl}/api/version`).then(r => r.json()).then(v => {
+                localStorage.setItem('ot_app_version', v.version || '1.0.0');
+            }).catch(() => {});
 
-        initAdminDashboard(user);
-        showScreen('screen-admin');
-        showToast(`Xin chào, ${user.fullname}!`, 'info');
-        e.target.reset();
+            initAdminDashboard(finalUser);
+            showScreen('screen-admin');
+            showToast(`Xin chào, ${finalUser.fullname}!`, 'info');
+            e.target.reset();
+        };
+
+        if (data.requireEmailSetup) {
+            showEmailSetupOverlay(username, (verifiedEmail) => {
+                user.email = verifiedEmail;
+                proceedLogin(user);
+            });
+        } else {
+            proceedLogin(user);
+        }
     } catch (err) {
         errorEl.textContent = err.message;
     }
@@ -1528,9 +1550,9 @@ async function refreshAdminRecords() {
                 <tr class="empty-row">
                     <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
                         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color: var(--text-muted); opacity: 0.6;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="color: var(--text-muted); opacity: 0.6;">
                                 <circle cx="12" cy="12" r="10"/>
-                                <path d="M8 12h8"/>
+                                <line x1="8" y1="12" x2="16" y2="12"/>
                             </svg>
                             <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">Không có dữ liệu đã duyệt</span>
                             <span style="font-size: 13px; color: var(--text-muted);">Không tìm thấy bản ghi ${currentAdminRecType === 'ot' ? 'tăng ca' : 'hoạt động tùy chọn'} nào đã được duyệt trong tháng này.</span>
@@ -1630,10 +1652,10 @@ async function refreshAdminRecords() {
                 <tr class="empty-row">
                     <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
                         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color: var(--accent-green-light); opacity: 0.8;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="color: var(--accent-green-light); opacity: 0.8;">
                                 <circle cx="12" cy="12" r="10"/>
-                                <path d="M12 8v4"/>
-                                <path d="M12 16h.01"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
                             </svg>
                             <span style="font-size: 15px; font-weight: 600; color: var(--text-primary);">Không có yêu cầu chờ duyệt</span>
                             <span style="font-size: 13px; color: var(--text-muted);">Tất cả yêu cầu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'hoạt động tùy chọn'} đã được xử lý xong.</span>
@@ -1671,7 +1693,7 @@ async function refreshAdminRecords() {
                         <td>${totalOtBadge}</td>
                         <td>${noteDisplay}</td>
                         <td><div class="action-buttons">
-                            <button class="btn btn-success btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
+                            <button class="btn btn-green btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
                                 ✓ Duyệt
                             </button>
                             <button class="btn btn-danger btn-xs" onclick="rejectRecord('${r.id}')" title="Từ chối" style="padding: 4px 8px; font-size: 11px;">
@@ -1692,7 +1714,7 @@ async function refreshAdminRecords() {
                         <td>${detail}</td>
                         <td>${noteDisplay}</td>
                         <td><div class="action-buttons">
-                            <button class="btn btn-success btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
+                            <button class="btn btn-green btn-xs" onclick="approveRecord('${r.id}')" title="Duyệt" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
                                 ✓ Duyệt
                             </button>
                             <button class="btn btn-danger btn-xs" onclick="rejectRecord('${r.id}')" title="Từ chối" style="padding: 4px 8px; font-size: 11px;">
@@ -1711,10 +1733,10 @@ async function refreshAdminRecords() {
                 <tr class="empty-row">
                     <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
                         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color: #ef4444; opacity: 0.7;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="color: #ef4444; opacity: 0.7;">
                                 <circle cx="12" cy="12" r="10"/>
-                                <path d="M15 9l-6 6"/>
-                                <path d="M9 9l6 6"/>
+                                <line x1="15" y1="9" x2="9" y2="15"/>
+                                <line x1="9" y1="9" x2="15" y2="15"/>
                             </svg>
                             <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">Không có bản ghi bị từ chối</span>
                             <span style="font-size: 13px; color: var(--text-muted);">Không có yêu cầu ${currentAdminRecType === 'ot' ? 'tăng ca' : 'hoạt động tùy chọn'} nào bị từ chối duyệt.</span>
@@ -1870,6 +1892,7 @@ async function refreshAdminRecords() {
 async function refreshAdminUsers() {
     try {
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isSuperAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
         const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin' || currentUser.isSuperAdmin);
 
         const usersData = await api('/api/users');
@@ -1890,30 +1913,18 @@ async function refreshAdminUsers() {
 
             // Nút reset liên kết thiết bị
             let deviceUnlinkBtn = '';
-            if (u.deviceId) {
+            if (u.deviceId || u.browserDeviceId) {
                 deviceUnlinkBtn = `
-                    <button class="btn-reset btn-reset-mobile" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'mobile')" title="Xóa liên kết App điện thoại" style="margin-right: 4px;">
+                    <button class="btn-reset btn-reset-mobile" onclick="showUnlinkOptions('${u.id}', '${u.fullname}', ${!!u.deviceId}, ${!!u.browserDeviceId})" title="Hủy liên kết thiết bị" style="margin-right: 4px;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-                            <line x1="12" y1="18" x2="12.01" y2="18"/>
+                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                            <line x1="12" y1="2" x2="12" y2="12"/>
                         </svg>
-                        Hủy LK Mobile
+                        Hủy liên kết
                     </button>
                 `;
             }
             let browserUnlinkBtn = '';
-            if (u.browserDeviceId) {
-                browserUnlinkBtn = `
-                    <button class="btn-reset btn-reset-browser" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'browser')" title="Xóa liên kết Trình duyệt web" style="margin-right: 4px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="2" y1="12" x2="22" y2="12"/>
-                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                        </svg>
-                        Hủy LK Web
-                    </button>
-                `;
-            }
             let approveBtn = '';
             if (u.pendingUnlink) {
                 approveBtn = `
@@ -1939,9 +1950,15 @@ async function refreshAdminUsers() {
                 </span>
             ` : '';
 
+            const passwordResetBadge = u.pendingPasswordReset ? `
+                <span class="password-reset-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approvePasswordReset('${u.id}', '${u.fullname}')" title="Bấm vào đây để cấp lại mật khẩu">
+                    ⚠️ Xin cấp lại MK
+                </span>
+            ` : '';
+
             return `<tr>
                 <td>${i + 1}</td>
-                <td><strong>${u.fullname}</strong>${unlinkBadge}</td>
+                <td><strong>${u.fullname}</strong>${unlinkBadge}${passwordResetBadge}</td>
                 <td>${u.username}</td>
                 <td><span style="font-weight:600; color:var(--text-secondary);">${u.team || 'Chưa phân team'}</span></td>
                 <td><span class="tag tag-employee">Nhân viên</span></td>
@@ -1967,19 +1984,38 @@ async function refreshAdminUsers() {
                     ` : ''}
                 </div></td>
             </tr>`;
-        }).join('') || '<tr class="empty-row"><td colspan="7">Không có nhân viên</td></tr>';
+        }).join('') || `<tr class="empty-row">
+            <td colspan="7" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="color: var(--text-muted); opacity: 0.6;">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">Không có nhân viên</span>
+                    <span style="font-size: 13px; color: var(--text-muted);">Hiện tại chưa có nhân viên nào trong danh sách.</span>
+                </div>
+            </td>
+        </tr>`;
 
         // Render managers (admins)
         const tbodyMgr = document.getElementById('admin-managers-body');
         tbodyMgr.innerHTML = managers.map((u, i) => {
+            const passwordResetBadge = u.pendingPasswordReset ? `
+                <span class="password-reset-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approvePasswordReset('${u.id}', '${u.fullname}')" title="Bấm vào đây để cấp lại mật khẩu">
+                    ⚠️ Xin cấp lại MK
+                </span>
+            ` : '';
+
             return `<tr>
                 <td>${i + 1}</td>
-                <td><strong>${u.fullname}</strong></td>
+                <td><strong>${u.fullname}</strong>${passwordResetBadge}</td>
                 <td>${u.username}</td>
                 <td><span style="font-weight:600; color:var(--text-secondary);">${u.team === 'admin' ? 'admin' : (u.team || 'admin')}</span></td>
                 <td><span class="tag tag-admin">Quản lý</span></td>
                 <td><div class="action-buttons">
-                    ${((!u.isSuperAdmin && (u.team !== 'admin' || isBelongToAdminTeam)) || (currentUser && currentUser.id === u.id)) ? `
+                    ${(isSuperAdmin || (currentUser && currentUser.id === u.id)) ? `
                     <button class="btn-icon-only edit" onclick="editUserDialog('${u.id}')" title="Sửa" style="margin-right: 4px;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -1987,7 +2023,7 @@ async function refreshAdminUsers() {
                         </svg>
                     </button>
                     ` : ''}
-                    ${(!u.isSuperAdmin && (u.team !== 'admin' || isBelongToAdminTeam)) ? `
+                    ${(isSuperAdmin && !u.isSuperAdmin && u.username !== 'admin') ? `
                         <button class="btn-icon-only delete" onclick="deleteUser('${u.id}')" title="Xóa">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                                 <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -1996,7 +2032,18 @@ async function refreshAdminUsers() {
                     ` : ''}
                 </div></td>
             </tr>`;
-        }).join('') || '<tr class="empty-row"><td colspan="6">Không có quản lý</td></tr>';
+        }).join('') || `<tr class="empty-row">
+            <td colspan="6" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="color: var(--text-muted); opacity: 0.6;">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">Không có quản lý</span>
+                    <span style="font-size: 13px; color: var(--text-muted);">Không tìm thấy tài khoản quản lý nào.</span>
+                </div>
+            </td>
+        </tr>`;
 
         // Render unassigned employees
         const tbodyUnassigned = document.getElementById('admin-users-unassigned-body');
@@ -2007,30 +2054,18 @@ async function refreshAdminUsers() {
                 const totalOT = userRecords.reduce((sum, r) => sum + r.totalHours, 0);
 
                 let deviceUnlinkBtn = '';
-                if (u.deviceId) {
+                if (u.deviceId || u.browserDeviceId) {
                     deviceUnlinkBtn = `
-                        <button class="btn-reset btn-reset-mobile" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'mobile')" title="Xóa liên kết App điện thoại" style="margin-right: 4px;">
+                        <button class="btn-reset btn-reset-mobile" onclick="showUnlinkOptions('${u.id}', '${u.fullname}', ${!!u.deviceId}, ${!!u.browserDeviceId})" title="Hủy liên kết thiết bị" style="margin-right: 4px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-                                <line x1="12" y1="18" x2="12.01" y2="18"/>
+                                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                                <line x1="12" y1="2" x2="12" y2="12"/>
                             </svg>
-                            Hủy LK Mobile
+                            Hủy liên kết
                         </button>
                     `;
                 }
                 let browserUnlinkBtn = '';
-                if (u.browserDeviceId) {
-                    browserUnlinkBtn = `
-                        <button class="btn-reset btn-reset-browser" onclick="resetUserDevice('${u.id}', '${u.fullname}', 'browser')" title="Xóa liên kết Trình duyệt web" style="margin-right: 4px;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="2" y1="12" x2="22" y2="12"/>
-                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                            </svg>
-                            Hủy LK Web
-                        </button>
-                    `;
-                }
                 let approveBtn = '';
                 if (u.pendingUnlink) {
                     approveBtn = `
@@ -2056,9 +2091,15 @@ async function refreshAdminUsers() {
                     </span>
                 ` : '';
 
+                const passwordResetBadge = u.pendingPasswordReset ? `
+                    <span class="password-reset-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approvePasswordReset('${u.id}', '${u.fullname}')" title="Bấm vào đây để cấp lại mật khẩu">
+                        ⚠️ Xin cấp lại MK
+                    </span>
+                ` : '';
+
                 return `<tr>
                     <td>${i + 1}</td>
-                    <td><strong>${u.fullname}</strong>${unlinkBadge}</td>
+                    <td><strong>${u.fullname}</strong>${unlinkBadge}${passwordResetBadge}</td>
                     <td>${u.username}</td>
                     <td><span style="font-weight:600; color:var(--text-secondary);">${u.team || 'Chưa phân team'}</span></td>
                     <td><span class="tag tag-employee">Nhân viên</span></td>
@@ -2084,7 +2125,20 @@ async function refreshAdminUsers() {
                         ` : ''}
                     </div></td>
                 </tr>`;
-            }).join('') || '<tr class="empty-row"><td colspan="7">Không có nhân viên chưa phân team</td></tr>';
+            }).join('') || `<tr class="empty-row">
+                <td colspan="7" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="color: var(--text-muted); opacity: 0.6;">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">Không có nhân viên chưa phân team</span>
+                        <span style="font-size: 13px; color: var(--text-muted);">Tất cả nhân viên đã được phân bổ vào các nhóm làm việc.</span>
+                    </div>
+                </td>
+            </tr>`;
         }
 
         // Show/hide unassigned warning alert
@@ -3189,8 +3243,20 @@ async function handleDatabaseCleanup() {
 
 // ==================== EMPLOYEE DASHBOARD ====================
 async function initEmployeeDashboard(user) {
-    document.getElementById('emp-welcome').textContent = `Xin chào, ${user.fullname}`;
-    document.getElementById('emp-date').textContent = formatDateFull(new Date());
+    const welcomeEl = document.getElementById('emp-welcome');
+    if (welcomeEl) welcomeEl.textContent = `Xin chào, ${user.fullname}`;
+    
+    const empNameEl = document.getElementById('emp-user-fullname');
+    if (empNameEl) empNameEl.textContent = user.fullname;
+    
+    const empAvatarEl = document.getElementById('emp-user-avatar');
+    if (empAvatarEl && user.fullname) {
+        empAvatarEl.textContent = user.fullname.trim().charAt(0).toUpperCase();
+    }
+
+    const dateEl = document.getElementById('emp-date');
+    if (dateEl) dateEl.textContent = formatDateFull(new Date());
+    
     const todayStr = new Date().toISOString().split('T')[0];
     document.getElementById('ot-date').value = todayStr;
     document.getElementById('ot-date').max = todayStr;
@@ -3223,10 +3289,20 @@ function updateOTPreview() {
     const hasTrip = calcMode === 'trip' && !!customActivity;
     const province = customDetail;
 
+    const dateEl = document.getElementById('ot-date');
+    const dateVal = dateEl ? dateEl.value : '';
+    const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
+
     if (isBackfill) {
         const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
         if (hoursVal > 0) {
             items.push({ label: 'Bù tăng ca', value: `${hoursVal.toFixed(1)} giờ` });
+            total = hoursVal;
+        }
+    } else if (isSunday) {
+        const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
+        if (hoursVal > 0) {
+            items.push({ label: 'Tăng ca Chủ Nhật', value: `${hoursVal.toFixed(1)} giờ` });
             total = hoursVal;
         }
     } else {
@@ -3355,11 +3431,18 @@ function updateAdminOTPreview() {
     // 4. Lunch, Evening and Total Hours
     let total = 0;
     const isBackfill = otBackfill && otBackfill.checked;
+    const dateVal = otDate ? otDate.value : '';
+    const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
 
     if (isBackfill) {
         const hours = parseFloat(backfillHours?.value) || 0;
         ticketLunch.textContent = '-';
         ticketEvening.textContent = `Bù tăng ca: ${hours.toFixed(1)} giờ`;
+        total = hours;
+    } else if (isSunday) {
+        const hours = parseFloat(backfillHours?.value) || 0;
+        ticketLunch.textContent = '-';
+        ticketEvening.textContent = `Tăng ca Chủ Nhật: ${hours.toFixed(1)} giờ`;
         total = hours;
     } else {
         // Lunch
@@ -3463,12 +3546,16 @@ async function handleOTSubmit(e) {
     let eveningHours = 0;
     let totalHours = 0;
 
-    if (isBackfill) {
+    const isSunday = new Date(date + 'T00:00:00').getDay() === 0;
+
+    if (isBackfill || isSunday) {
         const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
-        if (hoursVal <= 0) { errorEl.textContent = 'Vui lòng nhập số giờ bù hợp lệ!'; return; }
+        if (hoursVal <= 0) { errorEl.textContent = isSunday ? 'Vui lòng nhập số giờ tăng ca Chủ Nhật hợp lệ!' : 'Vui lòng nhập số giờ bù hợp lệ!'; return; }
         totalHours = hoursVal;
         eveningHours = hoursVal;
-        note = '[BÙ THÁNG TRƯỚC] ' + note;
+        if (isBackfill) {
+            note = '[BÙ THÁNG TRƯỚC] ' + note;
+        }
     } else {
         eveningHours = calculateEveningOT(otStart, otEnd);
         const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
@@ -3485,9 +3572,9 @@ async function handleOTSubmit(e) {
 
     try {
         const data = await api('/api/records', 'POST', {
-            userId: user.id, date, hasLunchOT: isBackfill ? false : hasLunch,
-            otStart: (!isBackfill && eveningHours > 0) ? otStart : '',
-            otEnd: (!isBackfill && eveningHours > 0) ? otEnd : '',
+            userId: user.id, date, hasLunchOT: (isBackfill || isSunday) ? false : hasLunch,
+            otStart: (!(isBackfill || isSunday) && eveningHours > 0) ? otStart : '',
+            otEnd: (!(isBackfill || isSunday) && eveningHours > 0) ? otEnd : '',
             eveningOTHours: eveningHours, totalHours, note, isBackfill,
             deliveryProvince: hasTrip ? province : '',
             customActivity,
@@ -3504,6 +3591,13 @@ async function handleOTSubmit(e) {
         const backfillGroup = document.getElementById('ot-backfill-hours-group');
         if (normalInputs) normalInputs.style.display = 'block';
         if (backfillGroup) backfillGroup.style.display = 'none';
+        
+        // Restore label and backfill toggle switch display
+        const labelEl = backfillGroup ? backfillGroup.querySelector('label') : null;
+        if (labelEl) labelEl.textContent = 'Số giờ tăng ca cần bù:';
+        const backfillRow = otBackfill ? otBackfill.closest('.checkbox-label') || otBackfill.closest('.switch-label') : null;
+        if (backfillRow) backfillRow.style.display = '';
+        
         const backfillHoursEl = document.getElementById('ot-backfill-hours');
         if (backfillHoursEl) backfillHoursEl.value = '';
 
@@ -3585,12 +3679,16 @@ async function handleAdminOTSubmit(e) {
     let eveningHours = 0;
     let totalHours = 0;
 
-    if (isBackfill) {
+    const isSunday = new Date(date + 'T00:00:00').getDay() === 0;
+
+    if (isBackfill || isSunday) {
         const hoursVal = parseFloat(document.getElementById('admin-ot-backfill-hours').value) || 0;
-        if (hoursVal <= 0) { errorEl.textContent = 'Vui lòng nhập số giờ bù hợp lệ!'; return; }
+        if (hoursVal <= 0) { errorEl.textContent = isSunday ? 'Vui lòng nhập số giờ tăng ca Chủ Nhật hợp lệ!' : 'Vui lòng nhập số giờ bù hợp lệ!'; return; }
         totalHours = hoursVal;
         eveningHours = hoursVal;
-        note = '[BÙ THÁNG TRƯỚC] ' + note;
+        if (isBackfill) {
+            note = '[BÙ THÁNG TRƯỚC] ' + note;
+        }
     } else {
         eveningHours = calculateEveningOT(otStart, otEnd);
         const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
@@ -3607,9 +3705,9 @@ async function handleAdminOTSubmit(e) {
 
     try {
         const data = await api('/api/records', 'POST', {
-            userId, date, hasLunchOT: isBackfill ? false : hasLunch,
-            otStart: (!isBackfill && eveningHours > 0) ? otStart : '',
-            otEnd: (!isBackfill && eveningHours > 0) ? otEnd : '',
+            userId, date, hasLunchOT: (isBackfill || isSunday) ? false : hasLunch,
+            otStart: (!(isBackfill || isSunday) && eveningHours > 0) ? otStart : '',
+            otEnd: (!(isBackfill || isSunday) && eveningHours > 0) ? otEnd : '',
             eveningOTHours: eveningHours, totalHours, note, isBackfill,
             deliveryProvince: hasTrip ? province : '',
             customActivity,
@@ -3632,6 +3730,13 @@ async function handleAdminOTSubmit(e) {
         const backfillGroup = document.getElementById('admin-ot-backfill-hours-group');
         if (normalInputs) normalInputs.style.display = 'block';
         if (backfillGroup) backfillGroup.style.display = 'none';
+        
+        // Restore label and backfill toggle switch display
+        const labelEl = backfillGroup ? backfillGroup.querySelector('label') : null;
+        if (labelEl) labelEl.textContent = 'Số giờ tăng ca cần bù';
+        const backfillRow = adminOtBackfill ? adminOtBackfill.closest('.switch-label') || adminOtBackfill.closest('.checkbox-label') : null;
+        if (backfillRow) backfillRow.style.display = '';
+        
         const backfillHoursEl = document.getElementById('admin-ot-backfill-hours');
         if (backfillHoursEl) backfillHoursEl.value = '';
 
@@ -4324,6 +4429,121 @@ async function checkUpdateSilent() {
     }
 }
 
+function handleDateChange() {
+    const otDateEl = document.getElementById('ot-date');
+    if (!otDateEl) return;
+    
+    const dateVal = otDateEl.value;
+    const normalInputs = document.getElementById('ot-normal-inputs');
+    const backfillGroup = document.getElementById('ot-backfill-hours-group');
+    const customActGroup = document.getElementById('ot-custom-activity-group');
+    const backfillCheckbox = document.getElementById('ot-backfill');
+    
+    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+    const userTeam = currentUser ? (currentUser.team || '') : '';
+    const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+    const activities = (teamObj && teamObj.customActivities) ? teamObj.customActivities : [];
+    
+    const labelEl = backfillGroup ? backfillGroup.querySelector('label') : null;
+    
+    if (dateVal) {
+        const isSunday = new Date(dateVal + 'T00:00:00').getDay() === 0;
+        const isBackfill = backfillCheckbox ? backfillCheckbox.checked : false;
+        
+        if (isSunday) {
+            if (normalInputs) normalInputs.style.display = 'none';
+            if (backfillGroup) backfillGroup.style.display = 'block';
+            if (labelEl) labelEl.textContent = 'Số giờ tăng ca Chủ Nhật:';
+            
+            if (activities.length > 0) {
+                if (customActGroup) customActGroup.style.display = 'block';
+            }
+            
+            const backfillRow = backfillCheckbox ? backfillCheckbox.closest('.checkbox-label') || backfillCheckbox.closest('.switch-label') : null;
+            if (backfillRow) backfillRow.style.display = 'none';
+        } else {
+            const backfillRow = backfillCheckbox ? backfillCheckbox.closest('.checkbox-label') || backfillCheckbox.closest('.switch-label') : null;
+            if (backfillRow) backfillRow.style.display = '';
+            if (labelEl) labelEl.textContent = 'Số giờ tăng ca cần bù:';
+            
+            if (isBackfill) {
+                if (normalInputs) normalInputs.style.display = 'none';
+                if (backfillGroup) backfillGroup.style.display = 'block';
+                if (customActGroup) customActGroup.style.display = 'none';
+            } else {
+                if (normalInputs) normalInputs.style.display = 'block';
+                if (backfillGroup) backfillGroup.style.display = 'none';
+                if (activities.length > 0) {
+                    if (customActGroup) customActGroup.style.display = 'block';
+                }
+            }
+        }
+    }
+    updateOTPreview();
+}
+
+function handleAdminDateChange() {
+    const otDateEl = document.getElementById('admin-ot-date');
+    if (!otDateEl) return;
+    
+    const dateVal = otDateEl.value;
+    const normalInputs = document.getElementById('admin-ot-normal-inputs');
+    const backfillGroup = document.getElementById('admin-ot-backfill-hours-group');
+    const customActGroup = document.getElementById('admin-ot-custom-activity-group');
+    const backfillCheckbox = document.getElementById('admin-ot-backfill');
+    
+    let userTeam = '';
+    const targetSelf = document.getElementById('admin-ot-target-self');
+    if (targetSelf && targetSelf.checked) {
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        userTeam = currentUser ? (currentUser.team || '') : '';
+    } else {
+        const userSelect = document.getElementById('admin-ot-user');
+        const userId = userSelect ? userSelect.value : '';
+        const foundUser = loadedUsers.find(u => u.id === userId);
+        userTeam = foundUser ? (foundUser.team || '') : '';
+    }
+    const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+    const activities = (teamObj && teamObj.customActivities) ? teamObj.customActivities : [];
+    
+    const labelEl = backfillGroup ? backfillGroup.querySelector('label') : null;
+    
+    if (dateVal) {
+        const isSunday = new Date(dateVal + 'T00:00:00').getDay() === 0;
+        const isBackfill = backfillCheckbox ? backfillCheckbox.checked : false;
+        
+        if (isSunday) {
+            if (normalInputs) normalInputs.style.display = 'none';
+            if (backfillGroup) backfillGroup.style.display = 'block';
+            if (labelEl) labelEl.textContent = 'Số giờ tăng ca Chủ Nhật';
+            
+            if (activities.length > 0) {
+                if (customActGroup) customActGroup.style.display = 'block';
+            }
+            
+            const backfillRow = backfillCheckbox ? backfillCheckbox.closest('.switch-label') || backfillCheckbox.closest('.checkbox-label') : null;
+            if (backfillRow) backfillRow.style.display = 'none';
+        } else {
+            const backfillRow = backfillCheckbox ? backfillCheckbox.closest('.switch-label') || backfillCheckbox.closest('.checkbox-label') : null;
+            if (backfillRow) backfillRow.style.display = '';
+            if (labelEl) labelEl.textContent = 'Số giờ tăng ca cần bù';
+            
+            if (isBackfill) {
+                if (normalInputs) normalInputs.style.display = 'none';
+                if (backfillGroup) backfillGroup.style.display = 'block';
+                if (customActGroup) customActGroup.style.display = 'none';
+            } else {
+                if (normalInputs) normalInputs.style.display = 'block';
+                if (backfillGroup) backfillGroup.style.display = 'none';
+                if (activities.length > 0) {
+                    if (customActGroup) customActGroup.style.display = 'block';
+                }
+            }
+        }
+    }
+    updateAdminOTPreview();
+}
+
 // ==================== EVENT LISTENERS ====================
 document.addEventListener('DOMContentLoaded', () => {
     if (!isElectron) {
@@ -4374,7 +4594,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     const otDateEl = document.getElementById('ot-date');
-    if (otDateEl) otDateEl.max = new Date().toISOString().split('T')[0];
+    if (otDateEl) {
+        otDateEl.max = new Date().toISOString().split('T')[0];
+        otDateEl.addEventListener('change', handleDateChange);
+        otDateEl.addEventListener('input', handleDateChange);
+    }
 
     // Populate provinces-datalist
     const provincesDatalist = document.getElementById('provinces-datalist');
@@ -4626,18 +4850,14 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.remove('active'));
             tab.classList.add('active');
             document.getElementById(`admin-tab-${tab.dataset.adminTab}`).classList.add('active');
-        });
-    });
-
-    // Employee tabs
-    document.querySelectorAll('.emp-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('.emp-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.emp-tab-content').forEach(c => c.classList.remove('active'));
-            tab.classList.add('active');
-            const targetContent = document.getElementById(`emp-tab-${tab.dataset.empTab}`);
-            if (targetContent) {
-                targetContent.classList.add('active');
+            
+            // Cập nhật tiêu đề header động
+            const headerTitleEl = document.getElementById('admin-header-title');
+            if (headerTitleEl) {
+                const spanText = tab.querySelector('span');
+                if (spanText) {
+                    headerTitleEl.textContent = spanText.textContent;
+                }
             }
         });
     });
@@ -4651,6 +4871,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetContent = document.getElementById(`emp-tab-${tab.dataset.empTab}`);
             if (targetContent) {
                 targetContent.classList.add('active');
+            }
+            
+            // Cập nhật tiêu đề header động
+            const headerTitleEl = document.getElementById('emp-header-title');
+            if (headerTitleEl) {
+                const spanText = tab.querySelector('span');
+                if (spanText) {
+                    headerTitleEl.textContent = spanText.textContent;
+                }
             }
         });
     });
@@ -4787,6 +5016,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 el.addEventListener('input', updateAdminOTPreview);
             }
         });
+        const adminOtDateEl = document.getElementById('admin-ot-date');
+        if (adminOtDateEl) {
+            adminOtDateEl.addEventListener('change', handleAdminDateChange);
+            adminOtDateEl.addEventListener('input', handleAdminDateChange);
+        }
         
         // Initial preview render call
         setTimeout(updateAdminOTPreview, 100);
@@ -5300,6 +5534,7 @@ async function addUserDialog() {
 async function editUserDialog(userId) {
     try {
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isSuperAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
         const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin' || currentUser.isSuperAdmin);
 
         const data = await api('/api/users');
@@ -5311,45 +5546,81 @@ async function editUserDialog(userId) {
             return showToast('Bạn không có quyền chỉnh sửa tài khoản Quản trị viên tối cao!', 'error');
         }
 
-        // Phân quyền: chỉ có thuộc team admin mới được chỉnh sửa thông tin admin
-        const targetIsAdmin = user.team === 'admin' || user.username === 'admin' || user.isSuperAdmin;
-        if (targetIsAdmin && !isBelongToAdminTeam) {
-            return showToast('Chỉ có tài khoản thuộc team admin mới được chỉnh sửa thông tin của quản trị viên!', 'error');
+        // Phân quyền: các quản lý không được sửa thông tin của nhau, chỉ có superadmin mới được sửa thông tin quản lý
+        if (user.role === 'admin' && currentUser.id !== user.id && !isSuperAdmin) {
+            return showToast('Chỉ có Quản trị viên tối cao mới được chỉnh sửa tài khoản của quản lý khác!', 'error');
         }
 
         const body = `
-        <form id="modal-form-edit-user" class="login-form active" style="text-align: left; padding: 0;">
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="display:block;margin-bottom:6px;font-weight:600;">Họ và tên</label>
-                <input type="text" id="modal-user-fullname" value="${user.fullname}" class="input-sm" style="width:100%; box-sizing:border-box;" required>
+        <form id="modal-form-edit-user" style="text-align: left; padding: 5px; display: flex; flex-direction: column; gap: 18px; font-family: 'Inter', sans-serif; color: #e4e4e7;">
+            <!-- Grid for Basic Fields -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa;">Họ và tên</label>
+                    <input type="text" id="modal-user-fullname" value="${user.fullname}" class="input-sm" style="width:100%; box-sizing:border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; color: #fff; transition: all 0.3s;" required>
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa;">Tên đăng nhập</label>
+                    <input type="text" id="modal-user-username" value="${user.username}" class="input-sm" style="width:100%; box-sizing:border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; color: #fff; transition: all 0.3s;" required>
+                </div>
             </div>
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="display:block;margin-bottom:6px;font-weight:600;">Tên đăng nhập</label>
-                <input type="text" id="modal-user-username" value="${user.username}" class="input-sm" style="width:100%; box-sizing:border-box;" required>
+
+            <!-- Email Field (Crucial, styled nicely) -->
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa;">Địa chỉ Email</label>
+                <div style="position: relative;">
+                    <input type="email" id="modal-user-email" value="${user.email || ''}" placeholder="ten-cua-ban@company.com" class="input-sm" style="width:100%; box-sizing:border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 10px 10px 38px; color: #fff; transition: all 0.3s;">
+                    <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #71717a;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    </span>
+                </div>
             </div>
-            <div class="form-group" id="modal-user-password-group" style="margin-bottom: 15px;">
-                <label style="display:block;margin-bottom:6px;font-weight:600;">Mật khẩu mới (Để trống nếu giữ nguyên)</label>
-                <input type="password" id="modal-user-password" placeholder="Nhập mật khẩu mới nếu muốn đổi" class="input-sm" style="width:100%; box-sizing:border-box;">
-            </div>
-            <div id="modal-edit-user-role-team-group" style="${user.isSuperAdmin ? 'display: none;' : ''}">
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="display:block;margin-bottom:6px;font-weight:600;">Vai trò</label>
-                    <select id="modal-user-role" class="input-sm" style="width:100%; box-sizing:border-box;">
+
+            <!-- Role & Team (Hidden for SuperAdmin, shown for others) -->
+            <div id="modal-edit-user-role-team-group" style="display: ${user.isSuperAdmin ? 'none' : 'grid'}; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa;">Vai trò</label>
+                    <select id="modal-user-role" class="input-sm" style="width:100%; box-sizing:border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; color: #fff; height: 42px;">
                         <option value="employee" ${user.role === 'employee' ? 'selected' : ''}>Nhân viên (Điện thoại)</option>
                         <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Quản lý (Desktop)</option>
                     </select>
                 </div>
-                <div class="form-group" id="modal-edit-user-manager-group" style="margin-bottom: 0;">
-                    <label style="display:block;margin-bottom:6px;font-weight:600;">Team</label>
-                    <select id="modal-user-team" class="input-sm" style="width:100%; box-sizing:border-box;">
+                <div class="form-group" id="modal-edit-user-manager-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa;">Team</label>
+                    <select id="modal-user-team" class="input-sm" style="width:100%; box-sizing:border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; color: #fff; height: 42px;">
                         <option value="">-- Chưa phân team --</option>
-                        ${isBelongToAdminTeam ? `<option value="admin" ${user.team === 'admin' ? 'selected' : ''}>admin</option>` : ''}
+                        ${isSuperAdmin ? `<option value="admin" ${user.team === 'admin' ? 'selected' : ''}>admin</option>` : ''}
                         ${TEAMS.map(t => {
                             const name = typeof t === 'string' ? t : (t.name || '');
                             return `<option value="${name}" ${user.team === name ? 'selected' : ''}>${name}</option>`;
                         }).join('')}
                     </select>
                 </div>
+            </div>
+
+            <!-- Password Reset Section -->
+            <div id="modal-user-password-trigger-wrapper" style="margin-top: 5px;">
+                <button type="button" id="btn-change-password-trigger" style="width:100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(255, 255, 255, 0.04); border: 1px dashed rgba(255, 255, 255, 0.2); border-radius: 8px; color: #e4e4e7; padding: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.08)'; this.style.borderColor='rgba(255,255,255,0.3)';" onmouseout="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="color: #fbbf24;"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                    Đổi mật khẩu tài khoản
+                </button>
+            </div>
+            <div class="form-group" id="modal-user-password-group" style="display: none; flex-direction: column; gap: 6px; animation: fadeIn 0.3s ease;">
+                <label style="font-size: 0.85rem; font-weight: 600; color: #ef4444;">Mật khẩu mới</label>
+                <input type="password" id="modal-user-password" placeholder="Nhập mật khẩu mới" class="input-sm" style="width:100%; box-sizing:border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; color: #fff;">
+            </div>
+
+            <!-- OTP Verification Section -->
+            <div id="modal-otp-verification-section" style="display: none; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 15px; margin-top: 5px; animation: fadeIn 0.3s ease;">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem; font-weight: 700; color: #10b981; margin-bottom: 10px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Xác thực thay đổi qua OTP
+                </label>
+                <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                    <input type="text" id="modal-verification-otp" placeholder="Nhập mã OTP" class="input-sm" style="flex: 1; text-align: center; font-size: 1.1rem; letter-spacing: 4px; font-weight: bold; background: rgba(0,0,0,0.2); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 8px; color: #fff;" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    <button type="button" id="btn-send-verification-otp" style="background: #10b981; color: #020604; border: none; border-radius: 8px; padding: 0 16px; font-weight: bold; cursor: pointer; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='#059669';" onmouseout="this.style.background='#10b981';">Gửi OTP</button>
+                </div>
+                <p style="font-size: 0.8rem; color: #a1a1aa; margin: 0;" id="verification-otp-status"></p>
             </div>
         </form>`;
 
@@ -5358,17 +5629,27 @@ async function editUserDialog(userId) {
             { text: 'Lưu', class: 'btn btn-primary btn-sm', action: async () => {
                 const fullname = document.getElementById('modal-user-fullname').value.trim();
                 const username = document.getElementById('modal-user-username').value.trim();
-                const password = document.getElementById('modal-user-password').value;
+                const passwordGroupEl = document.getElementById('modal-user-password-group');
+                const password = passwordGroupEl && passwordGroupEl.style.display !== 'none' ? document.getElementById('modal-user-password').value : '';
                 const role = document.getElementById('modal-user-role') ? document.getElementById('modal-user-role').value : user.role;
                 const team = document.getElementById('modal-user-team') ? document.getElementById('modal-user-team').value : user.team;
+                const email = document.getElementById('modal-user-email').value.trim();
+
+                const otpSection = document.getElementById('modal-otp-verification-section');
+                const isOtpVisible = otpSection && otpSection.style.display !== 'none';
+                const otpVal = isOtpVisible ? document.getElementById('modal-verification-otp').value.trim() : '';
 
                 if (!fullname || !username) return showToast('Vui lòng điền họ tên và tên đăng nhập!', 'error');
                 if (username.length < 3) return showToast('Tên đăng nhập tối thiểu 3 ký tự!', 'error');
+                if (isOtpVisible && !otpVal) return showToast('Vui lòng nhập mã OTP xác thực thay đổi!', 'error');
 
-                const payload = { fullname, username, role, team };
+                const payload = { fullname, username, role, team, email };
                 if (password) {
                     if (password.length < 4) return showToast('Mật khẩu tối thiểu 4 ký tự!', 'error');
                     payload.password = password;
+                }
+                if (isOtpVisible) {
+                    payload.otpCode = otpVal;
                 }
 
                 try {
@@ -5387,16 +5668,103 @@ async function editUserDialog(userId) {
             }}
         ]);
 
-        const roleSelect = document.getElementById('modal-user-role');
+        const passwordTrigger = document.getElementById('btn-change-password-trigger');
         const passwordGroup = document.getElementById('modal-user-password-group');
-        if (roleSelect && passwordGroup) {
+        const passwordTriggerWrapper = document.getElementById('modal-user-password-trigger-wrapper');
+        const otpSection = document.getElementById('modal-otp-verification-section');
+        const emailInput = document.getElementById('modal-user-email');
+        const otpStatus = document.getElementById('verification-otp-status');
+        const btnSendOtp = document.getElementById('btn-send-verification-otp');
+        
+        let isChangePasswordClicked = false;
+
+        const checkVerificationNeeded = () => {
+            if (user.role !== 'admin') {
+                if (otpSection) otpSection.style.display = 'none';
+                return;
+            }
+            const isEmailChanged = emailInput.value.trim().toLowerCase() !== (user.email || '').toLowerCase();
+            const isPasswordGroupVisible = passwordGroup && passwordGroup.style.display !== 'none';
+            if (isEmailChanged || isPasswordGroupVisible) {
+                if (otpSection) otpSection.style.display = 'block';
+            } else {
+                if (otpSection) otpSection.style.display = 'none';
+            }
+        };
+
+        if (emailInput) {
+            emailInput.addEventListener('input', checkVerificationNeeded);
+            emailInput.addEventListener('change', checkVerificationNeeded);
+        }
+        
+        if (passwordTrigger && passwordGroup && passwordTriggerWrapper) {
+            passwordTrigger.onclick = () => {
+                isChangePasswordClicked = true;
+                passwordTriggerWrapper.style.display = 'none';
+                passwordGroup.style.display = 'block';
+                checkVerificationNeeded();
+                const inputPass = document.getElementById('modal-user-password');
+                if (inputPass) inputPass.focus();
+            };
+        }
+
+        if (btnSendOtp) {
+            let countdown = 0;
+            let timer = null;
+            btnSendOtp.onclick = async (e) => {
+                e.preventDefault();
+                const targetEmail = emailInput.value.trim();
+                if (!targetEmail) {
+                    return showToast('Vui lòng điền Email hợp lệ để nhận mã OTP!', 'error');
+                }
+                btnSendOtp.disabled = true;
+                otpStatus.textContent = 'Đang gửi mã OTP...';
+                otpStatus.style.color = '#a1a1aa';
+                try {
+                    await api('/api/auth/send-email-otp', 'POST', { username: user.username, email: targetEmail });
+                    showToast('Đã gửi mã OTP xác nhận đến email!');
+                    otpStatus.textContent = `Mã OTP đã được gửi tới ${targetEmail}. Hiệu lực trong 5 phút.`;
+                    otpStatus.style.color = '#10b981';
+                    
+                    countdown = 60;
+                    btnSendOtp.disabled = true;
+                    timer = setInterval(() => {
+                        countdown--;
+                        if (countdown <= 0) {
+                            clearInterval(timer);
+                            btnSendOtp.disabled = false;
+                            btnSendOtp.textContent = 'Gửi OTP';
+                        } else {
+                            btnSendOtp.textContent = `Gửi lại (${countdown}s)`;
+                        }
+                    }, 1000);
+                } catch (err) {
+                    showToast(err.message, 'error');
+                    otpStatus.textContent = `Lỗi: ${err.message}`;
+                    otpStatus.style.color = '#ef4444';
+                    btnSendOtp.disabled = false;
+                }
+            };
+        }
+
+        const roleSelect = document.getElementById('modal-user-role');
+        if (roleSelect) {
             const togglePassword = () => {
                 if (roleSelect.value === 'employee') {
-                    passwordGroup.style.display = 'none';
-                    document.getElementById('modal-user-password').value = '';
+                    if (passwordTriggerWrapper) passwordTriggerWrapper.style.display = 'none';
+                    if (passwordGroup) passwordGroup.style.display = 'none';
+                    const inputPass = document.getElementById('modal-user-password');
+                    if (inputPass) inputPass.value = '';
                 } else {
-                    passwordGroup.style.display = 'block';
+                    if (isChangePasswordClicked) {
+                        if (passwordTriggerWrapper) passwordTriggerWrapper.style.display = 'none';
+                        if (passwordGroup) passwordGroup.style.display = 'block';
+                    } else {
+                        if (passwordTriggerWrapper) passwordTriggerWrapper.style.display = 'block';
+                        if (passwordGroup) passwordGroup.style.display = 'none';
+                    }
                 }
+                checkVerificationNeeded();
             };
             roleSelect.addEventListener('change', togglePassword);
             togglePassword();
@@ -5422,6 +5790,23 @@ async function resetUserDevice(userId, fullname, type = 'mobile') {
         }}
     ]);
 }
+
+function showUnlinkOptions(userId, fullname, hasMobile, hasWeb) {
+    showModal('Xóa tất cả liên kết thiết bị', `Bạn có chắc muốn xóa tất cả liên kết (App điện thoại & Trình duyệt web) của nhân viên <strong>${fullname}</strong>?<br>Sau khi xóa, nhân viên này có thể đăng nhập trên thiết bị/trình duyệt mới.`, [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Xóa liên kết', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                await api(`/api/users/${userId}`, 'PUT', { deviceId: null, browserDeviceId: null });
+                await refreshAdminUsers();
+                showToast(`Đã xóa toàn bộ liên kết thiết bị của ${fullname}!`);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+window.showUnlinkOptions = showUnlinkOptions;
 
 async function approveUnlinkDevice(userId, fullname) {
     showModal('Duyệt huỷ liên kết thiết bị', `Bạn có chắc muốn phê duyệt yêu cầu huỷ liên kết thiết bị của nhân viên <strong>${fullname}</strong>?<br>Thao tác này sẽ reset liên kết cả App điện thoại và Trình duyệt, nhân viên sẽ tự động đăng xuất.`, [
@@ -5483,9 +5868,11 @@ function setupAdminCustomActivitiesUI(userId) {
     const activities = (teamObj && teamObj.customActivities) ? teamObj.customActivities : [];
 
     const isBackfillChecked = document.getElementById('admin-ot-backfill')?.checked || false;
+    const dateVal = document.getElementById('admin-ot-date')?.value || '';
+    const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
 
     if (activities.length > 0) {
-        if (activityGroup) activityGroup.style.display = isBackfillChecked ? 'none' : 'block';
+        if (activityGroup) activityGroup.style.display = (isBackfillChecked && !isSunday) ? 'none' : 'block';
 
         listContainer.innerHTML = activities.map(act => `
             <div class="custom-activity-item" style="margin-bottom: 14px; text-align: left;">
@@ -5603,9 +5990,11 @@ function setupEmployeeCustomActivitiesUI() {
     const activities = (teamObj && teamObj.customActivities) ? teamObj.customActivities : [];
 
     const isBackfillChecked = document.getElementById('ot-backfill')?.checked || false;
+    const dateVal = document.getElementById('ot-date')?.value || '';
+    const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
 
     if (activities.length > 0) {
-        if (activityGroup) activityGroup.style.display = isBackfillChecked ? 'none' : 'block';
+        if (activityGroup) activityGroup.style.display = (isBackfillChecked && !isSunday) ? 'none' : 'block';
 
         listContainer.innerHTML = activities.map(act => `
             <div class="custom-activity-item" style="margin-bottom: 14px; text-align: left;">
@@ -5657,6 +6046,325 @@ window.toggleEmployeeCustomActivityInput = function(actId) {
     updateOTPreview();
 };
 
+async function forgotPasswordDialog() {
+    const modalBody = `
+        <div id="modal-form-forgot-password" class="login-form active" style="text-align: left; padding: 0;">
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Tên đăng nhập</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="forgot-username" placeholder="Nhập tên đăng nhập..." class="input-sm" style="flex:1; box-sizing:border-box;" required>
+                    <button type="button" id="btn-forgot-send-otp" class="btn btn-primary btn-sm" style="height:38px; white-space:nowrap; font-size:12px;">Gửi OTP</button>
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Mã OTP xác thực (Nhận qua Email)</label>
+                <input type="text" id="forgot-otp" placeholder="Nhập mã OTP 6 chữ số..." class="input-sm" style="width:100%; box-sizing:border-box;" required maxlength="6" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Mật khẩu mới</label>
+                <input type="password" id="forgot-new-password" placeholder="Nhập mật khẩu mới..." class="input-sm" style="width:100%; box-sizing:border-box;" required>
+            </div>
+        </div>
+    `;
+    
+    showModal('Quên mật khẩu', modalBody, [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Đặt lại mật khẩu', class: 'btn btn-primary btn-sm', action: async () => {
+            const username = document.getElementById('forgot-username').value.trim();
+            const otpCode = document.getElementById('forgot-otp').value.trim();
+            const newPassword = document.getElementById('forgot-new-password').value.trim();
+            
+            if (!username || !otpCode || !newPassword) {
+                return showToast('Vui lòng nhập đầy đủ thông tin!', 'error');
+            }
+            if (newPassword.length < 4) {
+                return showToast('Mật khẩu mới phải có ít nhất 4 ký tự!', 'error');
+            }
+            
+            try {
+                const res = await api('/api/auth/forgot-password', 'POST', { username, otpCode, newPassword });
+                showToast(res.message || 'Đặt lại mật khẩu thành công!', 'success');
+            } catch (e) {
+                showToast(e.message || 'Lỗi đặt lại mật khẩu!', 'error');
+            }
+        }}
+    ]);
+
+    const btnSendOtp = document.getElementById('btn-forgot-send-otp');
+    if (btnSendOtp) {
+        btnSendOtp.onclick = async () => {
+            const username = document.getElementById('forgot-username').value.trim();
+            if (!username) {
+                return showToast('Vui lòng nhập Tên đăng nhập trước!', 'error');
+            }
+            btnSendOtp.disabled = true;
+            btnSendOtp.textContent = 'Gửi...';
+            try {
+                await api('/api/auth/send-email-otp', 'POST', { username });
+                showToast('Mã OTP đã được gửi đến Email liên kết của tài khoản!', 'success');
+            } catch (e) {
+                showToast(e.message || 'Lỗi gửi OTP!', 'error');
+            } finally {
+                btnSendOtp.disabled = false;
+                btnSendOtp.textContent = 'Gửi OTP';
+            }
+        };
+    }
+}
+
+// ==================== EMAIL SETUP MODAL FOR FIRST LOGIN ====================
+function injectEmailSetupModalStyle() {
+    if (document.getElementById('email-setup-style')) return;
+    const style = document.createElement('style');
+    style.id = 'email-setup-style';
+    style.textContent = `
+        .email-setup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .email-setup-overlay.active {
+            opacity: 1;
+        }
+        .email-setup-modal {
+            background: rgba(30, 41, 59, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            padding: 30px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+            color: #f8fafc;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: left;
+        }
+        .email-setup-overlay.active .email-setup-modal {
+            transform: scale(1);
+        }
+        .email-setup-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+        .email-setup-desc {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .email-setup-group {
+            margin-bottom: 20px;
+        }
+        .email-setup-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .email-setup-input {
+            width: 100%;
+            height: 42px;
+            padding: 0 14px;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #f8fafc;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+        .email-setup-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        .email-setup-btn {
+            width: 100%;
+            height: 42px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .email-setup-btn:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+        .email-setup-btn:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .email-setup-btn-ghost {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #cbd5e1;
+        }
+        .email-setup-btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function showEmailSetupOverlay(username, onVerified) {
+    injectEmailSetupModalStyle();
+    
+    const oldOverlay = document.getElementById('email-setup-overlay');
+    if (oldOverlay) oldOverlay.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'email-setup-overlay';
+    overlay.className = 'email-setup-overlay';
+    
+    overlay.innerHTML = `
+        <div class="email-setup-modal">
+            <div class="email-setup-title">Xác thực Email tài khoản</div>
+            <div class="email-setup-desc">
+                Tài khoản của bạn chưa cấu hình Email. Vui lòng nhập và xác thực Email của bạn để nhận mã OTP khôi phục mật khẩu sau này.
+            </div>
+            
+            <div id="email-setup-step1">
+                <div class="email-setup-group">
+                    <label class="email-setup-label">Địa chỉ Email</label>
+                    <input type="email" id="email-setup-address" class="email-setup-input" placeholder="ten-cua-ban@company.com" required>
+                </div>
+                <button type="button" id="email-setup-btn-send" class="email-setup-btn">Gửi mã OTP</button>
+            </div>
+            
+            <div id="email-setup-step2" style="display: none;">
+                <div class="email-setup-group" style="margin-bottom: 12px;">
+                    <label class="email-setup-label" id="email-setup-sent-label">Mã OTP (6 chữ số)</label>
+                    <input type="text" id="email-setup-otp" class="email-setup-input" placeholder="Nhập 6 chữ số..." maxlength="6" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" id="email-setup-btn-back" class="email-setup-btn email-setup-btn-ghost" style="flex: 1;">Quay lại</button>
+                    <button type="button" id="email-setup-btn-verify" class="email-setup-btn" style="flex: 2;">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.classList.add('active'), 10);
+    
+    const btnSend = document.getElementById('email-setup-btn-send');
+    const btnVerify = document.getElementById('email-setup-btn-verify');
+    const btnBack = document.getElementById('email-setup-btn-back');
+    const inputEmail = document.getElementById('email-setup-address');
+    const inputOtp = document.getElementById('email-setup-otp');
+    
+    const step1 = document.getElementById('email-setup-step1');
+    const step2 = document.getElementById('email-setup-step2');
+    
+    let targetEmail = '';
+    
+    btnSend.onclick = async () => {
+        const email = inputEmail.value.trim();
+        if (!email) {
+            return showToast('Vui lòng nhập địa chỉ Email!', 'error');
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return showToast('Địa chỉ Email không hợp lệ!', 'error');
+        }
+        
+        btnSend.disabled = true;
+        btnSend.textContent = 'Đang gửi mã OTP...';
+        
+        try {
+            await api('/api/auth/send-email-otp', 'POST', { username, email });
+            targetEmail = email;
+            
+            showToast('Đã gửi mã OTP tới email của bạn!', 'success');
+            step1.style.display = 'none';
+            step2.style.display = 'block';
+            inputOtp.value = '';
+            inputOtp.focus();
+        } catch (e) {
+            showToast(e.message || 'Lỗi gửi mã OTP!', 'error');
+        } finally {
+            btnSend.disabled = false;
+            btnSend.textContent = 'Gửi mã OTP';
+        }
+    };
+    
+    btnBack.onclick = () => {
+        step2.style.display = 'none';
+        step1.style.display = 'block';
+        inputEmail.focus();
+    };
+    
+    btnVerify.onclick = async () => {
+        const otpCode = inputOtp.value.trim();
+        if (!otpCode || otpCode.length !== 6) {
+            return showToast('Vui lòng nhập mã OTP gồm 6 chữ số!', 'error');
+        }
+        
+        btnVerify.disabled = true;
+        btnVerify.textContent = 'Đang xác nhận...';
+        
+        try {
+            await api('/api/auth/verify-email-otp', 'POST', { username, email: targetEmail, otpCode });
+            showToast('Xác thực email thành công!', 'success');
+            
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 300);
+            
+            if (onVerified) onVerified(targetEmail);
+        } catch (e) {
+            showToast(e.message || 'Mã OTP không chính xác!', 'error');
+        } finally {
+            btnVerify.disabled = false;
+            btnVerify.textContent = 'Xác nhận';
+        }
+    };
+}
+
+async function approvePasswordReset(userId, fullname) {
+    const randomPassword = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit random password
+    showModal('Cấp lại mật khẩu', `Bạn có chắc muốn cấp lại mật khẩu cho nhân viên <strong>${fullname}</strong>?<br>Mật khẩu mới tự động tạo là: <strong style="font-size: 16px; color: var(--accent-orange);">${randomPassword}</strong>`, [
+        { text: 'Hủy', class: 'btn-ghost' },
+        { text: 'Cấp mật khẩu mới', class: 'btn btn-primary btn-sm', action: async () => {
+            try {
+                await api(`/api/users/${userId}`, 'PUT', { password: randomPassword, pendingPasswordReset: false });
+                await refreshAdminUsers();
+                showToast(`Đã cấp lại mật khẩu mới cho ${fullname} thành công! Mật khẩu là: ${randomPassword}`, 'success', 8000);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
 // Expose global methods for inline HTML onclick handlers
 window.editRecordDialog = editRecordDialog;
 window.deleteRecord = deleteRecord;
@@ -5671,4 +6379,8 @@ window.addTeamFromModal = addTeamFromModal;
 window.renameTeamFromModal = renameTeamFromModal;
 window.deleteTeamFromModal = deleteTeamFromModal;
 window.handleDatabaseCleanup = handleDatabaseCleanup;
+window.forgotPasswordDialog = forgotPasswordDialog;
+window.approvePasswordReset = approvePasswordReset;
+})();
+
 

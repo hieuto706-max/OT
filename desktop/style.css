@@ -575,18 +575,15 @@ h1, h2, h3, h4, h5, h6 {
     border-color: var(--accent-red);
 }
 
-/* ==================== APP HEADER ==================== */
-.app-header {
+/* ==================== WORKSPACE HEADER ==================== */
+.workspace-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    padding: 10px 24px;
-    background: rgba(7, 7, 12, 0.85);
-    backdrop-filter: blur(16px);
+    align-items: center;
+    padding: 14px 24px;
+    background: var(--bg-primary);
     border-bottom: 1px solid var(--border-color);
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    flex-shrink: 0;
 }
 
 .header-left {
@@ -607,8 +604,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .header-title h2 {
-    font-size: 16px;
-    font-weight: 800;
+    font-size: 14px;
+    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -616,9 +613,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .header-title p {
-    font-size: 11px;
-    color: var(--text-secondary);
-    margin-top: 0;
+    display: none;
 }
 
 .header-right {
@@ -668,9 +663,9 @@ h1, h2, h3, h4, h5, h6 {
 .header-user-profile {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding-left: 16px;
-    border-left: 1px solid var(--border-color);
+    gap: 8px;
+    padding-left: 0;
+    border-left: none;
 }
 
 .header-avatar {
@@ -782,9 +777,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .header-date {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--text-secondary);
-    padding: 8px 14px;
+    padding: 5px 12px;
     background: var(--bg-glass);
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
@@ -2470,6 +2465,7 @@ html.user-admin-logged-in #screen-admin::before {
     background-position: bottom center;
 }
 
+
 .ticket-header {
     display: flex;
     justify-content: space-between;
@@ -2724,6 +2720,66 @@ html.user-admin-logged-in #screen-admin::before {
 .progress-bg-green { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.3); }
 .progress-bg-orange { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.3); }
 .progress-bg-red { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.3); }
+
+/* Center empty-state elements vertically inside scrollable table wrappers */
+.table-wrapper:has(tr.empty-row) {
+    display: flex;
+    flex-direction: column;
+}
+.table-wrapper:has(tr.empty-row) .data-table {
+    height: 100%;
+}
+.table-wrapper:has(tr.empty-row) tbody {
+    height: 100%;
+}
+.table-wrapper:has(tr.empty-row) tr.empty-row {
+    height: 100%;
+}
+.table-wrapper:has(tr.empty-row) tr.empty-row td {
+    height: 100%;
+    vertical-align: middle;
+    border: none !important;
+    background: transparent !important;
+}
+.table-wrapper:has(tr.empty-row) tr.empty-row td > div {
+    height: 100%;
+    justify-content: center;
+}
+
+/* Redesigned Sidebar Icon Buttons */
+.btn-sidebar-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-sidebar-icon:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: var(--text-primary) !important;
+    transform: translateY(-1px);
+}
+
+.btn-sidebar-icon#btn-logout-admin:hover,
+.btn-sidebar-icon#btn-logout-emp:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: var(--accent-red) !important;
+}
+
+.btn-sidebar-icon svg {
+    transition: transform var(--transition-fast);
+}
+
+.btn-sidebar-icon:active svg {
+    transform: scale(0.9);
+}
 
 
 

@@ -86,5 +86,11 @@ module.exports = {
     KEY_PATH: process.env.KEY_PATH || null,
     EMAIL_ADMIN: process.env.EMAIL_ADMIN || null,
     ENABLE_HTTPS: process.env.ENABLE_HTTPS === 'true',
-    RENTRY_KEY: process.env.RENTRY_KEY || null
+    RENTRY_KEY: process.env.RENTRY_KEY || null,
+    SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',
+    SMTP_PORT: parseInt(process.env.SMTP_PORT, 10) || 587,
+    SMTP_SECURE: process.env.SMTP_SECURE === 'true',
+    SMTP_USER: process.env.SMTP_USER || null,
+    SMTP_PASS: process.env.SMTP_PASS || null,
+    SMTP_FROM: process.env.SMTP_FROM || '"OT Manager" <noreply@otmanager.id.vn>'
 };

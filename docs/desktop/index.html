@@ -129,7 +129,7 @@
         display: flex !important;
       }
     </style>
-    <script id="anti-flash-script">
+    <script id="anti-flash-script-2">
       (function() {
         try {
           // If session is temporary (stored in sessionStorage), sync to localStorage for app access
@@ -228,6 +228,9 @@
                                 </svg>
                             </button>
                         </div>
+                    </div>
+                    <div style="text-align: right; margin-bottom: 15px; margin-top: -5px;">
+                        <a href="javascript:void(0)" onclick="forgotPasswordDialog()" style="color: var(--accent-purple-light); font-size: 12px; text-decoration: none; font-weight: 500; opacity: 0.8; transition: var(--transition-fast);" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">Quên mật khẩu?</a>
                     </div>
                     <button type="submit" class="btn btn-purple btn-full">
                         <span>Đăng nhập Quản trị</span>

@@ -1,9 +1,12 @@
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const https = require('https');
 const crypto = require('crypto');
 const config = require('./config');
-const { logInfo, logError, hashPassword, verifyPassword, generateId, getCorsOrigin, getSecurityHeaders, signJWT, verifyJWT, authenticateToken, getLocalIP } = require('./utils');
-const { loadDB, saveDB, getPGPool, initPGTable, fetchGist } = require('./db');
+const { updatesDir } = config;
+const { logInfo, logError, hashPassword, verifyPassword, generateId, getCorsOrigin, getSecurityHeaders, signJWT, verifyJWT, authenticateToken, getLocalIP, sendMail } = require('./utils');
+const { loadDB, saveDB, getPGPool, initPGTable, fetchGist, getDbPath } = require('./db');
 const { VAPID_PUBLIC_KEY, sendPushNotification } = require('./notifications');
 const webpush = require('web-push');
 
@@ -142,8 +145,21 @@ async function handleAPI(req, res, urlPath, method) {
     req.user = jwtPayload || null;
 
     // --- Phân quyền: Các API nhạy cảm yêu cầu JWT ---
-    // Bỏ qua auth cho: login, version, server-info, cloud-url, gist-status
-    const publicEndpoints = ['/api/auth/login', '/api/auth/request-unlink', '/api/version', '/api/server-info', '/api/cloud-url', '/api/gist-status', '/api/apply-hotfix', '/api/trigger-update', '/api/notifications/vapid-public-key'];
+    // Bỏ qua auth cho: login, forgot-password, request-unlink, version, server-info, cloud-url, gist-status
+    const publicEndpoints = [
+        '/api/auth/login', 
+        '/api/auth/forgot-password', 
+        '/api/auth/request-unlink', 
+        '/api/version', 
+        '/api/server-info', 
+        '/api/cloud-url', 
+        '/api/gist-status', 
+        '/api/apply-hotfix', 
+        '/api/trigger-update', 
+        '/api/notifications/vapid-public-key',
+        '/api/auth/send-email-otp',
+        '/api/auth/verify-email-otp'
+    ];
     const isPublicEndpoint = publicEndpoints.some(ep => urlPath === ep || urlPath.startsWith(ep + '/'));
 
     if (!isPublicEndpoint && !jwtPayload && !req.headers['x-user-id']) {
@@ -234,7 +250,8 @@ async function handleAPI(req, res, urlPath, method) {
 
         const { password: _, ...safeUser } = user;
         const token = signJWT({ userId: user.id, role: user.role, team: user.team || '' }, 24 * 3600);
-        return sendJSON(res, 200, { user: safeUser, token }, req);
+        const requireEmailSetup = user.role === 'admin' && !user.email;
+        return sendJSON(res, 200, { user: safeUser, token, requireEmailSetup }, req);
     }
 
     if (urlPath === '/api/auth/request-unlink' && method === 'POST') {
@@ -248,6 +265,112 @@ async function handleAPI(req, res, urlPath, method) {
         return sendJSON(res, 200, { success: true, message: 'Đã gửi yêu cầu huỷ liên kết đến Quản trị viên!' }, req);
     }
 
+    if (urlPath === '/api/auth/send-email-otp' && method === 'POST') {
+        const { username, email } = await parseBody(req);
+        if (!username) return sendError(res, 400, 'Thiếu tên đăng nhập!', req);
+
+        const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+        if (!user) return sendError(res, 404, 'Không tìm thấy tên đăng nhập trong hệ thống!', req);
+
+        const targetEmail = email ? email.trim() : user.email;
+        if (!targetEmail) {
+            return sendError(res, 400, 'Tài khoản chưa được liên kết email. Vui lòng liên hệ Kỹ thuật hoặc Admin!', req);
+        }
+
+        // Sinh mã OTP 6 chữ số
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        user.otpCode = otpCode;
+        user.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // hết hạn trong 5 phút
+        saveDB(db);
+
+        // Gửi email chứa OTP
+        const subject = '[OT Manager] Mã OTP xác thực tài khoản';
+        const text = `Mã OTP của bạn là: ${otpCode}. Mã có hiệu lực trong 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.`;
+        const html = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #ffffff;">
+                <h2 style="color: #6366f1; text-align: center;">Xác thực tài khoản OT Manager</h2>
+                <p>Xin chào <strong>${user.fullname || user.username}</strong>,</p>
+                <p>Chúng tôi nhận được yêu cầu xác thực tài khoản/khôi phục mật khẩu từ bạn. Dưới đây là mã OTP xác thực của bạn:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1e1b4b; background-color: #f3f4f6; padding: 10px 20px; border-radius: 8px; border: 1px dashed #6366f1;">${otpCode}</span>
+                </div>
+                <p style="color: #ef4444; font-weight: bold;">Mã này có hiệu lực trong vòng 5 phút.</p>
+                <p>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email hoặc liên hệ Admin.</p>
+                <hr style="border: 0; border-top: 1px solid #f3f4f6; margin: 20px 0;" />
+                <p style="font-size: 12px; color: #6b7280; text-align: center;">Đây là email tự động từ hệ thống OT Manager. Vui lòng không trả lời trực tiếp email này.</p>
+            </div>
+        `;
+
+        const success = await sendMail(targetEmail, subject, text, html);
+        if (!success) {
+            return sendError(res, 500, 'Không thể gửi email OTP. Vui lòng kiểm tra lại cấu hình SMTP hoặc liên hệ Admin!', req);
+        }
+
+        return sendJSON(res, 200, { success: true, message: 'Mã OTP đã được gửi tới email của bạn!' }, req);
+    }
+
+    if (urlPath === '/api/auth/verify-email-otp' && method === 'POST') {
+        const { username, email, otpCode } = await parseBody(req);
+        if (!username || !email || !otpCode) {
+            return sendError(res, 400, 'Thiếu thông tin xác thực!', req);
+        }
+
+        const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+        if (!user) return sendError(res, 404, 'Không tìm thấy tên đăng nhập trong hệ thống!', req);
+
+        if (!user.otpCode || !user.otpExpiresAt) {
+            return sendError(res, 400, 'Không tìm thấy mã OTP nào được yêu cầu hoặc mã đã hết hạn!', req);
+        }
+
+        if (new Date() > new Date(user.otpExpiresAt)) {
+            return sendError(res, 400, 'Mã OTP đã hết hạn! Vui lòng yêu cầu mã mới.', req);
+        }
+
+        if (otpCode.trim() !== user.otpCode.trim()) {
+            return sendError(res, 401, 'Mã OTP không chính xác!', req);
+        }
+
+        user.email = email.trim().toLowerCase();
+        user.otpCode = null;
+        user.otpExpiresAt = null;
+        saveDB(db);
+
+        return sendJSON(res, 200, { success: true, message: 'Xác thực và lưu email thành công!' }, req);
+    }
+
+    if (urlPath === '/api/auth/forgot-password' && method === 'POST') {
+        const { username, otpCode, recoveryPin, newPassword } = await parseBody(req);
+        const codeToVerify = otpCode || recoveryPin;
+        if (!username || !codeToVerify || !newPassword) {
+            return sendError(res, 400, 'Thiếu Tên đăng nhập, Mã OTP xác thực hoặc Mật khẩu mới!', req);
+        }
+        const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
+        if (!user) return sendError(res, 404, 'Không tìm thấy tên đăng nhập trong hệ thống!', req);
+        
+        if (!user.otpCode || !user.otpExpiresAt) {
+            return sendError(res, 400, 'Không tìm thấy mã OTP nào được yêu cầu hoặc mã đã hết hạn!', req);
+        }
+
+        if (new Date() > new Date(user.otpExpiresAt)) {
+            return sendError(res, 400, 'Mã OTP đã hết hạn! Vui lòng yêu cầu mã mới.', req);
+        }
+        
+        if (codeToVerify.trim() !== user.otpCode.trim()) {
+            return sendError(res, 401, 'Mã OTP xác thực không chính xác!', req);
+        }
+        
+        if (newPassword.length < 4) {
+            return sendError(res, 400, 'Mật khẩu mới phải có ít nhất 4 ký tự!', req);
+        }
+        
+        user.password = hashPassword(newPassword);
+        user.pendingPasswordReset = false;
+        user.otpCode = null;
+        user.otpExpiresAt = null;
+        saveDB(db);
+        return sendJSON(res, 200, { success: true, message: 'Đổi mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.' }, req);
+    }
+
     if (urlPath === '/api/auth/register' && method === 'POST') {
         // Phân quyền: Chỉ Admin/Sub-Admin mới được tạo tài khoản
         if (jwtPayload && reqUserRole !== 'admin') {
@@ -259,6 +382,15 @@ async function handleAPI(req, res, urlPath, method) {
         if (!fullname || !username) return sendError(res, 400, 'Vui lòng điền đầy đủ thông tin!', req);
         if (username.length < 3) return sendError(res, 400, 'Tên đăng nhập phải có ít nhất 3 ký tự!', req);
         
+        // Chỉ Super Admin mới được tạo tài khoản quản lý (admin role)
+        if (role === 'admin') {
+            const reqUser = db.users.find(u => u.id === reqUserId);
+            const reqIsSuperAdmin = reqUser && (reqUser.isSuperAdmin || reqUser.username === 'admin');
+            if (!reqIsSuperAdmin) {
+                return sendError(res, 403, 'Chỉ Quản trị viên tối cao mới được tạo tài khoản quản lý!', req);
+            }
+        }
+
         const isEmployee = role !== 'admin';
         if (!isEmployee && (!password || password.length < 4)) {
             return sendError(res, 400, 'Mật khẩu quản trị viên phải có ít nhất 4 ký tự!', req);
@@ -287,6 +419,7 @@ async function handleAPI(req, res, urlPath, method) {
             fullname,
             role: role || 'employee',
             team: userTeam,
+            recoveryPin: Math.floor(100000 + Math.random() * 900000).toString(),
             createdAt: new Date().toISOString()
         };
         db.users.push(newUser);
@@ -300,10 +433,17 @@ async function handleAPI(req, res, urlPath, method) {
         let filteredUsers = db.users;
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
+            const reqIsSuperAdmin = reqUser && (reqUser.isSuperAdmin || reqUser.username === 'admin');
+            
+            // Ẩn Super Admin đối với người dùng thông thường
+            if (!reqIsSuperAdmin) {
+                filteredUsers = filteredUsers.filter(u => !u.isSuperAdmin && u.username !== 'admin');
+            }
+            
             if (reqUser && reqUser.role === 'admin' && !reqUser.isSuperAdmin && reqUser.team !== 'admin') {
                 const reqUserTeam = reqUser.team || '';
                 // Sub-admin: chỉ xem các quản trị viên, nhân viên thuộc team mình, và nhân viên chưa phân team
-                filteredUsers = db.users.filter(u => u.role === 'admin' || (reqUserTeam && u.team === reqUserTeam) || !u.team);
+                filteredUsers = filteredUsers.filter(u => u.role === 'admin' || (reqUserTeam && u.team === reqUserTeam) || !u.team);
             }
         }
         const safeUsers = filteredUsers.map(({ password, ...u }) => u);
@@ -314,6 +454,14 @@ async function handleAPI(req, res, urlPath, method) {
         const userId = urlPath.split('/api/users/')[1];
         const user = db.users.find(u => u.id === userId);
         if (!user) return sendError(res, 404, 'Không tìm thấy người dùng!');
+        
+        // Chỉ cho phép Super Admin hoặc chính chủ xem thông tin tài khoản Super Admin
+        if (user.isSuperAdmin || user.username === 'admin') {
+            if (reqUserId !== user.id) {
+                return sendError(res, 403, 'Bạn không có quyền truy cập thông tin tài khoản này!');
+            }
+        }
+        
         const { password: _, ...safeUser } = user;
         let teamSettings = null;
         if (user.team) {
@@ -351,23 +499,60 @@ async function handleAPI(req, res, urlPath, method) {
     if (urlPath.startsWith('/api/users/') && method === 'PUT') {
         const userId = urlPath.split('/api/users/')[1];
         const body = await parseBody(req);
-        const { fullname, username, password, role, deviceId, browserDeviceId, pendingUnlink, team } = body;
+        const { fullname, username, password, role, deviceId, browserDeviceId, pendingUnlink, team, pendingPasswordReset, recoveryPin, email, otpCode } = body;
         const userIdx = db.users.findIndex(u => u.id === userId);
         if (userIdx < 0) return sendError(res, 404, 'Không tìm thấy người dùng!');
 
         const targetUser = db.users[userIdx];
+        const reqUser = reqUserId ? db.users.find(u => u.id === reqUserId) : null;
+        const reqIsSuperAdmin = reqUser && (reqUser.isSuperAdmin || reqUser.username === 'admin');
+
+        // Chỉ có bản thân Super Admin mới được sửa tài khoản Super Admin
         if (targetUser.isSuperAdmin && reqUserId !== targetUser.id) {
             return sendError(res, 403, 'Chỉ có Quản trị viên tối cao mới được chỉnh sửa tài khoản này!');
         }
 
+        // Các quản lý không được sửa thông tin của nhau, chỉ có superadmin mới được sửa thông tin quản lý
+        if (targetUser.role === 'admin' && targetUser.id !== reqUserId && !reqIsSuperAdmin) {
+            return sendError(res, 403, 'Chỉ có Quản trị viên tối cao mới được sửa thông tin của quản lý khác!');
+        }
+
+        // Chỉ có superadmin mới có quyền thay đổi vai trò của người khác thành quản lý (admin)
+        if (role === 'admin' && !reqIsSuperAdmin) {
+            return sendError(res, 403, 'Chỉ có Quản trị viên tối cao mới được phân quyền quản lý!');
+        }
+
         // Phân quyền theo Team
-        if (reqUserId) {
-            const reqUser = db.users.find(u => u.id === reqUserId);
-            if (reqUser && reqUser.role === 'admin' && !reqUser.isSuperAdmin && reqUser.team !== 'admin') {
+        if (reqUserId && reqUser) {
+            if (reqUser.role === 'admin' && !reqIsSuperAdmin && reqUser.team !== 'admin') {
                 const reqUserTeam = reqUser.team || '';
                 if (targetUser.id !== reqUserId && targetUser.team && targetUser.team !== reqUserTeam) {
                     return sendError(res, 403, 'Bạn không có quyền sửa tài khoản của team khác!');
                 }
+            }
+        }
+
+        // Kiểm tra OTP khi thay đổi email hoặc mật khẩu của quản lý (role = admin)
+        if (targetUser.role === 'admin') {
+            const isEmailChanged = email !== undefined && email !== targetUser.email;
+            const isPasswordChanged = password !== undefined && password !== '';
+            
+            if (isEmailChanged || isPasswordChanged) {
+                if (!otpCode) {
+                    return sendError(res, 400, 'Thiếu mã OTP xác thực thay đổi!', req);
+                }
+                if (!targetUser.otpCode || !targetUser.otpExpiresAt) {
+                    return sendError(res, 400, 'Yêu cầu xác thực OTP không tồn tại hoặc đã hết hạn!', req);
+                }
+                if (new Date() > new Date(targetUser.otpExpiresAt)) {
+                    return sendError(res, 400, 'Mã OTP xác thực đã hết hạn! Vui lòng yêu cầu mã mới.', req);
+                }
+                if (otpCode.trim() !== targetUser.otpCode.trim()) {
+                    return sendError(res, 401, 'Mã OTP xác thực không chính xác!', req);
+                }
+                // Xác thực thành công, xóa OTP để không tái sử dụng
+                db.users[userIdx].otpCode = null;
+                db.users[userIdx].otpExpiresAt = null;
             }
         }
 
@@ -383,10 +568,15 @@ async function handleAPI(req, res, urlPath, method) {
             }
             db.users[userIdx].username = username.trim();
         }
-        if (password) db.users[userIdx].password = password;
+        if (password) {
+            db.users[userIdx].password = (targetUser.role === 'admin') ? hashPassword(password) : password;
+        }
         if (deviceId !== undefined) db.users[userIdx].deviceId = deviceId;
         if (browserDeviceId !== undefined) db.users[userIdx].browserDeviceId = browserDeviceId;
         if (pendingUnlink !== undefined) db.users[userIdx].pendingUnlink = !!pendingUnlink;
+        if (pendingPasswordReset !== undefined) db.users[userIdx].pendingPasswordReset = !!pendingPasswordReset;
+        if (recoveryPin !== undefined) db.users[userIdx].recoveryPin = recoveryPin;
+        if (email !== undefined) db.users[userIdx].email = email ? email.trim().toLowerCase() : null;
         
         if (team !== undefined) {
             if (reqUserId) {
@@ -434,6 +624,14 @@ async function handleAPI(req, res, urlPath, method) {
         // Lọc records theo team nếu requester là Sub-admin
         if (reqUserId) {
             const reqUser = db.users.find(u => u.id === reqUserId);
+            const reqIsSuperAdmin = reqUser && (reqUser.isSuperAdmin || reqUser.username === 'admin');
+
+            // Ẩn records của Super Admin đối với người dùng thông thường
+            if (!reqIsSuperAdmin) {
+                const superAdminIds = db.users.filter(u => u.isSuperAdmin || u.username === 'admin').map(u => u.id);
+                records = records.filter(r => !superAdminIds.includes(r.userId));
+            }
+
             if (reqUser && reqUser.role === 'admin' && !reqUser.isSuperAdmin && reqUser.team !== 'admin') {
                 const reqUserTeam = reqUser.team || '';
                 const allowedUserIds = db.users

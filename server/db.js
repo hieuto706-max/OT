@@ -129,6 +129,11 @@ async function initPGTable() {
             )
         `);
         await client.query('ALTER TABLE pg_users ADD COLUMN IF NOT EXISTS is_super_admin BOOLEAN DEFAULT false');
+        await client.query('ALTER TABLE pg_users ADD COLUMN IF NOT EXISTS pending_password_reset BOOLEAN DEFAULT false');
+        await client.query('ALTER TABLE pg_users ADD COLUMN IF NOT EXISTS recovery_pin VARCHAR(20) DEFAULT \'123456\'');
+        await client.query('ALTER TABLE pg_users ADD COLUMN IF NOT EXISTS email VARCHAR(255) DEFAULT NULL');
+        await client.query('ALTER TABLE pg_users ADD COLUMN IF NOT EXISTS otp_code VARCHAR(20) DEFAULT NULL');
+        await client.query('ALTER TABLE pg_users ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMP DEFAULT NULL');
 
         // Bảng bản ghi tăng ca
         await client.query(`
@@ -192,7 +197,12 @@ function pgUserToJS(row) {
         pushSubscriptions: row.push_subscriptions || undefined,
         fcmTokens: row.fcm_tokens || [],
         pendingUnlink: row.pending_unlink || undefined,
+        pendingPasswordReset: row.pending_password_reset || undefined,
+        recoveryPin: row.recovery_pin || undefined,
         isSuperAdmin: !!row.is_super_admin,
+        email: row.email || undefined,
+        otpCode: row.otp_code || undefined,
+        otpExpiresAt: row.otp_expires_at ? row.otp_expires_at.toISOString() : undefined,
         createdAt: row.created_at ? row.created_at.toISOString() : undefined,
         updatedAt: row.updated_at ? row.updated_at.toISOString() : undefined
     };
@@ -282,20 +292,26 @@ async function saveDBToPG(data) {
 
         for (const u of (data.users || [])) {
             await client.query(`
-                INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, fcm_tokens, is_super_admin, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, pending_password_reset, recovery_pin, fcm_tokens, is_super_admin, email, otp_code, otp_expires_at, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
                 ON CONFLICT (id) DO UPDATE SET
                     username = $2, fullname = $3, password = $4, role = $5, team = $6,
                     device_id = $7, browser_device_id = $8, push_subscriptions = $9,
-                    pending_unlink = $10, fcm_tokens = $11, is_super_admin = $12, updated_at = $14
+                    pending_unlink = $10, pending_password_reset = $11, recovery_pin = $12, fcm_tokens = $13, is_super_admin = $14,
+                    email = $15, otp_code = $16, otp_expires_at = $17, updated_at = $19
             `, [
                 u.id, u.username, u.fullname || '', u.password || '',
                 u.role || 'user', u.team || null,
                 u.deviceId || null, u.browserDeviceId || null,
                 u.pushSubscriptions ? JSON.stringify(u.pushSubscriptions) : null,
                 u.pendingUnlink || false,
+                u.pendingPasswordReset || false,
+                u.recoveryPin || '123456',
                 u.fcmTokens ? JSON.stringify(u.fcmTokens) : '[]',
                 u.isSuperAdmin || false,
+                u.email || null,
+                u.otpCode || null,
+                u.otpExpiresAt || null,
                 u.createdAt || new Date().toISOString(),
                 u.updatedAt || new Date().toISOString()
             ]);
@@ -458,7 +474,12 @@ function isUserEqual(u1, u2) {
            u1.browserDeviceId === u2.browserDeviceId &&
            JSON.stringify(u1.pushSubscriptions) === JSON.stringify(u2.pushSubscriptions) &&
            JSON.stringify(u1.fcmTokens) === JSON.stringify(u2.fcmTokens) &&
-           u1.pendingUnlink === u2.pendingUnlink;
+           u1.pendingUnlink === u2.pendingUnlink &&
+           u1.pendingPasswordReset === u2.pendingPasswordReset &&
+           u1.recoveryPin === u2.recoveryPin &&
+           u1.email === u2.email &&
+           u1.otpCode === u2.otpCode &&
+           u1.otpExpiresAt === u2.otpExpiresAt;
 }
 
 function isRecordEqual(r1, r2) {
@@ -502,20 +523,26 @@ async function syncDiffToPG(oldData, newData) {
             const ou = oldUsersMap.get(id);
             if (!ou || !isUserEqual(ou, nu)) {
                 await client.query(`
-                    INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, fcm_tokens, is_super_admin, created_at, updated_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                    INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, pending_password_reset, recovery_pin, fcm_tokens, is_super_admin, email, otp_code, otp_expires_at, created_at, updated_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
                     ON CONFLICT (id) DO UPDATE SET
                         username = $2, fullname = $3, password = $4, role = $5, team = $6,
                         device_id = $7, browser_device_id = $8, push_subscriptions = $9,
-                        pending_unlink = $10, fcm_tokens = $11, is_super_admin = $12, updated_at = $14
+                        pending_unlink = $10, pending_password_reset = $11, recovery_pin = $12, fcm_tokens = $13, is_super_admin = $14,
+                        email = $15, otp_code = $16, otp_expires_at = $17, updated_at = $19
                 `, [
                     nu.id, nu.username, nu.fullname || '', nu.password || '',
                     nu.role || 'user', nu.team || null,
                     nu.deviceId || null, nu.browserDeviceId || null,
                     nu.pushSubscriptions ? JSON.stringify(nu.pushSubscriptions) : null,
                     nu.pendingUnlink || false,
+                    nu.pendingPasswordReset || false,
+                    nu.recoveryPin || '123456',
                     nu.fcmTokens ? JSON.stringify(nu.fcmTokens) : '[]',
                     nu.isSuperAdmin || false,
+                    nu.email || null,
+                    nu.otpCode || null,
+                    nu.otpExpiresAt || null,
                     nu.createdAt || new Date().toISOString(),
                     nu.updatedAt || new Date().toISOString()
                 ]);

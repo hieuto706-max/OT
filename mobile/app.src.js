@@ -1112,10 +1112,20 @@ function updatePreview() {
     const hasTrip = (activities.length > 0) && (calcMode === 'trip' && !!customActivity);
     const province = (activities.length > 0) ? customDetail : '';
 
+    const dateEl = document.getElementById('ot-date');
+    const dateVal = dateEl ? dateEl.value : '';
+    const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
+
     if (isBackfill) {
         const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
         if (hoursVal > 0) {
             items.push({ label: 'Bù tăng ca', val: `${hoursVal.toFixed(1)} giờ` });
+            total = hoursVal;
+        }
+    } else if (isSunday) {
+        const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
+        if (hoursVal > 0) {
+            items.push({ label: 'Tăng ca Chủ Nhật', val: `${hoursVal.toFixed(1)} giờ` });
             total = hoursVal;
         }
     } else {
@@ -1307,15 +1317,19 @@ async function handleOTSubmit(e) {
     let eveningOTHours = 0;
     let totalHours = 0;
 
-    if (isBackfill) {
+    const isSunday = new Date(date + 'T00:00:00').getDay() === 0;
+
+    if (isBackfill || isSunday) {
         const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
         if (hoursVal <= 0) {
-            showToast('Vui lòng nhập số giờ bù hợp lệ!', 'error');
+            showToast(isSunday ? 'Vui lòng nhập số giờ tăng ca Chủ Nhật hợp lệ!' : 'Vui lòng nhập số giờ bù hợp lệ!', 'error');
             return;
         }
         totalHours = hoursVal;
         eveningOTHours = hoursVal;
-        note = '[BÙ THÁNG TRƯỚC] ' + note;
+        if (isBackfill) {
+            note = '[BÙ THÁNG TRƯỚC] ' + note;
+        }
     } else {
         eveningOTHours = calcEveningOT(start, end);
         totalHours = (lunch ? OT_LUNCH_HOURS : 0) + eveningOTHours;
@@ -1338,9 +1352,9 @@ async function handleOTSubmit(e) {
     const recordData = {
         userId: currentUser.id,
         date,
-        hasLunchOT: isBackfill ? false : lunch,
-        otStart: (!isBackfill && eveningOTHours > 0) ? start : '',
-        otEnd: (!isBackfill && eveningOTHours > 0) ? end : '',
+        hasLunchOT: (isBackfill || isSunday) ? false : lunch,
+        otStart: (!(isBackfill || isSunday) && eveningOTHours > 0) ? start : '',
+        otEnd: (!(isBackfill || isSunday) && eveningOTHours > 0) ? end : '',
         eveningOTHours: eveningOTHours,
         totalHours,
         deliveryProvince: hasTrip ? province : '',
@@ -1961,6 +1975,107 @@ async function syncOfflineData() {
     }
 }
 
+function handleDateChange() {
+    const otDateEl = document.getElementById('ot-date');
+    if (!otDateEl) return;
+    
+    const dateVal = otDateEl.value;
+    const normalInputs = document.getElementById('ot-normal-inputs');
+    const backfillGroup = document.getElementById('ot-backfill-hours-group');
+    const customActGroup = document.getElementById('ot-custom-activity-group');
+    const backfillCheckbox = document.getElementById('ot-backfill');
+    
+    const teamSettings = currentUser ? currentUser.teamSettings : null;
+    const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
+    
+    const labelEl = backfillGroup ? backfillGroup.querySelector('label') : null;
+    
+    if (dateVal) {
+        const isSunday = new Date(dateVal + 'T00:00:00').getDay() === 0;
+        const isBackfill = backfillCheckbox ? backfillCheckbox.checked : false;
+        
+        if (isSunday) {
+            if (normalInputs) normalInputs.style.display = 'none';
+            if (backfillGroup) backfillGroup.style.display = 'block';
+            if (labelEl) labelEl.textContent = 'Số giờ tăng ca Chủ Nhật';
+            
+            if (activities.length > 0) {
+                if (customActGroup) customActGroup.style.display = 'block';
+            }
+            
+            const backfillRow = backfillCheckbox ? backfillCheckbox.closest('.toggle-row') : null;
+            if (backfillRow) backfillRow.style.display = 'none';
+        } else {
+            const backfillRow = backfillCheckbox ? backfillCheckbox.closest('.toggle-row') : null;
+            if (backfillRow) backfillRow.style.display = 'block';
+            if (labelEl) labelEl.textContent = 'Số giờ tăng ca cần bù';
+            
+            if (isBackfill) {
+                if (normalInputs) normalInputs.style.display = 'none';
+                if (backfillGroup) backfillGroup.style.display = 'block';
+                if (customActGroup) customActGroup.style.display = 'none';
+            } else {
+                if (normalInputs) normalInputs.style.display = 'block';
+                if (backfillGroup) backfillGroup.style.display = 'none';
+                if (activities.length > 0) {
+                    if (customActGroup) customActGroup.style.display = 'block';
+                }
+            }
+        }
+    }
+    updatePreview();
+}
+
+function handleEditDateChange() {
+    const otDateEl = document.getElementById('edit-ot-date');
+    if (!otDateEl) return;
+    
+    const dateVal = otDateEl.value;
+    const normalInputs = document.getElementById('edit-ot-normal-inputs');
+    const backfillGroup = document.getElementById('edit-ot-backfill-hours-group');
+    const customActGroup = document.getElementById('edit-ot-custom-activity-group');
+    const backfillCheckbox = document.getElementById('edit-ot-backfill');
+    
+    const teamSettings = currentUser ? currentUser.teamSettings : null;
+    const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
+    
+    const labelEl = backfillGroup ? backfillGroup.querySelector('label') : null;
+    
+    if (dateVal) {
+        const isSunday = new Date(dateVal + 'T00:00:00').getDay() === 0;
+        const isBackfill = backfillCheckbox ? backfillCheckbox.checked : false;
+        
+        if (isSunday) {
+            if (normalInputs) normalInputs.style.display = 'none';
+            if (backfillGroup) backfillGroup.style.display = 'block';
+            if (labelEl) labelEl.textContent = 'Số giờ tăng ca Chủ Nhật';
+            
+            if (activities.length > 0) {
+                if (customActGroup) customActGroup.style.display = 'block';
+            }
+            
+            const backfillRow = backfillCheckbox ? backfillCheckbox.closest('.toggle-row') : null;
+            if (backfillRow) backfillRow.style.display = 'none';
+        } else {
+            const backfillRow = backfillCheckbox ? backfillCheckbox.closest('.toggle-row') : null;
+            if (backfillRow) backfillRow.style.display = 'block';
+            if (labelEl) labelEl.textContent = 'Số giờ tăng ca cần bù';
+            
+            if (isBackfill) {
+                if (normalInputs) normalInputs.style.display = 'none';
+                if (backfillGroup) backfillGroup.style.display = 'block';
+                if (customActGroup) customActGroup.style.display = 'none';
+            } else {
+                if (normalInputs) normalInputs.style.display = 'block';
+                if (backfillGroup) backfillGroup.style.display = 'none';
+                if (activities.length > 0) {
+                    if (customActGroup) customActGroup.style.display = 'block';
+                }
+            }
+        }
+    }
+}
+
 // ==================== INIT ====================
 function initApp() {
     const isBrowser = window.location.protocol !== 'file:' && !window.AndroidBridge;
@@ -1970,8 +2085,8 @@ function initApp() {
     const otDateEl = document.getElementById('ot-date');
     if (otDateEl) {
         otDateEl.max = new Date().toISOString().split('T')[0];
-        otDateEl.addEventListener('change', updatePreview);
-        otDateEl.addEventListener('input', updatePreview);
+        otDateEl.addEventListener('change', handleDateChange);
+        otDateEl.addEventListener('input', handleDateChange);
     }
 
     // Populate provinces-datalist
@@ -2683,14 +2798,30 @@ async function editRecordDialog(id) {
         if (elBackfill) elBackfill.checked = isBackfill;
         console.log('[editRecordDialog] Step 12: Backfill checkbox set');
 
-        if (isBackfill) {
+        const isSunday = new Date(record.date + 'T00:00:00').getDay() === 0;
+        const labelEl = elBackfillGroup ? elBackfillGroup.querySelector('label') : null;
+
+        if (isSunday) {
             if (elNormalInputs) elNormalInputs.style.display = 'none';
             if (elBackfillGroup) elBackfillGroup.style.display = 'block';
             if (elBackfillHours) elBackfillHours.value = record.totalHours;
+            if (labelEl) labelEl.textContent = 'Số giờ tăng ca Chủ Nhật';
+            const backfillRow = elBackfill ? elBackfill.closest('.toggle-row') : null;
+            if (backfillRow) backfillRow.style.display = 'none';
         } else {
-            if (elNormalInputs) elNormalInputs.style.display = 'block';
-            if (elBackfillGroup) elBackfillGroup.style.display = 'none';
-            if (elBackfillHours) elBackfillHours.value = '';
+            const backfillRow = elBackfill ? elBackfill.closest('.toggle-row') : null;
+            if (backfillRow) backfillRow.style.display = 'block';
+            if (labelEl) labelEl.textContent = 'Số giờ tăng ca cần bù';
+
+            if (isBackfill) {
+                if (elNormalInputs) elNormalInputs.style.display = 'none';
+                if (elBackfillGroup) elBackfillGroup.style.display = 'block';
+                if (elBackfillHours) elBackfillHours.value = record.totalHours;
+            } else {
+                if (elNormalInputs) elNormalInputs.style.display = 'block';
+                if (elBackfillGroup) elBackfillGroup.style.display = 'none';
+                if (elBackfillHours) elBackfillHours.value = '';
+            }
         }
         console.log('[editRecordDialog] Step 13: Backfill layout set');
 
@@ -2747,6 +2878,11 @@ async function editRecordDialog(id) {
                     }
                 }
             });
+        }
+        if (!elDate.dataset.listenerBound) {
+            elDate.dataset.listenerBound = 'true';
+            elDate.addEventListener('change', handleEditDateChange);
+            elDate.addEventListener('input', handleEditDateChange);
         }
         console.log('[editRecordDialog] Step 15: Listener set');
 
@@ -2830,10 +2966,12 @@ async function handleEditOTSubmit(e) {
     let eveningOTHours = 0;
     let totalHours = 0;
 
-    if (isBackfill) {
+    const isSunday = new Date(date + 'T00:00:00').getDay() === 0;
+
+    if (isBackfill || isSunday) {
         const hoursVal = elBackfillHours ? parseFloat(elBackfillHours.value) || 0 : 0;
         if (hoursVal <= 0) {
-            showToast('Vui lòng nhập số giờ bù hợp lệ!', 'error');
+            showToast(isSunday ? 'Vui lòng nhập số giờ tăng ca Chủ Nhật hợp lệ!' : 'Vui lòng nhập số giờ bù hợp lệ!', 'error');
             return;
         }
         totalHours = hoursVal;
@@ -2852,9 +2990,9 @@ async function handleEditOTSubmit(e) {
  
     const updatedData = {
         date,
-        hasLunchOT: isBackfill ? false : lunch,
-        otStart: (!isBackfill && eveningOTHours > 0) ? start : '',
-        otEnd: (!isBackfill && eveningOTHours > 0) ? end : '',
+        hasLunchOT: (isBackfill || isSunday) ? false : lunch,
+        otStart: (!(isBackfill || isSunday) && eveningOTHours > 0) ? start : '',
+        otEnd: (!(isBackfill || isSunday) && eveningOTHours > 0) ? end : '',
         eveningOTHours: eveningOTHours,
         totalHours,
         deliveryProvince: hasTrip ? province : '',

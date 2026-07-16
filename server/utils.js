@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 // ==================== STRUCTURED LOGGING ====================
 function logInfo(message, ...args) {
@@ -194,6 +195,42 @@ function getLocalIP() {
     return '127.0.0.1';
 }
 
+// ==================== MAIL SERVICE ====================
+async function sendMail(to, subject, text, html) {
+    const config = require('./config');
+    if (!config.SMTP_USER || !config.SMTP_PASS) {
+        logError('[Mail] Bỏ qua gửi email vì thiếu SMTP_USER hoặc SMTP_PASS trong cấu hình.');
+        return false;
+    }
+    
+    try {
+        const transporter = nodemailer.createTransport({
+            host: config.SMTP_HOST,
+            port: config.SMTP_PORT,
+            secure: config.SMTP_SECURE,
+            auth: {
+                user: config.SMTP_USER,
+                pass: config.SMTP_PASS
+            }
+        });
+
+        const mailOptions = {
+            from: config.SMTP_FROM,
+            to,
+            subject,
+            text,
+            html
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        logInfo(`[Mail] Email đã gửi thành công tới: ${to}. MessageId: ${info.messageId}`);
+        return true;
+    } catch (e) {
+        logError(`[Mail] Gửi email tới ${to} thất bại:`, e.message);
+        return false;
+    }
+}
+
 module.exports = {
     logInfo,
     logError,
@@ -207,5 +244,6 @@ module.exports = {
     signJWT,
     verifyJWT,
     authenticateToken,
-    getLocalIP
+    getLocalIP,
+    sendMail
 };
