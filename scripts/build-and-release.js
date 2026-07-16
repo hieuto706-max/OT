@@ -2,6 +2,28 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+// Helper function to recursively delete directory with retry to bypass temporary file locks (like OneDrive)
+function deleteFolderRecursiveWithRetry(folderPath, retries = 5, delay = 1000) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            if (fs.existsSync(folderPath)) {
+                fs.rmSync(folderPath, { recursive: true, force: true });
+            }
+            console.log(`Successfully deleted folder: ${folderPath}`);
+            return true;
+        } catch (e) {
+            console.warn(`[Delete Retry ${i+1}/${retries}] Failed to delete ${folderPath}: ${e.message}`);
+            if (i < retries - 1) {
+                try {
+                    execSync(`powershell -Command "Start-Sleep -Milliseconds ${delay}"`);
+                } catch(e2) {}
+            }
+        }
+    }
+    return false;
+}
+
+
 // Step 1: Clean dist folder
 console.log('--- Cleaning up dist directory ---');
 if (fs.existsSync('dist')) {
@@ -61,6 +83,21 @@ try {
     } catch (e) {
         console.warn('Failed to stop Gradle daemons (continuing):', e.message);
     }
+    
+    // Forcibly kill any running java.exe processes to ensure all locks are released
+    console.log('Forcibly terminating Java processes to release locks...');
+    try {
+        if (process.platform === 'win32') {
+            execSync('taskkill /F /IM java.exe', { stdio: 'ignore' });
+        }
+    } catch (e) {
+        // May error if no Java process is running, which is fine
+    }
+
+    // Force delete the build directory using Node.js with retry logic
+    console.log('Force deleting build directory via Node.js...');
+    const buildDirPath = path.resolve(path.join(__dirname, '..', 'mobile-android', 'app', 'build'));
+    deleteFolderRecursiveWithRetry(buildDirPath);
     
     execSync(`${gradleCmd} clean assembleRelease`, { 
         cwd: path.join(__dirname, '..', 'mobile-android'),
