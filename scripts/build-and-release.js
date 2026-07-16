@@ -22,8 +22,24 @@ try {
 console.log('\n--- Building Android Mobile App (APK) ---');
 try {
     const gradleCmd = process.platform === 'win32' ? 'gradlew.bat' : './gradlew';
+    
+    // Inject the local JDK 17 from temp_jdk to prevent JVM 8 mismatch errors
+    const localJdkPath = path.resolve(path.join(__dirname, '..', 'temp_jdk', 'jdk-17.0.19+10'));
+    const childEnv = { ...process.env };
+    childEnv['JAVA_HOME'] = localJdkPath;
+    
+    const binPath = path.join(localJdkPath, 'bin');
+    if (process.platform === 'win32') {
+        childEnv['PATH'] = `${binPath};${childEnv['PATH'] || ''}`;
+    } else {
+        childEnv['PATH'] = `${binPath}:${childEnv['PATH'] || ''}`;
+    }
+    
+    console.log(`Using JAVA_HOME: ${childEnv['JAVA_HOME']}`);
+    
     execSync(`${gradleCmd} assembleRelease`, { 
         cwd: path.join(__dirname, '..', 'mobile-android'),
+        env: childEnv,
         stdio: 'inherit' 
     });
 } catch (e) {
