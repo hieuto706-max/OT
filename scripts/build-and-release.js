@@ -25,10 +25,19 @@ try {
     
     // Inject the local JDK 17 from temp_jdk to prevent JVM 8 mismatch errors
     const localJdkPath = path.resolve(path.join(__dirname, '..', 'temp_jdk', 'jdk-17.0.19+10'));
-    const childEnv = { ...process.env };
-    childEnv['JAVA_HOME'] = localJdkPath;
+    let resolvedJdkPath = localJdkPath;
+    if (process.platform === 'win32') {
+        try {
+            resolvedJdkPath = execSync(`cmd.exe /c "for %I in (\\"${localJdkPath}\\") do @echo %~sI"`).toString().trim();
+        } catch (e) {
+            console.warn('Failed to resolve short path, using fallback long path:', e.message);
+        }
+    }
     
-    const binPath = path.join(localJdkPath, 'bin');
+    const childEnv = { ...process.env };
+    childEnv['JAVA_HOME'] = resolvedJdkPath;
+    
+    const binPath = path.join(resolvedJdkPath, 'bin');
     if (process.platform === 'win32') {
         childEnv['PATH'] = `${binPath};${childEnv['PATH'] || ''}`;
     } else {
