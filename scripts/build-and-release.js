@@ -50,7 +50,19 @@ try {
     
     console.log(`Using JAVA_HOME: ${childEnv['JAVA_HOME']}`);
     
-    execSync(`${gradleCmd} assembleRelease`, { 
+    // Stop any running Gradle daemons to release file locks
+    console.log('Stopping active Gradle daemons...');
+    try {
+        execSync(`${gradleCmd} --stop`, { 
+            cwd: path.join(__dirname, '..', 'mobile-android'),
+            env: childEnv,
+            stdio: 'ignore' 
+        });
+    } catch (e) {
+        console.warn('Failed to stop Gradle daemons (continuing):', e.message);
+    }
+    
+    execSync(`${gradleCmd} clean assembleRelease`, { 
         cwd: path.join(__dirname, '..', 'mobile-android'),
         env: childEnv,
         stdio: 'inherit' 
