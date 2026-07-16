@@ -27,10 +27,14 @@ try {
     const localJdkPath = path.resolve(path.join(__dirname, '..', 'temp_jdk', 'jdk-17.0.19+10'));
     let resolvedJdkPath = localJdkPath;
     if (process.platform === 'win32') {
-        try {
-            resolvedJdkPath = execSync(`cmd.exe /c "for %I in (\\"${localJdkPath}\\") do @echo %~sI"`).toString().trim();
-        } catch (e) {
-            console.warn('Failed to resolve short path, using fallback long path:', e.message);
+        if (localJdkPath.toLowerCase().includes('máy tính\\ot manager')) {
+            resolvedJdkPath = localJdkPath.replace(/c:\\users\\hieut\\onedrive\\máy tính\\ot manager/i, 'C:\\Users\\hieut\\OneDrive\\MYTNH~1\\OTMANA~1');
+        } else {
+            try {
+                resolvedJdkPath = execSync(`powershell -Command "(New-Object -ComObject Scripting.FileSystemObject).GetFolder('${localJdkPath}').ShortPath"`).toString().trim();
+            } catch (e) {
+                console.warn('Failed to resolve short path, using fallback long path:', e.message);
+            }
         }
     }
     
