@@ -6,7 +6,8 @@
   "scripts": {
     "start": "electron .",
     "prebuild": "node scripts/clean-dist.js",
-    "build": "electron-builder --win --publish always"
+    "build": "electron-builder --win --publish always",
+    "build-local": "node scripts/clean-dist.js && electron-builder --win --publish never"
   },
   "keywords": [
     "overtime",
