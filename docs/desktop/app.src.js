@@ -5499,11 +5499,16 @@ async function editRecordDialog(recordId, source) {
 
 async function addUserDialog() {
     let admins = [];
-    try {
-        const uData = await api('/api/users');
-        admins = uData.users.filter(u => u.role === 'admin');
-    } catch (e) {
-        console.error('Lỗi lấy danh sách admin:', e);
+    if (loadedUsers && loadedUsers.length > 0) {
+        admins = loadedUsers.filter(u => u.role === 'admin');
+    } else {
+        try {
+            const uData = await api('/api/users');
+            loadedUsers = uData.users || [];
+            admins = loadedUsers.filter(u => u.role === 'admin');
+        } catch (e) {
+            console.error('Lỗi lấy danh sách admin:', e);
+        }
     }
     const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
     const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
@@ -5517,6 +5522,10 @@ async function addUserDialog() {
         <div class="form-group" style="margin-bottom: 15px;">
             <label style="display:block;margin-bottom:6px;font-weight:600;">Tên đăng nhập</label>
             <input type="text" id="modal-user-username" placeholder="Chỉ viết liền, không dấu" class="input-sm" style="width:100%; box-sizing:border-box;" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">Địa chỉ Email</label>
+            <input type="email" id="modal-user-email" placeholder="ten-cua-ban@company.com" class="input-sm" style="width:100%; box-sizing:border-box;">
         </div>
         <div class="form-group" id="modal-user-password-group" style="margin-bottom: 15px;">
             <label style="display:block;margin-bottom:6px;font-weight:600;">Mật khẩu</label>
@@ -5547,12 +5556,14 @@ async function addUserDialog() {
         { text: 'Thêm', class: 'btn btn-primary btn-sm', action: async () => {
             const fullname = document.getElementById('modal-user-fullname').value.trim();
             const username = document.getElementById('modal-user-username').value.trim();
+            const email = document.getElementById('modal-user-email') ? document.getElementById('modal-user-email').value.trim() : '';
             const password = document.getElementById('modal-user-password').value;
             const role = document.getElementById('modal-user-role').value;
             const team = document.getElementById('modal-user-team') ? document.getElementById('modal-user-team').value : '';
 
             if (!fullname || !username) return showToast('Vui lòng điền họ tên và tên đăng nhập!', 'error');
             if (username.length < 3) return showToast('Tên đăng nhập tối thiểu 3 ký tự!', 'error');
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('Địa chỉ Email không hợp lệ!', 'error');
             
             if (role === 'admin') {
                 if (!password) return showToast('Tài khoản quản lý bắt buộc phải nhập mật khẩu!', 'error');
@@ -5560,7 +5571,7 @@ async function addUserDialog() {
             }
 
             try {
-                await api('/api/auth/register', 'POST', { fullname, username, password: password || '123', role, team });
+                await api('/api/auth/register', 'POST', { fullname, username, password: password || '123', role, team, email });
                 showToast('Thêm nhân viên thành công!');
                 await Promise.all([populateUserFilter(), refreshAdminUsers(), refreshAdminStats(), refreshReport()]);
             } catch (err) {

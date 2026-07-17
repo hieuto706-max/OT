@@ -378,7 +378,7 @@ async function handleAPI(req, res, urlPath, method) {
         }
 
         const body = await parseBody(req);
-        const { fullname, username, password, role } = body;
+        const { fullname, username, password, role, email } = body;
         if (!fullname || !username) return sendError(res, 400, 'Vui lòng điền đầy đủ thông tin!', req);
         if (username.length < 3) return sendError(res, 400, 'Tên đăng nhập phải có ít nhất 3 ký tự!', req);
         
@@ -419,6 +419,7 @@ async function handleAPI(req, res, urlPath, method) {
             fullname,
             role: role || 'employee',
             team: userTeam,
+            email: email ? email.trim() : null,
             recoveryPin: Math.floor(100000 + Math.random() * 900000).toString(),
             createdAt: new Date().toISOString()
         };
