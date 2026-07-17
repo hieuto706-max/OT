@@ -1794,6 +1794,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.token) {
                         safeStorage.setItem('ot_auth_token', data.token, remember);
                     }
+                    if (data.requireEmailSetup) {
+                        safeStorage.setItem('ot_require_email_setup', 'true', remember);
+                    } else {
+                        safeStorage.removeItem('ot_require_email_setup');
+                    }
                     safeStorage.setItem('ot_login_time', Date.now().toString(), remember);
                     safeStorage.setItem('ot_login_date', new Date().toISOString().split('T')[0], remember);
                     

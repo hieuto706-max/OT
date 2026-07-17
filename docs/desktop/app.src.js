@@ -4782,8 +4782,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentUser && token) {
             try {
                 if (currentUser.role === 'admin') {
-                    await initAdminDashboard(currentUser);
-                    showScreen('screen-admin');
+                    if (localStorage.getItem('ot_require_email_setup') === 'true') {
+                        showEmailSetupOverlay(currentUser.username, (verifiedEmail) => {
+                            currentUser.email = verifiedEmail;
+                            localStorage.setItem('ot_current_user', JSON.stringify(currentUser));
+                            localStorage.removeItem('ot_require_email_setup');
+                            initAdminDashboard(currentUser);
+                            showScreen('screen-admin');
+                        });
+                    } else {
+                        await initAdminDashboard(currentUser);
+                        showScreen('screen-admin');
+                    }
                 } else {
                     await initEmployeeDashboard(currentUser);
                     showScreen('screen-employee');
