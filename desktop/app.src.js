@@ -73,6 +73,7 @@ const PROVINCES = [
 let currentAdminRecType = 'ot';
 let currentEmpRecType = 'ot';
 let loadedUsers = [];
+let loadedRecords = [];
 
 // Report Redesign global state variables
 let reportSearchQuery = '';
@@ -1393,8 +1394,10 @@ async function refreshAdminRecords() {
 
         const data = await api(url);
         const records = data.records;
+        loadedRecords = records;
         const usersData = await api('/api/users');
         const users = usersData.users;
+        loadedUsers = users;
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
         const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
 
@@ -5245,8 +5248,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==================== DYNAMIC DIALOGS (ADD/EDIT) ====================
 async function editRecordDialog(recordId, source) {
     try {
-        const data = await api(`/api/records`);
-        const record = data.records.find(r => r.id === recordId);
+        let record = loadedRecords.find(r => r.id === recordId);
+        if (!record) {
+            const data = await api(`/api/records`);
+            loadedRecords = data.records || [];
+            record = loadedRecords.find(r => r.id === recordId);
+        }
         if (!record) return showToast('Không tìm thấy bản ghi', 'error');
 
         const isBackfill = record.isBackfill || (record.note && (record.note.includes('[BÙ THÁNG TRƯỚC]') || record.note.includes('[TĂNG THÁNG NÀY]')));
@@ -5584,8 +5591,12 @@ async function editUserDialog(userId) {
         const isSuperAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
         const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin' || currentUser.isSuperAdmin);
 
-        const data = await api('/api/users');
-        const user = data.users.find(u => u.id === userId);
+        let user = loadedUsers.find(u => u.id === userId);
+        if (!user) {
+            const data = await api('/api/users');
+            loadedUsers = data.users || [];
+            user = loadedUsers.find(u => u.id === userId);
+        }
         if (!user) return showToast('Không tìm thấy nhân viên', 'error');
 
         // Chỉ có bản thân Quản trị viên tối cao mới được sửa thông tin của chính mình

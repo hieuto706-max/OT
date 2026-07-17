@@ -73,6 +73,7 @@ const PROVINCES = [
 let currentAdminRecType = 'ot';
 let currentEmpRecType = 'ot';
 let loadedUsers = [];
+let loadedRecords = [];
 
 // Report Redesign global state variables
 let reportSearchQuery = '';
@@ -134,32 +135,60 @@ style.textContent = `
 document.head.appendChild(style);
 
 // ==================== API CLIENT ====================
+const apiCache = new Map();
+
 async function api(endpoint, method = 'GET', body = null) {
-    const opts = {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-    };
-    // Gửi JWT Token nếu có
-    const token = localStorage.getItem('ot_auth_token');
-    if (token) {
-        opts.headers['Authorization'] = `Bearer ${token}`;
+    const isGet = method.toUpperCase() === 'GET';
+    const cacheKey = endpoint;
+
+    // Clear cache immediately on write operations
+    if (!isGet) {
+        apiCache.clear();
     }
-    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
-    if (currentUser && currentUser.id) {
-        opts.headers['x-user-id'] = currentUser.id;
+
+    if (isGet && apiCache.has(cacheKey)) {
+        return apiCache.get(cacheKey);
     }
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(`${API_BASE}${endpoint}`, opts);
-    const data = await res.json();
-    if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-            localStorage.removeItem('ot_auth_token');
-            localStorage.removeItem('ot_current_user');
-            window.location.reload();
+
+    const promise = (async () => {
+        const opts = {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+        };
+        // Gửi JWT Token nếu có
+        const token = localStorage.getItem('ot_auth_token');
+        if (token) {
+            opts.headers['Authorization'] = `Bearer ${token}`;
         }
-        throw new Error(data.error || 'Lỗi kết nối server');
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        if (currentUser && currentUser.id) {
+            opts.headers['x-user-id'] = currentUser.id;
+        }
+        if (body) opts.body = JSON.stringify(body);
+        const res = await fetch(`${API_BASE}${endpoint}`, opts);
+        const data = await res.json();
+        if (!res.ok) {
+            if (res.status === 401 || res.status === 403) {
+                localStorage.removeItem('ot_auth_token');
+                localStorage.removeItem('ot_current_user');
+                window.location.reload();
+            }
+            throw new Error(data.error || 'Lỗi kết nối server');
+        }
+        return data;
+    })();
+
+    if (isGet) {
+        apiCache.set(cacheKey, promise);
+        // Tự động xoá cache sau 1 giây để đảm bảo dữ liệu mới nhất được nạp ở các lần tải sau
+        setTimeout(() => {
+            if (apiCache.get(cacheKey) === promise) {
+                apiCache.delete(cacheKey);
+            }
+        }, 1000);
     }
-    return data;
+
+    return promise;
 }
 
 // ==================== HELPERS ====================
@@ -1365,8 +1394,10 @@ async function refreshAdminRecords() {
 
         const data = await api(url);
         const records = data.records;
+        loadedRecords = records;
         const usersData = await api('/api/users');
         const users = usersData.users;
+        loadedUsers = users;
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
         const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
 
@@ -4782,7 +4813,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentUser && token) {
             try {
                 if (currentUser.role === 'admin') {
-                    if (localStorage.getItem('ot_require_email_setup') === 'true') {
+                    if (!currentUser.email) {
                         showEmailSetupOverlay(currentUser.username, (verifiedEmail) => {
                             currentUser.email = verifiedEmail;
                             localStorage.setItem('ot_current_user', JSON.stringify(currentUser));
@@ -5217,8 +5248,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==================== DYNAMIC DIALOGS (ADD/EDIT) ====================
 async function editRecordDialog(recordId, source) {
     try {
-        const data = await api(`/api/records`);
-        const record = data.records.find(r => r.id === recordId);
+        let record = loadedRecords.find(r => r.id === recordId);
+        if (!record) {
+            const data = await api(`/api/records`);
+            loadedRecords = data.records || [];
+            record = loadedRecords.find(r => r.id === recordId);
+        }
         if (!record) return showToast('Không tìm thấy bản ghi', 'error');
 
         const isBackfill = record.isBackfill || (record.note && (record.note.includes('[BÙ THÁNG TRƯỚC]') || record.note.includes('[TĂNG THÁNG NÀY]')));
@@ -5556,8 +5591,12 @@ async function editUserDialog(userId) {
         const isSuperAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
         const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin' || currentUser.isSuperAdmin);
 
-        const data = await api('/api/users');
-        const user = data.users.find(u => u.id === userId);
+        let user = loadedUsers.find(u => u.id === userId);
+        if (!user) {
+            const data = await api('/api/users');
+            loadedUsers = data.users || [];
+            user = loadedUsers.find(u => u.id === userId);
+        }
         if (!user) return showToast('Không tìm thấy nhân viên', 'error');
 
         // Chỉ có bản thân Quản trị viên tối cao mới được sửa thông tin của chính mình
