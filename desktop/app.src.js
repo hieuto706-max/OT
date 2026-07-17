@@ -134,32 +134,60 @@ style.textContent = `
 document.head.appendChild(style);
 
 // ==================== API CLIENT ====================
+const apiCache = new Map();
+
 async function api(endpoint, method = 'GET', body = null) {
-    const opts = {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-    };
-    // Gửi JWT Token nếu có
-    const token = localStorage.getItem('ot_auth_token');
-    if (token) {
-        opts.headers['Authorization'] = `Bearer ${token}`;
+    const isGet = method.toUpperCase() === 'GET';
+    const cacheKey = endpoint;
+
+    // Clear cache immediately on write operations
+    if (!isGet) {
+        apiCache.clear();
     }
-    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
-    if (currentUser && currentUser.id) {
-        opts.headers['x-user-id'] = currentUser.id;
+
+    if (isGet && apiCache.has(cacheKey)) {
+        return apiCache.get(cacheKey);
     }
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(`${API_BASE}${endpoint}`, opts);
-    const data = await res.json();
-    if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-            localStorage.removeItem('ot_auth_token');
-            localStorage.removeItem('ot_current_user');
-            window.location.reload();
+
+    const promise = (async () => {
+        const opts = {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+        };
+        // Gửi JWT Token nếu có
+        const token = localStorage.getItem('ot_auth_token');
+        if (token) {
+            opts.headers['Authorization'] = `Bearer ${token}`;
         }
-        throw new Error(data.error || 'Lỗi kết nối server');
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        if (currentUser && currentUser.id) {
+            opts.headers['x-user-id'] = currentUser.id;
+        }
+        if (body) opts.body = JSON.stringify(body);
+        const res = await fetch(`${API_BASE}${endpoint}`, opts);
+        const data = await res.json();
+        if (!res.ok) {
+            if (res.status === 401 || res.status === 403) {
+                localStorage.removeItem('ot_auth_token');
+                localStorage.removeItem('ot_current_user');
+                window.location.reload();
+            }
+            throw new Error(data.error || 'Lỗi kết nối server');
+        }
+        return data;
+    })();
+
+    if (isGet) {
+        apiCache.set(cacheKey, promise);
+        // Tự động xoá cache sau 1 giây để đảm bảo dữ liệu mới nhất được nạp ở các lần tải sau
+        setTimeout(() => {
+            if (apiCache.get(cacheKey) === promise) {
+                apiCache.delete(cacheKey);
+            }
+        }, 1000);
     }
-    return data;
+
+    return promise;
 }
 
 // ==================== HELPERS ====================
@@ -4782,7 +4810,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentUser && token) {
             try {
                 if (currentUser.role === 'admin') {
-                    if (localStorage.getItem('ot_require_email_setup') === 'true') {
+                    if (!currentUser.email) {
                         showEmailSetupOverlay(currentUser.username, (verifiedEmail) => {
                             currentUser.email = verifiedEmail;
                             localStorage.setItem('ot_current_user', JSON.stringify(currentUser));
