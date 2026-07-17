@@ -412,20 +412,29 @@ async function handleEmployeeLogin(e) {
             return;
         }
 
-        localStorage.setItem('ot_current_user', JSON.stringify(user));
-        if (data.token) localStorage.setItem('ot_auth_token', data.token);
-        const todayStr = new Date().toISOString().split('T')[0];
-        localStorage.setItem('ot_login_date', todayStr);
-        try {
-            const versionRes = await fetch(`${localServerUrl}/api/version`);
-            const versionData = await versionRes.json();
-            localStorage.setItem('ot_app_version', versionData.version || '1.0.0');
-        } catch (e) {}
+        const proceedLogin = (finalUser) => {
+            localStorage.setItem('ot_current_user', JSON.stringify(finalUser));
+            if (data.token) localStorage.setItem('ot_auth_token', data.token);
+            const todayStr = new Date().toISOString().split('T')[0];
+            localStorage.setItem('ot_login_date', todayStr);
+            fetch(`${localServerUrl}/api/version`).then(r => r.json()).then(v => {
+                localStorage.setItem('ot_app_version', v.version || '1.0.0');
+            }).catch(() => {});
 
-        initEmployeeDashboard(user);
-        showScreen('screen-employee');
-        showToast(`Xin chào, ${user.fullname}!`, 'info');
-        e.target.reset();
+            initEmployeeDashboard(finalUser);
+            showScreen('screen-employee');
+            showToast(`Xin chào, ${finalUser.fullname}!`, 'info');
+            e.target.reset();
+        };
+
+        if (data.requireEmailSetup) {
+            showEmailSetupOverlay(username, (verifiedEmail) => {
+                user.email = verifiedEmail;
+                proceedLogin(user);
+            });
+        } else {
+            proceedLogin(user);
+        }
     } catch (err) {
         errorEl.textContent = err.message;
     }
@@ -3234,8 +3243,20 @@ async function handleDatabaseCleanup() {
 
 // ==================== EMPLOYEE DASHBOARD ====================
 async function initEmployeeDashboard(user) {
-    document.getElementById('emp-welcome').textContent = `Xin chào, ${user.fullname}`;
-    document.getElementById('emp-date').textContent = formatDateFull(new Date());
+    const welcomeEl = document.getElementById('emp-welcome');
+    if (welcomeEl) welcomeEl.textContent = `Xin chào, ${user.fullname}`;
+    
+    const empNameEl = document.getElementById('emp-user-fullname');
+    if (empNameEl) empNameEl.textContent = user.fullname;
+    
+    const empAvatarEl = document.getElementById('emp-user-avatar');
+    if (empAvatarEl && user.fullname) {
+        empAvatarEl.textContent = user.fullname.trim().charAt(0).toUpperCase();
+    }
+
+    const dateEl = document.getElementById('emp-date');
+    if (dateEl) dateEl.textContent = formatDateFull(new Date());
+    
     const todayStr = new Date().toISOString().split('T')[0];
     document.getElementById('ot-date').value = todayStr;
     document.getElementById('ot-date').max = todayStr;
@@ -4829,18 +4850,14 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.remove('active'));
             tab.classList.add('active');
             document.getElementById(`admin-tab-${tab.dataset.adminTab}`).classList.add('active');
-        });
-    });
-
-    // Employee tabs
-    document.querySelectorAll('.emp-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('.emp-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.emp-tab-content').forEach(c => c.classList.remove('active'));
-            tab.classList.add('active');
-            const targetContent = document.getElementById(`emp-tab-${tab.dataset.empTab}`);
-            if (targetContent) {
-                targetContent.classList.add('active');
+            
+            // Cập nhật tiêu đề header động
+            const headerTitleEl = document.getElementById('admin-header-title');
+            if (headerTitleEl) {
+                const spanText = tab.querySelector('span');
+                if (spanText) {
+                    headerTitleEl.textContent = spanText.textContent;
+                }
             }
         });
     });
@@ -4854,6 +4871,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetContent = document.getElementById(`emp-tab-${tab.dataset.empTab}`);
             if (targetContent) {
                 targetContent.classList.add('active');
+            }
+            
+            // Cập nhật tiêu đề header động
+            const headerTitleEl = document.getElementById('emp-header-title');
+            if (headerTitleEl) {
+                const spanText = tab.querySelector('span');
+                if (spanText) {
+                    headerTitleEl.textContent = spanText.textContent;
+                }
             }
         });
     });
