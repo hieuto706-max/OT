@@ -126,7 +126,7 @@ if (fs.existsSync(apkSrc)) {
 console.log('\n--- Creating GitHub Release via gh CLI ---');
 const version = require('../package.json').version;
 try {
-    execSync(`gh release create v${version} dist/ot-manager-Setup-${version}.exe dist/OT-Manager-mobile.apk --title "Release v${version}" --notes "Bản phát hành v${version} - Thiết kế lại thanh Header phẳng gọn và sửa lỗi đăng nhập Email nhân viên."`, { stdio: 'inherit' });
+    execSync(`gh release create v${version} dist/ot-manager-Setup-${version}.exe dist/OT-Manager-mobile.apk --title "Release v${version}" --notes "Bản phát hành v${version} - Tích hợp cơ chế tự động cập nhật & hotfix qua Electron IPC, thiết kế lại bố cục giao diện, tự động điền thông tin đăng nhập và sửa các lỗi tương thích."`, { stdio: 'inherit' });
     console.log('\n🎉 Release published successfully!');
 } catch (e) {
     console.error('\n❌ Failed to publish release via gh CLI. You can still upload files in dist/ manually.');
