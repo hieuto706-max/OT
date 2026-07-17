@@ -50,9 +50,18 @@ document.addEventListener('keydown', e => {
 
 const isElectron = navigator.userAgent.toLowerCase().includes('electron');
 const isGitHubPages = window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
-const localServerUrl = isGitHubPages 
-    ? (localStorage.getItem('ot_server_ip') || 'https://api.otmanager.id.vn') 
-    : window.location.origin;
+let savedServerIp = localStorage.getItem('ot_server_ip') || 'https://api.otmanager.id.vn';
+if (isGitHubPages && (
+    savedServerIp.includes('otms.onrender.com') ||
+    savedServerIp.includes('ot-manager-server.onrender.com') ||
+    savedServerIp.includes('ot-manager-server-jbxd.onrender.com') ||
+    savedServerIp.includes('github.io') ||
+    savedServerIp.includes('otmanager.id.vn')
+)) {
+    localStorage.removeItem('ot_server_ip');
+    savedServerIp = 'https://api.otmanager.id.vn';
+}
+const localServerUrl = isGitHubPages ? savedServerIp : window.location.origin;
 let API_BASE = localServerUrl;
 const OT_LUNCH_HOURS = 1;
 const WORK_END = '16:30';

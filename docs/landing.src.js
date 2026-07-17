@@ -1323,6 +1323,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const host = window.location.origin;
     let savedServerIp = localStorage.getItem('ot_server_ip') || 'https://api.otmanager.id.vn';
     
+    // Tự động dọn dẹp các địa chỉ IP cũ hoặc bị lưu nhầm thành domain tĩnh của trang web
+    if (savedServerIp && (
+        savedServerIp.includes('otms.onrender.com') ||
+        savedServerIp.includes('ot-manager-server.onrender.com') ||
+        savedServerIp.includes('ot-manager-server-jbxd.onrender.com') ||
+        savedServerIp.includes('github.io') ||
+        savedServerIp.includes('otmanager.id.vn')
+    )) {
+        localStorage.removeItem('ot_server_ip');
+        savedServerIp = 'https://api.otmanager.id.vn';
+    }
+
     // Nếu chạy trên điện thoại hoặc HTTPS công cộng, lọc và bỏ qua các IP nội bộ tư nhân (như 192.168, localhost, v.v.)
     const isPublicHttps = window.location.protocol === 'https:' || window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
     if ((isMobileDevice || isPublicHttps) && isLocalNetworkUrl(savedServerIp)) {

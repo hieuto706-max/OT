@@ -170,7 +170,16 @@ if (window.location.protocol === 'https:' && API.startsWith('http://')) {
 
 // Tự động dọn dẹp các địa chỉ IP cũ từ các phiên bản trước
 let savedIp = safeStorage.getItem('ot_server_ip');
-if (!isLocalWeb && savedIp && (savedIp.includes('otms.onrender.com') || savedIp.includes('ot-manager-server.onrender.com') || savedIp.includes('otm.app.vn') || savedIp.includes('new-folder-6471') || savedIp.includes('lhr.life'))) {
+if (!isLocalWeb && savedIp && (
+    savedIp.includes('otms.onrender.com') || 
+    savedIp.includes('ot-manager-server.onrender.com') || 
+    savedIp.includes('ot-manager-server-jbxd.onrender.com') || 
+    savedIp.includes('otm.app.vn') || 
+    savedIp.includes('new-folder-6471') || 
+    savedIp.includes('lhr.life') ||
+    savedIp.includes('github.io') ||
+    savedIp.includes('otmanager.id.vn')
+)) {
     safeStorage.removeItem('ot_server_ip');
     API = 'https://api.otmanager.id.vn';
 }
