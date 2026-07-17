@@ -603,6 +603,19 @@ async function initAdminDashboard(user) {
     if (headerAvatarEl) headerAvatarEl.textContent = user.fullname.charAt(0).toUpperCase();
     if (headerRoleEl) headerRoleEl.textContent = user.role === 'admin' ? 'Quản lý' : 'Nhân viên';
 
+    // Click to edit own profile
+    const userProfileEl = document.getElementById('header-user-profile');
+    if (userProfileEl) {
+        userProfileEl.style.cursor = 'pointer';
+        userProfileEl.title = 'Chỉnh sửa thông tin cá nhân';
+        userProfileEl.style.transition = 'opacity 0.2s';
+        userProfileEl.onmouseover = () => { userProfileEl.style.opacity = '0.8'; };
+        userProfileEl.onmouseout = () => { userProfileEl.style.opacity = '1'; };
+        userProfileEl.onclick = () => {
+            editUserDialog(user.id);
+        };
+    }
+
     // Setup Notification Bell Click Listener to open pending subtab
     const bellBtn = document.getElementById('btn-notification-bell');
     if (bellBtn) {
@@ -2055,7 +2068,7 @@ async function refreshAdminUsers() {
                 <td><span style="font-weight:600; color:var(--text-secondary);">${u.team === 'admin' ? 'admin' : (u.team || 'admin')}</span></td>
                 <td><span class="tag tag-admin">Quản lý</span></td>
                 <td><div class="action-buttons">
-                    ${(isSuperAdmin || (currentUser && currentUser.id === u.id)) ? `
+                    ${(isSuperAdmin && (currentUser && currentUser.id !== u.id)) ? `
                     <button class="btn-icon-only edit" onclick="editUserDialog('${u.id}')" title="Sửa" style="margin-right: 4px;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -5645,8 +5658,8 @@ async function editUserDialog(userId) {
                 </div>
             </div>
 
-            <!-- Role & Team (Hidden for SuperAdmin, shown for others) -->
-            <div id="modal-edit-user-role-team-group" style="display: ${user.isSuperAdmin ? 'none' : 'grid'}; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <!-- Role & Team (Hidden for SuperAdmin or when editing yourself, shown for others) -->
+            <div id="modal-edit-user-role-team-group" style="display: ${(user.isSuperAdmin || currentUser.id === user.id) ? 'none' : 'grid'}; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
                     <label style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa;">Vai trò</label>
                     <select id="modal-user-role" class="input-sm" style="width:100%; box-sizing:border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; color: #fff; height: 42px;">
