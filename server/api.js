@@ -277,6 +277,12 @@ async function handleAPI(req, res, urlPath, method) {
             return sendError(res, 400, 'Tài khoản chưa được liên kết email. Vui lòng liên hệ Kỹ thuật hoặc Admin!', req);
         }
 
+        // Kiểm tra xem email đã được tài khoản khác sử dụng chưa
+        const isEmailUsed = db.users.some(u => u.username.toLowerCase() !== username.toLowerCase() && u.email && u.email.toLowerCase() === targetEmail.toLowerCase());
+        if (isEmailUsed) {
+            return sendError(res, 400, 'Địa chỉ Email này đã được đăng ký cho một tài khoản khác!', req);
+        }
+
         // Sinh mã OTP 6 chữ số
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
         user.otpCode = otpCode;
@@ -328,6 +334,11 @@ async function handleAPI(req, res, urlPath, method) {
 
         if (otpCode.trim() !== user.otpCode.trim()) {
             return sendError(res, 401, 'Mã OTP không chính xác!', req);
+        }
+
+        const isEmailUsed = db.users.some(u => u.username.toLowerCase() !== username.toLowerCase() && u.email && u.email.toLowerCase() === email.trim().toLowerCase());
+        if (isEmailUsed) {
+            return sendError(res, 400, 'Địa chỉ Email này đã được đăng ký cho một tài khoản khác!', req);
         }
 
         user.email = email.trim().toLowerCase();
@@ -398,6 +409,13 @@ async function handleAPI(req, res, urlPath, method) {
 
         if (db.users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
             return sendError(res, 409, 'Tên đăng nhập đã tồn tại!', req);
+        }
+
+        if (email && email.trim()) {
+            const isEmailUsed = db.users.some(u => u.email && u.email.toLowerCase() === email.trim().toLowerCase());
+            if (isEmailUsed) {
+                return sendError(res, 400, 'Địa chỉ Email này đã được đăng ký cho một tài khoản khác!', req);
+            }
         }
 
         let userTeam = body.team || '';
@@ -577,7 +595,16 @@ async function handleAPI(req, res, urlPath, method) {
         if (pendingUnlink !== undefined) db.users[userIdx].pendingUnlink = !!pendingUnlink;
         if (pendingPasswordReset !== undefined) db.users[userIdx].pendingPasswordReset = !!pendingPasswordReset;
         if (recoveryPin !== undefined) db.users[userIdx].recoveryPin = recoveryPin;
-        if (email !== undefined) db.users[userIdx].email = email ? email.trim().toLowerCase() : null;
+        if (email !== undefined) {
+            const cleanEmail = email ? email.trim().toLowerCase() : null;
+            if (cleanEmail) {
+                const isEmailUsed = db.users.some(u => u.id !== userId && u.email && u.email.toLowerCase() === cleanEmail);
+                if (isEmailUsed) {
+                    return sendError(res, 400, 'Địa chỉ Email này đã được đăng ký cho một tài khoản khác!', req);
+                }
+            }
+            db.users[userIdx].email = cleanEmail;
+        }
         
         if (team !== undefined) {
             if (reqUserId) {

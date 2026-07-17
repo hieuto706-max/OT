@@ -312,12 +312,20 @@
                         <span>Thiết lập</span>
                     </button>
                 </div>
-                <div class="sidebar-footer" style="padding: 16px; border-top: 1px solid var(--border-color); margin-top: auto;">
+                <div class="sidebar-footer" style="padding: 16px; border-top: 1px solid var(--border-color); margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
                     <button class="btn-sidebar-action btn-update" id="btn-check-update" title="Kiểm tra cập nhật" style="justify-content: center; width: 100%;">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                             <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
                         </svg>
                         <span>Kiểm tra cập nhật</span>
+                    </button>
+                    <button class="btn-sidebar-action" id="btn-logout-admin" title="Đăng xuất" style="justify-content: center; width: 100%; color: var(--accent-red); background: rgba(239, 68, 68, 0.05); border: 1px dashed rgba(239, 68, 68, 0.2);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        <span>Đăng xuất</span>
                     </button>
                 </div>
             </aside>
@@ -347,14 +355,6 @@
                             <span class="header-username" id="header-user-fullname" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Quản trị viên</span>
                             <span id="header-user-role" style="display: none;"></span>
                         </div>
-                        
-                        <button class="btn btn-ghost" id="btn-logout-admin" title="Đăng xuất" style="color: var(--accent-red); width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                                <polyline points="16 17 21 12 16 7"/>
-                                <line x1="21" y1="12" x2="9" y2="12"/>
-                            </svg>
-                        </button>
                     </div>
                 </div>
                 <!-- Stats Cards -->
@@ -1123,9 +1123,19 @@
                         <span>Tổng hợp giờ OT</span>
                     </button>
                 </div>
-                <div class="sidebar-footer" style="padding: 16px; border-top: 1px solid var(--border-color); margin-top: auto; font-size: 11px; color: var(--text-muted); line-height: 1.5;">
-                    <div style="margin-bottom: 2px;">Hỗ trợ kỹ thuật:</div>
-                    <div style="font-weight: 600; color: var(--text-secondary);">support@otmanager.id.vn</div>
+                <div class="sidebar-footer" style="padding: 16px; border-top: 1px solid var(--border-color); margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+                    <div style="font-size: 11px; color: var(--text-muted); line-height: 1.5;">
+                        <div style="margin-bottom: 2px;">Hỗ trợ kỹ thuật:</div>
+                        <div style="font-weight: 600; color: var(--text-secondary);">support@otmanager.id.vn</div>
+                    </div>
+                    <button class="btn-sidebar-action" id="btn-logout-emp" title="Đăng xuất" style="justify-content: center; width: 100%; color: var(--accent-red); background: rgba(239, 68, 68, 0.05); border: 1px dashed rgba(239, 68, 68, 0.2); font-size: 12px; font-weight: 500;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        <span>Đăng xuất</span>
+                    </button>
                 </div>
             </aside>
 
@@ -1150,14 +1160,6 @@
                             <div class="header-avatar" id="emp-user-avatar" style="width: 28px; height: 28px; border-radius: 50%; background: var(--accent-green); color: #000; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 13px;">E</div>
                             <span class="header-username" id="emp-user-fullname" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">Nhân viên</span>
                         </div>
-                        
-                        <button class="btn btn-ghost" id="btn-logout-emp" title="Đăng xuất" style="color: var(--accent-red); width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                                <polyline points="16 17 21 12 16 7"/>
-                                <line x1="21" y1="12" x2="9" y2="12"/>
-                            </svg>
-                        </button>
                     </div>
                 </div>
                 <!-- Tab 1: Ghi nhận tăng ca -->

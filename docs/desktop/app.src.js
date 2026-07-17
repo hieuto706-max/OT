@@ -168,7 +168,10 @@ async function api(endpoint, method = 'GET', body = null) {
         const res = await fetch(`${API_BASE}${endpoint}`, opts);
         const data = await res.json();
         if (!res.ok) {
-            if (res.status === 401 || res.status === 403) {
+            if ((res.status === 401 || res.status === 403) && 
+                !endpoint.includes('/api/auth/login') && 
+                !endpoint.includes('/api/auth/verify-email-otp') && 
+                !endpoint.includes('/api/auth/forgot-password')) {
                 localStorage.removeItem('ot_auth_token');
                 localStorage.removeItem('ot_current_user');
                 window.location.reload();
@@ -4844,7 +4847,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (err) {
                 console.error('[Dashboard] Lỗi khởi tạo dữ liệu:', err);
-                showScreen('screen-login');
+                if (isElectron) {
+                    showScreen('screen-login');
+                } else {
+                    const needsOtPrefix = window.location.hostname.includes('github.io');
+                    const mainPageUrl = needsOtPrefix ? '/OT/index.html' : '/index.html';
+                    window.location.href = mainPageUrl;
+                }
+            }
+        } else {
+            // Nếu không có session trên bản Web, chuyển hướng thẳng về Landing Page
+            if (!isElectron) {
+                const needsOtPrefix = window.location.hostname.includes('github.io');
+                const mainPageUrl = needsOtPrefix ? '/OT/index.html' : '/index.html';
+                window.location.href = mainPageUrl;
             }
         }
 
