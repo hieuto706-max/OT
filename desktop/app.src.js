@@ -4830,6 +4830,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Hàm khởi chạy bất đồng bộ để cấu hình Cloud, check version và tải dữ liệu dashboard
     async function runAsyncInit() {
+        // Chạy kiểm tra chế độ ẩn danh ngầm trước để cache kết quả sẵn sàng
+        isPrivateMode().catch(() => {});
+
         // 1. Cấu hình và đồng bộ hóa Cloud Server trước khi tải trang dashboard
         await initCloudConfig();
 
