@@ -273,20 +273,7 @@ async function checkPrivateModeInternal() {
         if (isSafari) {
             safariPrivateTest();
         } else {
-            if (navigator.serviceWorker && typeof navigator.serviceWorker.register === 'function') {
-                navigator.serviceWorker.register('sw.js').then((reg) => {
-                    reg.unregister();
-                    detectChromiumOrFallback();
-                }).catch((err) => {
-                    if (err && err.name === 'SecurityError') {
-                        resolve(true);
-                    } else {
-                        detectChromiumOrFallback();
-                    }
-                });
-            } else {
-                detectChromiumOrFallback();
-            }
+            fallbackQuota();
         }
 
         async function safariPrivateTest() {
@@ -339,36 +326,6 @@ async function checkPrivateModeInternal() {
                 } else {
                     resolve(false);
                 }
-            }
-        }
-
-        function detectChromiumOrFallback() {
-            if (navigator.storage && typeof navigator.storage.getDirectory === 'function' && typeof Worker === 'function') {
-                try {
-                    const src = `(async()=>{try{const r=await navigator.storage.getDirectory(),f=await(await r.getFileHandle('_',{create:true})).createSyncAccessHandle(),b=new Uint8Array(1);let m=1/0;for(let i=0;i<5;i++){f.write(b,{at:0});const s=performance.now();f.flush();const dt=performance.now()-s;if(dt<m)m=dt}f.close();postMessage(m<.04)}catch(e){postMessage(false)}})()`;
-                    const blob = new Blob([src], { type: 'application/javascript' });
-                    const w = new Worker(URL.createObjectURL(blob));
-                    w.onmessage = (e) => {
-                        w.terminate();
-                        if (e.data) {
-                            resolve(true);
-                        } else {
-                            fallbackQuota();
-                        }
-                    };
-                    w.onerror = () => {
-                        w.terminate();
-                        fallbackQuota();
-                    };
-                    setTimeout(() => {
-                        w.terminate();
-                        fallbackQuota();
-                    }, 2000);
-                } catch (err) {
-                    fallbackQuota();
-                }
-            } else {
-                fallbackQuota();
             }
         }
 
