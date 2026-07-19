@@ -225,7 +225,14 @@ function getCurrentMonth() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
+let cachedPrivateModeResult = null;
 async function isPrivateMode() {
+    if (cachedPrivateModeResult !== null) return cachedPrivateModeResult;
+    cachedPrivateModeResult = await checkPrivateModeInternal();
+    return cachedPrivateModeResult;
+}
+
+async function checkPrivateModeInternal() {
     return new Promise((resolve) => {
         // Native mobile apps running under file:// protocol must bypass this check
         if (window.location.protocol === 'file:') {
@@ -443,17 +450,32 @@ async function handleEmployeeLogin(e) {
     const errorEl = document.getElementById('login-error-emp');
     errorEl.textContent = '';
 
-    if (await isPrivateMode()) {
-        errorEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
-        return;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.dataset.originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Đang đăng nhập...';
     }
 
     try {
+        if (await isPrivateMode()) {
+            errorEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = submitBtn.dataset.originalText || 'Đăng nhập';
+            }
+            return;
+        }
+
         const data = await api('/api/auth/login', 'POST', { username });
         const user = data.user;
 
         if (user.role !== 'employee') {
             errorEl.textContent = 'Tài khoản này không phải là nhân viên!';
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = submitBtn.dataset.originalText || 'Đăng nhập';
+            }
             return;
         }
 
@@ -470,6 +492,11 @@ async function handleEmployeeLogin(e) {
             showScreen('screen-employee');
             showToast(`Xin chào, ${finalUser.fullname}!`, 'info');
             e.target.reset();
+
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = submitBtn.dataset.originalText || 'Đăng nhập';
+            }
         };
 
         if (data.requireEmailSetup) {
@@ -482,6 +509,10 @@ async function handleEmployeeLogin(e) {
         }
     } catch (err) {
         errorEl.textContent = err.message;
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = submitBtn.dataset.originalText || 'Đăng nhập';
+        }
     }
 }
 
@@ -492,17 +523,32 @@ async function handleAdminLogin(e) {
     const errorEl = document.getElementById('login-error-admin');
     errorEl.textContent = '';
 
-    if (await isPrivateMode()) {
-        errorEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
-        return;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.dataset.originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Đang đăng nhập...';
     }
 
     try {
+        if (await isPrivateMode()) {
+            errorEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = submitBtn.dataset.originalText || 'Đăng nhập';
+            }
+            return;
+        }
+
         const data = await api('/api/auth/login', 'POST', { username, password });
         const user = data.user;
 
         if (user.role !== 'admin') {
             errorEl.textContent = 'Tài khoản nhân viên không được phép đăng nhập bên phần quản trị!';
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = submitBtn.dataset.originalText || 'Đăng nhập';
+            }
             return;
         }
 
@@ -519,6 +565,11 @@ async function handleAdminLogin(e) {
             showScreen('screen-admin');
             showToast(`Xin chào, ${finalUser.fullname}!`, 'info');
             e.target.reset();
+
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = submitBtn.dataset.originalText || 'Đăng nhập';
+            }
         };
 
         if (data.requireEmailSetup) {
@@ -531,6 +582,10 @@ async function handleAdminLogin(e) {
         }
     } catch (err) {
         errorEl.textContent = err.message;
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = submitBtn.dataset.originalText || 'Đăng nhập';
+        }
     }
 }
 
