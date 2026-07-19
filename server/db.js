@@ -678,6 +678,7 @@ function migrateTeams(db) {
         if (!team.leaderIds) {
             team.leaderIds = team.leaderId ? [team.leaderId] : [];
             migrated = true;
+        }
         if (!team.customActivities) {
             team.customActivities = [];
             migrated = true;
