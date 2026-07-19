@@ -1,6 +1,4 @@
 ﻿/* eslint-disable */
-/*jshint ignore:start*/
-// @ts-nocheck
 (function() {
 /**
  * OT Manager - Desktop App (Admin)
@@ -2009,15 +2007,9 @@ async function refreshAdminUsers() {
                 </span>
             ` : '';
 
-            const passwordResetBadge = u.pendingPasswordReset ? `
-                <span class="password-reset-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approvePasswordReset('${u.id}', '${u.fullname}')" title="Báº¥m vĂ o Ä‘Ă¢y Ä‘á»ƒ cáº¥p láº¡i máº­t kháº©u">
-                    â ï¸ Xin cáº¥p láº¡i MK
-                </span>
-            ` : '';
-
             return `<tr>
                 <td>${i + 1}</td>
-                <td><strong>${u.fullname}</strong>${unlinkBadge}${passwordResetBadge}</td>
+                <td><strong>${u.fullname}</strong>${unlinkBadge}</td>
                 <td>${u.username}</td>
                 <td><span style="font-weight:600; color:var(--text-secondary);">${u.team || 'ChÆ°a phĂ¢n team'}</span></td>
                 <td><span class="tag tag-employee">NhĂ¢n viĂªn</span></td>
@@ -2061,15 +2053,9 @@ async function refreshAdminUsers() {
         // Render managers (admins)
         const tbodyMgr = document.getElementById('admin-managers-body');
         tbodyMgr.innerHTML = managers.map((u, i) => {
-            const passwordResetBadge = u.pendingPasswordReset ? `
-                <span class="password-reset-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approvePasswordReset('${u.id}', '${u.fullname}')" title="Báº¥m vĂ o Ä‘Ă¢y Ä‘á»ƒ cáº¥p láº¡i máº­t kháº©u">
-                    â ï¸ Xin cáº¥p láº¡i MK
-                </span>
-            ` : '';
-
             return `<tr>
                 <td>${i + 1}</td>
-                <td><strong>${u.fullname}</strong>${passwordResetBadge}</td>
+                <td><strong>${u.fullname}</strong></td>
                 <td>${u.username}</td>
                 <td><span style="font-weight:600; color:var(--text-secondary);">${u.team === 'admin' ? 'admin' : (u.team || 'admin')}</span></td>
                 <td><span class="tag tag-admin">Quáº£n lĂ½</span></td>
@@ -2150,15 +2136,9 @@ async function refreshAdminUsers() {
                     </span>
                 ` : '';
 
-                const passwordResetBadge = u.pendingPasswordReset ? `
-                    <span class="password-reset-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approvePasswordReset('${u.id}', '${u.fullname}')" title="Báº¥m vĂ o Ä‘Ă¢y Ä‘á»ƒ cáº¥p láº¡i máº­t kháº©u">
-                        â ï¸ Xin cáº¥p láº¡i MK
-                    </span>
-                ` : '';
-
                 return `<tr>
                     <td>${i + 1}</td>
-                    <td><strong>${u.fullname}</strong>${unlinkBadge}${passwordResetBadge}</td>
+                    <td><strong>${u.fullname}</strong>${unlinkBadge}</td>
                     <td>${u.username}</td>
                     <td><span style="font-weight:600; color:var(--text-secondary);">${u.team || 'ChÆ°a phĂ¢n team'}</span></td>
                     <td><span class="tag tag-employee">NhĂ¢n viĂªn</span></td>
@@ -6450,22 +6430,6 @@ function showEmailSetupOverlay(username, onVerified) {
     };
 }
 
-async function approvePasswordReset(userId, fullname) {
-    const randomPassword = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit random password
-    showModal('Cáº¥p láº¡i máº­t kháº©u', `Báº¡n cĂ³ cháº¯c muá»‘n cáº¥p láº¡i máº­t kháº©u cho nhĂ¢n viĂªn <strong>${fullname}</strong>?<br>Máº­t kháº©u má»›i tá»± Ä‘á»™ng táº¡o lĂ : <strong style="font-size: 16px; color: var(--accent-orange);">${randomPassword}</strong>`, [
-        { text: 'Há»§y', class: 'btn-ghost' },
-        { text: 'Cáº¥p máº­t kháº©u má»›i', class: 'btn btn-primary btn-sm', action: async () => {
-            try {
-                await api(`/api/users/${userId}`, 'PUT', { password: randomPassword, pendingPasswordReset: false });
-                await refreshAdminUsers();
-                showToast(`ÄĂ£ cáº¥p láº¡i máº­t kháº©u má»›i cho ${fullname} thĂ nh cĂ´ng! Máº­t kháº©u lĂ : ${randomPassword}`, 'success', 8000);
-            } catch (e) {
-                showToast(e.message, 'error');
-            }
-        }}
-    ]);
-}
-
 // Expose global methods for inline HTML onclick handlers
 window.editRecordDialog = editRecordDialog;
 window.deleteRecord = deleteRecord;
@@ -6481,8 +6445,6 @@ window.renameTeamFromModal = renameTeamFromModal;
 window.deleteTeamFromModal = deleteTeamFromModal;
 window.handleDatabaseCleanup = handleDatabaseCleanup;
 window.forgotPasswordDialog = forgotPasswordDialog;
-window.approvePasswordReset = approvePasswordReset;
 })();
-
 
 

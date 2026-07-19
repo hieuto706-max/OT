@@ -2006,15 +2006,9 @@ async function refreshAdminUsers() {
                 </span>
             ` : '';
 
-            const passwordResetBadge = u.pendingPasswordReset ? `
-                <span class="password-reset-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approvePasswordReset('${u.id}', '${u.fullname}')" title="Bấm vào đây để cấp lại mật khẩu">
-                    ⚠️ Xin cấp lại MK
-                </span>
-            ` : '';
-
             return `<tr>
                 <td>${i + 1}</td>
-                <td><strong>${u.fullname}</strong>${unlinkBadge}${passwordResetBadge}</td>
+                <td><strong>${u.fullname}</strong>${unlinkBadge}</td>
                 <td>${u.username}</td>
                 <td><span style="font-weight:600; color:var(--text-secondary);">${u.team || 'Chưa phân team'}</span></td>
                 <td><span class="tag tag-employee">Nhân viên</span></td>
@@ -2058,15 +2052,9 @@ async function refreshAdminUsers() {
         // Render managers (admins)
         const tbodyMgr = document.getElementById('admin-managers-body');
         tbodyMgr.innerHTML = managers.map((u, i) => {
-            const passwordResetBadge = u.pendingPasswordReset ? `
-                <span class="password-reset-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approvePasswordReset('${u.id}', '${u.fullname}')" title="Bấm vào đây để cấp lại mật khẩu">
-                    ⚠️ Xin cấp lại MK
-                </span>
-            ` : '';
-
             return `<tr>
                 <td>${i + 1}</td>
-                <td><strong>${u.fullname}</strong>${passwordResetBadge}</td>
+                <td><strong>${u.fullname}</strong></td>
                 <td>${u.username}</td>
                 <td><span style="font-weight:600; color:var(--text-secondary);">${u.team === 'admin' ? 'admin' : (u.team || 'admin')}</span></td>
                 <td><span class="tag tag-admin">Quản lý</span></td>
@@ -2147,15 +2135,9 @@ async function refreshAdminUsers() {
                     </span>
                 ` : '';
 
-                const passwordResetBadge = u.pendingPasswordReset ? `
-                    <span class="password-reset-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approvePasswordReset('${u.id}', '${u.fullname}')" title="Bấm vào đây để cấp lại mật khẩu">
-                        ⚠️ Xin cấp lại MK
-                    </span>
-                ` : '';
-
                 return `<tr>
                     <td>${i + 1}</td>
-                    <td><strong>${u.fullname}</strong>${unlinkBadge}${passwordResetBadge}</td>
+                    <td><strong>${u.fullname}</strong>${unlinkBadge}</td>
                     <td>${u.username}</td>
                     <td><span style="font-weight:600; color:var(--text-secondary);">${u.team || 'Chưa phân team'}</span></td>
                     <td><span class="tag tag-employee">Nhân viên</span></td>
@@ -6447,22 +6429,6 @@ function showEmailSetupOverlay(username, onVerified) {
     };
 }
 
-async function approvePasswordReset(userId, fullname) {
-    const randomPassword = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit random password
-    showModal('Cấp lại mật khẩu', `Bạn có chắc muốn cấp lại mật khẩu cho nhân viên <strong>${fullname}</strong>?<br>Mật khẩu mới tự động tạo là: <strong style="font-size: 16px; color: var(--accent-orange);">${randomPassword}</strong>`, [
-        { text: 'Hủy', class: 'btn-ghost' },
-        { text: 'Cấp mật khẩu mới', class: 'btn btn-primary btn-sm', action: async () => {
-            try {
-                await api(`/api/users/${userId}`, 'PUT', { password: randomPassword, pendingPasswordReset: false });
-                await refreshAdminUsers();
-                showToast(`Đã cấp lại mật khẩu mới cho ${fullname} thành công! Mật khẩu là: ${randomPassword}`, 'success', 8000);
-            } catch (e) {
-                showToast(e.message, 'error');
-            }
-        }}
-    ]);
-}
-
 // Expose global methods for inline HTML onclick handlers
 window.editRecordDialog = editRecordDialog;
 window.deleteRecord = deleteRecord;
@@ -6478,7 +6444,6 @@ window.renameTeamFromModal = renameTeamFromModal;
 window.deleteTeamFromModal = deleteTeamFromModal;
 window.handleDatabaseCleanup = handleDatabaseCleanup;
 window.forgotPasswordDialog = forgotPasswordDialog;
-window.approvePasswordReset = approvePasswordReset;
 })();
 
 

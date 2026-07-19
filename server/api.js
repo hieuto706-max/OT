@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const config = require('./config');
 const { updatesDir } = config;
 const { logInfo, logError, hashPassword, verifyPassword, generateId, getCorsOrigin, getSecurityHeaders, signJWT, verifyJWT, authenticateToken, getLocalIP, sendMail } = require('./utils');
-const { loadDB, saveDB, getPGPool, initPGTable, fetchGist, getDbPath } = require('./db');
+const { loadDB, saveDB, getPGPool, initPGTable, fetchGist, getDbPath, fetchUserFromPG, updateUserInCache } = require('./db');
 const { VAPID_PUBLIC_KEY, sendPushNotification } = require('./notifications');
 const webpush = require('web-push');
 
@@ -208,6 +208,25 @@ async function handleAPI(req, res, urlPath, method) {
     // --- AUTH ---
     if (urlPath === '/api/auth/login' && method === 'POST') {
         const { username, password, deviceId, isBrowser, clientSource } = await parseBody(req);
+        if (!username) return sendError(res, 400, 'Thiếu tên đăng nhập!', req);
+
+        // Sync single user from PostgreSQL if configured
+        if (config.DATABASE_URL) {
+            try {
+                const latestUser = await fetchUserFromPG(username);
+                if (latestUser) {
+                    updateUserInCache(latestUser);
+                    const idx = db.users.findIndex(u => u.id === latestUser.id);
+                    if (idx >= 0) {
+                        db.users[idx] = latestUser;
+                    } else {
+                        db.users.push(latestUser);
+                    }
+                }
+            } catch (e) {
+                logError('[Login Sync] Lỗi đồng bộ user từ PG:', e.message);
+            }
+        }
         
         // Tìm user không phân biệt chữ hoa chữ thường
         const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
@@ -351,9 +370,8 @@ async function handleAPI(req, res, urlPath, method) {
     }
 
     if (urlPath === '/api/auth/forgot-password' && method === 'POST') {
-        const { username, otpCode, recoveryPin, newPassword } = await parseBody(req);
-        const codeToVerify = otpCode || recoveryPin;
-        if (!username || !codeToVerify || !newPassword) {
+        const { username, otpCode, newPassword } = await parseBody(req);
+        if (!username || !otpCode || !newPassword) {
             return sendError(res, 400, 'Thiếu Tên đăng nhập, Mã OTP xác thực hoặc Mật khẩu mới!', req);
         }
         const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
@@ -367,7 +385,7 @@ async function handleAPI(req, res, urlPath, method) {
             return sendError(res, 400, 'Mã OTP đã hết hạn! Vui lòng yêu cầu mã mới.', req);
         }
         
-        if (codeToVerify.trim() !== user.otpCode.trim()) {
+        if (otpCode.trim() !== user.otpCode.trim()) {
             return sendError(res, 401, 'Mã OTP xác thực không chính xác!', req);
         }
         
@@ -376,7 +394,6 @@ async function handleAPI(req, res, urlPath, method) {
         }
         
         user.password = hashPassword(newPassword);
-        user.pendingPasswordReset = false;
         user.otpCode = null;
         user.otpExpiresAt = null;
         saveDB(db);
@@ -439,7 +456,6 @@ async function handleAPI(req, res, urlPath, method) {
             role: role || 'employee',
             team: userTeam,
             email: email ? email.trim() : null,
-            recoveryPin: Math.floor(100000 + Math.random() * 900000).toString(),
             createdAt: new Date().toISOString()
         };
         db.users.push(newUser);
@@ -519,7 +535,7 @@ async function handleAPI(req, res, urlPath, method) {
     if (urlPath.startsWith('/api/users/') && method === 'PUT') {
         const userId = urlPath.split('/api/users/')[1];
         const body = await parseBody(req);
-        const { fullname, username, password, role, deviceId, browserDeviceId, pendingUnlink, team, pendingPasswordReset, recoveryPin, email, otpCode } = body;
+        const { fullname, username, password, role, deviceId, browserDeviceId, pendingUnlink, team, email, otpCode } = body;
         const userIdx = db.users.findIndex(u => u.id === userId);
         if (userIdx < 0) return sendError(res, 404, 'Không tìm thấy người dùng!');
 
@@ -594,8 +610,6 @@ async function handleAPI(req, res, urlPath, method) {
         if (deviceId !== undefined) db.users[userIdx].deviceId = deviceId;
         if (browserDeviceId !== undefined) db.users[userIdx].browserDeviceId = browserDeviceId;
         if (pendingUnlink !== undefined) db.users[userIdx].pendingUnlink = !!pendingUnlink;
-        if (pendingPasswordReset !== undefined) db.users[userIdx].pendingPasswordReset = !!pendingPasswordReset;
-        if (recoveryPin !== undefined) db.users[userIdx].recoveryPin = recoveryPin;
         if (email !== undefined) {
             const cleanEmail = email ? email.trim().toLowerCase() : null;
             if (cleanEmail) {
