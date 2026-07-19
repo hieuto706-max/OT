@@ -1032,24 +1032,10 @@ async function handleAPI(req, res, urlPath, method) {
         }
         
         // 4. Stats calculation
-        let employees = db.users.filter(u => u.role === 'employee');
-        let allowedUserIds = employees.map(u => u.id);
+        const approvedRecords = records.filter(r => r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
+        const pendingRecords = records.filter(r => r.status === 'pending');
         
-        if (!isSuperAdmin && managerTeam !== 'admin') {
-            employees = db.users.filter(u => u.role === 'employee' && u.team === managerTeam);
-            allowedUserIds = [reqUserId, ...employees.map(u => u.id)];
-        }
-        
-        const approvedRecords = db.records.filter(r => {
-            const rMonth = r.createdMonth || r.date.substring(0, 7);
-            return rMonth === month && allowedUserIds.includes(r.userId) && (r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
-        });
-        
-        const pendingRecords = db.records.filter(r => {
-            const rMonth = r.createdMonth || r.date.substring(0, 7);
-            return rMonth === month && allowedUserIds.includes(r.userId) && r.status === 'pending';
-        });
-        
+        let employees = users.filter(u => u.role === 'employee');
         const pendingUnlinksCount = employees.filter(u => u.pendingUnlink).length;
         
         const stats = {
@@ -1071,21 +1057,15 @@ async function handleAPI(req, res, urlPath, method) {
     // --- STATS ---
     if (urlPath === '/api/stats' && method === 'GET') {
         const currentMonth = getCurrentMonth();
-        const today = new Date().toISOString().split('T')[0];
-        
-        let employees = db.users.filter(u => u.role === 'employee');
-        let allowedUserIds = employees.map(u => u.id);
+        const currentUser = db.users.find(u => u.id === reqUserId);
+        const isSuperAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
+        const managerTeam = currentUser ? (currentUser.team || '') : '';
 
-        if (reqUserId) {
-            const reqUser = db.users.find(u => u.id === reqUserId);
-            if (reqUser && reqUser.role === 'admin' && !reqUser.isSuperAdmin && reqUser.team !== 'admin') {
-                const adminTeam = reqUser.team || '';
-                // Sub-admin: chỉ thống kê nhân viên thuộc team của mình
-                employees = db.users.filter(u => u.role === 'employee' && u.team === adminTeam);
-                // Thống kê bao gồm cả chính mình (admin) và nhân viên trong team
-                allowedUserIds = [reqUserId, ...employees.map(u => u.id)];
-            }
+        let users = db.users;
+        if (!isSuperAdmin) {
+            users = db.users.filter(u => u.id === reqUserId || u.team === managerTeam);
         }
+        const allowedUserIds = users.map(u => u.id);
 
         const approvedRecords = db.records.filter(r => {
             const rMonth = r.createdMonth || r.date.substring(0, 7);
@@ -1095,6 +1075,8 @@ async function handleAPI(req, res, urlPath, method) {
             const rMonth = r.createdMonth || r.date.substring(0, 7);
             return rMonth === currentMonth && allowedUserIds.includes(r.userId) && r.status === 'pending';
         });
+        
+        let employees = users.filter(u => u.role === 'employee');
         const pendingUnlinksCount = employees.filter(u => u.pendingUnlink).length;
 
         return sendJSON(res, 200, {
