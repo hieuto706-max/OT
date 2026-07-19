@@ -80,13 +80,17 @@ let reportSearchQuery = '';
 let reportSortColumn = 'total'; // 'name', 'days', 'total'
 let reportSortOrder = 'desc'; // 'asc', 'desc'
 
-async function loadTeams() {
-    try {
-        const res = await api('/api/teams');
-        TEAMS = res.teams || [];
-    } catch (e) {
-        console.error('Lỗi load teams:', e);
-        TEAMS = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6', 'Team 7', 'Team 8', 'Team 9', 'Team 10'];
+async function loadTeams(cachedTeams) {
+    if (cachedTeams) {
+        TEAMS = cachedTeams;
+    } else {
+        try {
+            const res = await api('/api/teams');
+            TEAMS = res.teams || [];
+        } catch (e) {
+            console.error('Lỗi load teams:', e);
+            TEAMS = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6', 'Team 7', 'Team 8', 'Team 9', 'Team 10'];
+        }
     }
     populateTeamFilters();
 }
@@ -658,14 +662,29 @@ async function initAdminDashboard(user) {
         adminOtDate.max = todayStr;
     }
 
-    await Promise.all([
-        loadTeams(),
-        populateUserFilter(),
-        refreshAdminRecords(),
-        refreshAdminUsers(),
-        refreshReport(),
-        refreshAdminStats()
-    ]);
+    try {
+        const currentMonth = getCurrentMonth();
+        const dashboardData = await api(`/api/dashboard?month=${currentMonth}`);
+        
+        await Promise.all([
+            loadTeams(dashboardData.teams),
+            populateUserFilter(dashboardData.users),
+            refreshAdminRecords(dashboardData.records, dashboardData.users),
+            refreshAdminUsers(dashboardData.users, dashboardData.records),
+            refreshReport(dashboardData.users, dashboardData.records),
+            refreshAdminStats(dashboardData.stats)
+        ]);
+    } catch (e) {
+        console.error('Lỗi khi tải dữ liệu Dashboard hàng loạt:', e);
+        await Promise.all([
+            loadTeams(),
+            populateUserFilter(),
+            refreshAdminRecords(),
+            refreshAdminUsers(),
+            refreshReport(),
+            refreshAdminStats()
+        ]);
+    }
     checkGistStatus();
 }
 
@@ -1266,12 +1285,17 @@ async function loadMobileInfo() {
     } catch (e) {}
 }
 
-async function populateUserFilter() {
+async function populateUserFilter(cachedUsers) {
     const select = document.getElementById('admin-filter-user');
     const adminOtUser = document.getElementById('admin-ot-user');
     try {
-        const data = await api('/api/users');
-        const users = data.users;
+        let users;
+        if (cachedUsers) {
+            users = cachedUsers;
+        } else {
+            const data = await api('/api/users');
+            users = data.users;
+        }
         loadedUsers = users;
         users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
 
@@ -1306,9 +1330,9 @@ async function populateUserFilter() {
     } catch (e) {}
 }
 
-async function refreshAdminStats() {
+async function refreshAdminStats(cachedStats) {
     try {
-        const stats = await api('/api/stats');
+        const stats = cachedStats || await api('/api/stats');
         document.getElementById('stat-total-users').textContent = stats.totalUsers;
         
         // Update Pending OT
@@ -1391,7 +1415,7 @@ async function refreshAdminStats() {
     } catch (e) {}
 }
 
-async function refreshAdminRecords() {
+async function refreshAdminRecords(cachedRecords, cachedUsers) {
     let month = document.getElementById('admin-filter-month').value;
     const dateFilter = document.getElementById('admin-filter-date') ? document.getElementById('admin-filter-date').value : '';
     const userId = document.getElementById('admin-filter-user').value;
@@ -1404,15 +1428,24 @@ async function refreshAdminRecords() {
     }
 
     try {
-        let url = '/api/records?';
-        if (month) url += `month=${month}&`;
-        if (userId) url += `userId=${userId}&`;
+        let records;
+        let users;
 
-        const data = await api(url);
-        const records = data.records;
+        const isDefaultFilter = !dateFilter && !userId && !searchUser && !searchNote && !filterTeam;
+        if (isDefaultFilter && cachedRecords && cachedUsers) {
+            records = cachedRecords;
+            users = cachedUsers;
+        } else {
+            let url = '/api/records?';
+            if (month) url += `month=${month}&`;
+            if (userId) url += `userId=${userId}&`;
+
+            const data = await api(url);
+            records = data.records;
+            const usersData = await api('/api/users');
+            users = usersData.users;
+        }
         loadedRecords = records;
-        const usersData = await api('/api/users');
-        const users = usersData.users;
         loadedUsers = users;
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
         const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
@@ -1945,17 +1978,25 @@ async function refreshAdminRecords() {
     }
 }
 
-async function refreshAdminUsers() {
+async function refreshAdminUsers(cachedUsers, cachedRecords) {
     try {
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
         const isSuperAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
         const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin' || currentUser.isSuperAdmin);
 
-        const usersData = await api('/api/users');
-        const users = usersData.users;
-        const currentMonth = getCurrentMonth();
-        const recData = await api(`/api/records?month=${currentMonth}`);
-        const records = recData.records;
+        let users;
+        let records;
+
+        if (cachedUsers && cachedRecords) {
+            users = cachedUsers;
+            records = cachedRecords;
+        } else {
+            const usersData = await api('/api/users');
+            users = usersData.users;
+            const currentMonth = getCurrentMonth();
+            const recData = await api(`/api/records?month=${currentMonth}`);
+            records = recData.records;
+        }
 
         // Filter users
         const employees = users.filter(u => u.role === 'employee');
@@ -2404,17 +2445,22 @@ window.toggleReportRow = function(row, userId) {
     }
 };
 
-async function refreshReport() {
+async function refreshReport(cachedUsers, cachedRecords) {
     const month = document.getElementById('report-filter-month').value;
     const filterTeam = document.getElementById('report-filter-team') ? document.getElementById('report-filter-team').value : '';
     const searchVal = document.getElementById('report-search-name') ? document.getElementById('report-search-name').value : '';
     
     try {
-        const usersData = await api('/api/users');
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
         const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
         
-        let users = usersData.users.filter(u => u.role === 'employee');
+        let users;
+        if (cachedUsers) {
+            users = cachedUsers.filter(u => u.role === 'employee');
+        } else {
+            const usersData = await api('/api/users');
+            users = usersData.users.filter(u => u.role === 'employee');
+        }
         
         if (isAdmin) {
             if (filterTeam) {
@@ -2431,8 +2477,15 @@ async function refreshReport() {
             users = users.filter(u => u.team && u.team === managerTeam);
         }
 
-        const recData = await api(`/api/records?month=${month}`);
-        const records = recData.records.filter(r => {
+        let rawRecords;
+        const currentMonth = getCurrentMonth();
+        if (month === currentMonth && cachedRecords) {
+            rawRecords = cachedRecords;
+        } else {
+            const recData = await api(`/api/records?month=${month}`);
+            rawRecords = recData.records;
+        }
+        const records = rawRecords.filter(r => {
             const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
             return r.status === 'approved' || (!isBackfill && r.status !== 'pending' && r.status !== 'rejected');
         });

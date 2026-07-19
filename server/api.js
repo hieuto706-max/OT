@@ -999,6 +999,75 @@ async function handleAPI(req, res, urlPath, method) {
         return sendJSON(res, 200, { record: db.records[idx] });
     }
 
+    // --- DASHBOARD BATCH LOAD ---
+    if (urlPath === '/api/dashboard' && method === 'GET') {
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        const month = url.searchParams.get('month') || getCurrentMonth();
+        
+        // 1. Teams
+        const teams = db.teams || [];
+        
+        // 2. Users filter based on role/permissions
+        const currentUser = db.users.find(u => u.id === reqUserId);
+        const isSuperAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
+        const managerTeam = currentUser ? (currentUser.team || '') : '';
+        
+        let users = db.users;
+        if (!isSuperAdmin) {
+            users = db.users.filter(u => u.id === reqUserId || u.team === managerTeam);
+        }
+        
+        // Exclude passwords
+        const safeUsers = users.map(({ password, ...u }) => u);
+        
+        // 3. Records filter based on month and team/permissions
+        let records = db.records.filter(r => {
+            const rMonth = r.createdMonth || r.date.substring(0, 7);
+            return rMonth === month;
+        });
+        
+        if (!isSuperAdmin) {
+            const allowedUserIds = users.map(u => u.id);
+            records = records.filter(r => allowedUserIds.includes(r.userId));
+        }
+        
+        // 4. Stats calculation
+        let employees = db.users.filter(u => u.role === 'employee');
+        let allowedUserIds = employees.map(u => u.id);
+        
+        if (!isSuperAdmin && managerTeam !== 'admin') {
+            employees = db.users.filter(u => u.role === 'employee' && u.team === managerTeam);
+            allowedUserIds = [reqUserId, ...employees.map(u => u.id)];
+        }
+        
+        const approvedRecords = db.records.filter(r => {
+            const rMonth = r.createdMonth || r.date.substring(0, 7);
+            return rMonth === month && allowedUserIds.includes(r.userId) && (r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
+        });
+        
+        const pendingRecords = db.records.filter(r => {
+            const rMonth = r.createdMonth || r.date.substring(0, 7);
+            return rMonth === month && allowedUserIds.includes(r.userId) && r.status === 'pending';
+        });
+        
+        const pendingUnlinksCount = employees.filter(u => u.pendingUnlink).length;
+        
+        const stats = {
+            totalUsers: employees.length,
+            pendingOT: pendingRecords.length,
+            pendingUnlinks: pendingUnlinksCount,
+            totalOTMonth: approvedRecords.filter(r => !r.customActivity).reduce((s, r) => s + r.totalHours, 0),
+            totalTripsMonth: approvedRecords.filter(r => r.customActivity && r.customActivity.trim() !== '').length
+        };
+        
+        return sendJSON(res, 200, {
+            teams,
+            users: safeUsers,
+            records,
+            stats
+        });
+    }
+
     // --- STATS ---
     if (urlPath === '/api/stats' && method === 'GET') {
         const currentMonth = getCurrentMonth();
