@@ -22,20 +22,24 @@ function hashPassword(password) {
 function verifyPassword(password, stored) {
     // Hỗ trợ so sánh với mật khẩu plaintext cũ (backward compatibility)
     if (!stored.startsWith('pbkdf2$')) {
-        return password === stored;
+        return Promise.resolve(password === stored);
     }
     const parts = stored.split('$');
-    if (parts.length !== 4) return false;
+    if (parts.length !== 4) return Promise.resolve(false);
     const iterations = parseInt(parts[1], 10);
     const salt = parts[2];
     const storedHash = parts[3];
-    const hash = crypto.pbkdf2Sync(password, salt, iterations, 64, 'sha512').toString('hex');
     
-    try {
-        return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(storedHash, 'hex'));
-    } catch (e) {
-        return false;
-    }
+    return new Promise((resolve) => {
+        crypto.pbkdf2(password, salt, iterations, 64, 'sha512', (err, derivedKey) => {
+            if (err) return resolve(false);
+            try {
+                resolve(crypto.timingSafeEqual(derivedKey, Buffer.from(storedHash, 'hex')));
+            } catch (e) {
+                resolve(false);
+            }
+        });
+    });
 }
 
 // ==================== UNIQUE ID GENERATION ====================

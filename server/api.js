@@ -210,22 +210,11 @@ async function handleAPI(req, res, urlPath, method) {
         const { username, password, deviceId, isBrowser, clientSource } = await parseBody(req);
         if (!username) return sendError(res, 400, 'Thiếu tên đăng nhập!', req);
 
-        // Sync single user from PostgreSQL if configured
+        // Sync single user from PostgreSQL in background (non-blocking để login nhanh hơn)
         if (config.DATABASE_URL) {
-            try {
-                const latestUser = await fetchUserFromPG(username);
-                if (latestUser) {
-                    updateUserInCache(latestUser);
-                    const idx = db.users.findIndex(u => u.id === latestUser.id);
-                    if (idx >= 0) {
-                        db.users[idx] = latestUser;
-                    } else {
-                        db.users.push(latestUser);
-                    }
-                }
-            } catch (e) {
-                logError('[Login Sync] Lỗi đồng bộ user từ PG:', e.message);
-            }
+            fetchUserFromPG(username).then(latestUser => {
+                if (latestUser) updateUserInCache(latestUser);
+            }).catch(e => logError('[Login Sync] Lỗi đồng bộ user từ PG:', e.message));
         }
         
         // Tìm user không phân biệt chữ hoa chữ thường
@@ -264,7 +253,7 @@ async function handleAPI(req, res, urlPath, method) {
         }
 
         // Nếu là admin, yêu cầu mật khẩu
-        if (!verifyPassword(password || '', user.password)) {
+        if (!(await verifyPassword(password || '', user.password))) {
             return sendError(res, 401, 'Sai mật khẩu!', req);
         }
 
