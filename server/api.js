@@ -537,7 +537,7 @@ async function handleAPI(req, res, urlPath, method) {
         }
 
         // Chỉ có superadmin mới có quyền thay đổi vai trò của người khác thành quản lý (admin)
-        if (role === 'admin' && !reqIsSuperAdmin) {
+        if (role === 'admin' && targetUser.role !== 'admin' && !reqIsSuperAdmin) {
             return sendError(res, 403, 'Chỉ có Quản trị viên tối cao mới được phân quyền quản lý!');
         }
 
@@ -567,7 +567,7 @@ async function handleAPI(req, res, urlPath, method) {
                     return sendError(res, 400, 'Mã OTP xác thực đã hết hạn! Vui lòng yêu cầu mã mới.', req);
                 }
                 if (otpCode.trim() !== targetUser.otpCode.trim()) {
-                    return sendError(res, 401, 'Mã OTP xác thực không chính xác!', req);
+                    return sendError(res, 400, 'Mã OTP xác thực không chính xác!', req);
                 }
                 // Xác thực thành công, xóa OTP để không tái sử dụng
                 db.users[userIdx].otpCode = null;
