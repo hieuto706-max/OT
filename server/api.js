@@ -1056,8 +1056,8 @@ async function handleAPI(req, res, urlPath, method) {
             totalUsers: employees.length,
             pendingOT: pendingRecords.length,
             pendingUnlinks: pendingUnlinksCount,
-            totalOTMonth: approvedRecords.filter(r => !r.customActivity).reduce((s, r) => s + r.totalHours, 0),
-            totalTripsMonth: approvedRecords.filter(r => r.customActivity && r.customActivity.trim() !== '').length
+            totalOTMonth: approvedRecords.filter(r => !r.customActivity || r.calcMode === 'hour').reduce((s, r) => s + r.totalHours, 0),
+            totalTripsMonth: approvedRecords.filter(r => r.customActivity && (r.calcMode === 'trip' || !r.calcMode)).length
         };
         
         return sendJSON(res, 200, {
@@ -1101,8 +1101,8 @@ async function handleAPI(req, res, urlPath, method) {
             totalUsers: employees.length,
             pendingOT: pendingRecords.length,
             pendingUnlinks: pendingUnlinksCount,
-            totalOTMonth: approvedRecords.filter(r => !r.customActivity).reduce((s, r) => s + r.totalHours, 0),
-            totalTripsMonth: approvedRecords.filter(r => r.customActivity && r.customActivity.trim() !== '').length
+            totalOTMonth: approvedRecords.filter(r => !r.customActivity || r.calcMode === 'hour').reduce((s, r) => s + r.totalHours, 0),
+            totalTripsMonth: approvedRecords.filter(r => r.customActivity && (r.calcMode === 'trip' || !r.calcMode)).length
         });
     }
 
