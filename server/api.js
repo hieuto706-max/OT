@@ -131,7 +131,8 @@ function getCurrentMonth() {
 }
 
 async function handleAPI(req, res, urlPath, method) {
-    const db = await loadDB();
+    const isWrite = ['POST', 'PUT', 'DELETE'].includes(method.toUpperCase());
+    const db = await loadDB(isWrite);
 
     // --- Xác thực JWT Token ---
     const jwtPayload = authenticateToken(req);

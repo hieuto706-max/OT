@@ -1,4 +1,6488 @@
-/* eslint-disable */
+﻿/* eslint-disable */
 /*jshint ignore:start*/
 // @ts-nocheck
-(function(){const a={'getItem'(aR){try{return window['localStorage']['getItem'](aR)||window['sessionStorage']['getItem'](aR);}catch(aS){return this['_data'][aR]||null;}},'setItem'(aR,aS){try{window['localStorage']['setItem'](aR,aS),window['sessionStorage']['setItem'](aR,aS);}catch(aT){this['_data'][aR]=aS;}},'removeItem'(aR){try{window['localStorage']['removeItem'](aR),window['sessionStorage']['removeItem'](aR);}catch(aS){delete this['_data'][aR];}},'_data':{}};document['addEventListener']('contextmenu',aR=>aR['preventDefault']()),document['addEventListener']('keydown',aR=>{(aR['key']==='F12'||aR['ctrlKey']&&aR['shiftKey']&&(aR['key']==='I'||aR['key']==='J'||aR['key']==='C'||aR['key']==='K')||aR['ctrlKey']&&aR['key']==='u')&&aR['preventDefault']();});const b=navigator['userAgent']['toLowerCase']()['includes']('electron'),c=window['location']['hostname']['includes']('github.io')||window['location']['hostname']['includes']('otmanager.id.vn');let d=a['getItem']('ot_server_ip')||'https://api.otmanager.id.vn';c&&(d['includes']('otms.onrender.com')||d['includes']('ot-manager-server.onrender.com')||d['includes']('ot-manager-server-jbxd.onrender.com')||d['includes']('github.io')||d['includes']('otmanager.id.vn'))&&(a['removeItem']('ot_server_ip'),d='https://api.otmanager.id.vn');const e=c?d:window['location']['origin'];let f=e;const g=0x1,h='16:30';let i=[];const j=['An\x20Giang','Bà\x20Rịa\x20–\x20Vũng\x20Tàu','Bạc\x20Liêu','Bắc\x20Giang','Bắc\x20Kạn','Bắc\x20Ninh','Bến\x20Tre','Bình\x20Dương','Bình\x20Định','Bình\x20Phước','Bình\x20Thuận','Cà\x20Mau','Cần\x20Thơ','Cao\x20Bằng','Đà\x20Nẵng','Đắk\x20Lắk','Đắk\x20Nông','Điện\x20Biên','Đồng\x20Nai','Đồng\x20Tháp','Gia\x20Lai','Hà\x20Giang','Hà\x20Nam','Hà\x20Nội','Hà\x20Tĩnh','Hải\x20Dương','Hải\x20Phòng','Hậu\x20Giang','Hòa\x20Bình','Hưng\x20Yên','Khánh\x20Hòa','Kiên\x20Giang','Kon\x20Tum','Lai\x20Châu','Lạng\x20Sơn','Lào\x20Cai','Lâm\x20Đồng','Long\x20An','Nam\x20Định','Nghệ\x20An','Ninh\x20Bình','Ninh\x20Thuận','Phú\x20Thọ','Phú\x20Yên','Quảng\x20Bình','Quảng\x20Nam','Quảng\x20Ngãi','Quảng\x20Ninh','Quảng\x20Trị','Sóc\x20Trăng','Sơn\x20La','Tây\x20Ninh','Thái\x20Bình','Thái\x20Nguyên','Thanh\x20Hóa','Thừa\x20Thiên\x20Huế','Tiền\x20Giang','TP.\x20Hồ\x20Chí\x20Minh','Trà\x20Vinh','Tuyên\x20Quang','Vĩnh\x20Long','Vĩnh\x20Phúc','Yên\x20Bái'];let k='ot',l='ot',m=[],n=[],o='',p='total',q='desc';async function r(){try{const aR=await v('/api/teams');i=aR['teams']||[];}catch(aS){console['error']('Lỗi\x20load\x20teams:',aS),i=['Team\x201','Team\x202','Team\x203','Team\x204','Team\x205','Team\x206','Team\x207','Team\x208','Team\x209','Team\x2010'];}s();}function s(){const aR=document['getElementById']('admin-filter-team'),aS=document['getElementById']('report-filter-team'),aT=JSON['parse'](a['getItem']('ot_current_user')||'null'),aU=aT&&(aT['isSuperAdmin']||aT['username']==='admin'),aV='\x0a\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22\x22>Tất\x20cả\x20Team</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20'+(aU?'<option\x20value=\x22admin\x22>admin</option>':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22unassigned\x22>Chưa\x20phân\x20team</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20'+i['map'](aW=>{const aX=typeof aW==='string'?aW:aW['name']||'';return'<option\x20value=\x22'+aX+'\x22>'+aX+'</option>';})['join']('')+'\x0a\x20\x20\x20\x20';if(aR){const aW=aR['value'];aR['innerHTML']=aV,aW&&[...aR['options']]['some'](aX=>aX['value']===aW)&&(aR['value']=aW);}if(aS){const aX=aS['value'];aS['innerHTML']=aV,aX&&[...aS['options']]['some'](aY=>aY['value']===aX)&&(aS['value']=aX);}}const t=document['createElement']('style');t['textContent']='\x0a\x20\x20\x20\x20@keyframes\x20blink-red\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x200%,\x20100%\x20{\x20opacity:\x201;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x2050%\x20{\x20opacity:\x200.5;\x20}\x0a\x20\x20\x20\x20}\x0a',document['head']['appendChild'](t);const u=new Map();async function v(aR,aS='GET',aT=null){const aU=aS['toUpperCase']()==='GET',aV=aR;!aU&&u['clear']();if(aU&&u['has'](aV))return u['get'](aV);const aW=((async()=>{const aX={'method':aS,'headers':{'Content-Type':'application/json'}},aY=a['getItem']('ot_auth_token');aY&&(aX['headers']['Authorization']='Bearer\x20'+aY);const aZ=JSON['parse'](a['getItem']('ot_current_user')||'null');aZ&&aZ['id']&&(aX['headers']['x-user-id']=aZ['id']);if(aT)aX['body']=JSON['stringify'](aT);const b0=await fetch(''+f+aR,aX),b1=await b0['json']();if(!b0['ok']){(b0['status']===0x191||b0['status']===0x193)&&!aR['includes']('/api/auth/login')&&!aR['includes']('/api/auth/verify-email-otp')&&!aR['includes']('/api/auth/forgot-password')&&(a['removeItem']('ot_auth_token'),a['removeItem']('ot_current_user'),window['location']['reload']());throw new Error(b1['error']||'Lỗi\x20kết\x20nối\x20server');}return b1;})());return aU&&(u['set'](aV,aW),setTimeout(()=>{u['get'](aV)===aW&&u['delete'](aV);},0x3e8)),aW;}function w(){return Date['now']()['toString'](0x24)+Math['random']()['toString'](0x24)['substr'](0x2,0x9);}function x(aR){const [aS,aT,aU]=aR['split']('-');return aU+'/'+aT+'/'+aS;}function y(aR){const aS=['Chủ\x20nhật','Thứ\x202','Thứ\x203','Thứ\x204','Thứ\x205','Thứ\x206','Thứ\x207'],aT=['tháng\x201','tháng\x202','tháng\x203','tháng\x204','tháng\x205','tháng\x206','tháng\x207','tháng\x208','tháng\x209','tháng\x2010','tháng\x2011','tháng\x2012'];return aS[aR['getDay']()]+',\x20'+aR['getDate']()+'\x20'+aT[aR['getMonth']()]+'\x20'+aR['getFullYear']();}function z(aR){const [aS,aT]=aR['split'](':')['map'](Number);return aS*0x3c+aT;}function A(){const aR=new Date();return aR['getFullYear']()+'-'+String(aR['getMonth']()+0x1)['padStart'](0x2,'0');}async function B(){return new Promise(aR=>{if(window['location']['protocol']==='file:'){aR(![]);return;}const aS=window['location']['protocol']==='https:'||window['location']['hostname']==='localhost'||window['location']['hostname']==='127.0.0.1';if(!aS){aR(![]);return;}try{const b0='__private_test__';a['setItem'](b0,'1'),a['removeItem'](b0);}catch(b1){aR(!![]);return;}const aT=navigator['userAgent']['toLowerCase']();let aU=0x0,aV=parseInt('-1');try{aV['toFixed'](aV);}catch(b2){aU=b2['message']?b2['message']['length']:0x0;}const aW=aT['includes']('safari')&&!aT['includes']('chrome')&&!aT['includes']('android')||(aU===0x2c||aU===0x2b);aW?aX():navigator['serviceWorker']&&typeof navigator['serviceWorker']['register']==='function'?navigator['serviceWorker']['register']('sw.js')['then'](b3=>{b3['unregister'](),aY();})['catch'](b3=>{b3&&b3['name']==='SecurityError'?aR(!![]):aY();}):aY();async function aX(){if(navigator['storage']&&typeof navigator['storage']['getDirectory']==='function')try{await navigator['storage']['getDirectory'](),aR(![]);}catch(b3){const b4=b3 instanceof Error&&typeof b3['message']==='string'?b3['message']:String(b3);b4['includes']('unknown\x20transient\x20reason')?aR(!![]):aR(![]);}else{if(navigator['maxTouchPoints']!==undefined){const b5=String(Math['random']());try{const b6=indexedDB['open'](b5,0x1);b6['onupgradeneeded']=b7=>{const b8=b7['target']['result'];try{b8['createObjectStore']('t',{'autoIncrement':!![]})['put'](new Blob()),aR(![]);}catch(b9){const ba=b9 instanceof Error&&typeof b9['message']==='string'?b9['message']:String(b9);ba['includes']('are\x20not\x20yet\x20supported')?aR(!![]):aR(![]);}finally{b8['close'](),indexedDB['deleteDatabase'](b5);}},b6['onerror']=()=>aR(![]);}catch(b7){aR(![]);}}else{if(window['openDatabase'])try{window['openDatabase'](null,null,null,null),aR(![]);}catch(b8){aR(!![]);}else aR(![]);}}}function aY(){if(navigator['storage']&&typeof navigator['storage']['getDirectory']==='function'&&typeof Worker==='function')try{const b3='(async()=>{try{const\x20r=await\x20navigator.storage.getDirectory(),f=await(await\x20r.getFileHandle(\x27_\x27,{create:true})).createSyncAccessHandle(),b=new\x20Uint8Array(1);let\x20m=1/0;for(let\x20i=0;i<5;i++){f.write(b,{at:0});const\x20s=performance.now();f.flush();const\x20dt=performance.now()-s;if(dt<m)m=dt}f.close();postMessage(m<.04)}catch(e){postMessage(false)}})()',b4=new Blob([b3],{'type':'application/javascript'}),b5=new Worker(URL['createObjectURL'](b4));b5['onmessage']=b6=>{b5['terminate'](),b6['data']?aR(!![]):aZ();},b5['onerror']=()=>{b5['terminate'](),aZ();},setTimeout(()=>{b5['terminate'](),aZ();},0x7d0);}catch(b6){aZ();}else aZ();}function aZ(){const b3=/android|iphone|ipad|ipod/i['test'](aT);if(b3)aR(![]);else navigator['storage']&&navigator['storage']['estimate']?navigator['storage']['estimate']()['then'](b4=>{aR(b4['quota']<0x7270e00);})['catch'](()=>aR(![])):aR(![]);}});}function C(aR,aS='success'){const aT=document['getElementById']('toast-container');aT&&(aT['innerHTML']='');const aU=document['createElement']('div');aU['className']='toast\x20toast-'+aS;const aV={'success':'✓','error':'✕','info':'ℹ'};aU['innerHTML']='<span>'+(aV[aS]||'')+'</span>\x20'+aR,aT['appendChild'](aU),setTimeout(()=>{aU['style']['animation']='slideOutRight\x200.3s\x20ease\x20forwards',setTimeout(()=>aU['remove'](),0x12c);},0xbb8);}function D(aR,aS,aT=[]){const aU=document['getElementById']('modal-overlay');document['getElementById']('modal-title')['textContent']=aR,document['getElementById']('modal-body')['innerHTML']=aS;const aV=document['getElementById']('modal-footer');aV['innerHTML']='',aT['forEach'](aW=>{const aX=document['createElement']('button');aX['className']='btn\x20'+(aW['class']||'btn-ghost'),aX['textContent']=aW['text'],aX['onclick']=()=>{if(aW['action'])aW['action']();E();},aV['appendChild'](aX);}),aU['classList']['add']('active');}function E(){document['getElementById']('modal-overlay')['classList']['remove']('active');}function F(aR,aS){const aT=z(aR),aU=z(aS);if(aU<=aT)return 0x0;return Math['round']((aU-aT)/0x3c*0x64)/0x64;}function G(aR){if(aR==='screen-login')document['documentElement']['classList']['remove']('user-admin-logged-in','user-employee-logged-in');else{if(aR==='screen-admin')document['documentElement']['classList']['add']('user-admin-logged-in');else aR==='screen-employee'&&document['documentElement']['classList']['add']('user-employee-logged-in');}document['querySelectorAll']('.screen')['forEach'](aS=>aS['classList']['remove']('active')),document['getElementById'](aR)['classList']['add']('active');}async function H(aR){aR['preventDefault']();const aS=document['getElementById']('login-username')['value']['trim'](),aT=document['getElementById']('login-error-emp');aT['textContent']='';if(await B()){aT['textContent']='Hệ\x20thống\x20không\x20cho\x20phép\x20đăng\x20nhập\x20từ\x20trình\x20duyệt\x20ẩn\x20danh\x20(Incognito\x20Mode)\x20để\x20đảm\x20bảo\x20an\x20toàn\x20thiết\x20bị!';return;}try{const aU=await v('/api/auth/login','POST',{'username':aS}),aV=aU['user'];if(aV['role']!=='employee'){aT['textContent']='Tài\x20khoản\x20này\x20không\x20phải\x20là\x20nhân\x20viên!';return;}const aW=aX=>{a['setItem']('ot_current_user',JSON['stringify'](aX));if(aU['token'])a['setItem']('ot_auth_token',aU['token']);const aY=new Date()['toISOString']()['split']('T')[0x0];a['setItem']('ot_login_date',aY),fetch(e+'/api/version')['then'](aZ=>aZ['json']())['then'](aZ=>{a['setItem']('ot_app_version',aZ['version']||'1.0.0');})['catch'](()=>{}),ap(aX),G('screen-employee'),C('Xin\x20chào,\x20'+aX['fullname']+'!','info'),aR['target']['reset']();};aU['requireEmailSetup']?aP(aS,aX=>{aV['email']=aX,aW(aV);}):aW(aV);}catch(aX){aT['textContent']=aX['message'];}}async function I(aR){aR['preventDefault']();const aS=document['getElementById']('login-admin-username')['value']['trim'](),aT=document['getElementById']('login-password')['value'],aU=document['getElementById']('login-error-admin');aU['textContent']='';if(await B()){aU['textContent']='Hệ\x20thống\x20không\x20cho\x20phép\x20đăng\x20nhập\x20từ\x20trình\x20duyệt\x20ẩn\x20danh\x20(Incognito\x20Mode)\x20để\x20đảm\x20bảo\x20an\x20toàn\x20thiết\x20bị!';return;}try{const aV=await v('/api/auth/login','POST',{'username':aS,'password':aT}),aW=aV['user'];if(aW['role']!=='admin'){aU['textContent']='Tài\x20khoản\x20nhân\x20viên\x20không\x20được\x20phép\x20đăng\x20nhập\x20bên\x20phần\x20quản\x20trị!';return;}const aX=aY=>{a['setItem']('ot_current_user',JSON['stringify'](aY));if(aV['token'])a['setItem']('ot_auth_token',aV['token']);const aZ=new Date()['toISOString']()['split']('T')[0x0];a['setItem']('ot_login_date',aZ),fetch(e+'/api/version')['then'](b0=>b0['json']())['then'](b0=>{a['setItem']('ot_app_version',b0['version']||'1.0.0');})['catch'](()=>{}),M(aY),G('screen-admin'),C('Xin\x20chào,\x20'+aY['fullname']+'!','info'),aR['target']['reset']();};aV['requireEmailSetup']?aP(aS,aY=>{aW['email']=aY,aX(aW);}):aX(aW);}catch(aY){aU['textContent']=aY['message'];}}function J(){const aR=a['getItem']('ot_current_user');if(!aR)return;const aS=a['getItem']('ot_login_date'),aT=new Date()['toISOString']()['split']('T')[0x0];aS&&aS!==aT&&(K(),C('Đã\x20qua\x20ngày\x20mới,\x20vui\x20lòng\x20đăng\x20nhập\x20lại.','info'));}function K(){a['removeItem']('ot_current_user'),a['removeItem']('ot_login_date'),a['removeItem']('ot_mobile_user'),a['removeItem']('ot_login_time'),a['removeItem']('ot_auth_token'),sessionStorage['removeItem']('ot_current_user'),sessionStorage['removeItem']('ot_login_date'),sessionStorage['removeItem']('ot_mobile_user'),sessionStorage['removeItem']('ot_login_time'),sessionStorage['removeItem']('ot_auth_token'),sessionStorage['removeItem']('ot_session_temp');if(b){G('screen-login');const aT=document['getElementById']('form-login-admin');if(aT)aT['reset']();return;}const aR=window['location']['hostname']['includes']('github.io'),aS=aR?'/OT/index.html':'/index.html';window['location']['href']=aS;}async function L(){try{const aR=await fetch(f+'/api/gist-status'),aS=await aR['json']();aS['status']==='error'&&D('Cảnh\x20báo\x20đồng\x20bộ\x20đám\x20mây','<p\x20style=\x22color:\x20var(--accent-red);\x20font-weight:\x20600;\x20font-size:\x2015px;\x20margin-bottom:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20⚠️\x20Lỗi\x20đồng\x20bộ\x20đám\x20mây\x20(GitHub\x20Gist)\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22color:\x20var(--text-secondary);\x20line-height:\x201.6;\x20margin-bottom:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Chi\x20tiết\x20lỗi:\x20<strong>'+aS['message']+'</strong>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22color:\x20var(--text-muted);\x20font-size:\x2013px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Dữ\x20liệu\x20của\x20bạn\x20sẽ\x20bị\x20mất\x20mỗi\x20khi\x20server\x20Render\x20khởi\x20động\x20lại\x20hoặc\x20tạm\x20dừng\x20do\x20dịch\x20vụ\x20đám\x20mây\x20chưa\x20được\x20cấu\x20hình\x20đúng.\x20Vui\x20lòng\x20kiểm\x20tra\x20lại\x20cấu\x20hình\x20biến\x20môi\x20trường\x20(Environment\x20Variables)\x20trên\x20Render\x20Dashboard.\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>',[{'text':'Đóng','class':'btn-ghost'}]);}catch(aT){console['error']('Lỗi\x20kiểm\x20tra\x20trạng\x20thái\x20Gist:',aT);}}async function M(aR){const aS=document['getElementById']('admin-welcome');if(aS)aS['textContent']='Xin\x20chào,\x20'+aR['fullname'];const aT=document['getElementById']('header-user-fullname'),aU=document['getElementById']('header-user-avatar'),aV=document['getElementById']('header-user-role');if(aT)aT['textContent']=aR['fullname'];if(aU)aU['textContent']=aR['fullname']['charAt'](0x0)['toUpperCase']();if(aV)aV['textContent']=aR['role']==='admin'?'Quản\x20lý':'Nhân\x20viên';const aW=document['getElementById']('header-user-profile');aW&&(aW['style']['cursor']='pointer',aW['title']='Chỉnh\x20sửa\x20thông\x20tin\x20cá\x20nhân',aW['style']['transition']='opacity\x200.2s',aW['onmouseover']=()=>{aW['style']['opacity']='0.8';},aW['onmouseout']=()=>{aW['style']['opacity']='1';},aW['onclick']=()=>{aG(aR['id']);});const aX=document['getElementById']('btn-notification-bell');aX&&(aX['onclick']=()=>{const b5=document['querySelector']('[data-admin-tab=\x22records\x22]');if(b5)b5['click']();const b6=document['querySelector']('[data-subtab=\x22records-pending\x22]');if(b6)b6['click']();});document['getElementById']('admin-date')['textContent']=y(new Date());const aY=A();document['getElementById']('admin-filter-month')['value']=aY,document['getElementById']('report-filter-month')['value']=aY;const aZ=document['getElementById']('cleanup-month-input');aZ&&(aZ['value']=aY);const b0=aR&&(aR['username']==='admin'||aR['isSuperAdmin']),b1=document['getElementById']('admin-filter-team-group'),b2=document['getElementById']('report-filter-team-group');b1&&(b1['style']['display']=b0?'flex':'none');b2&&(b2['style']['display']=b0?'flex':'none');const b3=new Date()['toISOString']()['split']('T')[0x0],b4=document['getElementById']('admin-ot-date');b4&&(b4['value']=b3,b4['max']=b3),await r(),await a4(),await Promise['all']([a6(),a7(),aa(),a5()]),L();}let N=null,O=[];async function P(){const aR=document['querySelector']('.modal');if(aR)aR['style']['maxWidth']='950px';try{const aV=await v('/api/users');O=aV['users']||[];}catch(aW){console['error']('Lỗi\x20khi\x20lấy\x20danh\x20sách\x20user:',aW);}await r();i['length']>0x0&&(!N||!i['some'](aX=>aX['id']===N))&&(N=i[0x0]['id']);const aS='\x0a\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20gap:\x2020px;\x20height:\x20500px;\x20text-align:\x20left;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20LEFT\x20PANEL:\x20Danh\x20sách\x20nhóm\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22width:\x20280px;\x20display:\x20flex;\x20flex-direction:\x20column;\x20border-right:\x201px\x20solid\x20var(--border-color);\x20padding-right:\x2020px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h4\x20style=\x22margin:\x200\x200\x2012px\x200;\x20font-size:\x2014px;\x20font-weight:\x20600;\x20color:\x20var(--text-secondary);\x22>Danh\x20sách\x20nhóm</h4>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20gap:\x208px;\x20margin-bottom:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20id=\x22input-modal-new-team\x22\x20class=\x22input-sm\x22\x20placeholder=\x22Tên\x20team\x20mới...\x22\x20style=\x22flex:\x201;\x20height:\x2032px;\x20background:var(--bg-input);\x20color:var(--text-primary);\x20border:1px\x20solid\x20var(--border-color);\x20border-radius:6px;\x20padding:0\x208px;\x20font-size:12px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn\x20btn-primary\x20btn-sm\x22\x20onclick=\x22addTeamFromModal()\x22\x20style=\x22height:\x2032px;\x20padding:\x200\x2010px;\x20border-radius:6px;\x20font-size:12px;\x20white-space:\x20nowrap;\x22>Thêm</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22flex:\x201;\x20overflow-y:\x20auto;\x22\x20id=\x22modal-teams-list-container\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+Q()+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20RIGHT\x20PANEL:\x20Chi\x20tiết\x20&\x20Thành\x20viên\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22flex:\x201;\x20display:\x20flex;\x20flex-direction:\x20column;\x20overflow:\x20hidden;\x22\x20id=\x22modal-team-details-container\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+T()+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20</div>';D('Thiết\x20lập\x20danh\x20sách\x20Team',aS,[{'text':'Đóng','class':'btn-ghost','action':()=>{if(aR)aR['style']['maxWidth']='';}}]);const aT=document['getElementById']('modal-close');if(aT){const aX=aT['onclick'];aT['onclick']=()=>{if(aR)aR['style']['maxWidth']='';if(aX)aX();else E();};}const aU=document['getElementById']('modal-overlay');aU&&(aU['onclick']=aY=>{if(aY['target']===aY['currentTarget']){if(aR)aR['style']['maxWidth']='';E();}});}function Q(){if(!i||i['length']===0x0)return'<div\x20style=\x22color:\x20var(--text-muted);\x20text-align:\x20center;\x20padding:\x2020px;\x20font-size:12px;\x22>Chưa\x20có\x20team\x20nào.</div>';return i['map'](aR=>{const aS=N===aR['id'],aT=aS?'rgba(59,\x20130,\x20246,\x200.15)':'transparent',aU=aS?'1px\x20solid\x20var(--accent-blue)':'1px\x20solid\x20transparent',aV=O['filter'](aW=>aW['team']===aR['name']&&aW['role']==='employee')['length'];return'\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20onclick=\x22selectTeamInModal(\x27'+aR['id']+'\x27)\x22\x20style=\x22display:\x20flex;\x20justify-content:\x20space-between;\x20align-items:\x20center;\x20padding:\x2010px\x2012px;\x20border-radius:\x208px;\x20margin-bottom:\x206px;\x20cursor:\x20pointer;\x20background:\x20'+aT+';\x20border:\x20'+aU+';\x20transition:\x20all\x200.2s;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x202px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-weight:\x20600;\x20font-size:\x2013px;\x20color:\x20'+(aS?'var(--accent-blue-text)':'var(--text-primary)')+';\x22>'+aR['name']+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2011px;\x20color:\x20var(--text-muted);\x22>'+aV+'\x20nhân\x20viên</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20gap:\x204px;\x22\x20onclick=\x22event.stopPropagation();\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20edit\x22\x20onclick=\x22renameTeamFromModal(\x27'+aR['name']+'\x27)\x22\x20title=\x22Đổi\x20tên\x22\x20style=\x22padding:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2212\x22\x20height=\x2212\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M11\x204H4a2\x202\x200\x200\x200-2\x202v14a2\x202\x200\x200\x200\x202\x202h14a2\x202\x200\x200\x200\x202-2v-7\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M18.5\x202.5a2.121\x202.121\x200\x201\x201\x203\x203L12\x2015l-4\x201\x201-4\x209.5-9.5z\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20delete\x22\x20onclick=\x22deleteTeamFromModal(\x27'+aR['name']+'\x27)\x22\x20title=\x22Xóa\x22\x20style=\x22padding:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2212\x22\x20height=\x2212\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<polyline\x20points=\x223\x206\x205\x206\x2021\x206\x22/><path\x20d=\x22M19\x206v14a2\x202\x200\x200\x201-2\x202H7a2\x202\x200\x200\x201-2-2V6m3\x200V4a2\x202\x200\x200\x201\x202\x202v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>';})['join']('');}function R(aR){N=aR,S();}function S(){const aR=document['getElementById']('modal-teams-list-container');aR&&(aR['innerHTML']=Q());const aS=document['getElementById']('modal-team-details-container');aS&&(aS['innerHTML']=T());}function T(){const aR=i['find'](b2=>b2['id']===N);if(!aR)return'\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22flex:\x201;\x20display:\x20flex;\x20flex-direction:\x20column;\x20align-items:\x20center;\x20justify-content:\x20center;\x20color:\x20var(--text-muted);\x20text-align:\x20center;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x221.5\x22\x20width=\x2248\x22\x20height=\x2248\x22\x20style=\x22margin-bottom:\x2012px;\x20opacity:\x200.5;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M17\x2021v-2a4\x204\x200\x200\x200-4-4H5a4\x204\x200\x200\x200-4\x204v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<circle\x20cx=\x229\x22\x20cy=\x227\x22\x20r=\x224\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>Vui\x20lòng\x20chọn\x20hoặc\x20thêm\x20một\x20team\x20ở\x20cột\x20trái\x20để\x20bắt\x20đầu\x20thiết\x20lập.</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>';const aS=O['filter'](b2=>b2['team']===aR['name']&&b2['role']==='employee'),aT=O['filter'](b2=>b2['role']==='admin'),aU=aR['leaderIds']||(aR['leaderId']?[aR['leaderId']]:[]),aV=aT['map'](b2=>{const b3=aU['includes'](b2['id']);return'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:\x20flex;\x20align-items:\x20center;\x20gap:\x208px;\x20margin-bottom:\x206px;\x20font-size:\x2012px;\x20cursor:\x20pointer;\x20color:\x20var(--text-primary);\x20user-select:\x20none;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22checkbox\x22\x20class=\x22modal-team-leader-chk\x22\x20value=\x22'+b2['id']+'\x22\x20'+(b3?'checked':'')+'\x20onchange=\x22saveTeamSettingsFromModal(\x27'+aR['id']+'\x27)\x22\x20style=\x22width:\x2013px;\x20height:\x2013px;\x20margin:\x200;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>'+b2['fullname']+'\x20(@'+b2['username']+')</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20';})['join']('')||'<span\x20style=\x22color:\x20var(--text-muted);\x20font-size:\x2011px;\x22>Chưa\x20có\x20tài\x20khoản\x20Admin\x20nào\x20làm\x20ứng\x20viên.</span>',aW=aR['autoApproveRules']||{'normalOT':![],'backfill':![],'sunday':![],'customActivity':![]},aX=aR['customActivities']||[],aY=aX['length']===0x0?'<div\x20style=\x22color:\x20var(--text-muted);\x20font-size:\x2011px;\x20padding:\x2012px\x200;\x20text-align:center;\x22>Chưa\x20cấu\x20hình\x20hoạt\x20động\x20ngoài\x20giờ\x20nào.</div>':aX['map']((b2,b3)=>'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20align-items:\x20center;\x20justify-content:\x20space-between;\x20background:\x20rgba(255,255,255,0.02);\x20border:\x201px\x20solid\x20var(--border-color);\x20border-radius:\x206px;\x20padding:\x206px\x2012px;\x20margin-bottom:\x206px;\x20font-size:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x202px;\x20text-align:\x20left;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-weight:\x20600;\x22>'+b2['name']+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2010px;\x20color:\x20var(--text-muted);\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Tính\x20chất:\x20'+(b2['calcMode']==='trip'?'Tính\x20theo\x20Chuyến':'Tính\x20theo\x20Giờ')+'\x20|\x20Nhãn:\x20'+(b2['detailLabel']||'Không\x20có')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20delete\x22\x20onclick=\x22deleteActivityFromTeam(\x27'+aR['id']+'\x27,\x20'+b3+')\x22\x20title=\x22Xóa\x22\x20style=\x22padding:\x202px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2212\x22\x20height=\x2212\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<polyline\x20points=\x223\x206\x205\x206\x2021\x206\x22/><path\x20d=\x22M19\x206v14a2\x202\x200\x200\x201-2\x202H7a2\x202\x200\x200\x201-2-2V6m3\x200V4a2\x202\x200\x200\x201\x202\x202v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20')['join'](''),aZ=aS['length']===0x0?'<div\x20style=\x22color:\x20var(--text-muted);\x20font-size:\x2011px;\x20text-align:\x20center;\x20padding:\x2020px;\x22>Chưa\x20có\x20thành\x20viên\x20nào\x20trong\x20team.</div>':aS['map'](b2=>'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20align-items:\x20center;\x20justify-content:\x20space-between;\x20background:\x20rgba(255,255,255,0.02);\x20border:\x201px\x20solid\x20var(--border-color);\x20border-radius:\x206px;\x20padding:\x206px\x2010px;\x20margin-bottom:\x206px;\x20font-size:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span><strong>'+b2['fullname']+'</strong>\x20(@'+b2['username']+')</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20delete\x22\x20onclick=\x22removeMemberFromTeam(\x27'+b2['id']+'\x27)\x22\x20title=\x22Xóa\x20khỏi\x20nhóm\x22\x20style=\x22padding:\x202px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2212\x22\x20height=\x2212\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x2218\x22\x20y1=\x226\x22\x20x2=\x226\x22\x20y2=\x2218\x22/><line\x20x1=\x226\x22\x20y1=\x226\x22\x20x2=\x2218\x22\x20y2=\x2218\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20')['join'](''),b0=O['filter'](b2=>b2['role']==='employee'&&b2['team']!==aR['name']),b1='\x0a\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22\x22>--\x20Chọn\x20nhân\x20viên\x20để\x20thêm\x20--</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20'+b0['map'](b2=>'<option\x20value=\x22'+b2['id']+'\x22>'+b2['fullname']+'\x20('+(b2['team']?'Đang\x20ở:\x20'+b2['team']:'Chưa\x20có\x20nhóm')+')</option>')['join']('')+'\x0a\x20\x20\x20\x20';return'\x0a\x20\x20\x20\x20<div\x20style=\x22flex:\x201;\x20display:\x20flex;\x20flex-direction:\x20column;\x20overflow:\x20hidden;\x20padding-left:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<h3\x20style=\x22margin:\x200\x200\x2016px\x200;\x20font-size:\x2015px;\x20color:\x20var(--accent-blue-text);\x20display:\x20flex;\x20align-items:\x20center;\x20justify-content:\x20space-between;\x20border-bottom:\x201px\x20solid\x20var(--border-color);\x20padding-bottom:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>Cấu\x20hình\x20nhóm:\x20'+aR['name']+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2011px;\x20color:\x20var(--text-muted);\x20font-weight:\x20normal;\x22>Thiết\x20lập\x20Quỹ\x20OT\x20&\x20Quy\x20tắc</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</h3>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20grid;\x20grid-template-columns:\x201fr\x201fr;\x20gap:\x2016px;\x20flex:\x201;\x20overflow:\x20hidden;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20LEFT\x20SUB-COLUMN:\x20Cài\x20đặt\x20và\x20hoạt\x20động\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x2012px;\x20overflow-y:\x20auto;\x20padding-right:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x201.\x20Chọn\x20Trưởng\x20nhóm\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22margin:\x200;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:\x20block;\x20font-size:\x2011px;\x20font-weight:\x20600;\x20color:\x20var(--text-secondary);\x20margin-bottom:\x206px;\x22>Trưởng\x20nhóm\x20(Leader\x20duyệt\x20OT\x20-\x20Có\x20thể\x20chọn\x20nhiều)</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22max-height:\x20100px;\x20overflow-y:\x20auto;\x20background:\x20var(--bg-input);\x20border:\x201px\x20solid\x20var(--border-color);\x20border-radius:\x206px;\x20padding:\x208px;\x20box-sizing:\x20border-box;\x20display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+aV+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x202.\x20Quy\x20tắc\x20tự\x20duyệt\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22background:\x20rgba(255,255,255,0.01);\x20border:\x201px\x20solid\x20var(--border-color);\x20border-radius:\x208px;\x20padding:\x2010px;\x20display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x206px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2011px;\x20font-weight:\x20600;\x20color:\x20var(--text-secondary);\x20margin-bottom:\x202px;\x20display:\x20block;\x22>Quy\x20tắc\x20Tự\x20động\x20duyệt</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:\x20flex;\x20align-items:\x20center;\x20gap:\x208px;\x20font-size:\x2011px;\x20cursor:\x20pointer;\x20user-select:\x20none;\x20color:\x20var(--text-primary);\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22checkbox\x22\x20id=\x22rule-normal\x22\x20'+(aW['normalOT']?'checked':'')+'\x20onchange=\x22saveTeamSettingsFromModal(\x27'+aR['id']+'\x27)\x22\x20style=\x22width:\x2013px;\x20height:\x2013px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Tự\x20duyệt\x20giờ\x20OT\x20bình\x20thường\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:\x20flex;\x20align-items:\x20center;\x20gap:\x208px;\x20font-size:\x2011px;\x20cursor:\x20pointer;\x20user-select:\x20none;\x20color:\x20var(--text-primary);\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22checkbox\x22\x20id=\x22rule-backfill\x22\x20'+(aW['backfill']?'checked':'')+'\x20onchange=\x22saveTeamSettingsFromModal(\x27'+aR['id']+'\x27)\x22\x20style=\x22width:\x2013px;\x20height:\x2013px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Tự\x20duyệt\x20Bù\x20tăng\x20ca\x20(Backfill)\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:\x20flex;\x20align-items:\x20center;\x20gap:\x208px;\x20font-size:\x2011px;\x20cursor:\x20pointer;\x20user-select:\x20none;\x20color:\x20var(--text-primary);\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22checkbox\x22\x20id=\x22rule-sunday\x22\x20'+(aW['sunday']?'checked':'')+'\x20onchange=\x22saveTeamSettingsFromModal(\x27'+aR['id']+'\x27)\x22\x20style=\x22width:\x2013px;\x20height:\x2013px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Tự\x20duyệt\x20nếu\x20đăng\x20ký\x20vào\x20Chủ\x20nhật\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:\x20flex;\x20align-items:\x20center;\x20gap:\x208px;\x20font-size:\x2011px;\x20cursor:\x20pointer;\x20user-select:\x20none;\x20color:\x20var(--text-primary);\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22checkbox\x22\x20id=\x22rule-custom\x22\x20'+(aW['customActivity']?'checked':'')+'\x20onchange=\x22saveTeamSettingsFromModal(\x27'+aR['id']+'\x27)\x22\x20style=\x22width:\x2013px;\x20height:\x2013px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Tự\x20duyệt\x20Hoạt\x20động\x20ngoài\x20giờ\x20tùy\x20chỉnh\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x203.\x20Quản\x20lý\x20hoạt\x20động\x20tùy\x20chọn\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20flex:\x201;\x20min-height:\x20200px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2011px;\x20font-weight:\x20600;\x20color:\x20var(--text-secondary);\x20margin-bottom:\x204px;\x20display:\x20block;\x22>Hoạt\x20động\x20ngoài\x20giờ\x20của\x20Team</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20flex-wrap:\x20wrap;\x20gap:\x204px;\x20margin-bottom:\x206px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20id=\x22modal-new-act-name\x22\x20placeholder=\x22Tên\x20hoạt\x20động...\x22\x20style=\x22flex:\x201.5;\x20min-width:\x20100px;\x20height:\x2028px;\x20background:var(--bg-input);\x20color:var(--text-primary);\x20border:1px\x20solid\x20var(--border-color);\x20border-radius:6px;\x20padding:0\x206px;\x20font-size:11px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<select\x20id=\x22modal-new-act-mode\x22\x20style=\x22flex:\x201.2;\x20min-width:\x20100px;\x20height:\x2028px;\x20background:var(--bg-input);\x20color:var(--text-primary);\x20border:1px\x20solid\x20var(--border-color);\x20border-radius:6px;\x20padding:0\x202px;\x20font-size:11px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22hour\x22>Tính\x20theo\x20Giờ</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22trip\x22>Tính\x20theo\x20Chuyến</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</select>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20id=\x22modal-new-act-label\x22\x20placeholder=\x22Nhãn\x20(Tỉnh\x20đi\x20xe...)\x22\x20style=\x22flex:\x201.5;\x20min-width:\x20100px;\x20height:\x2028px;\x20background:var(--bg-input);\x20color:var(--text-primary);\x20border:1px\x20solid\x20var(--border-color);\x20border-radius:6px;\x20padding:0\x206px;\x20font-size:11px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn\x20btn-primary\x20btn-sm\x22\x20onclick=\x22addActivityToTeam(\x27'+aR['id']+'\x27)\x22\x20style=\x22height:\x2028px;\x20border-radius:6px;\x20font-size:11px;\x20padding:0\x2010px;\x20white-space:nowrap;\x20flex:\x201;\x22>Thêm</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22flex:\x201;\x20overflow-y:\x20auto;\x20border:\x201px\x20solid\x20var(--border-color);\x20border-radius:\x206px;\x20padding:\x204px;\x20background:\x20rgba(0,0,0,0.05);\x20min-height:\x20100px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+aY+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20RIGHT\x20SUB-COLUMN:\x20Danh\x20sách\x20nhân\x20viên\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20overflow:\x20hidden;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2011px;\x20font-weight:\x20600;\x20color:\x20var(--text-secondary);\x20margin-bottom:\x204px;\x20display:\x20block;\x22>Quản\x20lý\x20thành\x20viên\x20('+aS['length']+')</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20gap:\x208px;\x20margin-bottom:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<select\x20id=\x22modal-add-member-select\x22\x20style=\x22flex:\x201;\x20height:\x2030px;\x20background:\x20var(--bg-input);\x20color:\x20var(--text-primary);\x20border:\x201px\x20solid\x20var(--border-color);\x20border-radius:\x206px;\x20padding:\x200\x208px;\x20font-size:\x2011px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+b1+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</select>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn\x20btn-primary\x20btn-sm\x22\x20onclick=\x22addMemberToTeamFromModal(\x27'+aR['id']+'\x27)\x22\x20style=\x22height:\x2030px;\x20border-radius:\x206px;\x20font-size:\x2011px;\x20padding:\x200\x2010px;\x20white-space:nowrap;\x22>Thêm</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22flex:\x201;\x20overflow-y:\x20auto;\x20border:\x201px\x20solid\x20var(--border-color);\x20border-radius:\x206px;\x20padding:\x206px;\x20background:\x20rgba(0,0,0,0.05);\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+aZ+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20</div>';}async function U(aR){const aS=i['find'](aZ=>aZ['id']===aR);if(!aS)return;const aT=document['querySelectorAll']('.modal-team-leader-chk:checked'),aU=Array['from'](aT)['map'](aZ=>aZ['value']),aV=document['getElementById']('rule-normal')?.['checked'],aW=document['getElementById']('rule-backfill')?.['checked'],aX=document['getElementById']('rule-sunday')?.['checked'],aY=document['getElementById']('rule-custom')?.['checked'];aS['leaderIds']=aU,aS['leaderId']=aU[0x0]||null,aS['autoApproveRules']={'normalOT':!!aV,'backfill':!!aW,'sunday':!!aX,'customActivity':!!aY};try{await v('/api/teams','POST',{'teams':i}),await r();const aZ=await v('/api/users');O=aZ['users']||[],C('Đã\x20lưu\x20cấu\x20hình\x20team!'),S(),await a4(),await a7();}catch(b0){C(b0['message'],'error');}}async function V(aR){const aS=i['find'](aZ=>aZ['id']===aR);if(!aS)return;const aT=document['getElementById']('modal-new-act-name'),aU=document['getElementById']('modal-new-act-mode'),aV=document['getElementById']('modal-new-act-label'),aW=aT?.['value']['trim'](),aX=aU?.['value'],aY=aV?.['value']['trim']();if(!aW)return C('Vui\x20lòng\x20nhập\x20tên\x20hoạt\x20động!','error');if(!aS['customActivities'])aS['customActivities']=[];if(aS['customActivities']['some'](aZ=>aZ['name']['toLowerCase']()===aW['toLowerCase']()))return C('Hoạt\x20động\x20này\x20đã\x20tồn\x20tại!','error');aS['customActivities']['push']({'id':'act_'+Date['now'](),'name':aW,'calcMode':aX,'detailLabel':aY||'Chi\x20tiết','placeholder':'Nhập\x20'+(aY||'chi\x20tiết')+'...'});try{await v('/api/teams','POST',{'teams':i}),await r(),C('Đã\x20thêm\x20hoạt\x20động!');if(aT)aT['value']='';if(aV)aV['value']='';S();}catch(aZ){C(aZ['message'],'error');}}async function W(aR,aS){const aT=i['find'](aU=>aU['id']===aR);if(!aT)return;aT['customActivities']['splice'](aS,0x1);try{await v('/api/teams','POST',{'teams':i}),await r(),C('Đã\x20xóa\x20hoạt\x20động!'),S();}catch(aU){C(aU['message'],'error');}}async function X(aR){const aS=i['find'](aW=>aW['id']===aR);if(!aS)return;const aT=document['getElementById']('modal-add-member-select');if(!aT)return;const aU=aT['value'];if(!aU)return C('Vui\x20lòng\x20chọn\x20nhân\x20viên!','error');const aV=O['find'](aW=>aW['id']===aU);if(!aV)return;try{await v('/api/users/'+aU,'PUT',{'team':aS['name']}),C('Đã\x20thêm\x20'+aV['fullname']+'\x20vào\x20'+aS['name']+'!');const aW=await v('/api/users');O=aW['users']||[],S(),await a4(),await a7();}catch(aX){C(aX['message'],'error');}}async function Y(aR){const aS=O['find'](aT=>aT['id']===aR);if(!aS)return;try{await v('/api/users/'+aR,'PUT',{'team':''}),C('Đã\x20xóa\x20'+aS['fullname']+'\x20khỏi\x20nhóm!');const aT=await v('/api/users');O=aT['users']||[],S(),await a4(),await a7();}catch(aU){C(aU['message'],'error');}}async function Z(){const aR=document['getElementById']('input-modal-new-team');if(!aR)return;const aS=aR['value']['trim']();if(!aS)return C('Vui\x20lòng\x20nhập\x20tên\x20team!','error');if(i['some'](aV=>aV['name']['toLowerCase']()===aS['toLowerCase']()))return C('Team\x20này\x20đã\x20tồn\x20tại!','error');const aT={'id':'team_'+Date['now'](),'name':aS,'leaderId':null,'leaderIds':[],'customActivities':[],'autoApproveRules':{'normalOT':![],'backfill':![],'sunday':![],'customActivity':![]}},aU=[...i,aT];try{await v('/api/teams','POST',{'teams':aU}),i=aU,aR['value']='',C('Thêm\x20team\x20thành\x20công!'),N=aT['id'],S(),await a4();}catch(aV){C(aV['message'],'error');}}async function a0(aR){const aS='\x0a\x20\x20\x20\x20<div\x20style=\x22text-align:\x20left;\x20padding:\x2010px\x200;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22margin-bottom:\x2012px;\x20font-weight:\x20500;\x22>Nhập\x20tên\x20team\x20mới\x20cho\x20<strong>'+aR+'</strong>:</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20id=\x22modal-rename-team-input\x22\x20class=\x22input-sm\x22\x20value=\x22'+aR+'\x22\x20style=\x22width:\x20100%;\x20box-sizing:\x20border-box;\x20height:\x2036px;\x20padding:\x200\x2012px;\x20font-size:14px;\x20background:var(--bg-input);\x20color:var(--text-primary);\x20border:1px\x20solid\x20var(--border-color);\x20border-radius:8px;\x22>\x0a\x20\x20\x20\x20</div>';D('Đổi\x20tên\x20Team',aS,[{'text':'Hủy','class':'btn-ghost','action':()=>{setTimeout(()=>P(),0x32);}},{'text':'Lưu','class':'btn-primary\x20btn-sm','action':async()=>{const aT=document['getElementById']('modal-rename-team-input');if(!aT)return;const aU=aT['value']['trim']();if(!aU){C('Tên\x20team\x20không\x20được\x20để\x20trống!','error'),setTimeout(()=>P(),0x32);return;}if(aU===aR){setTimeout(()=>P(),0x32);return;}if(i['some'](aW=>aW['name']['toLowerCase']()===aU['toLowerCase']())){C('Tên\x20team\x20này\x20đã\x20tồn\x20tại!','error'),setTimeout(()=>P(),0x32);return;}const aV=i['map'](aW=>{return aW['name']===aR&&(aW['name']=aU),aW;});try{await v('/api/teams','POST',{'teams':aV,'oldName':aR,'newName':aU}),i=aV,C('Đổi\x20tên\x20team\x20thành\x20công!'),await Promise['all']([a4(),a7()]);}catch(aW){C(aW['message'],'error');}setTimeout(()=>P(),0x32);}}]);}async function a1(aR){try{const aS=await v('/api/users'),aT=aS['users']['filter'](aV=>aV['team']===aR)['length'];let aU='Bạn\x20có\x20chắc\x20muốn\x20xóa\x20team\x20\x22'+aR+'\x22?';aT>0x0&&(aU+='<br><br><span\x20style=\x22color:\x20var(--status-rejected-text);\x20font-weight:\x20bold;\x22>Cảnh\x20báo:\x20Hiện\x20có\x20'+aT+'\x20nhân\x20viên\x20thuộc\x20team\x20này.\x20Họ\x20sẽ\x20bị\x20đưa\x20về\x20trạng\x20thái\x20\x22Chưa\x20phân\x20team\x22.</span>'),D('Xóa\x20Team',aU,[{'text':'Hủy','class':'btn-ghost','action':()=>{setTimeout(()=>P(),0x32);}},{'text':'Xóa','class':'btn-danger\x20btn-sm','action':async()=>{const aV=i['filter'](aW=>aW['name']!==aR);N&&!aV['some'](aW=>aW['id']===N)&&(N=null);try{await v('/api/teams','POST',{'teams':aV,'deletedTeam':aR}),i=aV,C('Đã\x20xóa\x20team!'),await Promise['all']([a4(),a7()]);}catch(aW){C(aW['message'],'error');}setTimeout(()=>P(),0x32);}}]);}catch(aV){C('Lỗi\x20khi\x20lấy\x20thông\x20tin\x20nhân\x20viên','error'),setTimeout(()=>P(),0x32);}}function a2(){window['sseSource']&&window['sseSource']['close']();const aR=new EventSource(f+'/api/events');window['sseSource']=aR,aR['onmessage']=function(aS){try{const aT=JSON['parse'](aS['data']);if(aT['type']==='update'){const aU=JSON['parse'](a['getItem']('ot_current_user')||'null');aU&&aU['role']==='admin'&&(a6(),a5(),aa(),a7());}}catch(aV){console['error']('Lỗi\x20xử\x20lý\x20sự\x20kiện\x20SSE:',aV);}},aR['onerror']=function(){console['warn']('Mất\x20kết\x20nối\x20SSE,\x20đang\x20thử\x20kết\x20nối\x20lại...');};}async function a3(){try{const aR=await v('/api/server-info'),aS=document['getElementById']('mobile-url');if(aS)aS['textContent']=aR['url'];const aT=document['getElementById']('mobile-url-link');if(aT)aT['href']=aR['url'];const aU=document['getElementById']('mobile-qr-container'),aV=document['getElementById']('mobile-qr');aU&&aV&&aR['url']&&(aV['src']='https://api.qrserver.com/v1/create-qr-code/?size=120x120&data='+encodeURIComponent(aR['url']),aU['style']['display']='flex');}catch(aW){}}async function a4(){const aR=document['getElementById']('admin-filter-user'),aS=document['getElementById']('admin-ot-user');try{const aT=await v('/api/users'),aU=aT['users'];m=aU,aU['sort']((aY,aZ)=>aY['fullname']['localeCompare'](aZ['fullname'],'vi'));const aV=JSON['parse'](a['getItem']('ot_current_user')||'null'),aW=aV&&(aV['username']==='admin'||aV['isSuperAdmin']),aX=aV?aV['team']||'':'';aR&&(aR['innerHTML']='<option\x20value=\x22\x22>Tất\x20cả</option>',aU['forEach'](aY=>{aW?aR['innerHTML']+='<option\x20value=\x22'+aY['id']+'\x22>'+aY['fullname']+'</option>':(aY['role']==='employee'&&aY['team']===aX||aV&&aY['id']===aV['id'])&&(aR['innerHTML']+='<option\x20value=\x22'+aY['id']+'\x22>'+aY['fullname']+'</option>');})),aS&&(aS['innerHTML']='<option\x20value=\x22\x22>--\x20Chọn\x20nhân\x20viên\x20--</option>',aU['filter'](aY=>aY['role']==='employee')['forEach'](aY=>{aW?aS['innerHTML']+='<option\x20value=\x22'+aY['id']+'\x22>'+aY['fullname']+'</option>':aY['team']===aX&&(aS['innerHTML']+='<option\x20value=\x22'+aY['id']+'\x22>'+aY['fullname']+'</option>');}));}catch(aY){}}async function a5(){try{const aR=await v('/api/stats');document['getElementById']('stat-total-users')['textContent']=aR['totalUsers'];const aS=aR['pendingOT']||0x0;document['getElementById']('stat-pending-ot')['textContent']=aS;const aT=document['getElementById']('stat-card-pending-ot'),aU=document['getElementById']('dot-pending-ot');aT&&aU&&(aS>0x0?(aT['classList']['add']('has-pending'),aU['style']['display']='inline-block'):(aT['classList']['remove']('has-pending'),aU['style']['display']='none'));const aV=aR['pendingUnlinks']||0x0;document['getElementById']('stat-pending-unlinks')['textContent']=aV;const aW=document['getElementById']('stat-card-pending-unlinks'),aX=document['getElementById']('dot-pending-unlinks');aW&&aX&&(aV>0x0?(aW['classList']['add']('has-pending'),aX['style']['display']='inline-block'):(aW['classList']['remove']('has-pending'),aX['style']['display']='none'));const aY=document['getElementById']('badge-pending-unlinks');aY&&(aV>0x0?(aY['textContent']=aV,aY['style']['display']='inline-block'):aY['style']['display']='none');const aZ=aS+aV,b0=document['getElementById']('bell-badge-count');b0&&(aZ>0x0?(b0['textContent']=aZ,b0['style']['display']='block'):b0['style']['display']='none');document['getElementById']('stat-total-ot')['textContent']=aR['totalOTMonth']['toFixed'](0x1);const b1=document['getElementById']('stat-total-trips');if(b1)b1['textContent']=aR['totalTripsMonth']||0x0;let b2='Tổng\x20chuyến\x20xe\x20(Đã\x20duyệt)';if(isAdmin){const b4=typeof i!=='undefined'&&i['some'](b5=>typeof b5==='object'&&b5['customActivities']&&b5['customActivities']['length']>0x0);b4&&(b2='Tổng\x20hoạt\x20động\x20khác\x20(Đã\x20duyệt)');}else{const b5=currentUser?currentUser['team']||'':'';if(b5&&typeof i!=='undefined'){const b6=i['find'](b8=>typeof b8==='object'&&b8['name']===b5),b7=!!(b6&&b6['customActivities']&&b6['customActivities']['length']>0x0);if(b7){const b8=b6['customActivities']['map'](b9=>b9['name'])['join']('\x20/\x20');b2='Tổng\x20'+b8+'\x20(Đã\x20duyệt)';}}}const b3=document['getElementById']('stat-total-trips-label');if(b3)b3['textContent']=b2;}catch(b9){}}async function a6(){let aR=document['getElementById']('admin-filter-month')['value'];const aS=document['getElementById']('admin-filter-date')?document['getElementById']('admin-filter-date')['value']:'',aT=document['getElementById']('admin-filter-user')['value'],aU=document['getElementById']('admin-search-user')['value']['toLowerCase']()['trim'](),aV=document['getElementById']('admin-search-note')['value']['toLowerCase']()['trim'](),aW=document['getElementById']('admin-filter-team')?document['getElementById']('admin-filter-team')['value']:'';aS&&(aR=aS['substring'](0x0,0x7));try{let aX='/api/records?';if(aR)aX+='month='+aR+'&';if(aT)aX+='userId='+aT+'&';const aY=await v(aX),aZ=aY['records'];n=aZ;const b0=await v('/api/users'),b1=b0['users'];m=b1;const b2=JSON['parse'](a['getItem']('ot_current_user')||'null'),b3=b2&&(b2['username']==='admin'||b2['isSuperAdmin']);let b4=![],b5='2.\x20Hoạt\x20động\x20khác';if(b3){if(aW&&aW!=='unassigned'&&typeof i!=='undefined'){const bo=i['find'](bp=>typeof bp==='object'&&bp['name']===aW);b4=!!(bo&&bo['customActivities']&&bo['customActivities']['length']>0x0),b4&&(b5='2.\x20'+bo['customActivities']['map'](bp=>bp['name'])['join']('\x20/\x20'));}else{if(typeof i!=='undefined'){b4=i['some'](bp=>typeof bp==='object'&&bp['customActivities']&&bp['customActivities']['length']>0x0);if(b4){const bp=[];i['forEach'](bq=>{typeof bq==='object'&&bq['customActivities']&&bq['customActivities']['forEach'](br=>{if(!bp['includes'](br['name']))bp['push'](br['name']);});}),bp['length']>0x0&&bp['length']<=0x3?b5='2.\x20'+bp['join']('\x20/\x20'):b5='2.\x20Hoạt\x20động\x20khác';}}}}else{const bq=b2?b2['team']||'':'';if(bq&&typeof i!=='undefined'){const br=i['find'](bs=>typeof bs==='object'&&bs['name']===bq);b4=!!(br&&br['customActivities']&&br['customActivities']['length']>0x0),b4&&(b5='2.\x20'+br['customActivities']['map'](bs=>bs['name'])['join']('\x20/\x20'));}}const b6=document['getElementById']('admin-rec-type-selector'),b7=document['getElementById']('btn-admin-rec-type-trips');if(b4){if(b6)b6['style']['display']='flex';b7&&(b7['style']['display']='inline-block',b7['textContent']=b5);}else{if(b6)b6['style']['display']='none';k='ot';}const b8=aZ['filter'](bs=>{const bt=b1['find'](by=>by['id']===bs['userId']),bu=!aU||bt&&(bt['fullname']['toLowerCase']()['includes'](aU)||bt['username']['toLowerCase']()['includes'](aU)),bv=!aV||bs['note']&&bs['note']['toLowerCase']()['includes'](aV);let bw=!![];if(b3){if(aW){const by=bt?bt['team']||'':'';aW==='unassigned'?bw=by===''||by==='unassigned':bw=by===aW;}}else{const bz=b2?b2['team']||'':'',bA=bt?bt['team']||'':'';bw=bt&&bt['id']===b2['id']||bA&&bA===bz;}const bx=!aS||bs['date']===aS;return bu&&bv&&bw&&bx;}),b9=document['getElementById']('admin-records-approved-body'),ba=document['getElementById']('admin-records-pending-body'),bb=document['getElementById']('admin-records-rejected-body');let bc=[];k==='ot'?bc=b8['filter'](bs=>(!bs['customActivity']||bs['customActivity']['trim']()==='')&&(bs['totalHours']>0x0||bs['isBackfill'])):bc=b8['filter'](bs=>bs['customActivity']&&bs['customActivity']['trim']()!=='');b9&&b9['previousElementSibling']&&(k==='ot'?b9['previousElementSibling']['innerHTML']='<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Nhân\x20viên</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Nhóm</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ngày</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>OT\x20Trưa</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>OT\x20Chiều</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Khung\x20giờ\x20(Chiều)</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Tổng\x20OT\x20(giờ)</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ghi\x20chú</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Trạng\x20thái</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Thao\x20tác</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>':b9['previousElementSibling']['innerHTML']='<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Nhân\x20viên</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Nhóm</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ngày</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Hoạt\x20động</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Hình\x20thức\x20/\x20Chi\x20tiết</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ghi\x20chú</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Trạng\x20thái</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Thao\x20tác</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>');ba&&ba['previousElementSibling']&&(k==='ot'?ba['previousElementSibling']['innerHTML']='<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20style=\x22width:\x2040px;\x20text-align:\x20center;\x22><input\x20type=\x22checkbox\x22\x20id=\x22chk-pending-select-all\x22\x20style=\x22width:\x2014px;\x20height:\x2014px;\x20margin:\x200;\x20cursor:\x20pointer;\x22></th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Nhân\x20viên</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Nhóm</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ngày</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>OT\x20Trưa</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>OT\x20Chiều</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Khung\x20giờ\x20(Chiều)</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Tổng\x20OT\x20(giờ)</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ghi\x20chú</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Thao\x20tác</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>':ba['previousElementSibling']['innerHTML']='<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20style=\x22width:\x2040px;\x20text-align:\x20center;\x22><input\x20type=\x22checkbox\x22\x20id=\x22chk-pending-select-all\x22\x20style=\x22width:\x2014px;\x20height:\x2014px;\x20margin:\x200;\x20cursor:\x20pointer;\x22></th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Nhân\x20viên</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Nhóm</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ngày</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Hoạt\x20động</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Hình\x20thức\x20/\x20Chi\x20tiết</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ghi\x20chú</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Thao\x20tác</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>');bb&&bb['previousElementSibling']&&(k==='ot'?bb['previousElementSibling']['innerHTML']='<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20style=\x22width:\x2040px;\x20text-align:\x20center;\x22><input\x20type=\x22checkbox\x22\x20id=\x22chk-rejected-select-all\x22\x20style=\x22width:\x2014px;\x20height:\x2014px;\x20margin:\x200;\x20cursor:\x20pointer;\x22></th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Nhân\x20viên</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Nhóm</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ngày</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>OT\x20Trưa</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>OT\x20Chiều</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Khung\x20giờ\x20(Chiều)</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Tổng\x20OT\x20(giờ)</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ghi\x20chú</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Thao\x20tác</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>':bb['previousElementSibling']['innerHTML']='<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20style=\x22width:\x2040px;\x20text-align:\x20center;\x22><input\x20type=\x22checkbox\x22\x20id=\x22chk-rejected-select-all\x22\x20style=\x22width:\x2014px;\x20height:\x2014px;\x20margin:\x200;\x20cursor:\x20pointer;\x22></th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Nhân\x20viên</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Nhóm</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ngày</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Hoạt\x20động</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Hình\x20thức\x20/\x20Chi\x20tiết</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ghi\x20chú</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Thao\x20tác</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>');const bd=bc['filter'](bs=>bs['status']==='approved'||!bs['isBackfill']&&bs['status']!=='pending'&&bs['status']!=='rejected'),be=bc['filter'](bs=>bs['status']==='pending'),bf=bc['filter'](bs=>bs['status']==='rejected');if(bd['length']===0x0){const bs=k==='ot'?0xa:0x8;b9['innerHTML']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr\x20class=\x22empty-row\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20colspan=\x22'+bs+'\x22\x20style=\x22padding:\x2080px\x2016px;\x20text-align:\x20center;\x20background:\x20rgba(255,255,255,0.01);\x20border:\x201px\x20dashed\x20rgba(255,255,255,0.06);\x20border-radius:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20align-items:\x20center;\x20justify-content:\x20center;\x20gap:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x221.5\x22\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20width=\x2248\x22\x20height=\x2248\x22\x20style=\x22color:\x20var(--text-muted);\x20opacity:\x200.6;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<circle\x20cx=\x2212\x22\x20cy=\x2212\x22\x20r=\x2210\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x228\x22\x20y1=\x2212\x22\x20x2=\x2216\x22\x20y2=\x2212\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2015px;\x20font-weight:\x20600;\x20color:\x20var(--text-secondary);\x22>Không\x20có\x20dữ\x20liệu\x20đã\x20duyệt</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2013px;\x20color:\x20var(--text-muted);\x22>Không\x20tìm\x20thấy\x20bản\x20ghi\x20'+(k==='ot'?'tăng\x20ca':'hoạt\x20động\x20tùy\x20chọn')+'\x20nào\x20đã\x20được\x20duyệt\x20trong\x20tháng\x20này.</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20';}else b9['innerHTML']=bd['map'](bt=>{const bu=b1['find'](bA=>bA['id']===bt['userId']),bv=bu?bu['team']==='admin'?'admin':bu['team']||'Chưa\x20phân\x20team':'N/A',bw=bt['isBackfill']||bt['note']&&(bt['note']['includes']('[BÙ\x20THÁNG\x20TRƯỚC]')||bt['note']['includes']('[TĂNG\x20THÁNG\x20NÀY]')),bx='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22user-profile-cell\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22avatar-mini\x22>'+(bu?bu['fullname']['charAt'](0x0)['toUpperCase']():'N')+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22user-details\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22user-fullname\x22>'+(bu?bu['fullname']:'N/A')+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22user-username\x22>@'+(bu?bu['username']:'N/A')+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20',by='<span\x20class=\x22tag-team\x22>'+bv+'</span>',bz=bt['note']?'<span\x20class=\x22text-note\x22\x20title=\x22'+bt['note']+'\x22>'+bt['note']+'</span>':'<span\x20class=\x22text-muted\x22>—</span>';if(k==='ot'){const bA=bt['otStart']||bt['otEnd']?'<span\x20class=\x22text-time\x22>'+(bt['otStart']||'—')+'</span>\x20<span\x20class=\x22text-arrow\x22>→</span>\x20<span\x20class=\x22text-time\x22>'+(bt['otEnd']||'—')+'</span>':'<span\x20class=\x22text-muted\x22>—</span>',bB='<span\x20class=\x22badge-total-ot\x22>'+bt['totalHours']['toFixed'](0x1)+'h</span>';return'<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bx+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+by+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22text-date\x22>'+x(bt['date'])+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(bt['hasLunchOT']?'<span\x20class=\x22tag\x20tag-yes\x22>✓\x20Có</span>':'<span\x20class=\x22tag\x20tag-no\x22>Không</span>')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(bt['eveningOTHours']>0x0?'<span\x20class=\x22text-green\x20text-bold\x22>'+bt['eveningOTHours']['toFixed'](0x1)+'h</span>':'<span\x20class=\x22text-muted\x22>—</span>')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bA+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bB+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bz+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(bw?'<span\x20class=\x22tag\x20tag-yes\x22\x20style=\x22background:rgba(16,185,129,0.1);\x20color:#10b981;\x22>Bù\x20tăng\x20ca</span>':'<span\x20class=\x22tag\x20tag-no\x22\x20style=\x22background:rgba(99,102,241,0.1);\x20color:#6366f1;\x22>Thường</span>')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><div\x20class=\x22action-buttons\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20edit\x22\x20onclick=\x22editRecordDialog(\x27'+bt['id']+'\x27,\x20\x27admin\x27)\x22\x20title=\x22Sửa\x22\x20style=\x22margin-right:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M11\x204H4a2\x202\x200\x200\x200-2\x202v14a2\x202\x200\x200\x200\x202\x202h14a2\x202\x200\x200\x200\x202-2v-7\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M18.5\x202.5a2.121\x202.121\x200\x201\x201\x203\x203L12\x2015l-4\x201\x201-4\x209.5-9.5z\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20delete\x22\x20onclick=\x22deleteRecord(\x27'+bt['id']+'\x27,\x20\x27admin\x27)\x22\x20title=\x22Xóa\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<polyline\x20points=\x223\x206\x205\x206\x2021\x206\x22/><path\x20d=\x22M19\x206v14a2\x202\x200\x200\x201-2-2H7a2\x202\x200\x200\x201-2-2V6m3\x200V4a2\x202\x200\x200\x201\x202-2h4a2\x202\x200\x200\x201\x202\x202v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>';}else{const bC=bt['calcMode']==='trip'?'<span\x20class=\x22tag\x22\x20style=\x22background:\x20rgba(245,158,11,0.15);\x20color:\x20#f59e0b;\x20border:\x201px\x20solid\x20rgba(245,158,11,0.3);\x20font-weight:\x20500;\x22>🚚\x20'+(bt['deliveryProvince']||'Chưa\x20rõ')+'</span>':'<span\x20class=\x22tag\x22\x20style=\x22background:\x20rgba(99,102,241,0.15);\x20color:\x20#6366f1;\x20border:\x201px\x20solid\x20rgba(99,102,241,0.3);\x20font-weight:\x20500;\x22>⏱️\x20'+bt['totalHours']['toFixed'](0x1)+'h</span>';let bD='status-approved',bE='Đã\x20duyệt';if(bt['status']==='pending')bD='status-pending',bE='Chờ\x20duyệt';else bt['status']==='rejected'&&(bD='status-rejected',bE='Từ\x20chối');return'<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bx+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+by+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22text-date\x22>'+x(bt['date'])+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><strong>'+bt['customActivity']+'</strong></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bC+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bz+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22status-badge\x20'+bD+'\x22>'+bE+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><div\x20class=\x22action-buttons\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20edit\x22\x20onclick=\x22editRecordDialog(\x27'+bt['id']+'\x27,\x20\x27admin\x27)\x22\x20title=\x22Sửa\x22\x20style=\x22margin-right:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M11\x204H4a2\x202\x200\x200\x200-2\x202v14a2\x202\x200\x200\x200\x202\x202h14a2\x202\x200\x200\x200\x202-2v-7\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M18.5\x202.5a2.121\x202.121\x200\x201\x201\x203\x203L12\x2015l-4\x201\x201-4\x209.5-9.5z\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20delete\x22\x20onclick=\x22deleteRecord(\x27'+bt['id']+'\x27,\x20\x27admin\x27)\x22\x20title=\x22Xóa\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<polyline\x20points=\x223\x206\x205\x206\x2021\x206\x22/><path\x20d=\x22M19\x206v14a2\x202\x200\x200\x201-2-2H7a2\x202\x200\x200\x201-2-2V6m3\x200V4a2\x202\x200\x200\x201\x202-2h4a2\x202\x200\x200\x201\x202\x202v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>';}})['join']('');if(be['length']===0x0){const bt=k==='ot'?0xa:0x8;ba['innerHTML']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr\x20class=\x22empty-row\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20colspan=\x22'+bt+'\x22\x20style=\x22padding:\x2080px\x2016px;\x20text-align:\x20center;\x20background:\x20rgba(255,255,255,0.01);\x20border:\x201px\x20dashed\x20rgba(255,255,255,0.06);\x20border-radius:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20align-items:\x20center;\x20justify-content:\x20center;\x20gap:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x221.5\x22\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20width=\x2248\x22\x20height=\x2248\x22\x20style=\x22color:\x20var(--accent-green-light);\x20opacity:\x200.8;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<circle\x20cx=\x2212\x22\x20cy=\x2212\x22\x20r=\x2210\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x2212\x22\x20y1=\x228\x22\x20x2=\x2212\x22\x20y2=\x2212\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x2212\x22\x20y1=\x2216\x22\x20x2=\x2212.01\x22\x20y2=\x2216\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2015px;\x20font-weight:\x20600;\x20color:\x20var(--text-primary);\x22>Không\x20có\x20yêu\x20cầu\x20chờ\x20duyệt</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2013px;\x20color:\x20var(--text-muted);\x22>Tất\x20cả\x20yêu\x20cầu\x20'+(k==='ot'?'tăng\x20ca':'hoạt\x20động\x20tùy\x20chọn')+'\x20đã\x20được\x20xử\x20lý\x20xong.</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20';}else ba['innerHTML']=be['map'](bu=>{const bv=b1['find'](bA=>bA['id']===bu['userId']),bw=bv?bv['team']==='admin'?'admin':bv['team']||'Chưa\x20phân\x20team':'N/A',bx='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22user-profile-cell\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22avatar-mini\x22>'+(bv?bv['fullname']['charAt'](0x0)['toUpperCase']():'N')+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22user-details\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22user-fullname\x22>'+(bv?bv['fullname']:'N/A')+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22user-username\x22>@'+(bv?bv['username']:'N/A')+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20',by='<span\x20class=\x22tag-team\x22>'+bw+'</span>',bz=bu['note']?'<span\x20class=\x22text-note\x22\x20title=\x22'+bu['note']+'\x22>'+bu['note']+'</span>':'<span\x20class=\x22text-muted\x22>—</span>';if(k==='ot'){const bA=bu['otStart']||bu['otEnd']?'<span\x20class=\x22text-time\x22>'+(bu['otStart']||'—')+'</span>\x20<span\x20class=\x22text-arrow\x22>→</span>\x20<span\x20class=\x22text-time\x22>'+(bu['otEnd']||'—')+'</span>':'<span\x20class=\x22text-muted\x22>—</span>',bB='<span\x20class=\x22badge-total-ot\x22>'+bu['totalHours']['toFixed'](0x1)+'h</span>';return'<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20style=\x22text-align:\x20center;\x22><input\x20type=\x22checkbox\x22\x20class=\x22chk-pending-record\x22\x20value=\x22'+bu['id']+'\x22\x20style=\x22width:\x2014px;\x20height:\x2014px;\x20margin:\x200;\x20cursor:\x20pointer;\x22\x20onchange=\x22updatePendingBulkActionsVisibility()\x22></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bx+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+by+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22text-date\x22>'+x(bu['date'])+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(bu['hasLunchOT']?'<span\x20class=\x22tag\x20tag-yes\x22>✓\x20Có</span>':'<span\x20class=\x22tag\x20tag-no\x22>Không</span>')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(bu['eveningOTHours']>0x0?'<span\x20class=\x22text-green\x20text-bold\x22>'+bu['eveningOTHours']['toFixed'](0x1)+'h</span>':'<span\x20class=\x22text-muted\x22>—</span>')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bA+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bB+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bz+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><div\x20class=\x22action-buttons\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn\x20btn-green\x20btn-xs\x22\x20onclick=\x22approveRecord(\x27'+bu['id']+'\x27)\x22\x20title=\x22Duyệt\x22\x20style=\x22margin-right:\x204px;\x20padding:\x204px\x208px;\x20font-size:\x2011px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20✓\x20Duyệt\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn\x20btn-danger\x20btn-xs\x22\x20onclick=\x22rejectRecord(\x27'+bu['id']+'\x27)\x22\x20title=\x22Từ\x20chối\x22\x20style=\x22padding:\x204px\x208px;\x20font-size:\x2011px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20✕\x20Từ\x20chối\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>';}else{const bC=bu['calcMode']==='trip'?'<span\x20class=\x22tag\x22\x20style=\x22background:\x20rgba(245,158,11,0.15);\x20color:\x20#f59e0b;\x20border:\x201px\x20solid\x20rgba(245,158,11,0.3);\x20font-weight:\x20500;\x22>🚚\x20'+(bu['deliveryProvince']||'Chưa\x20rõ')+'</span>':'<span\x20class=\x22tag\x22\x20style=\x22background:\x20rgba(99,102,241,0.15);\x20color:\x20#6366f1;\x20border:\x201px\x20solid\x20rgba(99,102,241,0.3);\x20font-weight:\x20500;\x22>⏱️\x20'+bu['totalHours']['toFixed'](0x1)+'h</span>';return'<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20style=\x22text-align:\x20center;\x22><input\x20type=\x22checkbox\x22\x20class=\x22chk-pending-record\x22\x20value=\x22'+bu['id']+'\x22\x20style=\x22width:\x2014px;\x20height:\x2014px;\x20margin:\x200;\x20cursor:\x20pointer;\x22\x20onchange=\x22updatePendingBulkActionsVisibility()\x22></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bx+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+by+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22text-date\x22>'+x(bu['date'])+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><strong>'+bu['customActivity']+'</strong></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bC+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bz+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><div\x20class=\x22action-buttons\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn\x20btn-green\x20btn-xs\x22\x20onclick=\x22approveRecord(\x27'+bu['id']+'\x27)\x22\x20title=\x22Duyệt\x22\x20style=\x22margin-right:\x204px;\x20padding:\x204px\x208px;\x20font-size:\x2011px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20✓\x20Duyệt\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn\x20btn-danger\x20btn-xs\x22\x20onclick=\x22rejectRecord(\x27'+bu['id']+'\x27)\x22\x20title=\x22Từ\x20chối\x22\x20style=\x22padding:\x204px\x208px;\x20font-size:\x2011px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20✕\x20Từ\x20chối\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>';}})['join']('');if(bf['length']===0x0){const bu=k==='ot'?0xa:0x8;bb['innerHTML']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr\x20class=\x22empty-row\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20colspan=\x22'+bu+'\x22\x20style=\x22padding:\x2080px\x2016px;\x20text-align:\x20center;\x20background:\x20rgba(255,255,255,0.01);\x20border:\x201px\x20dashed\x20rgba(255,255,255,0.06);\x20border-radius:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20align-items:\x20center;\x20justify-content:\x20center;\x20gap:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x221.5\x22\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20width=\x2248\x22\x20height=\x2248\x22\x20style=\x22color:\x20#ef4444;\x20opacity:\x200.7;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<circle\x20cx=\x2212\x22\x20cy=\x2212\x22\x20r=\x2210\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x2215\x22\x20y1=\x229\x22\x20x2=\x229\x22\x20y2=\x2215\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x229\x22\x20y1=\x229\x22\x20x2=\x2215\x22\x20y2=\x2215\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2015px;\x20font-weight:\x20600;\x20color:\x20var(--text-secondary);\x22>Không\x20có\x20bản\x20ghi\x20bị\x20từ\x20chối</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2013px;\x20color:\x20var(--text-muted);\x22>Không\x20có\x20yêu\x20cầu\x20'+(k==='ot'?'tăng\x20ca':'hoạt\x20động\x20tùy\x20chọn')+'\x20nào\x20bị\x20từ\x20chối\x20duyệt.</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20';}else bb['innerHTML']=bf['map'](bv=>{const bw=b1['find'](bB=>bB['id']===bv['userId']),bx=bw?bw['team']==='admin'?'admin':bw['team']||'Chưa\x20phân\x20team':'N/A',by='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22user-profile-cell\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22avatar-mini\x22>'+(bw?bw['fullname']['charAt'](0x0)['toUpperCase']():'N')+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22user-details\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22user-fullname\x22>'+(bw?bw['fullname']:'N/A')+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22user-username\x22>@'+(bw?bw['username']:'N/A')+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20',bz='<span\x20class=\x22tag-team\x22>'+bx+'</span>',bA=bv['note']?'<span\x20class=\x22text-note\x22\x20title=\x22'+bv['note']+'\x22>'+bv['note']+'</span>':'<span\x20class=\x22text-muted\x22>—</span>';if(k==='ot'){const bB=bv['otStart']||bv['otEnd']?'<span\x20class=\x22text-time\x22>'+(bv['otStart']||'—')+'</span>\x20<span\x20class=\x22text-arrow\x22>→</span>\x20<span\x20class=\x22text-time\x22>'+(bv['otEnd']||'—')+'</span>':'<span\x20class=\x22text-muted\x22>—</span>',bC='<span\x20class=\x22badge-total-ot\x22>'+bv['totalHours']['toFixed'](0x1)+'h</span>';return'<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20style=\x22text-align:\x20center;\x22><input\x20type=\x22checkbox\x22\x20class=\x22chk-rejected-record\x22\x20value=\x22'+bv['id']+'\x22\x20style=\x22width:\x2014px;\x20height:\x2014px;\x20margin:\x200;\x20cursor:\x20pointer;\x22\x20onchange=\x22updateRejectedBulkActionsVisibility()\x22></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+by+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bz+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22text-date\x22>'+x(bv['date'])+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(bv['hasLunchOT']?'<span\x20class=\x22tag\x20tag-yes\x22>✓\x20Có</span>':'<span\x20class=\x22tag\x20tag-no\x22>Không</span>')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(bv['eveningOTHours']>0x0?'<span\x20class=\x22text-green\x20text-bold\x22>'+bv['eveningOTHours']['toFixed'](0x1)+'h</span>':'<span\x20class=\x22text-muted\x22>—</span>')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bB+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bC+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bA+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><div\x20class=\x22action-buttons\x22\x20style=\x22display:\x20flex;\x20align-items:\x20center;\x20gap:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn\x20btn-primary\x20btn-xs\x22\x20onclick=\x22approveRecord(\x27'+bv['id']+'\x27)\x22\x20title=\x22Duyệt\x20lại\x22\x20style=\x22padding:\x204px\x208px;\x20font-size:\x2011px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20✓\x20Duyệt\x20lại\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20delete\x22\x20onclick=\x22deleteRecord(\x27'+bv['id']+'\x27,\x20\x27admin\x27)\x22\x20title=\x22Xóa\x22\x20style=\x22padding:\x202px;\x20width:\x2024px;\x20height:\x2024px;\x20display:\x20flex;\x20align-items:\x20center;\x20justify-content:\x20center;\x20background:\x20rgba(239,\x2068,\x2068,\x200.1);\x20border:\x201px\x20solid\x20rgba(239,\x2068,\x2068,\x200.2);\x20border-radius:\x204px;\x20color:\x20#ef4444;\x20cursor:\x20pointer;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222.5\x22\x20width=\x2213\x22\x20height=\x2213\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<polyline\x20points=\x223\x206\x205\x206\x2021\x206\x22/><path\x20d=\x22M19\x206v14a2\x202\x200\x200\x201-2\x202H7a2\x202\x200\x200\x201-2-2V6m3\x200V4a2\x202\x200\x200\x201\x202-2h4a2\x202\x200\x200\x201\x202\x202v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>';}else{const bD=bv['calcMode']==='trip'?'<span\x20class=\x22tag\x22\x20style=\x22background:\x20rgba(245,158,11,0.15);\x20color:\x20#f59e0b;\x20border:\x201px\x20solid\x20rgba(245,158,11,0.3);\x20font-weight:\x20500;\x22>🚚\x20'+(bv['deliveryProvince']||'Chưa\x20rõ')+'</span>':'<span\x20class=\x22tag\x22\x20style=\x22background:\x20rgba(99,102,241,0.15);\x20color:\x20#6366f1;\x20border:\x201px\x20solid\x20rgba(99,102,241,0.3);\x20font-weight:\x20500;\x22>⏱️\x20'+bv['totalHours']['toFixed'](0x1)+'h</span>';return'<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20style=\x22text-align:\x20center;\x22><input\x20type=\x22checkbox\x22\x20class=\x22chk-rejected-record\x22\x20value=\x22'+bv['id']+'\x22\x20style=\x22width:\x2014px;\x20height:\x2014px;\x20margin:\x200;\x20cursor:\x20pointer;\x22\x20onchange=\x22updateRejectedBulkActionsVisibility()\x22></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+by+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bz+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22text-date\x22>'+x(bv['date'])+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><strong>'+bv['customActivity']+'</strong></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bD+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bA+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><div\x20class=\x22action-buttons\x22\x20style=\x22display:\x20flex;\x20align-items:\x20center;\x20gap:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn\x20btn-primary\x20btn-xs\x22\x20onclick=\x22approveRecord(\x27'+bv['id']+'\x27)\x22\x20title=\x22Duyệt\x20lại\x22\x20style=\x22padding:\x204px\x208px;\x20font-size:\x2011px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20✓\x20Duyệt\x20lại\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20delete\x22\x20onclick=\x22deleteRecord(\x27'+bv['id']+'\x27,\x20\x27admin\x27)\x22\x20title=\x22Xóa\x22\x20style=\x22padding:\x202px;\x20width:\x2024px;\x20height:\x2024px;\x20display:\x20flex;\x20align-items:\x20center;\x20justify-content:\x20center;\x20background:\x20rgba(239,\x2068,\x2068,\x200.1);\x20border:\x201px\x20solid\x20rgba(239,\x2068,\x2068,\x200.2);\x20border-radius:\x204px;\x20color:\x20#ef4444;\x20cursor:\x20pointer;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222.5\x22\x20width=\x2213\x22\x20height=\x2213\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<polyline\x20points=\x223\x206\x205\x206\x2021\x206\x22/><path\x20d=\x22M19\x206v14a2\x202\x200\x200\x201-2\x202H7a2\x202\x200\x200\x201-2-2V6m3\x200V4a2\x202\x200\x200\x201\x202-2h4a2\x202\x200\x200\x201\x202\x202v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>';}})['join']('');const bg=b8['filter'](bv=>bv['status']==='approved'||!bv['isBackfill']&&bv['status']!=='pending'&&bv['status']!=='rejected');let bh=0x0,bi=0x0,bj=0x0,bk=0x0;bg['forEach'](bv=>{bh+=bv['hasLunchOT']?g:0x0,bi+=bv['eveningOTHours'],bj+=bv['totalHours'],bv['deliveryProvince']&&bv['deliveryProvince']['trim']()!==''&&bk++;});const bl=document['getElementById']('badge-pending-records');bl&&(be['length']>0x0?(bl['textContent']=be['length'],bl['style']['display']='inline-block'):bl['style']['display']='none');const bm=document['getElementById']('badge-sub-pending');bm&&(be['length']>0x0?(bm['textContent']=be['length'],bm['style']['display']='inline-block'):bm['style']['display']='none');const bn=document['getElementById']('badge-sub-rejected');bn&&(bf['length']>0x0?(bn['textContent']=bf['length'],bn['style']['display']='inline-block'):bn['style']['display']='none'),document['getElementById']('admin-table-summary')['innerHTML']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22summary-item\x22><span\x20class=\x22summary-label\x22>Tổng\x20bản\x20ghi:</span><span\x20class=\x22summary-value\x22>'+bg['length']+'</span></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22summary-item\x22><span\x20class=\x22summary-label\x22>OT\x20Trưa:</span><span\x20class=\x22summary-value\x22>'+bh['toFixed'](0x1)+'h</span></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22summary-item\x22><span\x20class=\x22summary-label\x22>OT\x20Chiều:</span><span\x20class=\x22summary-value\x22>'+bi['toFixed'](0x1)+'h</span></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22summary-item\x22><span\x20class=\x22summary-label\x22>Tổng\x20OT:</span><span\x20class=\x22summary-value\x22>'+bj['toFixed'](0x1)+'h</span></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22summary-item\x22><span\x20class=\x22summary-label\x22>Tổng\x20chuyến\x20xe:</span><span\x20class=\x22summary-value\x22>'+bk+'</span></div>',setTimeout(()=>{const bv=document['getElementById']('chk-pending-select-all');bv&&(bv['onclick']=bz=>{const bA=document['querySelectorAll']('.chk-pending-record');bA['forEach'](bB=>bB['checked']=bz['target']['checked']),ag();});const bw=document['getElementById']('pending-bulk-actions');if(bw)bw['style']['display']='none';const bx=document['getElementById']('chk-rejected-select-all');bx&&(bx['onclick']=bz=>{const bA=document['querySelectorAll']('.chk-rejected-record');bA['forEach'](bB=>bB['checked']=bz['target']['checked']),aj();});const by=document['getElementById']('rejected-bulk-actions');if(by)by['style']['display']='none';},0x32);}catch(bv){console['error'](bv);}}async function a7(){try{const aR=JSON['parse'](a['getItem']('ot_current_user')||'null'),aS=aR&&(aR['username']==='admin'||aR['isSuperAdmin']),aT=aR&&(aR['team']==='admin'||aR['username']==='admin'||aR['isSuperAdmin']),aU=await v('/api/users'),aV=aU['users'],aW=A(),aX=await v('/api/records?month='+aW),aY=aX['records'],aZ=aV['filter'](b7=>b7['role']==='employee'),b0=aV['filter'](b7=>b7['role']==='admin'),b1=document['getElementById']('admin-users-body');b1['innerHTML']=aZ['map']((b7,b8)=>{const b9=aY['filter'](bg=>bg['userId']===b7['id']),ba=b9['reduce']((bg,bh)=>bg+bh['totalHours'],0x0);let bb='';(b7['deviceId']||b7['browserDeviceId'])&&(bb='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-reset\x20btn-reset-mobile\x22\x20onclick=\x22showUnlinkOptions(\x27'+b7['id']+'\x27,\x20\x27'+b7['fullname']+'\x27,\x20'+!!b7['deviceId']+',\x20'+!!b7['browserDeviceId']+')\x22\x20title=\x22Hủy\x20liên\x20kết\x20thiết\x20bị\x22\x20style=\x22margin-right:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2214\x22\x20height=\x2214\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M18.36\x206.64a9\x209\x200\x201\x201-12.73\x200\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x2212\x22\x20y1=\x222\x22\x20x2=\x2212\x22\x20y2=\x2212\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Hủy\x20liên\x20kết\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20');let bc='',bd='';b7['pendingUnlink']&&(bd='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-reset\x20btn-reset-approve\x22\x20onclick=\x22approveUnlinkDevice(\x27'+b7['id']+'\x27,\x20\x27'+b7['fullname']+'\x27)\x22\x20title=\x22Duyệt\x20yêu\x20cầu\x20huỷ\x20liên\x20kết\x22\x20style=\x22margin-right:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2214\x22\x20height=\x2214\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<polyline\x20points=\x2220\x206\x209\x2017\x204\x2012\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Duyệt\x20Huỷ\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-reset\x20btn-reset-reject\x22\x20onclick=\x22rejectUnlinkDevice(\x27'+b7['id']+'\x27,\x20\x27'+b7['fullname']+'\x27)\x22\x20title=\x22Từ\x20chối\x20yêu\x20cầu\x20huỷ\x20liên\x20kết\x22\x20style=\x22margin-right:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2214\x22\x20height=\x2214\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x2218\x22\x20y1=\x226\x22\x20x2=\x226\x22\x20y2=\x2218\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x226\x22\x20y1=\x226\x22\x20x2=\x2218\x22\x20y2=\x2218\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Từ\x20Chối\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20');const be=b7['pendingUnlink']?'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22unlink-badge\x22\x20style=\x22display:inline-block;\x20font-size:0.75rem;\x20background:rgba(239,\x2068,\x2068,\x200.15);\x20color:#ef4444;\x20border:1px\x20solid\x20rgba(239,\x2068,\x2068,\x200.3);\x20padding:2px\x208px;\x20border-radius:12px;\x20font-weight:700;\x20margin-left:8px;\x20animation:\x20blink-red\x201.5s\x20infinite;\x20cursor:pointer;\x22\x20onclick=\x22approveUnlinkDevice(\x27'+b7['id']+'\x27,\x20\x27'+b7['fullname']+'\x27)\x22\x20title=\x22Bấm\x20vào\x20đây\x20để\x20phê\x20duyệt\x20huỷ\x20liên\x20kết\x20thiết\x20bị\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20⚠️\x20Xin\x20huỷ\x20liên\x20kết\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20':'',bf=b7['pendingPasswordReset']?'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22password-reset-badge\x22\x20style=\x22display:inline-block;\x20font-size:0.75rem;\x20background:rgba(239,\x2068,\x2068,\x200.15);\x20color:#ef4444;\x20border:1px\x20solid\x20rgba(239,\x2068,\x2068,\x200.3);\x20padding:2px\x208px;\x20border-radius:12px;\x20font-weight:700;\x20margin-left:8px;\x20animation:\x20blink-red\x201.5s\x20infinite;\x20cursor:pointer;\x22\x20onclick=\x22approvePasswordReset(\x27'+b7['id']+'\x27,\x20\x27'+b7['fullname']+'\x27)\x22\x20title=\x22Bấm\x20vào\x20đây\x20để\x20cấp\x20lại\x20mật\x20khẩu\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20⚠️\x20Xin\x20cấp\x20lại\x20MK\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20':'';return'<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(b8+0x1)+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><strong>'+b7['fullname']+'</strong>'+be+bf+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+b7['username']+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20style=\x22font-weight:600;\x20color:var(--text-secondary);\x22>'+(b7['team']||'Chưa\x20phân\x20team')+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22tag\x20tag-employee\x22>Nhân\x20viên</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22text-purple\x20text-bold\x22>'+ba['toFixed'](0x1)+'h</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><div\x20class=\x22action-buttons\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+bd+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+bb+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+bc+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(!b7['team']||b7['team']!=='admin'||aT||aR&&aR['id']===b7['id']?'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20edit\x22\x20onclick=\x22editUserDialog(\x27'+b7['id']+'\x27)\x22\x20title=\x22Sửa\x22\x20style=\x22margin-right:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M11\x204H4a2\x202\x200\x200\x200-2\x202v14a2\x202\x200\x200\x200\x202\x202h14a2\x202\x200\x200\x200\x202-2v-7\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M18.5\x202.5a2.121\x202.121\x200\x201\x201\x203\x203L12\x2015l-4\x201\x201-4\x209.5-9.5z\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(!b7['team']||b7['team']!=='admin'||aT?'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20delete\x22\x20onclick=\x22deleteUser(\x27'+b7['id']+'\x27)\x22\x20title=\x22Xóa\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<polyline\x20points=\x223\x206\x205\x206\x2021\x206\x22/><path\x20d=\x22M19\x206v14a2\x202\x200\x200\x201-2\x202H7a2\x202\x200\x200\x201-2-2V6m3\x200V4a2\x202\x200\x200\x201\x202-2h4a2\x202\x200\x200\x201\x202\x202v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>';})['join']('')||'<tr\x20class=\x22empty-row\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20colspan=\x227\x22\x20style=\x22padding:\x2080px\x2016px;\x20text-align:\x20center;\x20background:\x20rgba(255,255,255,0.01);\x20border:\x201px\x20dashed\x20rgba(255,255,255,0.06);\x20border-radius:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20align-items:\x20center;\x20justify-content:\x20center;\x20gap:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x221.5\x22\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20width=\x2248\x22\x20height=\x2248\x22\x20style=\x22color:\x20var(--text-muted);\x20opacity:\x200.6;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M17\x2021v-2a4\x204\x200\x200\x200-4-4H5a4\x204\x200\x200\x200-4\x204v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<circle\x20cx=\x229\x22\x20cy=\x227\x22\x20r=\x224\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M23\x2021v-2a4\x204\x200\x200\x200-3-3.87\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M16\x203.13a4\x204\x200\x200\x201\x200\x207.75\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2015px;\x20font-weight:\x20600;\x20color:\x20var(--text-secondary);\x22>Không\x20có\x20nhân\x20viên</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2013px;\x20color:\x20var(--text-muted);\x22>Hiện\x20tại\x20chưa\x20có\x20nhân\x20viên\x20nào\x20trong\x20danh\x20sách.</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</tr>';const b2=document['getElementById']('admin-managers-body');b2['innerHTML']=b0['map']((b7,b8)=>{const b9=b7['pendingPasswordReset']?'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22password-reset-badge\x22\x20style=\x22display:inline-block;\x20font-size:0.75rem;\x20background:rgba(239,\x2068,\x2068,\x200.15);\x20color:#ef4444;\x20border:1px\x20solid\x20rgba(239,\x2068,\x2068,\x200.3);\x20padding:2px\x208px;\x20border-radius:12px;\x20font-weight:700;\x20margin-left:8px;\x20animation:\x20blink-red\x201.5s\x20infinite;\x20cursor:pointer;\x22\x20onclick=\x22approvePasswordReset(\x27'+b7['id']+'\x27,\x20\x27'+b7['fullname']+'\x27)\x22\x20title=\x22Bấm\x20vào\x20đây\x20để\x20cấp\x20lại\x20mật\x20khẩu\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20⚠️\x20Xin\x20cấp\x20lại\x20MK\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20':'';return'<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(b8+0x1)+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><strong>'+b7['fullname']+'</strong>'+b9+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+b7['username']+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20style=\x22font-weight:600;\x20color:var(--text-secondary);\x22>'+(b7['team']==='admin'?'admin':b7['team']||'admin')+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22tag\x20tag-admin\x22>Quản\x20lý</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><div\x20class=\x22action-buttons\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(aS&&(aR&&aR['id']!==b7['id'])?'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20edit\x22\x20onclick=\x22editUserDialog(\x27'+b7['id']+'\x27)\x22\x20title=\x22Sửa\x22\x20style=\x22margin-right:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M11\x204H4a2\x202\x200\x200\x200-2\x202v14a2\x202\x200\x200\x200\x202\x202h14a2\x202\x200\x200\x200\x202-2v-7\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M18.5\x202.5a2.121\x202.121\x200\x201\x201\x203\x203L12\x2015l-4\x201\x201-4\x209.5-9.5z\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(aS&&!b7['isSuperAdmin']&&b7['username']!=='admin'?'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20delete\x22\x20onclick=\x22deleteUser(\x27'+b7['id']+'\x27)\x22\x20title=\x22Xóa\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<polyline\x20points=\x223\x206\x205\x206\x2021\x206\x22/><path\x20d=\x22M19\x206v14a2\x202\x200\x200\x201-2\x202H7a2\x202\x200\x200\x201-2-2V6m3\x200V4a2\x202\x200\x200\x201\x202-2h4a2\x202\x200\x200\x201\x202\x202v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>';})['join']('')||'<tr\x20class=\x22empty-row\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20colspan=\x226\x22\x20style=\x22padding:\x2080px\x2016px;\x20text-align:\x20center;\x20background:\x20rgba(255,255,255,0.01);\x20border:\x201px\x20dashed\x20rgba(255,255,255,0.06);\x20border-radius:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20align-items:\x20center;\x20justify-content:\x20center;\x20gap:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x221.5\x22\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20width=\x2248\x22\x20height=\x2248\x22\x20style=\x22color:\x20var(--text-muted);\x20opacity:\x200.6;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M20\x2021v-2a4\x204\x200\x200\x200-4-4H8a4\x204\x200\x200\x200-4\x204v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<circle\x20cx=\x2212\x22\x20cy=\x227\x22\x20r=\x224\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2015px;\x20font-weight:\x20600;\x20color:\x20var(--text-secondary);\x22>Không\x20có\x20quản\x20lý</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2013px;\x20color:\x20var(--text-muted);\x22>Không\x20tìm\x20thấy\x20tài\x20khoản\x20quản\x20lý\x20nào.</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</tr>';const b3=document['getElementById']('admin-users-unassigned-body'),b4=aZ['filter'](b7=>!b7['team']||b7['team']==='unassigned');b3&&(b3['innerHTML']=b4['map']((b7,b8)=>{const b9=aY['filter'](bg=>bg['userId']===b7['id']),ba=b9['reduce']((bg,bh)=>bg+bh['totalHours'],0x0);let bb='';(b7['deviceId']||b7['browserDeviceId'])&&(bb='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-reset\x20btn-reset-mobile\x22\x20onclick=\x22showUnlinkOptions(\x27'+b7['id']+'\x27,\x20\x27'+b7['fullname']+'\x27,\x20'+!!b7['deviceId']+',\x20'+!!b7['browserDeviceId']+')\x22\x20title=\x22Hủy\x20liên\x20kết\x20thiết\x20bị\x22\x20style=\x22margin-right:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2214\x22\x20height=\x2214\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M18.36\x206.64a9\x209\x200\x201\x201-12.73\x200\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x2212\x22\x20y1=\x222\x22\x20x2=\x2212\x22\x20y2=\x2212\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Hủy\x20liên\x20kết\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20');let bc='',bd='';b7['pendingUnlink']&&(bd='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-reset\x20btn-reset-approve\x22\x20onclick=\x22approveUnlinkDevice(\x27'+b7['id']+'\x27,\x20\x27'+b7['fullname']+'\x27)\x22\x20title=\x22Duyệt\x20yêu\x20cầu\x20huỷ\x20liên\x20kết\x22\x20style=\x22margin-right:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2214\x22\x20height=\x2214\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<polyline\x20points=\x2220\x206\x209\x2017\x204\x2012\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Duyệt\x20Huỷ\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-reset\x20btn-reset-reject\x22\x20onclick=\x22rejectUnlinkDevice(\x27'+b7['id']+'\x27,\x20\x27'+b7['fullname']+'\x27)\x22\x20title=\x22Từ\x20chối\x20yêu\x20cầu\x20huỷ\x20liên\x20kết\x22\x20style=\x22margin-right:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2214\x22\x20height=\x2214\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x2218\x22\x20y1=\x226\x22\x20x2=\x226\x22\x20y2=\x2218\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x226\x22\x20y1=\x226\x22\x20x2=\x2218\x22\x20y2=\x2218\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Từ\x20Chối\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20');const be=b7['pendingUnlink']?'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22unlink-badge\x22\x20style=\x22display:inline-block;\x20font-size:0.75rem;\x20background:rgba(239,\x2068,\x2068,\x200.15);\x20color:#ef4444;\x20border:1px\x20solid\x20rgba(239,\x2068,\x2068,\x200.3);\x20padding:2px\x208px;\x20border-radius:12px;\x20font-weight:700;\x20margin-left:8px;\x20animation:\x20blink-red\x201.5s\x20infinite;\x20cursor:pointer;\x22\x20onclick=\x22approveUnlinkDevice(\x27'+b7['id']+'\x27,\x20\x27'+b7['fullname']+'\x27)\x22\x20title=\x22Bấm\x20vào\x20đây\x20để\x20phê\x20duyệt\x20huỷ\x20liên\x20kết\x20thiết\x20bị\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20⚠️\x20Xin\x20huỷ\x20liên\x20kết\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20':'',bf=b7['pendingPasswordReset']?'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22password-reset-badge\x22\x20style=\x22display:inline-block;\x20font-size:0.75rem;\x20background:rgba(239,\x2068,\x2068,\x200.15);\x20color:#ef4444;\x20border:1px\x20solid\x20rgba(239,\x2068,\x2068,\x200.3);\x20padding:2px\x208px;\x20border-radius:12px;\x20font-weight:700;\x20margin-left:8px;\x20animation:\x20blink-red\x201.5s\x20infinite;\x20cursor:pointer;\x22\x20onclick=\x22approvePasswordReset(\x27'+b7['id']+'\x27,\x20\x27'+b7['fullname']+'\x27)\x22\x20title=\x22Bấm\x20vào\x20đây\x20để\x20cấp\x20lại\x20mật\x20khẩu\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20⚠️\x20Xin\x20cấp\x20lại\x20MK\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20':'';return'<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(b8+0x1)+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><strong>'+b7['fullname']+'</strong>'+be+bf+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+b7['username']+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20style=\x22font-weight:600;\x20color:var(--text-secondary);\x22>'+(b7['team']||'Chưa\x20phân\x20team')+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22tag\x20tag-employee\x22>Nhân\x20viên</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22text-purple\x20text-bold\x22>'+ba['toFixed'](0x1)+'h</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><div\x20class=\x22action-buttons\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+bd+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+bb+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+bc+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(!b7['team']||b7['team']!=='admin'||aT||aR&&aR['id']===b7['id']?'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20edit\x22\x20onclick=\x22editUserDialog(\x27'+b7['id']+'\x27)\x22\x20title=\x22Sửa\x22\x20style=\x22margin-right:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M11\x204H4a2\x202\x200\x200\x200-2\x202v14a2\x202\x200\x200\x200\x202\x202h14a2\x202\x200\x200\x200\x202-2v-7\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M18.5\x202.5a2.121\x202.121\x200\x201\x201\x203\x203L12\x2015l-4\x201\x201-4\x209.5-9.5z\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(!b7['team']||b7['team']!=='admin'||aT?'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20delete\x22\x20onclick=\x22deleteUser(\x27'+b7['id']+'\x27)\x22\x20title=\x22Xóa\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<polyline\x20points=\x223\x206\x205\x206\x2021\x206\x22/><path\x20d=\x22M19\x206v14a2\x202\x200\x200\x201-2\x202H7a2\x202\x200\x200\x201-2-2V6m3\x200V4a2\x202\x200\x200\x201\x202-2h4a2\x202\x200\x200\x201\x202\x202v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>';})['join']('')||'<tr\x20class=\x22empty-row\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20colspan=\x227\x22\x20style=\x22padding:\x2080px\x2016px;\x20text-align:\x20center;\x20background:\x20rgba(255,255,255,0.01);\x20border:\x201px\x20dashed\x20rgba(255,255,255,0.06);\x20border-radius:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20align-items:\x20center;\x20justify-content:\x20center;\x20gap:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x221.5\x22\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20width=\x2248\x22\x20height=\x2248\x22\x20style=\x22color:\x20var(--text-muted);\x20opacity:\x200.6;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M17\x2021v-2a4\x204\x200\x200\x200-4-4H5a4\x204\x200\x200\x200-4\x204v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<circle\x20cx=\x229\x22\x20cy=\x227\x22\x20r=\x224\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M23\x2021v-2a4\x204\x200\x200\x200-3-3.87\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M16\x203.13a4\x204\x200\x200\x201\x200\x207.75\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2015px;\x20font-weight:\x20600;\x20color:\x20var(--text-secondary);\x22>Không\x20có\x20nhân\x20viên\x20chưa\x20phân\x20team</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22font-size:\x2013px;\x20color:\x20var(--text-muted);\x22>Tất\x20cả\x20nhân\x20viên\x20đã\x20được\x20phân\x20bổ\x20vào\x20các\x20nhóm\x20làm\x20việc.</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>');const b5=document['getElementById']('unassigned-warning-alert');b5&&(b4['length']>0x0?b5['style']['display']='flex':b5['style']['display']='none');const b6=document['getElementById']('badge-sub-unassigned');b6&&(b4['length']>0x0?(b6['textContent']=b4['length'],b6['style']['display']='inline-block'):b6['style']['display']='none');}catch(b7){}}function a8(aR){const aS=Object['entries'](aR)['sort']((b1,b2)=>b2[0x1]-b1[0x1]),aT=aS['reduce']((b1,b2)=>b1+b2[0x1],0x0);if(aS['length']===0x0||aT===0x0)return'<div\x20class=\x22chart-empty\x22>Chưa\x20có\x20dữ\x20liệu\x20đội\x20nhóm</div>';const aU=Math['max'](...aS['map'](b1=>b1[0x1]))||0x1,aV=0x190,aW=0x18,aX=0x6e,aY=0x3c,aZ=aS['length']*aW+0x14;let b0='<svg\x20width=\x22100%\x22\x20height=\x22'+aZ+'\x22\x20viewBox=\x220\x200\x20'+aV+'\x20'+aZ+'\x22\x20style=\x22font-family:\x20inherit;\x22>';return b0+='\x0a\x20\x20\x20\x20\x20\x20\x20\x20<defs>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<linearGradient\x20id=\x22barGrad\x22\x20x1=\x220%\x22\x20y1=\x220%\x22\x20x2=\x22100%\x22\x20y2=\x220%\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<stop\x20offset=\x220%\x22\x20stop-color=\x22#0dd98b\x22\x20stop-opacity=\x220.6\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<stop\x20offset=\x22100%\x22\x20stop-color=\x22#0dd98b\x22\x20stop-opacity=\x220.95\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</linearGradient>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</defs>',aS['forEach'](([b1,b2],b3)=>{const b4=b3*aW+0xa,b5=aV-aX-aY,b6=b2/aU*b5,b7=b1['length']>0xe?b1['substring'](0x0,0xc)+'..':b1;b0+='<text\x20x=\x22'+(aX-0xa)+'\x22\x20y=\x22'+(b4+0xf)+'\x22\x20fill=\x22var(--text-secondary)\x22\x20font-size=\x2211\x22\x20font-weight=\x22500\x22\x20text-anchor=\x22end\x22>'+b7+'</text>',b0+='<rect\x20x=\x22'+aX+'\x22\x20y=\x22'+(b4+0x4)+'\x22\x20width=\x22'+b5+'\x22\x20height=\x2212\x22\x20rx=\x224\x22\x20fill=\x22rgba(255,255,255,0.03)\x22\x20/>',b0+='<rect\x20x=\x22'+aX+'\x22\x20y=\x22'+(b4+0x4)+'\x22\x20width=\x22'+b6+'\x22\x20height=\x2212\x22\x20rx=\x224\x22\x20fill=\x22url(#barGrad)\x22\x20/>',b0+='<text\x20x=\x22'+(aX+b6+0x8)+'\x22\x20y=\x22'+(b4+0xe)+'\x22\x20fill=\x22var(--accent-green)\x22\x20font-size=\x2211\x22\x20font-weight=\x22bold\x22>'+b2['toFixed'](0x1)+'h</text>';}),b0+='</svg>',b0;}function a9(aR,aS){const aT=Object['entries'](aR)['sort']((bc,bd)=>bc[0x0]['localeCompare'](bd[0x0])),aU=aT['map'](bc=>bc[0x1]),aV=Math['max'](...aU)||0x1,aW=0x1e0,aX=0x78,aY=0x1e,aZ=0xf,b0=0xf,b1=0x16,b2=aW-aY-aZ,b3=aX-b0-b1,b4=aU['every'](bc=>bc===0x0);if(b4)return'<div\x20class=\x22chart-empty\x22>Chưa\x20có\x20dữ\x20liệu\x20xu\x20hướng\x20ngày</div>';let b5=[];aT['forEach'](([bc,bd],be)=>{const bf=aY+be/(aT['length']-0x1)*b2,bg=b0+b3-bd/aV*b3;b5['push'](bf+','+bg);});const b6=b5['join']('\x20'),b7=b5[0x0]['split'](','),b8=b5[b5['length']-0x1]['split'](','),b9=b7[0x0]+','+(b0+b3)+'\x20'+b6+'\x20'+b8[0x0]+','+(b0+b3);let ba='<svg\x20width=\x22100%\x22\x20height=\x22100%\x22\x20viewBox=\x220\x200\x20'+aW+'\x20'+aX+'\x22\x20style=\x22font-family:\x20inherit;\x22>';ba+='\x0a\x20\x20\x20\x20\x20\x20\x20\x20<defs>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<linearGradient\x20id=\x22areaGrad\x22\x20x1=\x220%\x22\x20y1=\x220%\x22\x20x2=\x220%\x22\x20y2=\x22100%\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<stop\x20offset=\x220%\x22\x20stop-color=\x22#a855f7\x22\x20stop-opacity=\x220.25\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<stop\x20offset=\x22100%\x22\x20stop-color=\x22#a855f7\x22\x20stop-opacity=\x220.0\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</linearGradient>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<linearGradient\x20id=\x22lineGrad\x22\x20x1=\x220%\x22\x20y1=\x220%\x22\x20x2=\x22100%\x22\x20y2=\x220%\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<stop\x20offset=\x220%\x22\x20stop-color=\x22#0dd98b\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<stop\x20offset=\x2250%\x22\x20stop-color=\x22#a855f7\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<stop\x20offset=\x22100%\x22\x20stop-color=\x22#3b82f6\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</linearGradient>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</defs>';for(let bc=0x0;bc<=0x4;bc++){const bd=b0+bc/0x4*b3,be=(aV-bc/0x4*aV)['toFixed'](0x1)+'h';ba+='<line\x20x1=\x22'+aY+'\x22\x20y1=\x22'+bd+'\x22\x20x2=\x22'+(aW-aZ)+'\x22\x20y2=\x22'+bd+'\x22\x20stroke=\x22rgba(255,255,255,0.05)\x22\x20stroke-width=\x221\x22\x20stroke-dasharray=\x222,2\x22\x20/>',ba+='<text\x20x=\x22'+(aY-0x8)+'\x22\x20y=\x22'+(bd+0x4)+'\x22\x20fill=\x22var(--text-muted)\x22\x20font-size=\x229\x22\x20text-anchor=\x22end\x22>'+be+'</text>';}ba+='<polygon\x20points=\x22'+b9+'\x22\x20fill=\x22url(#areaGrad)\x22\x20/>',ba+='<polyline\x20points=\x22'+b6+'\x22\x20fill=\x22none\x22\x20stroke=\x22url(#lineGrad)\x22\x20stroke-width=\x222.5\x22\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20/>';const bb=aX-0xa;return ba+='<text\x20x=\x22'+aY+'\x22\x20y=\x22'+bb+'\x22\x20fill=\x22var(--text-muted)\x22\x20font-size=\x229\x22\x20text-anchor=\x22start\x22>Ngày\x201</text>',ba+='<text\x20x=\x22'+(aY+b2/0x2)+'\x22\x20y=\x22'+bb+'\x22\x20fill=\x22var(--text-muted)\x22\x20font-size=\x229\x22\x20text-anchor=\x22middle\x22>Ngày\x2015</text>',ba+='<text\x20x=\x22'+(aW-aZ)+'\x22\x20y=\x22'+bb+'\x22\x20fill=\x22var(--text-muted)\x22\x20font-size=\x229\x22\x20text-anchor=\x22end\x22>Ngày\x20'+aT['length']+'</text>',ba+='</svg>',ba;}window['toggleReportRow']=function(aR,aS){const aT=aR['nextElementSibling'],aU=aR['classList']['contains']('expanded');document['querySelectorAll']('.report-row.expanded')['forEach'](aV=>{aV!==aR&&(aV['classList']['remove']('expanded'),aV['nextElementSibling']&&aV['nextElementSibling']['classList']['contains']('detail-row')&&aV['nextElementSibling']['remove']());});if(aU)aR['classList']['remove']('expanded'),aT&&aT['classList']['contains']('detail-row')&&aT['remove']();else{aR['classList']['add']('expanded');const aV=document['getElementById']('report-filter-month')['value'];v('/api/records?userId='+aS+'&month='+aV)['then'](aW=>{const aX=aW['records'],aY=document['createElement']('tr');aY['className']='detail-row';let aZ='';aX['length']===0x0?aZ='<div\x20style=\x22padding:\x2012px;\x20color:\x20var(--text-muted);\x20text-align:\x20center;\x20font-style:\x20italic;\x22>Không\x20có\x20chi\x20tiết\x20tăng\x20ca\x20cho\x20tháng\x20này.</div>':aZ='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22report-detail-wrapper\x22\x20style=\x22padding:\x2016px\x2024px;\x20background:\x20rgba(0,0,0,0.18);\x20margin:\x206px\x2012px;\x20border-radius:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h5\x20style=\x22margin-top:\x200;\x20margin-bottom:\x2012px;\x20color:\x20var(--accent-green);\x20font-size:\x2011px;\x20font-weight:\x20700;\x20letter-spacing:\x200.5px;\x20text-transform:\x20uppercase;\x22>Chi\x20tiết\x20lịch\x20sử\x20làm\x20thêm\x20giờ</h5>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<table\x20class=\x22detail-table\x22\x20style=\x22width:\x20100%;\x20border-collapse:\x20collapse;\x20font-size:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<thead>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr\x20style=\x22border-bottom:\x201px\x20solid\x20rgba(255,255,255,0.08);\x20text-align:\x20left;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20style=\x22color:\x20var(--text-secondary);\x20font-weight:\x20600;\x22>Ngày\x20làm\x20việc</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20style=\x22color:\x20var(--text-secondary);\x20font-weight:\x20600;\x22>OT\x20Trưa</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20style=\x22color:\x20var(--text-secondary);\x20font-weight:\x20600;\x22>OT\x20Chiều/Tối\x20(Khung\x20giờ)</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20style=\x22color:\x20var(--text-secondary);\x20font-weight:\x20600;\x22>Tuyến\x20đường\x20(Xe\x20tỉnh)</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20style=\x22color:\x20var(--text-secondary);\x20font-weight:\x20600;\x22>Trạng\x20thái</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th\x20style=\x22color:\x20var(--text-secondary);\x20font-weight:\x20600;\x22>Ghi\x20chú</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</thead>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tbody>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+aX['map'](b1=>{const b2=b1['hasLunchOT']?'1.0\x20tiếng':'-',b3=b1['eveningOTHours']?b1['eveningOTHours']['toFixed'](0x1)+'\x20tiếng\x20('+b1['otStart']+'\x20-\x20'+b1['otEnd']+')':'-',b4=b1['deliveryProvince']||'-',b5=b1['status']==='approved'?'<span\x20class=\x22tag\x20tag-success\x22>Đã\x20duyệt</span>':b1['status']==='pending'?'<span\x20class=\x22tag\x20tag-warning\x22>Đang\x20chờ</span>':'<span\x20class=\x22tag\x20tag-danger\x22>Từ\x20chối</span>',b6=b1['isBackfill']?'<span\x20style=\x22font-size:\x209px;\x20padding:\x202px\x205px;\x20background:\x20rgba(245,158,11,0.15);\x20color:\x20var(--accent-orange);\x20border-radius:\x204px;\x20font-weight:\x20800;\x20margin-left:\x206px;\x22>BÙ</span>':'';return'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr\x20style=\x22border-bottom:\x201px\x20solid\x20rgba(255,255,255,0.04);\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><strong>'+b1['date']+'</strong>'+b6+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+b2+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+b3+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20style=\x22color:\x20var(--text-primary);\x22>'+b4+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+b5+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20style=\x22max-width:\x20250px;\x20overflow:\x20hidden;\x20text-overflow:\x20ellipsis;\x20white-space:\x20nowrap;\x22\x20title=\x22'+(b1['note']||'')+'\x22>'+(b1['note']||'-')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20';})['join']('')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tbody>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</table>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20';const b0=document['createElement']('td');b0['colSpan']=0x8,b0['innerHTML']=aZ,aY['appendChild'](b0),aR['parentNode']['insertBefore'](aY,aR['nextSibling']);})['catch'](aW=>{console['error']('Error\x20fetching\x20details:',aW),C('Lỗi\x20khi\x20tải\x20chi\x20tiết','error');});}};async function aa(){const aR=document['getElementById']('report-filter-month')['value'],aS=document['getElementById']('report-filter-team')?document['getElementById']('report-filter-team')['value']:'',aT=document['getElementById']('report-search-name')?document['getElementById']('report-search-name')['value']:'';try{const aU=await v('/api/users'),aV=JSON['parse'](a['getItem']('ot_current_user')||'null'),aW=aV&&(aV['username']==='admin'||aV['isSuperAdmin']);let aX=aU['users']['filter'](bf=>bf['role']==='employee');if(aW)aS&&(aX=aX['filter'](bf=>{const bg=bf['team']||'';if(aS==='unassigned')return bg===''||bg==='unassigned';return bg===aS;}));else{const bf=aV?aV['team']||'':'';aX=aX['filter'](bg=>bg['team']&&bg['team']===bf);}const aY=await v('/api/records?month='+aR),aZ=aY['records']['filter'](bg=>{const bh=bg['isBackfill']||bg['note']&&(bg['note']['includes']('[BÙ\x20THÁNG\x20TRƯỚC]')||bg['note']['includes']('[TĂNG\x20THÁNG\x20NÀY]'));return bg['status']==='approved'||!bh&&bg['status']!=='pending'&&bg['status']!=='rejected';});let b0=0x0,b1=new Set();const b2={},b3={},b4=parseInt(aR['substring'](0x0,0x4)),b5=parseInt(aR['substring'](0x5,0x7)),b6=new Date(b4,b5,0x0)['getDate']();for(let bg=0x1;bg<=b6;bg++){const bh=aR+'-'+String(bg)['padStart'](0x2,'0');b3[bh]=0x0;}aX['forEach'](bi=>{const bj=aZ['filter'](bo=>bo['userId']===bi['id']),bk=bj['filter'](bo=>bo['hasLunchOT'])['length']*g,bl=bj['reduce']((bo,bp)=>bo+bp['eveningOTHours'],0x0),bm=bk+bl;bm>0x0&&(b0+=bm,b1['add'](bi['id']));const bn=bi['team']==='admin'?'admin':bi['team']||'Chưa\x20phân\x20team';b2[bn]=(b2[bn]||0x0)+bm;}),aZ['forEach'](bi=>{const bj=aX['some'](bk=>bk['id']===bi['userId']);if(bj&&b3[bi['date']]!==undefined){const bk=bi['hasLunchOT']?g:0x0,bl=bi['eveningOTHours']||0x0;b3[bi['date']]+=bk+bl;}});let b7='-',b8=0x0;Object['entries'](b2)['forEach'](([bi,bj])=>{bj>b8&&(b8=bj,b7=bi+'\x20('+bj['toFixed'](0x1)+'h)');});const b9=b1['size'],ba=b9>0x0?b0/b9:0x0;document['getElementById']('rep-stat-total-hours')['textContent']=b0['toFixed'](0x1)+'h',document['getElementById']('rep-stat-avg-hours')['textContent']=ba['toFixed'](0x1)+'h',document['getElementById']('rep-stat-active-users')['textContent']=b9['toString']();const bb=document['getElementById']('rep-stat-top-team');bb['textContent']=b7,bb['title']=b7;let bc=[...aX];if(aT){const bi=aT['toLowerCase']()['trim']();bc=bc['filter'](bj=>bj['fullname']['toLowerCase']()['includes'](bi)||bj['team']&&bj['team']['toLowerCase']()['includes'](bi));}const bd=bc['map'](bj=>{const bk=aZ['filter'](bp=>bp['userId']===bj['id']),bl=bk['length'],bm=bk['filter'](bp=>bp['hasLunchOT'])['length']*g,bn=bk['reduce']((bp,bq)=>bp+bq['eveningOTHours'],0x0),bo=bm+bn;return{'user':bj,'days':bl,'lunchH':bm,'eveningH':bn,'totalH':bo};});bd['sort']((bj,bk)=>{let bl,bm;if(p==='name')bl=bj['user']['fullname']['toLowerCase'](),bm=bk['user']['fullname']['toLowerCase']();else p==='days'?(bl=bj['days'],bm=bk['days']):(bl=bj['totalH'],bm=bk['totalH']);if(bl<bm)return q==='asc'?-0x1:0x1;if(bl>bm)return q==='asc'?0x1:-0x1;return 0x0;}),['name','days','total']['forEach'](bj=>{const bk=document['getElementById']('sort-ind-'+bj);bk&&(bk['className']='sort-indicator',p===bj&&bk['classList']['add'](q));});const be=document['getElementById']('report-body');if(bd['length']===0x0){be['innerHTML']='<tr\x20class=\x22empty-row\x22><td\x20colspan=\x227\x22>Không\x20tìm\x20thấy\x20kết\x20quả\x20phù\x20hợp</td></tr>';return;}be['innerHTML']=bd['map']((bj,bk)=>{const {user:bl,days:bm,lunchH:bn,eveningH:bo,totalH:bp}=bj,bq=bl['team']==='admin'?'admin':bl['team']||'Chưa\x20phân\x20team';return'<tr\x20class=\x22report-row\x22\x20onclick=\x22toggleReportRow(this,\x20\x27'+bl['id']+'\x27)\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(bk+0x1)+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22employee-name-cell\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20class=\x22chevron-icon\x22\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22><polyline\x20points=\x229\x2018\x2015\x2012\x209\x206\x22></polyline></svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<strong>'+bl['fullname']+'</strong>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22tag\x22\x20style=\x22background:\x20rgba(156,163,175,0.1);\x20color:\x20var(--text-primary);\x22>'+bq+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20style=\x22text-align:\x20center;\x22>'+bm+'\x20ngày</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20style=\x22text-align:\x20center;\x22>'+bn['toFixed'](0x1)+'h</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20style=\x22text-align:\x20center;\x22>'+bo['toFixed'](0x1)+'h</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20style=\x22text-align:\x20center;\x22><span\x20class=\x22text-purple\x20text-bold\x22\x20style=\x22font-size:\x2013px;\x22>'+bp['toFixed'](0x1)+'h</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>';})['join']('');try{ab(b2,b3);}catch(bj){console['error']('Lỗi\x20vẽ\x20biểu\x20đồ\x20phân\x20tích:',bj);}}catch(bk){console['error']('Lỗi\x20khi\x20vẽ\x20báo\x20cáo:',bk);}}function ab(aR,aS){const aT=document['getElementById']('chart-teams-bars');if(aT){const aV=Object['entries'](aR)['sort']((aX,aY)=>aY[0x1]-aX[0x1]),aW=aV['length']>0x0?Math['max'](...aV['map'](aX=>aX[0x1])):0x0;aV['length']===0x0||aW===0x0?aT['innerHTML']='<div\x20style=\x22text-align:\x20center;\x20color:\x20#71717a;\x20padding:\x2020px\x200;\x20font-size:\x200.9rem;\x22>Không\x20có\x20dữ\x20liệu\x20tăng\x20ca</div>':aT['innerHTML']=aV['map'](([aX,aY])=>{const aZ=aW>0x0?aY/aW*0x64:0x0;return'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22chart-team-row\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22chart-team-label\x22\x20title=\x22'+aX+'\x22>'+aX+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22chart-team-progress-wrapper\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22chart-team-progress\x22\x20style=\x22width:\x20'+aZ+'%;\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22chart-team-value\x22>'+aY['toFixed'](0x1)+'h</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20';})['join']('');}const aU=document['getElementById']('chart-days-trend');if(aU){const aX=Object['entries'](aS)['sort']((aZ,b0)=>aZ[0x0]['localeCompare'](b0[0x0])),aY=aX['length']>0x0?Math['max'](...aX['map'](aZ=>aZ[0x1])):0x0;aX['length']===0x0||aY===0x0?aU['innerHTML']='<div\x20style=\x22text-align:\x20center;\x20color:\x20#71717a;\x20width:\x20100%;\x20font-size:\x200.9rem;\x22>Không\x20có\x20dữ\x20liệu\x20biến\x20động</div>':aU['innerHTML']=aX['map'](([aZ,b0])=>{const b1=parseInt(aZ['substring'](0x8,0xa)),b2=aY>0x0?b0/aY*0x64:0x0;return'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22chart-day-column\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22chart-day-tooltip\x22>Ngày\x20'+b1+':\x20'+b0['toFixed'](0x1)+'h</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22chart-day-bar\x22\x20style=\x22--height:\x20'+b2+'%;\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22chart-day-label\x22>'+b1+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20';})['join']('');}}function ac(aR){D('Xóa\x20nhân\x20viên','Bạn\x20có\x20chắc\x20muốn\x20xóa\x20nhân\x20viên\x20này?<br>Tất\x20cả\x20dữ\x20liệu\x20tăng\x20ca\x20cũng\x20sẽ\x20bị\x20xóa.',[{'text':'Hủy','class':'btn-ghost'},{'text':'Xóa','class':'btn\x20btn-danger\x20btn-sm','action':async()=>{try{await v('/api/users/'+aR,'DELETE'),await Promise['all']([a4(),a7(),a6(),a5(),aa()]),C('Đã\x20xóa\x20nhân\x20viên');}catch(aS){C(aS['message'],'error');}}}]);}function ad(aR,aS){D('Xóa\x20bản\x20ghi','Bạn\x20có\x20chắc\x20muốn\x20xóa\x20bản\x20ghi\x20tăng\x20ca\x20này?',[{'text':'Hủy','class':'btn-ghost'},{'text':'Xóa','class':'btn\x20btn-danger\x20btn-sm','action':async()=>{try{await v('/api/records/'+aR,'DELETE'),aS==='admin'?await Promise['all']([a6(),a5(),aa()]):await au(),C('Đã\x20xóa\x20bản\x20ghi');}catch(aT){C(aT['message'],'error');}}}]);}async function ae(aR){try{await v('/api/records/'+aR,'PUT',{'status':'approved'}),C('Đã\x20duyệt\x20bản\x20ghi\x20tăng\x20ca!'),await Promise['all']([a6(),a5(),aa()]);}catch(aS){C(aS['message'],'error');}}async function af(aR){D('Từ\x20chối\x20bản\x20ghi','Bạn\x20có\x20chắc\x20muốn\x20từ\x20chối\x20bản\x20ghi\x20tăng\x20ca\x20này?',[{'text':'Hủy','class':'btn-ghost'},{'text':'Từ\x20chối','class':'btn\x20btn-danger\x20btn-sm','action':async()=>{try{await v('/api/records/'+aR,'PUT',{'status':'rejected'}),await Promise['all']([a6(),a5(),aa()]),C('Đã\x20từ\x20chối\x20bản\x20ghi');}catch(aS){C(aS['message'],'error');}}}]);}function ag(){const aR=document['querySelectorAll']('.chk-pending-record'),aS=document['querySelectorAll']('.chk-pending-record:checked'),aT=document['getElementById']('chk-pending-select-all');aT&&(aT['checked']=aR['length']>0x0&&aR['length']===aS['length']);const aU=document['getElementById']('pending-bulk-actions'),aV=document['getElementById']('pending-selected-count');aU&&aV&&(aS['length']>0x0?(aU['style']['display']='flex',aV['textContent']='Đã\x20chọn\x20'+aS['length']+'\x20bản\x20ghi'):aU['style']['display']='none');}async function ah(){const aR=document['querySelectorAll']('.chk-pending-record:checked'),aS=Array['from'](aR)['map'](aT=>aT['value']);if(aS['length']===0x0)return;D('Duyệt\x20hàng\x20loạt','Bạn\x20có\x20chắc\x20chắn\x20muốn\x20duyệt\x20'+aS['length']+'\x20bản\x20ghi\x20đã\x20chọn\x20không?',[{'text':'Hủy','class':'btn-ghost'},{'text':'Duyệt','class':'btn\x20btn-primary\x20btn-sm','action':async()=>{try{C('Đang\x20duyệt\x20'+aS['length']+'\x20bản\x20ghi...','info'),await Promise['all'](aS['map'](aT=>v('/api/records/'+aT,'PUT',{'status':'approved'}))),C('Đã\x20duyệt\x20thành\x20công\x20'+aS['length']+'\x20bản\x20ghi!'),await Promise['all']([a6(),a5(),aa()]);}catch(aT){C(aT['message'],'error');}}}]);}async function ai(){const aR=document['querySelectorAll']('.chk-pending-record:checked'),aS=Array['from'](aR)['map'](aT=>aT['value']);if(aS['length']===0x0)return;D('Từ\x20chối\x20hàng\x20loạt','Bạn\x20có\x20chắc\x20chắn\x20muốn\x20từ\x20chối\x20'+aS['length']+'\x20bản\x20ghi\x20đã\x20chọn\x20không?',[{'text':'Hủy','class':'btn-ghost'},{'text':'Từ\x20chối','class':'btn\x20btn-danger\x20btn-sm','action':async()=>{try{C('Đang\x20từ\x20chối\x20'+aS['length']+'\x20bản\x20ghi...','info'),await Promise['all'](aS['map'](aT=>v('/api/records/'+aT,'PUT',{'status':'rejected'}))),C('Đã\x20từ\x20chối\x20thành\x20công\x20'+aS['length']+'\x20bản\x20ghi!'),await Promise['all']([a6(),a5(),aa()]);}catch(aT){C(aT['message'],'error');}}}]);}function aj(){const aR=document['querySelectorAll']('.chk-rejected-record'),aS=document['querySelectorAll']('.chk-rejected-record:checked'),aT=document['getElementById']('chk-rejected-select-all');aT&&(aT['checked']=aR['length']>0x0&&aR['length']===aS['length']);const aU=document['getElementById']('rejected-bulk-actions'),aV=document['getElementById']('rejected-selected-count');aU&&aV&&(aS['length']>0x0?(aU['style']['display']='flex',aV['textContent']='Đã\x20chọn\x20'+aS['length']+'\x20bản\x20ghi'):aU['style']['display']='none');}async function ak(){const aR=document['querySelectorAll']('.chk-rejected-record:checked'),aS=Array['from'](aR)['map'](aT=>aT['value']);if(aS['length']===0x0)return;D('Duyệt\x20lại\x20hàng\x20loạt','Bạn\x20có\x20chắc\x20chắn\x20muốn\x20duyệt\x20lại\x20'+aS['length']+'\x20bản\x20ghi\x20đã\x20chọn\x20không?',[{'text':'Hủy','class':'btn-ghost'},{'text':'Duyệt\x20lại','class':'btn\x20btn-primary\x20btn-sm','action':async()=>{try{C('Đang\x20duyệt\x20lại\x20'+aS['length']+'\x20bản\x20ghi...','info'),await Promise['all'](aS['map'](aT=>v('/api/records/'+aT,'PUT',{'status':'approved'}))),C('Đã\x20duyệt\x20lại\x20thành\x20công\x20'+aS['length']+'\x20bản\x20ghi!'),await Promise['all']([a6(),a5(),aa()]);}catch(aT){C(aT['message'],'error');}}}]);}async function al(){const aR=document['querySelectorAll']('.chk-rejected-record:checked'),aS=Array['from'](aR)['map'](aT=>aT['value']);if(aS['length']===0x0)return;D('Xóa\x20hàng\x20loạt','Bạn\x20có\x20chắc\x20chắn\x20muốn\x20xóa\x20vĩnh\x20viễn\x20'+aS['length']+'\x20bản\x20ghi\x20đã\x20chọn\x20không?',[{'text':'Hủy','class':'btn-ghost'},{'text':'Xóa','class':'btn\x20btn-danger\x20btn-sm','action':async()=>{try{C('Đang\x20xóa\x20'+aS['length']+'\x20bản\x20ghi...','info'),await Promise['all'](aS['map'](aT=>v('/api/records/'+aT,'DELETE'))),C('Đã\x20xóa\x20thành\x20công\x20'+aS['length']+'\x20bản\x20ghi!'),await Promise['all']([a6(),a5(),aa()]);}catch(aT){C(aT['message'],'error');}}}]);}async function am(){const aR=document['getElementById']('report-filter-month')['value'],aS=aR['split']('-'),aT=aS['length']===0x2?aS[0x1]+'-'+aS[0x0]:aR,aU=document['getElementById']('report-filter-team')?document['getElementById']('report-filter-team')['value']:'';try{const aV=await v('/api/users'),aW=JSON['parse'](a['getItem']('ot_current_user')||'null'),aX=aW&&(aW['username']==='admin'||aW['isSuperAdmin']);let aY=aV['users'];if(aX)aU&&(aY=aY['filter'](bl=>{const bm=bl['team']||'';if(aU==='unassigned')return bm===''||bm==='unassigned';return bm===aU;}));else{const bl=aW?aW['team']||'':'';aY=aY['filter'](bm=>bm['id']===aW['id']||bm['team']&&bm['team']===bl);}aY['sort']((bm,bn)=>bm['fullname']['localeCompare'](bn['fullname'],'vi'));const aZ=await v('/api/records?month='+aR),b0=aZ['records']['filter'](bm=>{const bn=bm['isBackfill']||bm['note']&&(bm['note']['includes']('[BÙ\x20THÁNG\x20TRƯỚC]')||bm['note']['includes']('[TĂNG\x20THÁNG\x20NÀY]'));return bm['status']==='approved'||!bn&&bm['status']!=='pending'&&bm['status']!=='rejected';}),b1=new Date(),b2=String(b1['getHours']())['padStart'](0x2,'0')+':'+String(b1['getMinutes']())['padStart'](0x2,'0'),b3=y(b1)+'\x20lúc\x20'+b2,b4=new ExcelJS['Workbook'](),b5=b4['addWorksheet']('Tổng\x20Hợp',{'views':[{'showGridLines':!![]}]});b5['mergeCells']('A1:G1');const b6=b5['getCell']('A1');b6['value']='BÁO\x20CÁO\x20TĂNG\x20CA\x20-\x20THÁNG\x20'+aT,b6['font']={'name':'Times\x20New\x20Roman','size':0x10,'bold':!![],'color':{'argb':'FFFFFFFF'}},b6['fill']={'type':'pattern','pattern':'solid','fgColor':{'argb':'FF1B365D'}},b6['alignment']={'vertical':'middle','horizontal':'center'},b5['getRow'](0x1)['height']=0x28,b5['mergeCells']('A2:G2');const b7=b5['getCell']('A2');b7['value']='Ngày\x20xuất\x20báo\x20cáo:\x20'+b3,b7['font']={'name':'Times\x20New\x20Roman','size':0xa,'italic':!![],'color':{'argb':'FF4B5563'}},b7['alignment']={'vertical':'middle','horizontal':'center'},b5['getRow'](0x2)['height']=0x14,b5['getRow'](0x3)['height']=0xf,b5['getCell']('A4')['value']='I.\x20BẢNG\x20TỔNG\x20HỢP\x20GIỜ\x20TĂNG\x20CA\x20&\x20CHUYẾN\x20ĐI\x20XE',b5['getCell']('A4')['font']={'name':'Times\x20New\x20Roman','size':0xc,'bold':!![],'color':{'argb':'FF1F2937'}},b5['getRow'](0x4)['height']=0x16;const b8=['STT','Họ\x20và\x20tên','Team','Mã\x20nhân\x20viên','Số\x20ngày\x20OT','Tổng\x20OT\x20(giờ)','Tổng\x20chuyến\x20xe'];b5['getRow'](0x5)['values']=b8,b5['getRow'](0x5)['height']=0x1c,b5['getRow'](0x5)['font']={'name':'Times\x20New\x20Roman','size':0xb,'bold':!![],'color':{'argb':'FFFFFFFF'}};for(let bm=0x1;bm<=0x7;bm++){const bn=b5['getCell'](0x5,bm);bn['fill']={'type':'pattern','pattern':'solid','fgColor':{'argb':'FF2B6CB0'}},bn['alignment']={'vertical':'middle','horizontal':'center'},bn['border']={'top':{'style':'thin','color':{'argb':'FF9CA3AF'}},'left':{'style':'thin','color':{'argb':'FF9CA3AF'}},'bottom':{'style':'thin','color':{'argb':'FF9CA3AF'}},'right':{'style':'thin','color':{'argb':'FF9CA3AF'}}};}let b9=0x6;aY['forEach']((bo,bp)=>{const bq=b0['filter'](bx=>bx['userId']===bo['id']),br=bq['length'],bs=bq['filter'](bx=>bx['hasLunchOT'])['length']*g,bt=bq['reduce']((bx,by)=>bx+by['eveningOTHours'],0x0),bu=bq['filter'](bx=>bx['calcMode']==='trip'||!bx['calcMode']&&bx['deliveryProvince']&&bx['deliveryProvince']['trim']()!=='')['length'],bv=b9+bp,bw=b5['getRow'](bv);bw['values']=[bp+0x1,bo['fullname'],bo['team']==='admin'?'admin':bo['team']||'Chưa\x20phân\x20team',bo['username'],br,bs+bt,bu],bw['height']=0x16,bw['font']={'name':'Times\x20New\x20Roman','size':0xa};for(let bx=0x1;bx<=0x7;bx++){const by=bw['getCell'](bx);by['border']={'top':{'style':'thin','color':{'argb':'FFCBD5E1'}},'left':{'style':'thin','color':{'argb':'FFCBD5E1'}},'bottom':{'style':'thin','color':{'argb':'FFCBD5E1'}},'right':{'style':'thin','color':{'argb':'FFCBD5E1'}}},by['alignment']={'vertical':'middle','horizontal':'center'};if(bx===0x1||bx===0x5||bx===0x7)by['numFmt']='0';else bx===0x6&&(by['numFmt']='#,##0.0');}}),b5['autoFilter']='A5:G'+(b9+aY['length']-0x1),b5['columns']=[{'width':0x8},{'width':0x1c},{'width':0x12},{'width':0x10},{'width':0xe},{'width':0x12},{'width':0x12}];const ba=b4['addWorksheet']('Chi\x20Tiết',{'views':[{'showGridLines':!![]}]});ba['mergeCells']('A1:I1');const bb=ba['getCell']('A1');bb['value']='CHI\x20TIẾT\x20TĂNG\x20CA\x20-\x20THÁNG\x20'+aT,bb['font']={'name':'Times\x20New\x20Roman','size':0x10,'bold':!![],'color':{'argb':'FFFFFFFF'}},bb['fill']={'type':'pattern','pattern':'solid','fgColor':{'argb':'FF1B365D'}},bb['alignment']={'vertical':'middle','horizontal':'center'},ba['getRow'](0x1)['height']=0x28,ba['mergeCells']('A2:I2');const bc=ba['getCell']('A2');bc['value']='Ngày\x20xuất\x20báo\x20cáo:\x20'+b3,bc['font']={'name':'Times\x20New\x20Roman','size':0xa,'italic':!![],'color':{'argb':'FF4B5563'}},bc['alignment']={'vertical':'middle','horizontal':'center'},ba['getRow'](0x2)['height']=0x14,ba['getRow'](0x3)['height']=0xf,ba['getCell']('A4')['value']='II.\x20BẢNG\x20CHI\x20TIẾT\x20TĂNG\x20CA\x20TỪNG\x20NGÀY',ba['getCell']('A4')['font']={'name':'Times\x20New\x20Roman','size':0xc,'bold':!![],'color':{'argb':'FF1F2937'}},ba['getRow'](0x4)['height']=0x16;const bd=['STT','Ngày','Họ\x20và\x20tên','Team','Mã\x20nhân\x20viên','Thời\x20gian\x20OT','Tổng\x20OT\x20(giờ)','Hoạt\x20động\x20/\x20Chuyến\x20đi','Ghi\x20chú'];ba['getRow'](0x5)['values']=bd,ba['getRow'](0x5)['height']=0x1c,ba['getRow'](0x5)['font']={'name':'Times\x20New\x20Roman','size':0xb,'bold':!![],'color':{'argb':'FFFFFFFF'}};for(let bo=0x1;bo<=0x9;bo++){const bp=ba['getCell'](0x5,bo);bp['fill']={'type':'pattern','pattern':'solid','fgColor':{'argb':'FF2B6CB0'}},bp['alignment']={'vertical':'middle','horizontal':'center'},bp['border']={'top':{'style':'thin','color':{'argb':'FF9CA3AF'}},'left':{'style':'thin','color':{'argb':'FF9CA3AF'}},'bottom':{'style':'thin','color':{'argb':'FF9CA3AF'}},'right':{'style':'thin','color':{'argb':'FF9CA3AF'}}};}let be=0x6,bf=0x1,bg=!![];aY['forEach'](bq=>{const br=b0['filter'](bs=>bs['userId']===bq['id']);if(br['length']===0x0)return;br['sort']((bs,bt)=>bs['date']['localeCompare'](bt['date']));if(!bg){ba['addRow']([]),ba['getRow'](be)['height']=0xe;for(let bs=0x1;bs<=0x9;bs++){const bt=ba['getCell'](be,bs);bt['fill']={'type':'pattern','pattern':'solid','fgColor':{'argb':'FFF1F5F9'}},bt['border']={'top':{'style':'thin','color':{'argb':'FFCBD5E1'}},'left':{'style':'thin','color':{'argb':'FFCBD5E1'}},'bottom':{'style':'thin','color':{'argb':'FFCBD5E1'}},'right':{'style':'thin','color':{'argb':'FFCBD5E1'}}};}be++;}bg=![],br['forEach'](bu=>{let bv='—';if(bu['hasLunchOT']&&bu['eveningOTHours']>0x0)bv='12:20-13:20,\x20'+bu['otStart']+'-'+bu['otEnd'];else{if(bu['hasLunchOT'])bv='12:20-13:20';else bu['eveningOTHours']>0x0&&(bv=bu['otStart']+'-'+bu['otEnd']);}let bw='—';if(bu['customActivity'])bu['calcMode']==='trip'?bw=''+bu['customActivity']+(bu['deliveryProvince']?':\x20'+bu['deliveryProvince']:''):bw=bu['customActivity'];else bu['deliveryProvince']&&bu['deliveryProvince']['trim']()!==''&&(bw=bu['deliveryProvince']);const bx=ba['getRow'](be);bx['values']=[bf++,x(bu['date']),bq['fullname'],bq['team']==='admin'?'admin':bq['team']||'Chưa\x20phân\x20team',bq['username'],bv,bu['totalHours'],bw,bu['note']||'—'],bx['height']=0x16,bx['font']={'name':'Times\x20New\x20Roman','size':0xa};for(let by=0x1;by<=0x9;by++){const bz=bx['getCell'](by);bz['border']={'top':{'style':'thin','color':{'argb':'FFCBD5E1'}},'left':{'style':'thin','color':{'argb':'FFCBD5E1'}},'bottom':{'style':'thin','color':{'argb':'FFCBD5E1'}},'right':{'style':'thin','color':{'argb':'FFCBD5E1'}}},bz['alignment']={'vertical':'middle','horizontal':'center'};if(by===0x1)bz['numFmt']='0';else by===0x7&&(bz['numFmt']='#,##0.0');}be++;});});if(bf>0x1)ba['autoFilter']='A5:I'+(be-0x1);else{ba['mergeCells']('A'+be+':I'+be);const bq=ba['getCell']('A'+be);bq['value']='Chưa\x20có\x20dữ\x20liệu\x20chi\x20tiết\x20tăng\x20ca\x20cho\x20tháng\x20này.',bq['alignment']={'vertical':'middle','horizontal':'center'},ba['getRow'](be)['height']=0x1e;}ba['columns']=[{'width':0x8},{'width':0xe},{'width':0x1c},{'width':0x12},{'width':0x10},{'width':0x18},{'width':0x10},{'width':0x14},{'width':0x23}];const bh=await b4['xlsx']['writeBuffer'](),bi=new Blob([bh],{'type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),bj=window['URL']['createObjectURL'](bi),bk=document['createElement']('a');bk['href']=bj,bk['download']='bao-cao-tang-ca-chi-tiet-'+aR+'.xlsx',bk['click'](),window['URL']['revokeObjectURL'](bj),C('Đã\x20xuất\x20file\x20Excel\x20chi\x20tiết\x20có\x20định\x20dạng!');}catch(br){C('Lỗi\x20xuất\x20Excel:\x20'+br['message'],'error'),console['error'](br);}}async function an(){const aR=document['getElementById']('report-filter-month')['value'];if(!aR){C('Vui\x20lòng\x20chọn\x20tháng\x20cần\x20chốt\x20công!','error');return;}D('Xác\x20nhận\x20Chốt\x20công\x20&\x20Khóa\x20tháng','<p\x20style=\x22font-size:\x2014px;\x20line-height:\x201.6;\x20color:\x20var(--text-primary);\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Hệ\x20thống\x20yêu\x20cầu\x20bạn\x20đã\x20xuất\x20báo\x20cáo\x20Excel\x20lưu\x20trữ\x20về\x20máy\x20tính\x20trước\x20khi\x20thực\x20hiện.<br><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<strong>Bạn\x20đã\x20tải\x20báo\x20cáo\x20Excel\x20tháng\x20'+aR+'\x20về\x20chưa?</strong>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>',[{'text':'Chưa\x20tải\x20(Tải\x20ngay)','class':'btn-ghost','action':async()=>{await am();}},{'text':'Đã\x20tải\x20(Khóa\x20tháng)','class':'btn-primary','action':()=>{setTimeout(()=>{D('XÁC\x20NHẬN\x20KHÓA\x20THÁNG','<p\x20style=\x22font-size:\x2014px;\x20line-height:\x201.6;\x20color:\x20var(--text-primary);\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Thao\x20tác\x20này\x20sẽ\x20**khóa\x20ghi\x20nhận\x20tăng\x20ca**\x20của\x20tháng\x20'+aR+'.<br><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Sau\x20khi\x20khóa,\x20nhân\x20viên\x20đăng\x20ký\x20OT\x20trong\x20tháng\x20này\x20sẽ\x20phải\x20được\x20**Quản\x20lý\x20phê\x20duyệt**\x20mới\x20được\x20tính.<br><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Bạn\x20có\x20chắc\x20chắn\x20muốn\x20khóa\x20tháng\x20'+aR+'?\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>',[{'text':'Hủy\x20bỏ','class':'btn-ghost','action':null},{'text':'Xác\x20nhận\x20khóa\x20tháng','class':'btn-warning','action':async()=>{try{C('Đang\x20thực\x20hiện\x20khóa\x20tháng...');const aS=await v('/api/records/close-month','POST',{'month':aR});C('Khóa\x20tháng\x20thành\x20công!'),await Promise['all']([a6(),a5(),aa()]);}catch(aT){C(aT['message'],'error');}}}]);},0x32);}}]);}async function ao(){const aR=document['getElementById']('cleanup-month-input');if(!aR)return;const aS=aR['value'];if(!aS){C('Vui\x20lòng\x20chọn\x20tháng\x20cần\x20dọn\x20dẹp!','error');return;}D('Xác\x20nhận\x20Chốt\x20công\x20&\x20Dọn\x20dẹp','<p\x20style=\x22font-size:\x2014px;\x20line-height:\x201.6;\x20color:\x20var(--text-primary);\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Hệ\x20thống\x20yêu\x20cầu\x20bạn\x20đã\x20xuất\x20báo\x20cáo\x20Excel\x20lưu\x20trữ\x20về\x20máy\x20tính\x20trước\x20khi\x20thực\x20hiện.<br><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<strong>Bạn\x20đã\x20tải\x20báo\x20cáo\x20Excel\x20tháng\x20'+aS+'\x20về\x20chưa?</strong>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>',[{'text':'Chưa\x20tải\x20(Tải\x20ngay)','class':'btn-ghost','action':async()=>{const aT=document['getElementById']('report-filter-month')['value'];document['getElementById']('report-filter-month')['value']=aS,await am(),document['getElementById']('report-filter-month')['value']=aT;}},{'text':'Đã\x20tải\x20(Tiếp\x20tục\x20dọn\x20dẹp)','class':'btn-primary','action':()=>{setTimeout(()=>{D('CẢNH\x20BÁO\x20QUAN\x20TRỌNG','<p\x20style=\x22font-size:\x2014px;\x20line-height:\x201.6;\x20color:\x20var(--accent-red);\x20font-weight:\x20600;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20CẢNH\x20BÁO:\x20Tất\x20cả\x20dữ\x20liệu\x20tăng\x20ca\x20của\x20tháng\x20'+aS+'\x20và\x20các\x20tháng\x20cũ\x20hơn\x20sẽ\x20bị\x20xóa\x20sạch\x20khỏi\x20Server.<br><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Hệ\x20thống\x20sẽ\x20tự\x20động\x20tạo\x20file\x20sao\x20lưu\x20trên\x20Server\x20và\x20GitHub\x20Gist,\x20tuy\x20nhiên\x20dữ\x20liệu\x20hiển\x20thị\x20hiện\x20tại\x20sẽ\x20bị\x20xóa\x20vĩnh\x20viễn.<br><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Thao\x20tác\x20này\x20KHÔNG\x20THỂ\x20HOÀN\x20TÁC!\x20Bạn\x20vẫn\x20muốn\x20tiếp\x20tục?\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>',[{'text':'Hủy\x20bỏ','class':'btn-ghost','action':null},{'text':'Xác\x20nhận\x20xóa\x20dữ\x20liệu','class':'btn-danger','action':async()=>{try{C('Đang\x20thực\x20hiện\x20dọn\x20dẹp...');const aT=await v('/api/records/cleanup','POST',{'month':aS});C('Dọn\x20dẹp\x20dữ\x20liệu\x20thành\x20công!'),await Promise['all']([a6(),a5(),aa()]);}catch(aU){C(aU['message'],'error');}}}]);},0x32);}}]);}async function ap(aR){const aS=document['getElementById']('emp-welcome');if(aS)aS['textContent']='Xin\x20chào,\x20'+aR['fullname'];const aT=document['getElementById']('emp-user-fullname');if(aT)aT['textContent']=aR['fullname'];const aU=document['getElementById']('emp-user-avatar');aU&&aR['fullname']&&(aU['textContent']=aR['fullname']['trim']()['charAt'](0x0)['toUpperCase']());const aV=document['getElementById']('emp-date');if(aV)aV['textContent']=y(new Date());const aW=new Date()['toISOString']()['split']('T')[0x0];document['getElementById']('ot-date')['value']=aW,document['getElementById']('ot-date')['max']=aW,document['getElementById']('emp-filter-month')['value']=A(),aM(),aq(),await au();}function aq(){const aR=document['getElementById']('ot-backfill'),aS=aR?aR['checked']:![],aT=document['getElementById']('preview-items'),aU=document['getElementById']('preview-total');let aV=[],aW=0x0,aX='',aY='',aZ='';const b0=document['querySelector']('.ot-custom-activity-checkbox:checked');if(b0){aX=b0['dataset']['actName'],aY=b0['dataset']['actMode'];const b7=document['querySelector']('.ot-custom-activity-detail[data-act-id=\x22'+b0['dataset']['actId']+'\x22]');aZ=b7?b7['value']['trim']():'';}const b1=aY==='trip'&&!!aX,b2=aZ,b3=document['getElementById']('ot-date'),b4=b3?b3['value']:'',b5=b4?new Date(b4+'T00:00:00')['getDay']()===0x0:![];if(aS){const b8=parseFloat(document['getElementById']('ot-backfill-hours')['value'])||0x0;b8>0x0&&(aV['push']({'label':'Bù\x20tăng\x20ca','value':b8['toFixed'](0x1)+'\x20giờ'}),aW=b8);}else{if(b5){const b9=parseFloat(document['getElementById']('ot-backfill-hours')['value'])||0x0;b9>0x0&&(aV['push']({'label':'Tăng\x20ca\x20Chủ\x20Nhật','value':b9['toFixed'](0x1)+'\x20giờ'}),aW=b9);}else{const ba=document['getElementById']('ot-lunch')['checked'],bb=document['getElementById']('ot-start')['value'],bc=document['getElementById']('ot-end')['value'];ba&&(aV['push']({'label':'OT\x20Trưa\x20(12:20\x20-\x2013:20)','value':g+'\x20giờ'}),aW+=g);if(bb&&bc){const bd=F(bb,bc);bd>0x0&&(aV['push']({'label':'OT\x20Chiều\x20('+bb+'\x20-\x20'+bc+')','value':bd['toFixed'](0x1)+'\x20giờ'}),aW+=bd);}}}aX&&aY==='hour'&&aV['push']({'label':'Hoạt\x20động','value':aX});b1&&b2&&aV['push']({'label':aX,'value':b2});aT['innerHTML']=aV['length']===0x0?'<div\x20class=\x22preview-item\x22><span>Chưa\x20có\x20OT\x20nào\x20được\x20chọn</span></div>':aV['map'](be=>'<div\x20class=\x22preview-item\x22><span>'+be['label']+'</span><span\x20class=\x22preview-item-value\x22>'+be['value']+'</span></div>')['join'](''),aU['textContent']=aW['toFixed'](0x1);const b6=document['getElementById']('ot-note');b6&&(b1&&aW===0x0?(b6['required']=![],b6['placeholder']='Mặc\x20định:\x20'+aX+'\x20'+b2):(b6['required']=!![],b6['placeholder']='Lý\x20do\x20tăng\x20ca,\x20phân\x20công\x20công\x20việc...'));}function ar(){const aR=document['getElementById']('admin-ot-target-self'),aS=document['getElementById']('admin-ot-target-emp'),aT=document['getElementById']('admin-ot-user'),aU=document['getElementById']('admin-ot-date'),aV=document['getElementById']('admin-ot-backfill'),aW=document['getElementById']('admin-ot-backfill-hours'),aX=document['getElementById']('admin-ot-lunch'),aY=document['getElementById']('admin-ot-start'),aZ=document['getElementById']('admin-ot-end'),b0=document['getElementById']('admin-ot-note'),b1=document['getElementById']('preview-ticket-target'),b2=document['getElementById']('preview-ticket-date'),b3=document['getElementById']('preview-ticket-lunch'),b4=document['getElementById']('preview-ticket-evening'),b5=document['getElementById']('preview-ticket-total'),b6=document['getElementById']('preview-ticket-note');if(!b1)return;if(aR&&aR['checked']){const bk=JSON['parse'](a['getItem']('ot_current_user')||'{}');b1['innerHTML']='<span\x20class=\x22badge\x20badge-admin\x22\x20style=\x22font-size:\x2010px;\x22>Cá\x20nhân</span>\x20<strong>'+(bk['fullname']||'Quản\x20lý')+'</strong>';}else{if(aS&&aS['checked']&&aT){const bl=aT['options'][aT['selectedIndex']]?.['text']||'';b1['innerHTML']='<span\x20class=\x22badge\x20badge-employee\x22\x20style=\x22font-size:\x2010px;\x22>Nhân\x20viên</span>\x20<strong>'+(bl['replace'](/^[^-]+-\s*/,'')||'Chưa\x20chọn')+'</strong>';}}if(aU&&aU['value']){const bm=new Date(aU['value']);if(!isNaN(bm['getTime']())){const bn=String(bm['getDate']())['padStart'](0x2,'0')+'/'+String(bm['getMonth']()+0x1)['padStart'](0x2,'0')+'/'+bm['getFullYear']();b2['textContent']=bn;}else b2['textContent']='-';}else b2['textContent']='Chưa\x20chọn\x20ngày';let b7='',b8='',b9='';const ba=document['querySelector']('.admin-ot-custom-activity-checkbox:checked');if(ba){b7=ba['dataset']['actName'],b8=ba['dataset']['actMode'];const bo=document['querySelector']('.admin-ot-custom-activity-detail[data-act-id=\x22'+ba['dataset']['actId']+'\x22]');b9=bo?bo['value']['trim']():'';}const bb=document['getElementById']('preview-ticket-activity-group'),bc=document['getElementById']('preview-ticket-activity-label'),bd=document['getElementById']('preview-ticket-activity');bb&&bc&&bd&&(b7?(bb['style']['display']='flex',bc['textContent']=b7,b8==='trip'?bd['textContent']=b9||'Chưa\x20nhập\x20chi\x20tiết':bd['innerHTML']='<span\x20class=\x22preview-active-badge\x22>✓\x20Đăng\x20ký</span>'):bb['style']['display']='none');const be=b8==='trip'&&!!b7,bf=b9;let bg=0x0;const bh=aV&&aV['checked'],bi=aU?aU['value']:'',bj=bi?new Date(bi+'T00:00:00')['getDay']()===0x0:![];if(bh){const bp=parseFloat(aW?.['value'])||0x0;b3['textContent']='-',b4['textContent']='Bù\x20tăng\x20ca:\x20'+bp['toFixed'](0x1)+'\x20giờ',bg=bp;}else{if(bj){const bq=parseFloat(aW?.['value'])||0x0;b3['textContent']='-',b4['textContent']='Tăng\x20ca\x20Chủ\x20Nhật:\x20'+bq['toFixed'](0x1)+'\x20giờ',bg=bq;}else{aX&&aX['checked']?(b3['innerHTML']='<span\x20class=\x22preview-active-badge\x22>✓\x20Đăng\x20ký</span>\x20('+g+'\x20giờ)',bg+=g):b3['textContent']='Không\x20đăng\x20ký';if(aY&&aZ&&aY['value']&&aZ['value']){const br=F(aY['value'],aZ['value']);br>0x0?(b4['innerHTML']='<span\x20class=\x22preview-active-badge\x22>✓\x20'+aY['value']+'\x20-\x20'+aZ['value']+'</span>\x20('+br['toFixed'](0x1)+'\x20giờ)',bg+=br):b4['textContent']='Không\x20đăng\x20ký';}else b4['textContent']='Không\x20đăng\x20ký';}}b5['textContent']=bg['toFixed'](0x1)+'\x20giờ';b0&&(be&&bg===0x0?(b0['required']=![],b0['placeholder']='Mặc\x20định:\x20'+b7+'\x20'+bf):(b0['required']=!![],b0['placeholder']='Lý\x20do\x20tăng\x20ca,\x20phân\x20công\x20công\x20việc...'));if(b0&&b0['value']['trim']())b6['textContent']=b0['value']['trim']();else be&&bg===0x0?b6['textContent']='Mặc\x20định:\x20'+b7+'\x20'+bf:b6['textContent']='Chưa\x20có\x20ghi\x20chú...';}async function as(aR){aR['preventDefault']();const aS=JSON['parse'](a['getItem']('ot_current_user'));if(!aS)return;const aT=document['getElementById']('ot-date')['value'],aU=document['getElementById']('ot-backfill'),aV=aU?aU['checked']:![],aW=aV?![]:document['getElementById']('ot-lunch')['checked'],aX=document['getElementById']('ot-start')['value'],aY=document['getElementById']('ot-end')['value'];let aZ=document['getElementById']('ot-note')['value']['trim']();const b0=document['getElementById']('ot-error'),b1=document['getElementById']('ot-success');b0['textContent']='',b1['textContent']='';if(!aT){b0['textContent']='Vui\x20lòng\x20chọn\x20ngày!';return;}const b2=new Date(Date['now']()+0x7*0x36ee80)['toISOString']()['split']('T')[0x0],b3=b2['substring'](0x0,0x7),b4=aT['substring'](0x0,0x7);if(b4<b3&&!aV){b0['textContent']='Để\x20chọn\x20ngày\x20thuộc\x20tháng\x20cũ,\x20vui\x20lòng\x20tích\x20chọn\x20\x22Bù\x20tăng\x20ca\x22!';return;}let b5='',b6='',b7='';const b8=document['querySelector']('.ot-custom-activity-checkbox:checked');if(b8){b5=b8['dataset']['actName'],b6=b8['dataset']['actMode'];const be=document['querySelector']('.ot-custom-activity-detail[data-act-id=\x22'+b8['dataset']['actId']+'\x22]');b7=be?be['value']['trim']():'';}const b9=b6==='trip'&&!!b5,ba=b7;if(b9&&!ba){let bf='chi\x20tiết';const bg=aS['team']||'',bh=i['find'](bj=>typeof bj==='object'&&bj['name']===bg),bi=bh?.['customActivities']?.['find'](bj=>bj['name']===b5);if(bi&&bi['detailLabel'])bf=bi['detailLabel'];b0['textContent']='Vui\x20lòng\x20nhập\x20'+bf['toLowerCase']()+'!';return;}let bb=0x0,bc=0x0;const bd=new Date(aT+'T00:00:00')['getDay']()===0x0;if(aV||bd){const bj=parseFloat(document['getElementById']('ot-backfill-hours')['value'])||0x0;if(bj<=0x0){b0['textContent']=bd?'Vui\x20lòng\x20nhập\x20số\x20giờ\x20tăng\x20ca\x20Chủ\x20Nhật\x20hợp\x20lệ!':'Vui\x20lòng\x20nhập\x20số\x20giờ\x20bù\x20hợp\x20lệ!';return;}bc=bj,bb=bj,aV&&(aZ='[BÙ\x20THÁNG\x20TRƯỚC]\x20'+aZ);}else{bb=F(aX,aY);const bk=aW?g:0x0;bc=bk+bb;if(bc<=0x0&&!b9){b0['textContent']='Vui\x20lòng\x20chọn\x20ít\x20nhất\x20một\x20loại\x20OT\x20hoặc\x20hoạt\x20động\x20ngoài\x20giờ!';return;}}if(b9&&bc===0x0&&!aZ)aZ=b5+'\x20'+ba;else{if(!aZ){b0['textContent']='Vui\x20lòng\x20nhập\x20ghi\x20chú!';return;}}try{const bl=await v('/api/records','POST',{'userId':aS['id'],'date':aT,'hasLunchOT':aV||bd?![]:aW,'otStart':!(aV||bd)&&bb>0x0?aX:'','otEnd':!(aV||bd)&&bb>0x0?aY:'','eveningOTHours':bb,'totalHours':bc,'note':aZ,'isBackfill':aV,'deliveryProvince':b9?ba:'','customActivity':b5,'calcMode':b6,'createdMonth':aV?A():aT['substring'](0x0,0x7)}),bm=bl['updated']?'Đã\x20cập\x20nhật':'Đã\x20lưu';b1['textContent']=bm+'\x20'+bc['toFixed'](0x1)+'\x20giờ\x20tăng\x20ca!',C(bm+'\x20'+bc['toFixed'](0x1)+'\x20giờ\x20tăng\x20ca');if(aU)aU['checked']=![];const bn=document['getElementById']('ot-normal-inputs'),bo=document['getElementById']('ot-backfill-hours-group');if(bn)bn['style']['display']='block';if(bo)bo['style']['display']='none';const bp=bo?bo['querySelector']('label'):null;if(bp)bp['textContent']='Số\x20giờ\x20tăng\x20ca\x20cần\x20bù:';const bq=aU?aU['closest']('.checkbox-label')||aU['closest']('.switch-label'):null;if(bq)bq['style']['display']='';const br=document['getElementById']('ot-backfill-hours');if(br)br['value']='';document['getElementById']('ot-lunch')['checked']=![],document['getElementById']('ot-start')['value']='16:30',document['getElementById']('ot-end')['value']='16:30',document['getElementById']('ot-note')['value']='',document['querySelectorAll']('.ot-custom-activity-checkbox')['forEach'](bt=>{bt['checked']=![];}),document['querySelectorAll']('.ot-custom-activity-detail')['forEach'](bt=>{bt['value']='';});const bs=document['getElementById']('ot-custom-activity-group');if(bs)bs['style']['display']='none';aq(),await au(),setTimeout(()=>{b1['textContent']='';},0xbb8);}catch(bt){b0['textContent']=bt['message'];}}async function at(aR){aR['preventDefault']();const aS=document['getElementById']('admin-ot-target-self');let aT='';if(aS&&aS['checked']){const bc=JSON['parse'](a['getItem']('ot_current_user')||'null');aT=bc?bc['id']:'';}else aT=document['getElementById']('admin-ot-user')['value'];const aU=document['getElementById']('admin-ot-date')['value'],aV=document['getElementById']('admin-ot-backfill'),aW=aV?aV['checked']:![],aX=aW?![]:document['getElementById']('admin-ot-lunch')['checked'],aY=document['getElementById']('admin-ot-start')['value'],aZ=document['getElementById']('admin-ot-end')['value'];let b0=document['getElementById']('admin-ot-note')['value']['trim']();const b1=document['getElementById']('admin-ot-error'),b2=document['getElementById']('admin-ot-success');b1['textContent']='',b2['textContent']='';if(!aT){b1['textContent']='Vui\x20lòng\x20chọn\x20nhân\x20viên!';return;}if(!aU){b1['textContent']='Vui\x20lòng\x20chọn\x20ngày!';return;}let b3='',b4='',b5='';const b6=document['querySelector']('.admin-ot-custom-activity-checkbox:checked');if(b6){b3=b6['dataset']['actName'],b4=b6['dataset']['actMode'];const bd=document['querySelector']('.admin-ot-custom-activity-detail[data-act-id=\x22'+b6['dataset']['actId']+'\x22]');b5=bd?bd['value']['trim']():'';}const b7=b4==='trip'&&!!b3,b8=b5;if(b7&&!b8){let be='chi\x20tiết';if(aT){const bf=m['find'](bj=>bj['id']===aT),bg=bf?bf['team']||'':'',bh=i['find'](bj=>typeof bj==='object'&&bj['name']===bg),bi=bh?.['customActivities']?.['find'](bj=>bj['name']===b3);if(bi&&bi['detailLabel'])be=bi['detailLabel'];}b1['textContent']='Vui\x20lòng\x20nhập\x20'+be['toLowerCase']()+'!';return;}let b9=0x0,ba=0x0;const bb=new Date(aU+'T00:00:00')['getDay']()===0x0;if(aW||bb){const bj=parseFloat(document['getElementById']('admin-ot-backfill-hours')['value'])||0x0;if(bj<=0x0){b1['textContent']=bb?'Vui\x20lòng\x20nhập\x20số\x20giờ\x20tăng\x20ca\x20Chủ\x20Nhật\x20hợp\x20lệ!':'Vui\x20lòng\x20nhập\x20số\x20giờ\x20bù\x20hợp\x20lệ!';return;}ba=bj,b9=bj,aW&&(b0='[BÙ\x20THÁNG\x20TRƯỚC]\x20'+b0);}else{b9=F(aY,aZ);const bk=aX?g:0x0;ba=bk+b9;if(ba<=0x0&&!b7){b1['textContent']='Vui\x20lòng\x20chọn\x20ít\x20nhất\x20một\x20loại\x20OT\x20hoặc\x20hoạt\x20động\x20ngoài\x20giờ!';return;}}if(b7&&ba===0x0&&!b0)b0=b3+'\x20'+b8;else{if(!b0){b1['textContent']='Vui\x20lòng\x20nhập\x20ghi\x20chú!';return;}}try{const bl=await v('/api/records','POST',{'userId':aT,'date':aU,'hasLunchOT':aW||bb?![]:aX,'otStart':!(aW||bb)&&b9>0x0?aY:'','otEnd':!(aW||bb)&&b9>0x0?aZ:'','eveningOTHours':b9,'totalHours':ba,'note':b0,'isBackfill':aW,'deliveryProvince':b7?b8:'','customActivity':b3,'calcMode':b4,'createdMonth':aW?A():aU['substring'](0x0,0x7)}),bm=bl['updated']?'Đã\x20cập\x20nhật':'Đã\x20lưu';b2['textContent']=bm+'\x20'+ba['toFixed'](0x1)+'\x20giờ\x20tăng\x20ca\x20thành\x20công!',C(bm+'\x20'+ba['toFixed'](0x1)+'\x20giờ\x20tăng\x20ca'),document['getElementById']('admin-ot-user')['value']='';if(aS){aS['checked']=!![];const bv=new Event('change');aS['dispatchEvent'](bv);}if(aV)aV['checked']=![];const bn=document['getElementById']('admin-ot-normal-inputs'),bo=document['getElementById']('admin-ot-backfill-hours-group');if(bn)bn['style']['display']='block';if(bo)bo['style']['display']='none';const bp=bo?bo['querySelector']('label'):null;if(bp)bp['textContent']='Số\x20giờ\x20tăng\x20ca\x20cần\x20bù';const bq=aV?aV['closest']('.switch-label')||aV['closest']('.checkbox-label'):null;if(bq)bq['style']['display']='';const br=document['getElementById']('admin-ot-backfill-hours');if(br)br['value']='';document['getElementById']('admin-ot-lunch')['checked']=![],document['getElementById']('admin-ot-start')['value']='16:30',document['getElementById']('admin-ot-end')['value']='16:30',document['getElementById']('admin-ot-note')['value']='',document['querySelectorAll']('.admin-ot-custom-activity-checkbox')['forEach'](bw=>{bw['checked']=![];}),document['querySelectorAll']('.admin-ot-custom-activity-detail')['forEach'](bw=>{bw['value']='';});const bs=document['getElementById']('admin-ot-custom-activity-group');if(bs)bs['style']['display']='none';const bt=new Date()['toISOString']()['split']('T')[0x0],bu=document['getElementById']('admin-ot-date');if(bu)bu['value']=bt;ar(),setTimeout(()=>{b2['textContent']='';},0xbb8),await a5(),await a6(),await aa();}catch(bw){b1['textContent']=bw['message'];}}async function au(){const aR=JSON['parse'](a['getItem']('ot_current_user'));if(!aR)return;const aS=aR['team']||'';let aT=![],aU='2.\x20Hoạt\x20động\x20khác';if(aS&&aS!=='admin'&&typeof i!=='undefined'){const aY=i['find'](aZ=>typeof aZ==='object'&&aZ['name']===aS);aY&&aY['customActivities']&&aY['customActivities']['length']>0x0&&(aT=!![],aU='2.\x20'+aY['customActivities']['map'](aZ=>aZ['name'])['join']('\x20/\x20'));}const aV=document['getElementById']('emp-rec-type-selector'),aW=document['getElementById']('btn-emp-rec-type-trips');if(aT){if(aV)aV['style']['display']='flex';aW&&(aW['style']['display']='inline-block',aW['textContent']=aU);}else{if(aV)aV['style']['display']='none';l='ot';}const aX=document['getElementById']('emp-filter-month')['value'];try{const aZ=await v('/api/records?userId='+aR['id']+'&month='+aX),b0=aZ['records'],b1=document['getElementById']('emp-records-body');let b2=0x0,b3=0x0,b4=0x0;b0['forEach'](ba=>{const bb=ba['isBackfill']||ba['note']&&(ba['note']['includes']('[BÙ\x20THÁNG\x20TRƯỚC]')||ba['note']['includes']('[TĂNG\x20THÁNG\x20NÀY]')),bc=ba['status']!=='pending'&&ba['status']!=='rejected';if(bc){if(!ba['customActivity']||ba['calcMode']==='hour'){const bd=ba['hasLunchOT']?g:0x0;b2+=bd,b3+=bb?0x0:ba['eveningOTHours']||0x0,b4+=ba['totalHours'];}}});let b5=[];l==='ot'?b5=b0['filter'](ba=>(!ba['customActivity']||ba['customActivity']['trim']()==='')&&(ba['totalHours']>0x0||ba['isBackfill'])):b5=b0['filter'](ba=>ba['customActivity']&&ba['customActivity']['trim']()!=='');b1&&b1['previousElementSibling']&&(l==='ot'?b1['previousElementSibling']['innerHTML']='<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ngày</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>OT\x20Trưa</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>OT\x20Chiều</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Giờ\x20BĐ</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Giờ\x20KT</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Tổng\x20(giờ)</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Trạng\x20thái</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ghi\x20chú</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Thao\x20tác</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>':b1['previousElementSibling']['innerHTML']='<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ngày</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Hoạt\x20động</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Hình\x20thức\x20/\x20Chi\x20tiết</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Trạng\x20thái</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Ghi\x20chú</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Thao\x20tác</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>');const b6=b0['filter'](ba=>ba['customActivity']&&ba['status']!=='rejected')['length'],b7=aT?'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-card\x20stat-card-orange\x22\x20style=\x22border-left-color:\x20var(--accent-orange);\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-icon\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M12\x202l3.09\x206.26L22\x209.27l-5\x204.87\x201.18\x206.88L12\x2017.77l-6.18\x203.25L7\x2014.14\x202\x209.27l6.91-1.01L12\x202z\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-info\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22stat-value\x22>'+b6+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22stat-label\x22>Hoạt\x20động\x20khác</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20':'',b8='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-card\x20stat-card-purple\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-icon\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<rect\x20x=\x223\x22\x20y=\x224\x22\x20width=\x2218\x22\x20height=\x2218\x22\x20rx=\x222\x22\x20ry=\x222\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x2216\x22\x20y1=\x222\x22\x20x2=\x2216\x22\x20y2=\x226\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x228\x22\x20y1=\x222\x22\x20x2=\x228\x22\x20y2=\x226\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x223\x22\x20y1=\x2210\x22\x20x2=\x2221\x22\x20y2=\x2210\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-info\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22stat-value\x22>'+b0['filter'](ba=>!ba['customActivity']||ba['calcMode']==='hour')['length']+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22stat-label\x22>Số\x20ngày\x20OT</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-card\x20stat-card-orange\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-icon\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<circle\x20cx=\x2212\x22\x20cy=\x2212\x22\x20r=\x2210\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M12\x206v6l4\x202\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-info\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22stat-value\x22>'+b2['toFixed'](0x1)+'h</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22stat-label\x22>OT\x20Trưa</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-card\x20stat-card-blue\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-icon\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M21\x2012.79A9\x209\x200\x201\x201\x2011.21\x203\x207\x207\x200\x200\x200\x2021\x2012.79z\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-info\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22stat-value\x22>'+b3['toFixed'](0x1)+'h</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22stat-label\x22>OT\x20Chiều</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-card\x20stat-card-green\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-icon\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M12\x202v20M17\x205H9.5a3.5\x203.5\x200\x200\x200\x200\x207h5a3.5\x203.5\x200\x200\x201\x200\x207H6\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22stat-info\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22stat-value\x22>'+b4['toFixed'](0x1)+'h</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22stat-label\x22>Tổng\x20OT</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+b7+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20';if(b5['length']===0x0){const ba=l==='ot'?0x9:0x6;b1['innerHTML']='<tr\x20class=\x22empty-row\x22><td\x20colspan=\x22'+ba+'\x22>Chưa\x20có\x20dữ\x20liệu\x20'+(l==='ot'?'tăng\x20ca':'hoạt\x20động\x20tùy\x20chọn')+'</td></tr>';const bb=document['getElementById']('emp-stats-cards');bb&&(bb['innerHTML']=b8);return;}b1['innerHTML']=b5['map'](bc=>{let bd='status-approved',be='Đã\x20duyệt';if(bc['status']==='pending')bd='status-pending',be='Chờ\x20duyệt';else bc['status']==='rejected'&&(bd='status-rejected',be='Từ\x20chối');if(l==='ot')return'<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+x(bc['date'])+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(bc['hasLunchOT']?'<span\x20class=\x22tag\x20tag-yes\x22>✓\x20Có</span>':'<span\x20class=\x22tag\x20tag-no\x22>Không</span>')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(bc['eveningOTHours']>0x0?'<span\x20class=\x22text-green\x20text-bold\x22>'+bc['eveningOTHours']['toFixed'](0x1)+'h</span>':'<span\x20style=\x22color:var(--text-muted)\x22>—</span>')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(bc['otStart']||'—')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(bc['otEnd']||'—')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22text-purple\x20text-bold\x22>'+bc['totalHours']['toFixed'](0x1)+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22status-badge\x20'+bd+'\x22>'+be+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(bc['note']||'<span\x20style=\x22color:var(--text-muted)\x22>—</span>')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><div\x20class=\x22action-buttons\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20edit\x22\x20onclick=\x22editRecordDialog(\x27'+bc['id']+'\x27,\x20\x27employee\x27)\x22\x20title=\x22Sửa\x22\x20style=\x22margin-right:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M11\x204H4a2\x202\x200\x200\x200-2\x202v14a2\x202\x200\x200\x200\x202\x202h14a2\x202\x200\x200\x200\x202-2v-7\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M18.5\x202.5a2.121\x202.121\x200\x201\x201\x203\x203L12\x2015l-4\x201\x201-4\x209.5-9.5z\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20delete\x22\x20onclick=\x22deleteRecord(\x27'+bc['id']+'\x27,\x20\x27employee\x27)\x22\x20title=\x22Xóa\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<polyline\x20points=\x223\x206\x205\x206\x2021\x206\x22/><path\x20d=\x22M19\x206v14a2\x202\x200\x200\x201-2-2H7a2\x202\x200\x200\x201-2-2V6m3\x200V4a2\x202\x200\x200\x201\x202-2h4a2\x202\x200\x200\x201\x202\x202v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>';else{const bf=bc['calcMode']==='trip'?'<span\x20class=\x22tag\x22\x20style=\x22background:\x20rgba(245,158,11,0.15);\x20color:\x20#f59e0b;\x20border:\x201px\x20solid\x20rgba(245,158,11,0.3);\x20font-weight:\x20500;\x22>🚚\x20'+(bc['deliveryProvince']||'Chưa\x20rõ')+'</span>':'<span\x20class=\x22tag\x22\x20style=\x22background:\x20rgba(99,102,241,0.15);\x20color:\x20#6366f1;\x20border:\x201px\x20solid\x20rgba(99,102,241,0.3);\x20font-weight:\x20500;\x22>⏱️\x20'+bc['totalHours']['toFixed'](0x1)+'h</span>';return'<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+x(bc['date'])+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><strong>'+bc['customActivity']+'</strong></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+bf+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><span\x20class=\x22status-badge\x20'+bd+'\x22>'+be+'</span></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>'+(bc['note']||'<span\x20style=\x22color:var(--text-muted)\x22>—</span>')+'</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td><div\x20class=\x22action-buttons\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20edit\x22\x20onclick=\x22editRecordDialog(\x27'+bc['id']+'\x27,\x20\x27employee\x27)\x22\x20title=\x22Sửa\x22\x20style=\x22margin-right:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M11\x204H4a2\x202\x200\x200\x200-2\x202v14a2\x202\x200\x200\x200\x202\x202h14a2\x202\x200\x200\x200\x202-2v-7\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M18.5\x202.5a2.121\x202.121\x200\x201\x201\x203\x203L12\x2015l-4\x201\x201-4\x209.5-9.5z\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22btn-icon-only\x20delete\x22\x20onclick=\x22deleteRecord(\x27'+bc['id']+'\x27,\x20\x27employee\x27)\x22\x20title=\x22Xóa\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<polyline\x20points=\x223\x206\x205\x206\x2021\x206\x22/><path\x20d=\x22M19\x206v14a2\x202\x200\x200\x201-2-2H7a2\x202\x200\x200\x201-2-2V6m3\x200V4a2\x202\x200\x200\x201\x202-2h4a2\x202\x200\x200\x201\x202\x202v2\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div></td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>';}})['join']('');const b9=document['getElementById']('emp-stats-cards');b9&&(b9['innerHTML']=b8);}catch(bc){}}async function av(){try{if(c)f='https://api.otmanager.id.vn';else window['OT_CLOUD_URL']?f=window['OT_CLOUD_URL']:f='https://api.otmanager.id.vn';f['endsWith']('/')&&(f=f['slice'](0x0,-0x1));console['log']('[Desktop\x20App]\x20API\x20Base\x20trỏ\x20tới\x20Cloud:',f);if(b){try{const aR=new AbortController(),aS=setTimeout(()=>aR['abort'](),0x5dc),aT=await fetch(f+'/api/server-info',{'method':'GET','mode':'cors','signal':aR['signal']});clearTimeout(aS);if(aT['ok']){console['log']('[Cloud]\x20Server\x20is\x20already\x20awake.\x20Direct\x20entry.'),a2();return;}}catch(aU){console['log']('[Cloud]\x20Server\x20seems\x20asleep\x20or\x20network\x20slow,\x20showing\x20wakeup\x20loader.');}aw(),await ay();}else a2();}catch(aV){console['error']('Lỗi\x20cấu\x20hình\x20kết\x20nối\x20Cloud:',aV);}}function aw(){if(document['getElementById']('cloud-wakeup-overlay'))return;const aR=document['createElement']('div');aR['id']='cloud-wakeup-overlay',aR['style']['position']='fixed',aR['style']['top']='0',aR['style']['left']='0',aR['style']['width']='100vw',aR['style']['height']='100vh',aR['style']['backgroundColor']='rgba(15,\x2015,\x2026,\x200.95)',aR['style']['display']='flex',aR['style']['flexDirection']='column',aR['style']['alignItems']='center',aR['style']['justifyContent']='center',aR['style']['zIndex']='99999',aR['style']['color']='#ffffff',aR['style']['fontFamily']='Inter,\x20sans-serif',aR['style']['transition']='opacity\x200.5s\x20ease',aR['innerHTML']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22text-align:\x20center;\x20max-width:\x20400px;\x20padding:\x2020px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22width:\x2050px;\x20height:\x2050px;\x20border:\x203px\x20solid\x20rgba(16,\x20185,\x20129,\x200.2);\x20border-top:\x203px\x20solid\x20#10b981;\x20border-radius:\x2050%;\x20animation:\x20spin\x201s\x20linear\x20infinite;\x20margin:\x200\x20auto\x2020px;\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h3\x20style=\x22margin-top:\x200;\x20color:\x20#10b981;\x20font-size:\x201.3rem;\x20margin-bottom:\x2010px;\x22>Đang\x20kết\x20nối\x20đến\x20hệ\x20thống...</h3>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22font-size:\x200.9rem;\x20color:\x20#a1a1aa;\x20line-height:\x201.5;\x20margin-bottom:\x208px;\x22>Hệ\x20thống\x20đang\x20chuẩn\x20bị\x20tài\x20nguyên\x20và\x20thiết\x20lập\x20đường\x20truyền\x20bảo\x20mật.</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22font-size:\x200.8rem;\x20color:\x20#71717a;\x20font-style:\x20italic;\x22>Vui\x20lòng\x20đợi\x20trong\x20giây\x20lát...</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<style>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20@keyframes\x20spin\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x200%\x20{\x20transform:\x20rotate(0deg);\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20100%\x20{\x20transform:\x20rotate(360deg);\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20</style>\x0a\x20\x20\x20\x20',document['body']['appendChild'](aR);}function ax(){const aR=document['getElementById']('cloud-wakeup-overlay');aR&&(aR['style']['opacity']='0',setTimeout(()=>aR['remove'](),0x1f4));}async function ay(){let aR=0x0;const aS=0x1e;while(aR<aS){try{console['log']('[Cloud]\x20Thử\x20kết\x20nối\x20đến\x20Cloud\x20Server\x20(Lần\x20'+(aR+0x1)+')...');const aU=await fetch(f+'/api/server-info',{'method':'GET','mode':'cors'});if(aU['ok'])return console['log']('[Cloud]\x20Kết\x20nối\x20thành\x20công!\x20Server\x20đã\x20hoạt\x20động.'),ax(),a2(),!![];}catch(aV){await new Promise(aW=>setTimeout(aW,0x7d0));}aR++;}const aT=document['getElementById']('cloud-wakeup-overlay');return aT&&(aT['innerHTML']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22text-align:\x20center;\x20max-width:\x20400px;\x20padding:\x2020px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22font-size:\x203rem;\x20margin-bottom:\x2020px;\x22>⚠️</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h3\x20style=\x22margin-top:\x200;\x20color:\x20#ef4444;\x20font-size:\x201.3rem;\x20margin-bottom:\x2010px;\x22>Lỗi\x20Kết\x20Nối</h3>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22font-size:\x200.9rem;\x20color:\x20#a1a1aa;\x20line-height:\x201.5;\x20margin-bottom:\x2020px;\x22>Không\x20thể\x20kết\x20nối\x20đến\x20Cloud\x20Server.\x20Vui\x20lòng\x20kiểm\x20tra\x20lại\x20kết\x20nối\x20mạng\x20hoặc\x20trạng\x20thái\x20dịch\x20vụ\x20của\x20Render.</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:flex;\x20gap:\x2010px;\x20justify-content:\x20center;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20onclick=\x22window.location.reload()\x22\x20style=\x22background:\x20#10b981;\x20color:\x20white;\x20border:\x20none;\x20padding:\x2010px\x2020px;\x20border-radius:\x208px;\x20font-weight:\x20600;\x20cursor:\x20pointer;\x20margin-right:\x2010px;\x22>Thử\x20lại</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20onclick=\x22document.getElementById(\x27cloud-wakeup-overlay\x27).remove()\x22\x20style=\x22background:\x20#27272a;\x20color:\x20white;\x20border:\x20none;\x20padding:\x2010px\x2020px;\x20border-radius:\x208px;\x20font-weight:\x20600;\x20cursor:\x20pointer;\x22>Dùng\x20Offline</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20'),![];}function az(aR,aS){const aT=aR['split']('.')['map'](Number),aU=aS['split']('.')['map'](Number);for(let aV=0x0;aV<Math['max'](aT['length'],aU['length']);aV++){const aW=aT[aV]||0x0,aX=aU[aV]||0x0;if(aW<aX)return-0x1;if(aW>aX)return 0x1;}return 0x0;}async function aA(){if(!b)return;C('Đang\x20kiểm\x20tra\x20bản\x20cập\x20nhật...','info');try{const aR=window['OT_CLOUD_URL']||f;if(!aR){D('Kiểm\x20tra\x20cập\x20nhật','<p\x20style=\x22color:\x20var(--text-secondary);\x20line-height:\x201.6;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Ứng\x20dụng\x20đang\x20hoạt\x20động\x20ở\x20chế\x20độ\x20Offline\x20(không\x20kết\x20nối\x20Cloud\x20Server).<br><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Để\x20sử\x20dụng\x20tính\x20năng\x20kiểm\x20tra\x20cập\x20nhật,\x20vui\x20lòng\x20cấu\x20hình\x20<strong>serverUrl</strong>\x20(đường\x20dẫn\x20Cloud\x20Server\x20Render)\x20trong\x20file\x20<code>config.json</code>\x20ở\x20thư\x20mục\x20gốc\x20của\x20ứng\x20dụng.\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>',[{'text':'Đóng','class':'btn-ghost'}]);return;}const aS=window['OT_LOCAL_VERSION']||a['getItem']('ot_app_version')||'1.4.4',aT=window['OT_LOCAL_BUILD_TIME']||parseInt(a['getItem']('ot_app_build_time'))||0x0,aU=await fetch(aR+'/api/version'),aV=await aU['json'](),aW=aV['version']||'1.0.0',aX=aV['buildTime']||0x0,aY=az(aS,aW),aZ=aY===0x0&&aT>0x0&&aX>aT+0xea60;if(aY<0x0||aZ){const b0=await fetch(aR+'/download/desktop?check=true'),b1=await b0['json']();if(b1['ready']){const b2=aZ?'Có\x20bản\x20vá\x20lỗi\x20mới!':'Có\x20phiên\x20bản\x20mới!',b3=aZ?'<p\x20style=\x22color:\x20var(--text-secondary);\x20line-height:\x201.6;\x20margin-bottom:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Phát\x20hiện\x20bản\x20vá\x20lỗi\x20(hotfix)\x20mới\x20cho\x20phiên\x20bản\x20hiện\x20tại:<br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20•\x20Phiên\x20bản:\x20<strong\x20style=\x22color:\x20var(--accent-green-light);\x22>v'+aS+'</strong><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20•\x20Bản\x20vá\x20mới\x20hơn\x20bản\x20đang\x20cài\x20trên\x20máy.\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22color:\x20var(--text-muted);\x20font-size:\x2013px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Bạn\x20có\x20muốn\x20tải\x20về\x20và\x20cập\x20nhật\x20bản\x20vá\x20lỗi\x20này\x20ngay\x20không?\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>':'<p\x20style=\x22color:\x20var(--text-secondary);\x20line-height:\x201.6;\x20margin-bottom:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Phát\x20hiện\x20phiên\x20bản\x20mới\x20của\x20ứng\x20dụng\x20trên\x20hệ\x20thống\x20Cloud:<br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20•\x20Phiên\x20bản\x20hiện\x20tại:\x20<strong\x20style=\x22color:\x20var(--accent-orange);\x22>v'+aS+'</strong><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20•\x20Phiên\x20bản\x20mới\x20nhất:\x20<strong\x20style=\x22color:\x20var(--accent-green-light);\x22>v'+aW+'</strong>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22color:\x20var(--text-muted);\x20font-size:\x2013px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Bạn\x20có\x20muốn\x20tải\x20xuống\x20phiên\x20bản\x20mới\x20nhất\x20ngay\x20trong\x20ứng\x20dụng\x20không?\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>';D(b2,b3,[{'text':'Để\x20sau','class':'btn-ghost'},{'text':aZ?'Vá\x20lỗi\x20ngay':'Tải\x20về\x20ngay','class':'btn\x20btn-primary\x20btn-sm','action':async()=>{if(aZ){C('Đang\x20tải\x20và\x20áp\x20dụng\x20bản\x20vá\x20nhanh...','info');try{let b4;if(window['electronAPI']&&window['electronAPI']['applyHotfix'])b4=await window['electronAPI']['applyHotfix'](aR,aX);else{const b5=await fetch(e+'/api/apply-hotfix',{'method':'POST','headers':{'Content-Type':'application/json'},'body':JSON['stringify']({'cloudUrl':aR,'buildTime':aX})});b4=await b5['json']();}if(b4['success'])C('Đã\x20áp\x20dụng\x20bản\x20vá\x20thành\x20công!\x20Đang\x20tự\x20khởi\x20động\x20lại...','success'),setTimeout(()=>{window['location']['reload']();},0x5dc);else throw new Error(b4['message']||'Lỗi\x20không\x20xác\x20định');}catch(b6){C('Lỗi\x20khi\x20vá:\x20'+b6['message']+'.\x20Vui\x20lòng\x20thử\x20lại\x20sau\x20hoặc\x20tải\x20bản\x20cài\x20đặt\x20mới.','error');}}else{const b7=aV['desktopDownloadUrl']||aR+'/download/desktop';try{C('Đang\x20chuẩn\x20bị\x20tải\x20bản\x20cập\x20nhật...','info');if(window['electronAPI']&&window['electronAPI']['triggerUpdate'])window['electronAPI']['triggerUpdate'](b7,aW),C('Bắt\x20đầu\x20tải\x20xuống\x20bản\x20cập\x20nhật!','success');else{const b8=await fetch(e+'/api/trigger-update',{'method':'POST','headers':{'Content-Type':'application/json'},'body':JSON['stringify']({'downloadUrl':b7,'version':aW})});if(!b8['ok']){const b9=await b8['json']()['catch'](()=>({}));throw new Error(b9['message']||'HTTP\x20'+b8['status']);}C('Bắt\x20đầu\x20tải\x20xuống\x20bản\x20cập\x20nhật!','success');}}catch(ba){console['error']('Lỗi\x20khi\x20kích\x20hoạt\x20cập\x20nhật:',ba),C('Không\x20thể\x20tự\x20động\x20tải\x20xuống.\x20Đang\x20mở\x20trình\x20duyệt\x20để\x20tải...','warning'),window['open'](b7,'_blank');}}}}]);}else D('Bản\x20cập\x20nhật\x20chưa\x20sẵn\x20sàng','<p\x20style=\x22color:\x20var(--text-secondary);\x20line-height:\x201.6;\x20margin-bottom:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Phiên\x20bản\x20<strong\x20style=\x22color:\x20var(--accent-green-light);\x22>v'+aW+'</strong>\x20đã\x20được\x20phát\x20hành\x20nhưng\x20file\x20cài\x20đặt\x20(.exe)\x20chưa\x20sẵn\x20sàng\x20để\x20tải.<br><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20•\x20Phiên\x20bản\x20hiện\x20tại:\x20<strong>v'+aS+'</strong>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22color:\x20var(--text-muted);\x20font-size:\x2013px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20File\x20bộ\x20cài\x20đặt\x20(.exe)\x20có\x20thể\x20chưa\x20được\x20upload\x20lên\x20GitHub\x20Releases.\x20Vui\x20lòng\x20thử\x20lại\x20sau\x20hoặc\x20mở\x20GitHub\x20Releases\x20để\x20kiểm\x20tra.\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>',[{'text':'Đóng','class':'btn-ghost'},{'text':'Mở\x20GitHub\x20Releases','class':'btn\x20btn-primary\x20btn-sm','action':()=>{window['open']('https://github.com/hieuto706-max/OT/releases','_blank');}}]);}else D('Kiểm\x20tra\x20cập\x20nhật','<p\x20style=\x22color:\x20var(--accent-green-light);\x20font-weight:\x20600;\x20font-size:\x2015px;\x20margin-bottom:\x208px;\x20display:\x20flex;\x20align-items:\x20center;\x20gap:\x206px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20✓\x20Bạn\x20đang\x20dùng\x20phiên\x20bản\x20mới\x20nhất\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22color:\x20var(--text-secondary);\x20line-height:\x201.6;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20•\x20Phiên\x20bản\x20hiện\x20tại:\x20<strong>v'+aS+'</strong><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Ứng\x20dụng\x20của\x20bạn\x20hoàn\x20toàn\x20tương\x20thích\x20và\x20đã\x20được\x20cập\x20nhật\x20đầy\x20đủ.\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>',[{'text':'Đóng','class':'btn-ghost'}]);}catch(b4){C('Không\x20thể\x20kết\x20nối\x20đến\x20Cloud\x20Server.\x20Máy\x20chủ\x20đám\x20mây\x20có\x20thể\x20đang\x20khởi\x20động\x20(mất\x20khoảng\x201\x20phút)\x20hoặc\x20tạm\x20ngưng\x20hoạt\x20động.\x20Vui\x20lòng\x20thử\x20lại\x20sau!','error'),console['error']('Lỗi\x20check\x20cập\x20nhật:',b4);}}async function aB(){if(!b)return;try{const aR=window['OT_CLOUD_URL']||f;if(!aR)return;const aS=window['OT_LOCAL_VERSION']||a['getItem']('ot_app_version')||'1.4.4',aT=window['OT_LOCAL_BUILD_TIME']||parseInt(a['getItem']('ot_app_build_time'))||0x0,aU=await fetch(aR+'/api/version'),aV=await aU['json'](),aW=aV['version']||'1.0.0',aX=aV['buildTime']||0x0,aY=az(aS,aW),aZ=aY===0x0&&aT>0x0&&aX>aT+0xea60;if(aY<0x0||aZ){const b0=await fetch(aR+'/download/desktop?check=true'),b1=await b0['json']();if(b1['ready']){const b2=aZ?'Có\x20bản\x20vá\x20lỗi\x20mới!':'Có\x20phiên\x20bản\x20mới!',b3=aZ?'<p\x20style=\x22color:\x20var(--text-secondary);\x20line-height:\x201.6;\x20margin-bottom:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Phát\x20hiện\x20bản\x20vá\x20lỗi\x20(hotfix)\x20mới\x20cho\x20phiên\x20bản\x20hiện\x20tại:<br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20•\x20Phiên\x20bản:\x20<strong\x20style=\x22color:\x20var(--accent-green-light);\x22>v'+aS+'</strong><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20•\x20Bản\x20vá\x20mới\x20hơn\x20bản\x20đang\x20cài\x20trên\x20máy.\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22color:\x20var(--text-muted);\x20font-size:\x2013px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Bạn\x20có\x20muốn\x20tải\x20về\x20và\x20cập\x20nhật\x20bản\x20vá\x20lỗi\x20này\x20ngay\x20không?\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>':'<p\x20style=\x22color:\x20var(--text-secondary);\x20line-height:\x201.6;\x20margin-bottom:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Phát\x20hiện\x20phiên\x20bản\x20mới\x20của\x20ứng\x20dụng\x20trên\x20hệ\x20thống\x20Cloud:<br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20•\x20Phiên\x20bản\x20hiện\x20tại:\x20<strong\x20style=\x22color:\x20var(--accent-orange);\x22>v'+aS+'</strong><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20•\x20Phiên\x20bản\x20mới\x20nhất:\x20<strong\x20style=\x22color:\x20var(--accent-green-light);\x22>v'+aW+'</strong>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22color:\x20var(--text-muted);\x20font-size:\x2013px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Bạn\x20có\x20muốn\x20tải\x20xuống\x20phiên\x20bản\x20mới\x20nhất\x20ngay\x20trong\x20ứng\x20dụng\x20không?\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>';D(b2,b3,[{'text':'Để\x20sau','class':'btn-ghost'},{'text':aZ?'Vá\x20lỗi\x20ngay':'Tải\x20về\x20ngay','class':'btn\x20btn-primary\x20btn-sm','action':async()=>{if(aZ){C('Đang\x20tải\x20và\x20áp\x20dụng\x20bản\x20vá\x20nhanh...','info');try{let b4;if(window['electronAPI']&&window['electronAPI']['applyHotfix'])b4=await window['electronAPI']['applyHotfix'](aR,aX);else{const b5=await fetch(e+'/api/apply-hotfix',{'method':'POST','headers':{'Content-Type':'application/json'},'body':JSON['stringify']({'cloudUrl':aR,'buildTime':aX})});b4=await b5['json']();}if(b4['success'])C('Đã\x20áp\x20dụng\x20bản\x20vá\x20thành\x20công!\x20Đang\x20tự\x20khởi\x20động\x20lại...','success'),setTimeout(()=>{window['location']['reload']();},0x5dc);else throw new Error(b4['message']||'Lỗi\x20không\x20xác\x20định');}catch(b6){C('Lỗi\x20khi\x20vá:\x20'+b6['message']+'.\x20Vui\x20lòng\x20thử\x20lại\x20sau\x20hoặc\x20tải\x20bản\x20cài\x20đặt\x20mới.','error');}}else{const b7=aV['desktopDownloadUrl']||aR+'/download/desktop';try{C('Đang\x20chuẩn\x20bị\x20tải\x20bản\x20cập\x20nhật...','info');if(window['electronAPI']&&window['electronAPI']['triggerUpdate'])window['electronAPI']['triggerUpdate'](b7,aW),C('Bắt\x20đầu\x20tải\x20xuống\x20bản\x20cập\x20nhật!','success');else{const b8=await fetch(e+'/api/trigger-update',{'method':'POST','headers':{'Content-Type':'application/json'},'body':JSON['stringify']({'downloadUrl':b7,'version':aW})});if(!b8['ok']){const b9=await b8['json']()['catch'](()=>({}));throw new Error(b9['message']||'HTTP\x20'+b8['status']);}C('Bắt\x20đầu\x20tải\x20xuống\x20bản\x20cập\x20nhật!','success');}}catch(ba){console['error']('Lỗi\x20khi\x20kích\x20hoạt\x20cập\x20nhật:',ba),C('Không\x20thể\x20tự\x20động\x20tải\x20xuống.\x20Đang\x20mở\x20trình\x20duyệt\x20để\x20tải...','warning'),window['open'](b7,'_blank');}}}}]);}else D('Bản\x20cập\x20nhật\x20chưa\x20sẵn\x20sàng','<p\x20style=\x22color:\x20var(--text-secondary);\x20line-height:\x201.6;\x20margin-bottom:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Phiên\x20bản\x20<strong\x20style=\x22color:\x20var(--accent-green-light);\x22>v'+aW+'</strong>\x20đã\x20được\x20phát\x20hành\x20nhưng\x20file\x20cài\x20đặt\x20(.exe)\x20chưa\x20sẵn\x20sàng\x20để\x20tải.<br><br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20•\x20Phiên\x20bản\x20hiện\x20tại:\x20<strong>v'+aS+'</strong>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22color:\x20var(--text-muted);\x20font-size:\x2013px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20File\x20bộ\x20cài\x20đặt\x20(.exe)\x20có\x20thể\x20chưa\x20được\x20upload\x20lên\x20GitHub\x20Releases.\x20Vui\x20lòng\x20thử\x20lại\x20sau\x20hoặc\x20mở\x20GitHub\x20Releases\x20để\x20kiểm\x20tra.\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</p>',[{'text':'Đóng','class':'btn-ghost'},{'text':'Mở\x20GitHub\x20Releases','class':'btn\x20btn-primary\x20btn-sm','action':()=>{window['open']('https://github.com/hieuto706-max/OT/releases','_blank');}}]);}}catch(b4){console['error']('Lỗi\x20check\x20cập\x20nhật\x20ngầm:',b4);}}function aC(){const aR=document['getElementById']('ot-date');if(!aR)return;const aS=aR['value'],aT=document['getElementById']('ot-normal-inputs'),aU=document['getElementById']('ot-backfill-hours-group'),aV=document['getElementById']('ot-custom-activity-group'),aW=document['getElementById']('ot-backfill'),aX=JSON['parse'](a['getItem']('ot_current_user')||'null'),aY=aX?aX['team']||'':'',aZ=i['find'](b2=>typeof b2==='object'&&b2['name']===aY),b0=aZ&&aZ['customActivities']?aZ['customActivities']:[],b1=aU?aU['querySelector']('label'):null;if(aS){const b2=new Date(aS+'T00:00:00')['getDay']()===0x0,b3=aW?aW['checked']:![];if(b2){if(aT)aT['style']['display']='none';if(aU)aU['style']['display']='block';if(b1)b1['textContent']='Số\x20giờ\x20tăng\x20ca\x20Chủ\x20Nhật:';if(b0['length']>0x0){if(aV)aV['style']['display']='block';}const b4=aW?aW['closest']('.checkbox-label')||aW['closest']('.switch-label'):null;if(b4)b4['style']['display']='none';}else{const b5=aW?aW['closest']('.checkbox-label')||aW['closest']('.switch-label'):null;if(b5)b5['style']['display']='';if(b1)b1['textContent']='Số\x20giờ\x20tăng\x20ca\x20cần\x20bù:';if(b3){if(aT)aT['style']['display']='none';if(aU)aU['style']['display']='block';if(aV)aV['style']['display']='none';}else{if(aT)aT['style']['display']='block';if(aU)aU['style']['display']='none';if(b0['length']>0x0){if(aV)aV['style']['display']='block';}}}}aq();}function aD(){const aR=document['getElementById']('admin-ot-date');if(!aR)return;const aS=aR['value'],aT=document['getElementById']('admin-ot-normal-inputs'),aU=document['getElementById']('admin-ot-backfill-hours-group'),aV=document['getElementById']('admin-ot-custom-activity-group'),aW=document['getElementById']('admin-ot-backfill');let aX='';const aY=document['getElementById']('admin-ot-target-self');if(aY&&aY['checked']){const b2=JSON['parse'](a['getItem']('ot_current_user')||'null');aX=b2?b2['team']||'':'';}else{const b3=document['getElementById']('admin-ot-user'),b4=b3?b3['value']:'',b5=m['find'](b6=>b6['id']===b4);aX=b5?b5['team']||'':'';}const aZ=i['find'](b6=>typeof b6==='object'&&b6['name']===aX),b0=aZ&&aZ['customActivities']?aZ['customActivities']:[],b1=aU?aU['querySelector']('label'):null;if(aS){const b6=new Date(aS+'T00:00:00')['getDay']()===0x0,b7=aW?aW['checked']:![];if(b6){if(aT)aT['style']['display']='none';if(aU)aU['style']['display']='block';if(b1)b1['textContent']='Số\x20giờ\x20tăng\x20ca\x20Chủ\x20Nhật';if(b0['length']>0x0){if(aV)aV['style']['display']='block';}const b8=aW?aW['closest']('.switch-label')||aW['closest']('.checkbox-label'):null;if(b8)b8['style']['display']='none';}else{const b9=aW?aW['closest']('.switch-label')||aW['closest']('.checkbox-label'):null;if(b9)b9['style']['display']='';if(b1)b1['textContent']='Số\x20giờ\x20tăng\x20ca\x20cần\x20bù';if(b7){if(aT)aT['style']['display']='none';if(aU)aU['style']['display']='block';if(aV)aV['style']['display']='none';}else{if(aT)aT['style']['display']='block';if(aU)aU['style']['display']='none';if(b0['length']>0x0){if(aV)aV['style']['display']='block';}}}}ar();}document['addEventListener']('DOMContentLoaded',()=>{!b&&document['body']['classList']['add']('is-web-browser');const aR=document['getElementById']('btn-admin-rec-type-ot'),aS=document['getElementById']('btn-admin-rec-type-trips');aR&&aS&&(aR['addEventListener']('click',()=>{k='ot',aR['classList']['remove']('btn-ghost'),aR['classList']['add']('btn-primary'),aS['classList']['remove']('btn-primary'),aS['classList']['add']('btn-ghost'),a6();}),aS['addEventListener']('click',()=>{k='trips',aS['classList']['remove']('btn-ghost'),aS['classList']['add']('btn-primary'),aR['classList']['remove']('btn-primary'),aR['classList']['add']('btn-ghost'),a6();}));const aT=document['getElementById']('btn-emp-rec-type-ot'),aU=document['getElementById']('btn-emp-rec-type-trips');aT&&aU&&(aT['addEventListener']('click',()=>{l='ot',aT['classList']['remove']('btn-ghost'),aT['classList']['add']('btn-primary'),aU['classList']['remove']('btn-primary'),aU['classList']['add']('btn-ghost'),au();}),aU['addEventListener']('click',()=>{l='trips',aU['classList']['remove']('btn-ghost'),aU['classList']['add']('btn-primary'),aT['classList']['remove']('btn-primary'),aT['classList']['add']('btn-ghost'),au();}));const aV=document['getElementById']('ot-date');aV&&(aV['max']=new Date()['toISOString']()['split']('T')[0x0],aV['addEventListener']('change',aC),aV['addEventListener']('input',aC));const aW=document['getElementById']('provinces-datalist');aW&&(aW['innerHTML']=j['map'](bw=>'<option\x20value=\x22'+bw+'\x22></option>')['join'](''));const aX=document['getElementById']('ot-has-trip'),aY=document['getElementById']('ot-province-group'),aZ=document['getElementById']('ot-province');aX&&aX['addEventListener']('change',function(){if(this['checked']){if(aY)aY['style']['display']='block';if(aZ)aZ['required']=!![];}else{if(aY)aY['style']['display']='none';aZ&&(aZ['required']=![],aZ['value']='');}aq();});aZ&&(aZ['addEventListener']('input',aq),aZ['addEventListener']('change',aq));const b0=document['getElementById']('admin-ot-has-trip'),b1=document['getElementById']('admin-ot-province-group'),b2=document['getElementById']('admin-ot-province');b0&&b0['addEventListener']('change',function(){if(this['checked']){if(b1)b1['style']['display']='block';if(b2)b2['required']=!![];}else{if(b1)b1['style']['display']='none';b2&&(b2['required']=![],b2['value']='');}ar();});b2&&(b2['addEventListener']('input',ar),b2['addEventListener']('change',ar));const b3=document['getElementById']('btn-check-update');b3&&(!b?b3['style']['display']='none':b3['style']['display']='flex');b&&(aB(),setInterval(aB,0x1e*0x3c*0x3e8));J(),window['addEventListener']('focus',J),document['addEventListener']('visibilitychange',()=>{document['visibilityState']==='visible'&&J();});async function b4(){await av();try{const by=await fetch(e+'/api/version'),bz=await by['json'](),bA=bz['version']||'1.0.0',bB=document['getElementById']('login-version');if(bB){const bE=bB['querySelector']('.login-ver-val');bE?bE['textContent']='v'+bA:bB['textContent']='Phiên\x20bản\x20v'+bA;}const bC=a['getItem']('ot_app_version'),bD=sessionStorage['getItem']('ot_session_active');if(b&&!bD)bC===bA?(a['removeItem']('ot_current_user'),a['removeItem']('ot_login_date'),a['removeItem']('ot_mobile_user'),a['removeItem']('ot_login_time'),a['removeItem']('ot_auth_token')):a['setItem']('ot_app_version',bA),sessionStorage['setItem']('ot_session_active','true');else!b&&a['setItem']('ot_app_version',bA);}catch(bF){console['error']('Lỗi\x20kiểm\x20tra\x20phiên\x20bản:',bF);const bG=document['getElementById']('login-version');if(bG){const bH=bG['querySelector']('.login-ver-val');bH?bH['textContent']='v1.4.4':bG['textContent']='Phiên\x20bản\x20v1.4.4';}}const bw=a['getItem']('ot_auth_token');if(bw){const bI=bw['split']('.');if(bI['length']===0x3)try{const bJ=JSON['parse'](atob(bI[0x1]['replace'](/-/g,'+')['replace'](/_/g,'/')));if(bJ['iat']){const bK=new Date(),bL=new Date(bK['getFullYear'](),bK['getMonth'](),bK['getDate'](),0x5,0x0,0x0,0x0);bK['getTime']()<bL['getTime']()&&bL['setDate'](bL['getDate']()-0x1);if(bJ['iat']*0x3e8<bL['getTime']()){a['removeItem']('ot_auth_token'),a['removeItem']('ot_current_user'),window['location']['reload']();return;}}}catch(bM){a['removeItem']('ot_auth_token'),a['removeItem']('ot_current_user'),window['location']['reload']();return;}}const bx=JSON['parse'](a['getItem']('ot_current_user')||'null');if(bx&&bw)try{bx['role']==='admin'?!bx['email']?aP(bx['username'],bN=>{bx['email']=bN,a['setItem']('ot_current_user',JSON['stringify'](bx)),a['removeItem']('ot_require_email_setup'),M(bx),G('screen-admin');}):(await M(bx),G('screen-admin')):(await ap(bx),G('screen-employee'));}catch(bN){console['error']('[Dashboard]\x20Lỗi\x20khởi\x20tạo\x20dữ\x20liệu:',bN);if(b)G('screen-login');else{const bO=window['location']['hostname']['includes']('github.io'),bP=bO?'/OT/index.html':'/index.html';window['location']['href']=bP;}}else{if(!b){const bQ=window['location']['hostname']['includes']('github.io'),bR=bQ?'/OT/index.html':'/index.html';window['location']['href']=bR;}}a2();}b4();const b5=document['getElementById']('stat-card-pending-ot');b5&&b5['addEventListener']('click',()=>{const bw=document['querySelector']('.admin-tab[data-admin-tab=\x22records\x22]');if(bw)bw['click']();const bx=document['querySelector']('.sub-tab[data-subtab=\x22subtab-content-records-pending\x22]');if(bx)bx['click']();});const b6=document['getElementById']('stat-card-pending-unlinks');b6&&b6['addEventListener']('click',()=>{const bw=document['querySelector']('.admin-tab[data-admin-tab=\x22users\x22]');if(bw)bw['click']();const bx=document['querySelector']('.sub-tab[data-subtab=\x22subtab-content-employees\x22]');if(bx)bx['click']();});const b7=document['getElementById']('btn-tab-employee'),b8=document['getElementById']('btn-tab-admin'),b9=document['getElementById']('form-login-employee'),ba=document['getElementById']('form-login-admin');b7&&b8&&b9&&ba&&(b7['addEventListener']('click',()=>{b7['classList']['add']('active'),b8['classList']['remove']('active'),b9['classList']['add']('active'),ba['classList']['remove']('active'),b9['style']['display']='block',ba['style']['display']='none';const bw=document['getElementById']('login-error-emp');if(bw)bw['textContent']='';}),b8['addEventListener']('click',()=>{b8['classList']['add']('active'),b7['classList']['remove']('active'),ba['classList']['add']('active'),b9['classList']['remove']('active'),ba['style']['display']='block',b9['style']['display']='none';const bw=document['getElementById']('login-error-admin');if(bw)bw['textContent']='';}));document['querySelectorAll']('.admin-tab')['forEach'](bw=>{bw['addEventListener']('click',()=>{document['querySelectorAll']('.admin-tab')['forEach'](by=>by['classList']['remove']('active')),document['querySelectorAll']('.admin-tab-content')['forEach'](by=>by['classList']['remove']('active')),bw['classList']['add']('active'),document['getElementById']('admin-tab-'+bw['dataset']['adminTab'])['classList']['add']('active');const bx=document['getElementById']('admin-header-title');if(bx){const by=bw['querySelector']('span');by&&(bx['textContent']=by['textContent']);}});}),document['querySelectorAll']('.emp-tab')['forEach'](bw=>{bw['addEventListener']('click',()=>{document['querySelectorAll']('.emp-tab')['forEach'](bz=>bz['classList']['remove']('active')),document['querySelectorAll']('.emp-tab-content')['forEach'](bz=>bz['classList']['remove']('active')),bw['classList']['add']('active');const bx=document['getElementById']('emp-tab-'+bw['dataset']['empTab']);bx&&bx['classList']['add']('active');const by=document['getElementById']('emp-header-title');if(by){const bz=bw['querySelector']('span');bz&&(by['textContent']=bz['textContent']);}});}),document['querySelectorAll']('.sub-tab')['forEach'](bw=>{bw['addEventListener']('click',()=>{const bx=bw['closest']('.panel');bx['querySelectorAll']('.sub-tab')['forEach'](bz=>bz['classList']['remove']('active')),bx['querySelectorAll']('.sub-tab-content')['forEach'](bz=>bz['classList']['remove']('active')),bw['classList']['add']('active');const by=bw['dataset']['subtab'];bx['querySelector']('#subtab-content-'+by)['classList']['add']('active');});});const bb=document['getElementById']('btn-toggle-password'),bc=document['getElementById']('login-password');bb&&bc&&bb['addEventListener']('click',()=>{const bw=bc['getAttribute']('type')==='password';bc['setAttribute']('type',bw?'text':'password'),bb['innerHTML']=bw?'<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20width=\x2218\x22\x20height=\x2218\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M17.94\x2017.94A10.07\x2010.07\x200\x200\x201\x2012\x2020c-7\x200-11-8-11-8a18.45\x2018.45\x200\x200\x201\x205.06-5.94M9.9\x204.24A9.12\x209.12\x200\x200\x201\x2012\x204c7\x200\x2011\x208\x2011\x208a18.5\x2018.5\x200\x200\x201-2.16\x203.19m-6.72-1.07a3\x203\x200\x201\x201-4.24-4.24\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<line\x20x1=\x221\x22\x20y1=\x221\x22\x20x2=\x2223\x22\x20y2=\x2223\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>':'<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20stroke-linecap=\x22round\x22\x20stroke-linejoin=\x22round\x22\x20width=\x2218\x22\x20height=\x2218\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<path\x20d=\x22M1\x2012s4-8\x2011-8\x2011\x208\x2011\x208-4\x208-11\x208-11-8-11-8z\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<circle\x20cx=\x2212\x22\x20cy=\x2212\x22\x20r=\x223\x22/>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</svg>';});const bd=document['getElementById']('form-login-employee');if(bd)bd['addEventListener']('submit',H);const be=document['getElementById']('form-login-admin');if(be)be['addEventListener']('submit',I);document['getElementById']('form-ot')['addEventListener']('submit',as);const bf=document['getElementById']('admin-form-ot');if(bf){bf['addEventListener']('submit',at);const bw=document['getElementById']('admin-ot-start');if(bw){const bC=()=>{const bD=bw['value'],bE=document['getElementById']('admin-ot-end')['value'];if(bD&&bE){const bF=z(bD),bG=z(bE);bG<=bF&&(document['getElementById']('admin-ot-end')['value']=bD);}};bw['addEventListener']('change',bC),bw['addEventListener']('input',bC);}const bx=document['getElementById']('admin-ot-backfill');bx&&bx['addEventListener']('change',function(){const bD=document['getElementById']('admin-ot-normal-inputs'),bE=document['getElementById']('admin-ot-backfill-hours-group'),bF=document['getElementById']('admin-ot-custom-activity-group');if(this['checked']){if(bD)bD['style']['display']='none';if(bE)bE['style']['display']='block';if(bF)bF['style']['display']='none';const bG=document['getElementById']('admin-ot-lunch');if(bG)bG['checked']=![];const bH=document['getElementById']('admin-ot-start');if(bH)bH['value']='16:30';const bI=document['getElementById']('admin-ot-end');if(bI)bI['value']='16:30';}else{if(bD)bD['style']['display']='block';if(bE)bE['style']['display']='none';const bJ=document['getElementById']('admin-ot-target-self');let bK='';bJ&&!bJ['checked']&&(bK=document['getElementById']('admin-ot-user')['value']),aL(bK);}});const by=document['getElementById']('admin-ot-target-self'),bz=document['getElementById']('admin-ot-target-emp');if(by&&bz){const bD=document['getElementById']('admin-ot-user-group'),bE=document['getElementById']('admin-ot-user');by['addEventListener']('change',function(){if(this['checked']){if(bD)bD['style']['display']='none';bE&&(bE['required']=![],bE['value']=''),aL('');}}),bz['addEventListener']('change',function(){if(this['checked']){if(bD)bD['style']['display']='block';bE&&(bE['required']=!![]),aL(bE['value']);}}),bE&&bE['addEventListener']('change',function(){aL(this['value']);});}const bA=['admin-ot-target-self','admin-ot-target-emp','admin-ot-user','admin-ot-date','admin-ot-backfill','admin-ot-backfill-hours','admin-ot-lunch','admin-ot-start','admin-ot-end','admin-ot-note'];bA['forEach'](bF=>{const bG=document['getElementById'](bF);bG&&(bG['addEventListener']('change',ar),bG['addEventListener']('input',ar));});const bB=document['getElementById']('admin-ot-date');bB&&(bB['addEventListener']('change',aD),bB['addEventListener']('input',aD)),setTimeout(ar,0x64);}document['getElementById']('btn-logout-admin')['addEventListener']('click',K),document['getElementById']('btn-logout-emp')['addEventListener']('click',K);b3&&b3['addEventListener']('click',aA);document['getElementById']('ot-lunch')['addEventListener']('change',aq),document['getElementById']('ot-lunch')['addEventListener']('input',aq),document['getElementById']('ot-start')['addEventListener']('change',aq),document['getElementById']('ot-start')['addEventListener']('input',aq),document['getElementById']('ot-end')['addEventListener']('change',aq),document['getElementById']('ot-end')['addEventListener']('input',aq);const bg=()=>{const bF=document['getElementById']('ot-start')['value'],bG=document['getElementById']('ot-end')['value'];if(bF&&bG){const bH=z(bF),bI=z(bG);bI<=bH&&(document['getElementById']('ot-end')['value']=bF,aq());}};document['getElementById']('ot-start')['addEventListener']('change',bg),document['getElementById']('ot-start')['addEventListener']('input',bg);const bh=document['getElementById']('ot-backfill');bh&&bh['addEventListener']('change',function(){const bF=document['getElementById']('ot-normal-inputs'),bG=document['getElementById']('ot-backfill-hours-group'),bH=document['getElementById']('ot-custom-activity-group');if(this['checked']){if(bF)bF['style']['display']='none';if(bG)bG['style']['display']='block';if(bH)bH['style']['display']='none';const bI=document['getElementById']('ot-lunch');if(bI)bI['checked']=![];const bJ=document['getElementById']('ot-start');if(bJ)bJ['value']='16:30';const bK=document['getElementById']('ot-end');if(bK)bK['value']='16:30';}else{if(bF)bF['style']['display']='block';if(bG)bG['style']['display']='none';aM();}aq();});const bi=document['getElementById']('ot-backfill-hours');bi&&(bi['addEventListener']('input',aq),bi['addEventListener']('change',aq));document['getElementById']('admin-filter-month')['addEventListener']('change',a6);const bj=document['getElementById']('admin-filter-date');bj&&bj['addEventListener']('change',a6);document['getElementById']('admin-filter-user')['addEventListener']('change',a6),document['getElementById']('admin-search-user')['addEventListener']('input',a6),document['getElementById']('admin-search-note')['addEventListener']('input',a6),document['getElementById']('emp-filter-month')['addEventListener']('change',au),document['getElementById']('report-filter-month')['addEventListener']('change',aa);const bk=document['getElementById']('admin-filter-team');bk&&bk['addEventListener']('change',a6);const bl=document['getElementById']('report-filter-team');bl&&bl['addEventListener']('change',aa);const bm=document['getElementById']('report-search-name');bm&&bm['addEventListener']('input',bF=>{o=bF['target']['value'],aa();});const bn=bF=>{p===bF?q=q==='asc'?'desc':'asc':(p=bF,q='desc'),aa();},bo=document['getElementById']('th-report-name');if(bo)bo['addEventListener']('click',()=>bn('name'));const bp=document['getElementById']('th-report-days');if(bp)bp['addEventListener']('click',()=>bn('days'));const bq=document['getElementById']('th-report-total');if(bq)bq['addEventListener']('click',()=>bn('total'));document['getElementById']('btn-export')['addEventListener']('click',am),document['getElementById']('btn-close-month')['addEventListener']('click',an);const br=document['getElementById']('btn-toggle-charts'),bs=document['getElementById']('charts-panel');if(br&&bs){const bF=a['getItem']('ot_show_report_charts')==='true';bF&&(bs['style']['display']='block',br['style']['backgroundColor']='#10b981',br['style']['borderColor']='#10b981',br['style']['color']='#ffffff'),br['addEventListener']('click',()=>{const bG=bs['style']['display']==='none'||!bs['style']['display'];bG?(bs['style']['display']='block',br['style']['backgroundColor']='#10b981',br['style']['borderColor']='#10b981',br['style']['color']='#ffffff',a['setItem']('ot_show_report_charts','true')):(bs['style']['display']='none',br['style']['backgroundColor']='#27272a',br['style']['borderColor']='#3f3f46',br['style']['color']='#e4e4e7',a['setItem']('ot_show_report_charts','false'));});}const bt=document['getElementById']('btn-cleanup-database');bt&&bt['addEventListener']('click',ao);document['getElementById']('modal-close')['addEventListener']('click',E),document['getElementById']('modal-overlay')['addEventListener']('click',bG=>{if(bG['target']===bG['currentTarget'])E();});const bu=document['getElementById']('btn-add-user');bu&&bu['addEventListener']('click',aF);const bv=document['getElementById']('btn-team-settings');bv&&bv['addEventListener']('click',P);});async function aE(aR,aS){try{let aT=n['find'](b6=>b6['id']===aR);if(!aT){const b6=await v('/api/records');n=b6['records']||[],aT=n['find'](b7=>b7['id']===aR);}if(!aT)return C('Không\x20tìm\x20thấy\x20bản\x20ghi','error');const aU=aT['isBackfill']||aT['note']&&(aT['note']['includes']('[BÙ\x20THÁNG\x20TRƯỚC]')||aT['note']['includes']('[TĂNG\x20THÁNG\x20NÀY]')),aV=aT['note']?aT['note']['replace']('[BÙ\x20THÁNG\x20TRƯỚC]\x20','')['replace']('[BÙ\x20THÁNG\x20TRƯỚC]','')['replace']('[TĂNG\x20THÁNG\x20NÀY]\x20','')['replace']('[TĂNG\x20THÁNG\x20NÀY]','')['trim']():'',aW='\x0a\x20\x20\x20\x20\x20\x20\x20\x20<form\x20id=\x22modal-form-record\x22\x20class=\x22login-form\x20active\x22\x20style=\x22text-align:\x20left;\x20padding:\x200;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22margin-bottom:\x2015px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;margin-bottom:6px;font-weight:600;\x22>Ngày\x20tăng\x20ca</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22input-wrapper\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22date\x22\x20id=\x22modal-rec-date\x22\x20value=\x22'+aT['date']+'\x22\x20max=\x22'+new Date()['toISOString']()['split']('T')[0x0]+'\x22\x20style=\x22padding-left:12px;\x20height:38px;\x20border-radius:8px;\x22\x20required>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22margin-bottom:\x2015px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20class=\x22switch-label\x22\x20for=\x22modal-rec-backfill\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22checkbox\x22\x20id=\x22modal-rec-backfill\x22\x20'+(aU?'checked':'')+'>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22switch-slider\x22></span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22switch-text\x22>Bù\x20tăng\x20ca</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20Backfill\x20hours\x20input\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20id=\x22modal-rec-backfill-hours-group\x22\x20style=\x22display:\x20'+(aU?'block':'none')+';\x20margin-bottom:\x2015px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;margin-bottom:6px;font-weight:600;\x22>Số\x20giờ\x20tăng\x20ca\x20cần\x20bù</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22number\x22\x20id=\x22modal-rec-backfill-hours\x22\x20step=\x220.1\x22\x20min=\x220.1\x22\x20max=\x2224\x22\x20value=\x22'+(aU?aT['totalHours']:'')+'\x22\x20placeholder=\x22Nhập\x20số\x20giờ\x20bù\x20(ví\x20dụ:\x208.0)\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x20height:38px;\x20border-radius:8px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20Normal\x20OT\x20inputs\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22modal-rec-normal-inputs\x22\x20style=\x22display:\x20'+(aU?'none':'block')+';\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22margin-bottom:\x2015px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20class=\x22switch-label\x22\x20for=\x22modal-rec-lunch\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22checkbox\x22\x20id=\x22modal-rec-lunch\x22\x20'+(aT['hasLunchOT']?'checked':'')+'>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22switch-slider\x22></span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22switch-text\x22>Tăng\x20ca\x20trưa\x20(12:20\x20-\x2013:20)</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22display:\x20grid;\x20grid-template-columns:\x201fr\x201fr;\x20gap:\x2012px;\x20margin-bottom:\x2015px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;margin-bottom:6px;font-weight:600;\x22>Bắt\x20đầu\x20OT\x20chiều</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22time\x22\x20id=\x22modal-rec-start\x22\x20value=\x22'+(aT['otStart']||'16:30')+'\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x20height:38px;\x20border-radius:8px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;margin-bottom:6px;font-weight:600;\x22>Kết\x20thúc\x20OT\x20chiều</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22time\x22\x20id=\x22modal-rec-end\x22\x20value=\x22'+(aT['otEnd']||'16:30')+'\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x20height:38px;\x20border-radius:8px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20Nhóm\x20Hoạt\x20động\x20ngoài\x20giờ\x20tùy\x20chỉnh\x20(Sửa)\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22modal-rec-custom-activity-group\x22\x20style=\x22display:\x20none;\x20margin-bottom:\x2015px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22modal-rec-custom-activities-list\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22margin-bottom:\x200;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;margin-bottom:6px;font-weight:600;\x22>Ghi\x20chú</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<textarea\x20id=\x22modal-rec-note\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20height:60px;\x20resize:none;\x20box-sizing:border-box;\x20padding:10px;\x22\x20required>'+aV+'</textarea>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</form>';D('Chỉnh\x20sửa\x20tăng\x20ca',aW,[{'text':'Hủy','class':'btn-ghost'},{'text':'Lưu','class':'btn\x20btn-primary\x20btn-sm','action':async()=>{const b7=document['getElementById']('modal-rec-date')['value'],b8=document['getElementById']('modal-rec-backfill'),b9=b8?b8['checked']:![],ba=b9?![]:document['getElementById']('modal-rec-lunch')?document['getElementById']('modal-rec-lunch')['checked']:![],bb=document['getElementById']('modal-rec-start')?document['getElementById']('modal-rec-start')['value']:'',bc=document['getElementById']('modal-rec-end')?document['getElementById']('modal-rec-end')['value']:'';let bd=document['getElementById']('modal-rec-note')['value']['trim']();if(!b7)return C('Vui\x20lòng\x20chọn\x20ngày!','error');const be=document['querySelector']('.modal-rec-custom-activity-checkbox:checked'),bf=be?be['dataset']['actName']:'',bg=be?be['dataset']['actMode']:'',bh=be?document['getElementById']('modal-rec-custom-activity-detail-group-'+be['dataset']['actId']):null,bi=bh?bh['querySelector']('.modal-rec-custom-activity-detail'):null,bj=bi?bi['value']['trim']():'';if(be&&!bj)return C('Vui\x20lòng\x20nhập\x20chi\x20tiết\x20cho\x20hoạt\x20động\x20ngoài\x20giờ!','error');let bk=0x0,bl=0x0;if(b9){const bn=parseFloat(document['getElementById']('modal-rec-backfill-hours')['value'])||0x0;if(bn<=0x0)return C('Vui\x20lòng\x20nhập\x20số\x20giờ\x20bù\x20hợp\x20lệ!','error');bl=bn,bk=bn,bd='[BÙ\x20THÁNG\x20TRƯỚC]\x20'+bd;}else{bk=F(bb,bc);const bo=ba?g:0x0;bl=bo+bk;if(bl<=0x0&&!be)return C('Vui\x20lòng\x20chọn\x20ít\x20nhất\x20một\x20loại\x20OT\x20hoặc\x20hoạt\x20động\x20ngoài\x20giờ!','error');}const bm=be&&bg==='trip'?bj:'';if(be&&bl===0x0&&!bd)bd=bf+'\x20'+bj;else{if(!bd)return C('Vui\x20lòng\x20nhập\x20ghi\x20chú!','error');}try{await v('/api/records/'+aR,'PUT',{'date':b7,'hasLunchOT':b9?![]:ba,'otStart':!b9&&bk>0x0?bb:'','otEnd':!b9&&bk>0x0?bc:'','eveningOTHours':bk,'totalHours':bl,'deliveryProvince':bm,'customActivity':bf,'calcMode':bg||(aT['calcMode']||''),'note':bd,'isBackfill':b9,'createdMonth':b9?A():b7['substring'](0x0,0x7)}),C('Đã\x20cập\x20nhật\x20bản\x20ghi\x20tăng\x20ca!'),aS==='admin'?await Promise['all']([a6(),a5(),aa()]):await au();}catch(bp){C(bp['message'],'error');}}}]);const aX=document['getElementById']('modal-rec-custom-activities-list'),aY=document['getElementById']('modal-rec-custom-activity-group'),aZ=JSON['parse'](a['getItem']('ot_current_user')||'null');let b0='';if(aZ&&aZ['role']==='employee')b0=aZ['team']||'';else{const b7=m['find'](b8=>b8['id']===aT['userId']);b0=b7?b7['team']||'':'';}const b1=i['find'](b8=>typeof b8==='object'&&b8['name']===b0),b2=b1&&b1['customActivities']?b1['customActivities']:[];if(b2['length']>0x0){if(aY)aY['style']['display']=aU?'none':'block';let b8=aT['customActivity']||'';if(!b8&&aT['deliveryProvince']){const ba=b2['find'](bb=>bb['calcMode']==='trip');b8=ba?ba['name']:b2[0x0]?.['name']||'';}aX&&(aX['innerHTML']=b2['map'](bb=>{const bc=bb['name']===b8,bd=bc?aT['deliveryProvince']||'':'';return'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22custom-activity-item\x22\x20style=\x22margin-bottom:\x2014px;\x20text-align:\x20left;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20class=\x22switch-label\x22\x20for=\x22modal-chk-'+bb['id']+'\x22\x20style=\x22display:\x20inline-flex;\x20align-items:\x20center;\x20gap:\x2012px;\x20cursor:\x20pointer;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22checkbox\x22\x20id=\x22modal-chk-'+bb['id']+'\x22\x20class=\x22modal-rec-custom-activity-checkbox\x22\x20data-act-id=\x22'+bb['id']+'\x22\x20data-act-name=\x22'+bb['name']+'\x22\x20data-act-mode=\x22'+bb['calcMode']+'\x22\x20onchange=\x22toggleModalCustomActivityInput(\x27'+bb['id']+'\x27)\x22\x20'+(bc?'checked':'')+'>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22switch-slider\x22></span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22switch-text\x22\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x202px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<strong>'+bb['name']+'</strong>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<small\x20style=\x22font-size:\x2011px;\x20color:\x20var(--text-secondary);\x22>Tính\x20chất:\x20'+(bb['calcMode']==='trip'?'Tính\x20theo\x20Chuyến':'Tính\x20theo\x20Giờ')+'</small>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20id=\x22modal-rec-custom-activity-detail-group-'+bb['id']+'\x22\x20style=\x22display:\x20'+(bc?'block':'none')+';\x20margin-top:\x208px;\x20padding:\x200\x204px;\x20margin-bottom:\x200;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;\x20margin-bottom:6px;\x20font-size:13px;\x20font-weight:600;\x20color:var(--text-secondary);\x22>'+(bb['detailLabel']||'Chi\x20tiết')+'</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22modal-rec-custom-activity-detail\x22\x20data-act-id=\x22'+bb['id']+'\x22\x20placeholder=\x22'+(bb['placeholder']||'Nhập\x20chi\x20tiết...')+'\x22\x20value=\x22'+bd+'\x22\x20style=\x22width:\x20100%;\x20height:\x2038px;\x20background:\x20rgba(0,0,0,0.2);\x20color:\x20#fff;\x20border:\x201px\x20solid\x20rgba(255,255,255,0.15);\x20border-radius:\x206px;\x20padding:\x200\x2010px;\x20font-size:\x2014px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20';})['join'](''));const b9=document['getElementById']('modal-rec-note');b8&&b9&&(b9['required']=![],b9['placeholder']='Mặc\x20định:\x20'+b8+'...');}else{if(aY)aY['style']['display']='none';}const b3=document['getElementById']('modal-rec-backfill');b3&&b3['addEventListener']('change',function(){const bb=document['getElementById']('modal-rec-normal-inputs'),bc=document['getElementById']('modal-rec-backfill-hours-group'),bd=document['getElementById']('modal-rec-custom-activity-group');if(this['checked']){if(bb)bb['style']['display']='none';if(bc)bc['style']['display']='block';if(bd)bd['style']['display']='none';document['querySelectorAll']('.modal-rec-custom-activity-checkbox')['forEach'](bh=>{bh['checked']=![];const bi=document['getElementById']('modal-rec-custom-activity-detail-group-'+bh['dataset']['actId']);if(bi)bi['style']['display']='none';});const be=document['getElementById']('modal-rec-lunch');if(be)be['checked']=![];const bf=document['getElementById']('modal-rec-start');if(bf)bf['value']='16:30';const bg=document['getElementById']('modal-rec-end');if(bg)bg['value']='16:30';}else{if(bb)bb['style']['display']='block';if(bd&&b2['length']>0x0)bd['style']['display']='block';if(bc)bc['style']['display']='none';}});const b4=document['getElementById']('modal-rec-start'),b5=document['getElementById']('modal-rec-end');if(b4&&b5){const bb=()=>{const bc=z(b4['value']),bd=z(b5['value']);bd<=bc&&(b5['value']=b4['value']);};b4['addEventListener']('change',bb),b4['addEventListener']('input',bb);}}catch(bc){C('Lỗi\x20tải\x20dữ\x20liệu\x20bản\x20ghi','error');}}async function aF(){let aR=[];if(m&&m['length']>0x0)aR=m['filter'](aX=>aX['role']==='admin');else try{const aX=await v('/api/users');m=aX['users']||[],aR=m['filter'](aY=>aY['role']==='admin');}catch(aY){console['error']('Lỗi\x20lấy\x20danh\x20sách\x20admin:',aY);}const aS=JSON['parse'](a['getItem']('ot_current_user')||'null'),aT=aS&&(aS['username']==='admin'||aS['isSuperAdmin']),aU='\x0a\x20\x20\x20\x20<form\x20id=\x22modal-form-add-user\x22\x20class=\x22login-form\x20active\x22\x20style=\x22text-align:\x20left;\x20padding:\x200;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22margin-bottom:\x2015px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;margin-bottom:6px;font-weight:600;\x22>Họ\x20và\x20tên</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20id=\x22modal-user-fullname\x22\x20placeholder=\x22Nguyễn\x20Văn\x20A\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x22\x20required>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22margin-bottom:\x2015px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;margin-bottom:6px;font-weight:600;\x22>Tên\x20đăng\x20nhập</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20id=\x22modal-user-username\x22\x20placeholder=\x22Chỉ\x20viết\x20liền,\x20không\x20dấu\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x22\x20required>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22margin-bottom:\x2015px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;margin-bottom:6px;font-weight:600;\x22>Địa\x20chỉ\x20Email</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22email\x22\x20id=\x22modal-user-email\x22\x20placeholder=\x22ten-cua-ban@company.com\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20id=\x22modal-user-password-group\x22\x20style=\x22margin-bottom:\x2015px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;margin-bottom:6px;font-weight:600;\x22>Mật\x20khẩu</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22password\x22\x20id=\x22modal-user-password\x22\x20placeholder=\x22Mật\x20khẩu\x20(bỏ\x20trống\x20đối\x20với\x20nhân\x20viên)\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22margin-bottom:\x2015px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;margin-bottom:6px;font-weight:600;\x22>Vai\x20trò</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<select\x20id=\x22modal-user-role\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22employee\x22>Nhân\x20viên\x20(Điện\x20thoại)</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22admin\x22>Quản\x20lý\x20(Desktop)</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</select>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20id=\x22modal-user-manager-group\x22\x20style=\x22margin-bottom:\x200;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;margin-bottom:6px;font-weight:600;\x22>Team</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<select\x20id=\x22modal-user-team\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22\x22>--\x20Chưa\x20phân\x20team\x20--</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(aT?'<option\x20value=\x22admin\x22>admin</option>':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+i['map'](aZ=>{const b0=typeof aZ==='string'?aZ:aZ['name']||'';return'<option\x20value=\x22'+b0+'\x22>'+b0+'</option>';})['join']('')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</select>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20</form>';D('Thêm\x20nhân\x20viên\x20mới',aU,[{'text':'Hủy','class':'btn-ghost'},{'text':'Thêm','class':'btn\x20btn-primary\x20btn-sm','action':async()=>{const aZ=document['getElementById']('modal-user-fullname')['value']['trim'](),b0=document['getElementById']('modal-user-username')['value']['trim'](),b1=document['getElementById']('modal-user-email')?document['getElementById']('modal-user-email')['value']['trim']():'',b2=document['getElementById']('modal-user-password')['value'],b3=document['getElementById']('modal-user-role')['value'],b4=document['getElementById']('modal-user-team')?document['getElementById']('modal-user-team')['value']:'';if(!aZ||!b0)return C('Vui\x20lòng\x20điền\x20họ\x20tên\x20và\x20tên\x20đăng\x20nhập!','error');if(b0['length']<0x3)return C('Tên\x20đăng\x20nhập\x20tối\x20thiểu\x203\x20ký\x20tự!','error');if(b1&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/['test'](b1))return C('Địa\x20chỉ\x20Email\x20không\x20hợp\x20lệ!','error');if(b3==='admin'){if(!b2)return C('Tài\x20khoản\x20quản\x20lý\x20bắt\x20buộc\x20phải\x20nhập\x20mật\x20khẩu!','error');if(b2['length']<0x4)return C('Mật\x20khẩu\x20tối\x20thiểu\x204\x20ký\x20tự!','error');}try{await v('/api/auth/register','POST',{'fullname':aZ,'username':b0,'password':b2||'123','role':b3,'team':b4,'email':b1}),C('Thêm\x20nhân\x20viên\x20thành\x20công!'),await Promise['all']([a4(),a7(),a5(),aa()]);}catch(b5){C(b5['message'],'error');}}}]);const aV=document['getElementById']('modal-user-role'),aW=document['getElementById']('modal-user-password-group');if(aV&&aW){const aZ=()=>{aV['value']==='employee'?(aW['style']['display']='none',document['getElementById']('modal-user-password')['value']=''):aW['style']['display']='block';};aV['addEventListener']('change',aZ),aZ();}}async function aG(aR){try{const aS=JSON['parse'](a['getItem']('ot_current_user')||'null'),aT=aS&&(aS['username']==='admin'||aS['isSuperAdmin']),aU=aS&&(aS['team']==='admin'||aS['username']==='admin'||aS['isSuperAdmin']);let aV=m['find'](b7=>b7['id']===aR);if(!aV){const b7=await v('/api/users');m=b7['users']||[],aV=m['find'](b8=>b8['id']===aR);}if(!aV)return C('Không\x20tìm\x20thấy\x20nhân\x20viên','error');if(aV['isSuperAdmin']&&aS['id']!==aV['id'])return C('Bạn\x20không\x20có\x20quyền\x20chỉnh\x20sửa\x20tài\x20khoản\x20Quản\x20trị\x20viên\x20tối\x20cao!','error');if(aV['role']==='admin'&&aS['id']!==aV['id']&&!aT)return C('Chỉ\x20có\x20Quản\x20trị\x20viên\x20tối\x20cao\x20mới\x20được\x20chỉnh\x20sửa\x20tài\x20khoản\x20của\x20quản\x20lý\x20khác!','error');const aW='\x0a\x20\x20\x20\x20\x20\x20\x20\x20<form\x20id=\x22modal-form-edit-user\x22\x20style=\x22text-align:\x20left;\x20padding:\x205px;\x20display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x2018px;\x20font-family:\x20\x27Inter\x27,\x20sans-serif;\x20color:\x20#e4e4e7;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20Grid\x20for\x20Basic\x20Fields\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20grid;\x20grid-template-columns:\x201fr\x201fr;\x20gap:\x2015px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x206px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22font-size:\x200.85rem;\x20font-weight:\x20600;\x20color:\x20#a1a1aa;\x22>Họ\x20và\x20tên</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20id=\x22modal-user-fullname\x22\x20value=\x22'+aV['fullname']+'\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x20background:\x20rgba(255,255,255,0.03);\x20border:\x201px\x20solid\x20rgba(255,255,255,0.1);\x20border-radius:\x208px;\x20padding:\x2010px;\x20color:\x20#fff;\x20transition:\x20all\x200.3s;\x22\x20required>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x206px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22font-size:\x200.85rem;\x20font-weight:\x20600;\x20color:\x20#a1a1aa;\x22>Tên\x20đăng\x20nhập</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20id=\x22modal-user-username\x22\x20value=\x22'+aV['username']+'\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x20background:\x20rgba(255,255,255,0.03);\x20border:\x201px\x20solid\x20rgba(255,255,255,0.1);\x20border-radius:\x208px;\x20padding:\x2010px;\x20color:\x20#fff;\x20transition:\x20all\x200.3s;\x22\x20required>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20Email\x20Field\x20(Crucial,\x20styled\x20nicely)\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x206px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22font-size:\x200.85rem;\x20font-weight:\x20600;\x20color:\x20#a1a1aa;\x22>Địa\x20chỉ\x20Email</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22position:\x20relative;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22email\x22\x20id=\x22modal-user-email\x22\x20value=\x22'+(aV['email']||'')+'\x22\x20placeholder=\x22ten-cua-ban@company.com\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x20background:\x20rgba(255,255,255,0.03);\x20border:\x201px\x20solid\x20rgba(255,255,255,0.1);\x20border-radius:\x208px;\x20padding:\x2010px\x2010px\x2010px\x2038px;\x20color:\x20#fff;\x20transition:\x20all\x200.3s;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20style=\x22position:\x20absolute;\x20left:\x2012px;\x20top:\x2050%;\x20transform:\x20translateY(-50%);\x20color:\x20#71717a;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22><path\x20d=\x22M4\x204h16c1.1\x200\x202\x20.9\x202\x202v12c0\x201.1-.9\x202-2\x202H4c-1.1\x200-2-.9-2-2V6c0-1.1.9-2\x202-2z\x22/><polyline\x20points=\x2222,6\x2012,13\x202,6\x22/></svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20Role\x20&\x20Team\x20(Hidden\x20for\x20SuperAdmin\x20or\x20when\x20editing\x20yourself,\x20shown\x20for\x20others)\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22modal-edit-user-role-team-group\x22\x20style=\x22display:\x20'+(aV['isSuperAdmin']||aS['id']===aV['id']?'none':'grid')+';\x20grid-template-columns:\x201fr\x201fr;\x20gap:\x2015px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x206px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22font-size:\x200.85rem;\x20font-weight:\x20600;\x20color:\x20#a1a1aa;\x22>Vai\x20trò</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<select\x20id=\x22modal-user-role\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x20background:\x20rgba(255,255,255,0.03);\x20border:\x201px\x20solid\x20rgba(255,255,255,0.1);\x20border-radius:\x208px;\x20padding:\x2010px;\x20color:\x20#fff;\x20height:\x2042px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22employee\x22\x20'+(aV['role']==='employee'?'selected':'')+'>Nhân\x20viên\x20(Điện\x20thoại)</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22admin\x22\x20'+(aV['role']==='admin'?'selected':'')+'>Quản\x20lý\x20(Desktop)</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</select>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20id=\x22modal-edit-user-manager-group\x22\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x206px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22font-size:\x200.85rem;\x20font-weight:\x20600;\x20color:\x20#a1a1aa;\x22>Team</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<select\x20id=\x22modal-user-team\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x20background:\x20rgba(255,255,255,0.03);\x20border:\x201px\x20solid\x20rgba(255,255,255,0.1);\x20border-radius:\x208px;\x20padding:\x2010px;\x20color:\x20#fff;\x20height:\x2042px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22\x22>--\x20Chưa\x20phân\x20team\x20--</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+(aT?'<option\x20value=\x22admin\x22\x20'+(aV['team']==='admin'?'selected':'')+'>admin</option>':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'+i['map'](b8=>{const b9=typeof b8==='string'?b8:b8['name']||'';return'<option\x20value=\x22'+b9+'\x22\x20'+(aV['team']===b9?'selected':'')+'>'+b9+'</option>';})['join']('')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</select>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20Password\x20Reset\x20Section\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22modal-user-password-trigger-wrapper\x22\x20style=\x22margin-top:\x205px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20type=\x22button\x22\x20id=\x22btn-change-password-trigger\x22\x20style=\x22width:100%;\x20display:\x20flex;\x20align-items:\x20center;\x20justify-content:\x20center;\x20gap:\x208px;\x20background:\x20rgba(255,\x20255,\x20255,\x200.04);\x20border:\x201px\x20dashed\x20rgba(255,\x20255,\x20255,\x200.2);\x20border-radius:\x208px;\x20color:\x20#e4e4e7;\x20padding:\x2012px;\x20font-weight:\x20600;\x20cursor:\x20pointer;\x20transition:\x20all\x200.2s;\x22\x20onmouseover=\x22this.style.background=\x27rgba(255,255,255,0.08)\x27;\x20this.style.borderColor=\x27rgba(255,255,255,0.3)\x27;\x22\x20onmouseout=\x22this.style.background=\x27rgba(255,255,255,0.04)\x27;\x20this.style.borderColor=\x27rgba(255,255,255,0.2)\x27;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222\x22\x20width=\x2216\x22\x20height=\x2216\x22\x20style=\x22color:\x20#fbbf24;\x22><path\x20d=\x22M21\x202l-2\x202m-7.61\x207.61a5.5\x205.5\x200\x201\x201-7.778\x207.778\x205.5\x205.5\x200\x200\x201\x207.777-7.777zm0\x200L15.5\x207.5m0\x200l3\x203L22\x207l-3-3m-3.5\x203.5L19\x204\x22/></svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Đổi\x20mật\x20khẩu\x20tài\x20khoản\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20id=\x22modal-user-password-group\x22\x20style=\x22display:\x20none;\x20flex-direction:\x20column;\x20gap:\x206px;\x20animation:\x20fadeIn\x200.3s\x20ease;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22font-size:\x200.85rem;\x20font-weight:\x20600;\x20color:\x20#ef4444;\x22>Mật\x20khẩu\x20mới</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22password\x22\x20id=\x22modal-user-password\x22\x20placeholder=\x22Nhập\x20mật\x20khẩu\x20mới\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x20background:\x20rgba(255,255,255,0.03);\x20border:\x201px\x20solid\x20rgba(255,255,255,0.1);\x20border-radius:\x208px;\x20padding:\x2010px;\x20color:\x20#fff;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<!--\x20OTP\x20Verification\x20Section\x20-->\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22modal-otp-verification-section\x22\x20style=\x22display:\x20none;\x20background:\x20rgba(16,\x20185,\x20129,\x200.05);\x20border:\x201px\x20solid\x20rgba(16,\x20185,\x20129,\x200.2);\x20border-radius:\x2012px;\x20padding:\x2015px;\x20margin-top:\x205px;\x20animation:\x20fadeIn\x200.3s\x20ease;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:\x20flex;\x20align-items:\x20center;\x20gap:\x206px;\x20font-size:\x200.9rem;\x20font-weight:\x20700;\x20color:\x20#10b981;\x20margin-bottom:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<svg\x20viewBox=\x220\x200\x2024\x2024\x22\x20fill=\x22none\x22\x20stroke=\x22currentColor\x22\x20stroke-width=\x222.5\x22\x20width=\x2216\x22\x20height=\x2216\x22><path\x20d=\x22M12\x2022s8-4\x208-10V5l-8-3-8\x203v7c0\x206\x208\x2010\x208\x2010z\x22/></svg>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Xác\x20thực\x20thay\x20đổi\x20qua\x20OTP\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20gap:\x2010px;\x20margin-bottom:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20id=\x22modal-verification-otp\x22\x20placeholder=\x22Nhập\x20mã\x20OTP\x22\x20class=\x22input-sm\x22\x20style=\x22flex:\x201;\x20text-align:\x20center;\x20font-size:\x201.1rem;\x20letter-spacing:\x204px;\x20font-weight:\x20bold;\x20background:\x20rgba(0,0,0,0.2);\x20border:\x201px\x20solid\x20rgba(16,\x20185,\x20129,\x200.3);\x20border-radius:\x208px;\x20padding:\x208px;\x20color:\x20#fff;\x22\x20maxlength=\x226\x22\x20oninput=\x22this.value\x20=\x20this.value.replace(/[^0-9]/g,\x20\x27\x27)\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20type=\x22button\x22\x20id=\x22btn-send-verification-otp\x22\x20style=\x22background:\x20#10b981;\x20color:\x20#020604;\x20border:\x20none;\x20border-radius:\x208px;\x20padding:\x200\x2016px;\x20font-weight:\x20bold;\x20cursor:\x20pointer;\x20transition:\x20all\x200.2s;\x20white-space:\x20nowrap;\x22\x20onmouseover=\x22this.style.background=\x27#059669\x27;\x22\x20onmouseout=\x22this.style.background=\x27#10b981\x27;\x22>Gửi\x20OTP</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20style=\x22font-size:\x200.8rem;\x20color:\x20#a1a1aa;\x20margin:\x200;\x22\x20id=\x22verification-otp-status\x22></p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</form>';D('Sửa\x20thông\x20tin\x20nhân\x20viên',aW,[{'text':'Hủy','class':'btn-ghost'},{'text':'Lưu','class':'btn\x20btn-primary\x20btn-sm','action':async()=>{const b8=document['getElementById']('modal-user-fullname')['value']['trim'](),b9=document['getElementById']('modal-user-username')['value']['trim'](),ba=document['getElementById']('modal-user-password-group'),bb=ba&&ba['style']['display']!=='none'?document['getElementById']('modal-user-password')['value']:'',bc=document['getElementById']('modal-user-role')?document['getElementById']('modal-user-role')['value']:aV['role'],bd=document['getElementById']('modal-user-team')?document['getElementById']('modal-user-team')['value']:aV['team'],be=document['getElementById']('modal-user-email')['value']['trim'](),bf=document['getElementById']('modal-otp-verification-section'),bg=bf&&bf['style']['display']!=='none',bh=bg?document['getElementById']('modal-verification-otp')['value']['trim']():'';if(!b8||!b9)return C('Vui\x20lòng\x20điền\x20họ\x20tên\x20và\x20tên\x20đăng\x20nhập!','error');if(b9['length']<0x3)return C('Tên\x20đăng\x20nhập\x20tối\x20thiểu\x203\x20ký\x20tự!','error');if(bg&&!bh)return C('Vui\x20lòng\x20nhập\x20mã\x20OTP\x20xác\x20thực\x20thay\x20đổi!','error');const bi={'fullname':b8,'username':b9,'role':bc,'team':bd,'email':be};if(bb){if(bb['length']<0x4)return C('Mật\x20khẩu\x20tối\x20thiểu\x204\x20ký\x20tự!','error');bi['password']=bb;}bg&&(bi['otpCode']=bh);try{await v('/api/users/'+aR,'PUT',bi),C('Cập\x20nhật\x20nhân\x20viên\x20thành\x20công!');if(aS&&aS['id']===aR){const bj={...aS,'fullname':b8,'username':b9,'role':bc,'team':bd};a['setItem']('ot_current_user',JSON['stringify'](bj));const bk=document['getElementById']('user-fullname');if(bk)bk['textContent']=b8;}await Promise['all']([a4(),a7(),a6(),aa(),a5()]);}catch(bl){C(bl['message'],'error');}}}]);const aX=document['getElementById']('btn-change-password-trigger'),aY=document['getElementById']('modal-user-password-group'),aZ=document['getElementById']('modal-user-password-trigger-wrapper'),b0=document['getElementById']('modal-otp-verification-section'),b1=document['getElementById']('modal-user-email'),b2=document['getElementById']('verification-otp-status'),b3=document['getElementById']('btn-send-verification-otp');let b4=![];const b5=()=>{if(aV['role']!=='admin'){if(b0)b0['style']['display']='none';return;}const b8=b1['value']['trim']()['toLowerCase']()!==(aV['email']||'')['toLowerCase'](),b9=aY&&aY['style']['display']!=='none';if(b8||b9){if(b0)b0['style']['display']='block';}else{if(b0)b0['style']['display']='none';}};b1&&(b1['addEventListener']('input',b5),b1['addEventListener']('change',b5));aX&&aY&&aZ&&(aX['onclick']=()=>{b4=!![],aZ['style']['display']='none',aY['style']['display']='block',b5();const b8=document['getElementById']('modal-user-password');if(b8)b8['focus']();});if(b3){let b8=0x0,b9=null;b3['onclick']=async ba=>{ba['preventDefault']();const bb=b1['value']['trim']();if(!bb)return C('Vui\x20lòng\x20điền\x20Email\x20hợp\x20lệ\x20để\x20nhận\x20mã\x20OTP!','error');b3['disabled']=!![],b2['textContent']='Đang\x20gửi\x20mã\x20OTP...',b2['style']['color']='#a1a1aa';try{await v('/api/auth/send-email-otp','POST',{'username':aV['username'],'email':bb}),C('Đã\x20gửi\x20mã\x20OTP\x20xác\x20nhận\x20đến\x20email!'),b2['textContent']='Mã\x20OTP\x20đã\x20được\x20gửi\x20tới\x20'+bb+'.\x20Hiệu\x20lực\x20trong\x205\x20phút.',b2['style']['color']='#10b981',b8=0x3c,b3['disabled']=!![],b9=setInterval(()=>{b8--,b8<=0x0?(clearInterval(b9),b3['disabled']=![],b3['textContent']='Gửi\x20OTP'):b3['textContent']='Gửi\x20lại\x20('+b8+'s)';},0x3e8);}catch(bc){C(bc['message'],'error'),b2['textContent']='Lỗi:\x20'+bc['message'],b2['style']['color']='#ef4444',b3['disabled']=![];}};}const b6=document['getElementById']('modal-user-role');if(b6){const ba=()=>{if(b6['value']==='employee'){if(aZ)aZ['style']['display']='none';if(aY)aY['style']['display']='none';const bb=document['getElementById']('modal-user-password');if(bb)bb['value']='';}else{if(b4){if(aZ)aZ['style']['display']='none';if(aY)aY['style']['display']='block';}else{if(aZ)aZ['style']['display']='block';if(aY)aY['style']['display']='none';}}b5();};b6['addEventListener']('change',ba),ba();}}catch(bb){C('Lỗi\x20tải\x20dữ\x20liệu\x20người\x20dùng','error');}}async function aH(aR,aS,aT='mobile'){const aU=aT==='mobile'?'App\x20điện\x20thoại':'Trình\x20duyệt\x20web',aV=aT==='mobile'?{'deviceId':null}:{'browserDeviceId':null};D('Xóa\x20liên\x20kết\x20thiết\x20bị','Bạn\x20có\x20chắc\x20muốn\x20xóa\x20liên\x20kết\x20<strong>'+aU+'</strong>\x20của\x20nhân\x20viên\x20<strong>'+aS+'</strong>?<br>Sau\x20khi\x20xóa,\x20nhân\x20viên\x20này\x20có\x20thể\x20đăng\x20nhập\x20trên\x20thiết\x20bị/trình\x20duyệt\x20mới.',[{'text':'Hủy','class':'btn-ghost'},{'text':'Xóa\x20liên\x20kết','class':'btn\x20btn-danger\x20btn-sm','action':async()=>{try{await v('/api/users/'+aR,'PUT',aV),await a7(),C('Đã\x20xóa\x20liên\x20kết\x20'+aU+'!');}catch(aW){C(aW['message'],'error');}}}]);}function aI(aR,aS,aT,aU){D('Xóa\x20tất\x20cả\x20liên\x20kết\x20thiết\x20bị','Bạn\x20có\x20chắc\x20muốn\x20xóa\x20tất\x20cả\x20liên\x20kết\x20(App\x20điện\x20thoại\x20&\x20Trình\x20duyệt\x20web)\x20của\x20nhân\x20viên\x20<strong>'+aS+'</strong>?<br>Sau\x20khi\x20xóa,\x20nhân\x20viên\x20này\x20có\x20thể\x20đăng\x20nhập\x20trên\x20thiết\x20bị/trình\x20duyệt\x20mới.',[{'text':'Hủy','class':'btn-ghost'},{'text':'Xóa\x20liên\x20kết','class':'btn\x20btn-danger\x20btn-sm','action':async()=>{try{await v('/api/users/'+aR,'PUT',{'deviceId':null,'browserDeviceId':null}),await a7(),C('Đã\x20xóa\x20toàn\x20bộ\x20liên\x20kết\x20thiết\x20bị\x20của\x20'+aS+'!');}catch(aV){C(aV['message'],'error');}}}]);}window['showUnlinkOptions']=aI;async function aJ(aR,aS){D('Duyệt\x20huỷ\x20liên\x20kết\x20thiết\x20bị','Bạn\x20có\x20chắc\x20muốn\x20phê\x20duyệt\x20yêu\x20cầu\x20huỷ\x20liên\x20kết\x20thiết\x20bị\x20của\x20nhân\x20viên\x20<strong>'+aS+'</strong>?<br>Thao\x20tác\x20này\x20sẽ\x20reset\x20liên\x20kết\x20cả\x20App\x20điện\x20thoại\x20và\x20Trình\x20duyệt,\x20nhân\x20viên\x20sẽ\x20tự\x20động\x20đăng\x20xuất.',[{'text':'Hủy','class':'btn-ghost'},{'text':'Duyệt','class':'btn\x20btn-primary\x20btn-sm','action':async()=>{try{await v('/api/users/'+aR,'PUT',{'deviceId':null,'browserDeviceId':null,'pendingUnlink':![]}),await a7(),C('Đã\x20duyệt\x20yêu\x20cầu\x20huỷ\x20liên\x20kết\x20thiết\x20bị!');}catch(aT){C(aT['message'],'error');}}}]);}async function aK(aR,aS){D('Từ\x20chối\x20huỷ\x20liên\x20kết\x20thiết\x20bị','Bạn\x20có\x20chắc\x20muốn\x20từ\x20chối\x20yêu\x20cầu\x20huỷ\x20liên\x20kết\x20thiết\x20bị\x20của\x20nhân\x20viên\x20<strong>'+aS+'</strong>?',[{'text':'Hủy','class':'btn-ghost'},{'text':'Từ\x20chối','class':'btn\x20btn-danger\x20btn-sm','action':async()=>{try{await v('/api/users/'+aR,'PUT',{'pendingUnlink':![]}),await a7(),C('Đã\x20từ\x20chối\x20yêu\x20cầu\x20huỷ\x20liên\x20kết\x20thiết\x20bị!');}catch(aT){C(aT['message'],'error');}}}]);}function aL(aR){const aS=document['getElementById']('admin-ot-custom-activities-list'),aT=document['getElementById']('admin-ot-custom-activity-group');if(!aS)return;aS['innerHTML']='';let aU='';if(aR){const b0=m['find'](b1=>b1['id']===aR);aU=b0?b0['team']||'':'';}else{const b1=JSON['parse'](a['getItem']('ot_current_user')||'null');aU=b1?b1['team']||'':'';}if(!aU||aU==='admin'){if(aT)aT['style']['display']='none';return;}const aV=i['find'](b2=>typeof b2==='object'&&b2['name']===aU),aW=aV&&aV['customActivities']?aV['customActivities']:[],aX=document['getElementById']('admin-ot-backfill')?.['checked']||![],aY=document['getElementById']('admin-ot-date')?.['value']||'',aZ=aY?new Date(aY+'T00:00:00')['getDay']()===0x0:![];if(aW['length']>0x0){if(aT)aT['style']['display']=aX&&!aZ?'none':'block';aS['innerHTML']=aW['map'](b2=>'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22custom-activity-item\x22\x20style=\x22margin-bottom:\x2014px;\x20text-align:\x20left;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20class=\x22switch-label\x22\x20for=\x22admin-chk-'+b2['id']+'\x22\x20style=\x22display:\x20inline-flex;\x20align-items:\x20center;\x20gap:\x2012px;\x20cursor:\x20pointer;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22checkbox\x22\x20id=\x22admin-chk-'+b2['id']+'\x22\x20class=\x22admin-ot-custom-activity-checkbox\x22\x20data-act-id=\x22'+b2['id']+'\x22\x20data-act-name=\x22'+b2['name']+'\x22\x20data-act-mode=\x22'+b2['calcMode']+'\x22\x20onchange=\x22toggleAdminCustomActivityInput(\x27'+b2['id']+'\x27)\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22switch-slider\x22></span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22switch-text\x22\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x202px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<strong>'+b2['name']+'</strong>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<small\x20style=\x22font-size:\x2011px;\x20color:\x20var(--text-secondary);\x22>Tính\x20chất:\x20'+(b2['calcMode']==='trip'?'Tính\x20theo\x20Chuyến':'Tính\x20theo\x20Giờ')+'</small>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20id=\x22admin-ot-custom-activity-detail-group-'+b2['id']+'\x22\x20style=\x22display:\x20none;\x20margin-top:\x208px;\x20padding:\x200\x204px;\x20margin-bottom:\x200;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;\x20margin-bottom:6px;\x20font-size:13px;\x20font-weight:600;\x20color:var(--text-secondary);\x22>'+(b2['detailLabel']||'Chi\x20tiết')+'</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22admin-ot-custom-activity-detail\x22\x20data-act-id=\x22'+b2['id']+'\x22\x20placeholder=\x22'+(b2['placeholder']||'Nhập\x20chi\x20tiết...')+'\x22\x20style=\x22width:\x20100%;\x20height:\x2038px;\x20background:\x20rgba(0,0,0,0.2);\x20color:\x20#fff;\x20border:\x201px\x20solid\x20rgba(255,255,255,0.15);\x20border-radius:\x206px;\x20padding:\x200\x2010px;\x20font-size:\x2014px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20')['join'](''),document['querySelectorAll']('.admin-ot-custom-activity-detail')['forEach'](b2=>{b2['addEventListener']('input',ar);});}else{if(aT)aT['style']['display']='none';}}window['toggleAdminCustomActivityInput']=function(aR){const aS=document['querySelector']('.admin-ot-custom-activity-checkbox[data-act-id=\x22'+aR+'\x22]');if(aS&&aS['checked']){document['querySelectorAll']('.admin-ot-custom-activity-checkbox')['forEach'](aU=>{if(aU!==aS){aU['checked']=![];const aV=document['getElementById']('admin-ot-custom-activity-detail-group-'+aU['dataset']['actId']);if(aV)aV['style']['display']='none';}});const aT=document['getElementById']('admin-ot-custom-activity-detail-group-'+aR);if(aT)aT['style']['display']='block';}else{const aU=document['getElementById']('admin-ot-custom-activity-detail-group-'+aR);if(aU)aU['style']['display']='none';}ar();},window['toggleModalCustomActivityInput']=function(aR){const aS=document['querySelector']('.modal-rec-custom-activity-checkbox[data-act-id=\x22'+aR+'\x22]'),aT=document['getElementById']('modal-rec-note');if(aS&&aS['checked']){document['querySelectorAll']('.modal-rec-custom-activity-checkbox')['forEach'](aV=>{if(aV!==aS){aV['checked']=![];const aW=document['getElementById']('modal-rec-custom-activity-detail-group-'+aV['dataset']['actId']);if(aW)aW['style']['display']='none';}});const aU=document['getElementById']('modal-rec-custom-activity-detail-group-'+aR);if(aU){aU['style']['display']='block';const aV=aU['querySelector']('.modal-rec-custom-activity-detail');if(aV)aV['required']=!![];}aT&&(aT['required']=![],aT['placeholder']='Mặc\x20định:\x20'+aS['dataset']['actName']+'...');}else{const aW=document['getElementById']('modal-rec-custom-activity-detail-group-'+aR);if(aW){aW['style']['display']='none';const aY=aW['querySelector']('.modal-rec-custom-activity-detail');aY&&(aY['required']=![],aY['value']='');}const aX=document['querySelector']('.modal-rec-custom-activity-checkbox:checked');!aX&&aT&&(aT['required']=!![],aT['placeholder']='Lý\x20do\x20tăng\x20ca,\x20phân\x20công\x20công\x20việc...');}};function aM(){const aR=document['getElementById']('ot-custom-activities-list'),aS=document['getElementById']('ot-custom-activity-group');if(!aR)return;aR['innerHTML']='';const aT=JSON['parse'](a['getItem']('ot_current_user')||'null'),aU=aT?aT['team']||'':'';if(!aU||aU==='admin'){if(aS)aS['style']['display']='none';return;}const aV=i['find'](b0=>typeof b0==='object'&&b0['name']===aU),aW=aV&&aV['customActivities']?aV['customActivities']:[],aX=document['getElementById']('ot-backfill')?.['checked']||![],aY=document['getElementById']('ot-date')?.['value']||'',aZ=aY?new Date(aY+'T00:00:00')['getDay']()===0x0:![];if(aW['length']>0x0){if(aS)aS['style']['display']=aX&&!aZ?'none':'block';aR['innerHTML']=aW['map'](b0=>'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22custom-activity-item\x22\x20style=\x22margin-bottom:\x2014px;\x20text-align:\x20left;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20class=\x22switch-label\x22\x20for=\x22chk-'+b0['id']+'\x22\x20style=\x22display:\x20inline-flex;\x20align-items:\x20center;\x20gap:\x2012px;\x20cursor:\x20pointer;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22checkbox\x22\x20id=\x22chk-'+b0['id']+'\x22\x20class=\x22ot-custom-activity-checkbox\x22\x20data-act-id=\x22'+b0['id']+'\x22\x20data-act-name=\x22'+b0['name']+'\x22\x20data-act-mode=\x22'+b0['calcMode']+'\x22\x20onchange=\x22toggleEmployeeCustomActivityInput(\x27'+b0['id']+'\x27)\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22switch-slider\x22></span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22switch-text\x22\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x202px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<strong>'+b0['name']+'</strong>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<small\x20style=\x22font-size:\x2011px;\x20color:\x20var(--text-secondary);\x22>Tính\x20chất:\x20'+(b0['calcMode']==='trip'?'Tính\x20theo\x20Chuyến':'Tính\x20theo\x20Giờ')+'</small>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20id=\x22ot-custom-activity-detail-group-'+b0['id']+'\x22\x20style=\x22display:\x20none;\x20margin-top:\x208px;\x20padding:\x200\x204px;\x20margin-bottom:\x200;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;\x20margin-bottom:6px;\x20font-size:13px;\x20font-weight:600;\x20color:var(--text-secondary);\x22>'+(b0['detailLabel']||'Chi\x20tiết')+'</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22ot-custom-activity-detail\x22\x20data-act-id=\x22'+b0['id']+'\x22\x20placeholder=\x22'+(b0['placeholder']||'Nhập\x20chi\x20tiết...')+'\x22\x20style=\x22width:\x20100%;\x20height:\x2038px;\x20background:\x20rgba(0,0,0,0.2);\x20color:\x20#fff;\x20border:\x201px\x20solid\x20rgba(255,255,255,0.15);\x20border-radius:\x206px;\x20padding:\x200\x2010px;\x20font-size:\x2014px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20')['join'](''),document['querySelectorAll']('.ot-custom-activity-detail')['forEach'](b0=>{b0['addEventListener']('input',aq);});}else{if(aS)aS['style']['display']='none';}}window['toggleEmployeeCustomActivityInput']=function(aR){const aS=document['querySelector']('.ot-custom-activity-checkbox[data-act-id=\x22'+aR+'\x22]');if(aS&&aS['checked']){document['querySelectorAll']('.ot-custom-activity-checkbox')['forEach'](aU=>{if(aU!==aS){aU['checked']=![];const aV=document['getElementById']('ot-custom-activity-detail-group-'+aU['dataset']['actId']);if(aV)aV['style']['display']='none';}});const aT=document['getElementById']('ot-custom-activity-detail-group-'+aR);if(aT)aT['style']['display']='block';}else{const aU=document['getElementById']('ot-custom-activity-detail-group-'+aR);if(aU)aU['style']['display']='none';}aq();};async function aN(){const aR='\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22modal-form-forgot-password\x22\x20class=\x22login-form\x20active\x22\x20style=\x22text-align:\x20left;\x20padding:\x200;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22margin-bottom:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;margin-bottom:6px;font-weight:600;\x22>Tên\x20đăng\x20nhập</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20gap:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20id=\x22forgot-username\x22\x20placeholder=\x22Nhập\x20tên\x20đăng\x20nhập...\x22\x20class=\x22input-sm\x22\x20style=\x22flex:1;\x20box-sizing:border-box;\x22\x20required>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20type=\x22button\x22\x20id=\x22btn-forgot-send-otp\x22\x20class=\x22btn\x20btn-primary\x20btn-sm\x22\x20style=\x22height:38px;\x20white-space:nowrap;\x20font-size:12px;\x22>Gửi\x20OTP</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22margin-bottom:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;margin-bottom:6px;font-weight:600;\x22>Mã\x20OTP\x20xác\x20thực\x20(Nhận\x20qua\x20Email)</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20id=\x22forgot-otp\x22\x20placeholder=\x22Nhập\x20mã\x20OTP\x206\x20chữ\x20số...\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x22\x20required\x20maxlength=\x226\x22\x20pattern=\x22[0-9]*\x22\x20oninput=\x22this.value\x20=\x20this.value.replace(/[^0-9]/g,\x20\x27\x27)\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22form-group\x22\x20style=\x22margin-bottom:\x200;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22display:block;margin-bottom:6px;font-weight:600;\x22>Mật\x20khẩu\x20mới</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22password\x22\x20id=\x22forgot-new-password\x22\x20placeholder=\x22Nhập\x20mật\x20khẩu\x20mới...\x22\x20class=\x22input-sm\x22\x20style=\x22width:100%;\x20box-sizing:border-box;\x22\x20required>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20';D('Quên\x20mật\x20khẩu',aR,[{'text':'Hủy','class':'btn-ghost'},{'text':'Đặt\x20lại\x20mật\x20khẩu','class':'btn\x20btn-primary\x20btn-sm','action':async()=>{const aT=document['getElementById']('forgot-username')['value']['trim'](),aU=document['getElementById']('forgot-otp')['value']['trim'](),aV=document['getElementById']('forgot-new-password')['value']['trim']();if(!aT||!aU||!aV)return C('Vui\x20lòng\x20nhập\x20đầy\x20đủ\x20thông\x20tin!','error');if(aV['length']<0x4)return C('Mật\x20khẩu\x20mới\x20phải\x20có\x20ít\x20nhất\x204\x20ký\x20tự!','error');try{const aW=await v('/api/auth/forgot-password','POST',{'username':aT,'otpCode':aU,'newPassword':aV});C(aW['message']||'Đặt\x20lại\x20mật\x20khẩu\x20thành\x20công!','success');}catch(aX){C(aX['message']||'Lỗi\x20đặt\x20lại\x20mật\x20khẩu!','error');}}}]);const aS=document['getElementById']('btn-forgot-send-otp');aS&&(aS['onclick']=async()=>{const aT=document['getElementById']('forgot-username')['value']['trim']();if(!aT)return C('Vui\x20lòng\x20nhập\x20Tên\x20đăng\x20nhập\x20trước!','error');aS['disabled']=!![],aS['textContent']='Gửi...';try{await v('/api/auth/send-email-otp','POST',{'username':aT}),C('Mã\x20OTP\x20đã\x20được\x20gửi\x20đến\x20Email\x20liên\x20kết\x20của\x20tài\x20khoản!','success');}catch(aU){C(aU['message']||'Lỗi\x20gửi\x20OTP!','error');}finally{aS['disabled']=![],aS['textContent']='Gửi\x20OTP';}});}function aO(){if(document['getElementById']('email-setup-style'))return;const aR=document['createElement']('style');aR['id']='email-setup-style',aR['textContent']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-overlay\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20position:\x20fixed;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20top:\x200;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20left:\x200;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20width:\x20100%;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20height:\x20100%;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20background:\x20rgba(15,\x2023,\x2042,\x200.6);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20backdrop-filter:\x20blur(8px);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20-webkit-backdrop-filter:\x20blur(8px);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20display:\x20flex;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20align-items:\x20center;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20justify-content:\x20center;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20z-index:\x2099999;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20opacity:\x200;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20transition:\x20opacity\x200.3s\x20ease;\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-overlay.active\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20opacity:\x201;\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-modal\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20background:\x20rgba(30,\x2041,\x2059,\x200.75);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20border:\x201px\x20solid\x20rgba(255,\x20255,\x20255,\x200.1);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20border-radius:\x2016px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20width:\x2090%;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20max-width:\x20400px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20padding:\x2030px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20box-shadow:\x200\x2020px\x2025px\x20-5px\x20rgba(0,\x200,\x200,\x200.3),\x200\x2010px\x2010px\x20-5px\x20rgba(0,\x200,\x200,\x200.3);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20color:\x20#f8fafc;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20transform:\x20scale(0.9);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20transition:\x20transform\x200.3s\x20cubic-bezier(0.34,\x201.56,\x200.64,\x201);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20text-align:\x20left;\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-overlay.active\x20.email-setup-modal\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20transform:\x20scale(1);\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-title\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-size:\x2020px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-weight:\x20700;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20margin-bottom:\x2010px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20background:\x20linear-gradient(135deg,\x20#6366f1,\x20#a855f7);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20-webkit-background-clip:\x20text;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20-webkit-text-fill-color:\x20transparent;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20text-align:\x20center;\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-desc\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-size:\x2013px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20color:\x20#94a3b8;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20line-height:\x201.6;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20margin-bottom:\x2020px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20text-align:\x20center;\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-group\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20margin-bottom:\x2020px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-label\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20display:\x20block;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-size:\x2012px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-weight:\x20600;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20color:\x20#cbd5e1;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20margin-bottom:\x208px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20text-transform:\x20uppercase;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20letter-spacing:\x200.05em;\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-input\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20width:\x20100%;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20height:\x2042px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20padding:\x200\x2014px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20background:\x20rgba(15,\x2023,\x2042,\x200.4);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20border:\x201px\x20solid\x20rgba(255,\x20255,\x20255,\x200.1);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20border-radius:\x208px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20color:\x20#f8fafc;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-size:\x2014px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20box-sizing:\x20border-box;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20transition:\x20all\x200.2s;\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-input:focus\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20outline:\x20none;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20border-color:\x20#6366f1;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20box-shadow:\x200\x200\x200\x203px\x20rgba(99,\x20102,\x20241,\x200.2);\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-btn\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20width:\x20100%;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20height:\x2042px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20background:\x20linear-gradient(135deg,\x20#6366f1,\x20#4f46e5);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20border:\x20none;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20border-radius:\x208px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20color:\x20white;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-weight:\x20600;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20font-size:\x2014px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20cursor:\x20pointer;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20transition:\x20all\x200.2s;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20display:\x20flex;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20align-items:\x20center;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20justify-content:\x20center;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20gap:\x208px;\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-btn:hover\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20opacity:\x200.95;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20transform:\x20translateY(-1px);\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-btn:disabled\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20background:\x20#475569;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20cursor:\x20not-allowed;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20transform:\x20none;\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-btn-ghost\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20background:\x20transparent;\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20border:\x201px\x20solid\x20rgba(255,\x20255,\x20255,\x200.15);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20color:\x20#cbd5e1;\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20.email-setup-btn-ghost:hover\x20{\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20background:\x20rgba(255,\x20255,\x20255,\x200.05);\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20color:\x20white;\x0a\x20\x20\x20\x20\x20\x20\x20\x20}\x0a\x20\x20\x20\x20',document['head']['appendChild'](aR);}function aP(aR,aS){aO();const aT=document['getElementById']('email-setup-overlay');if(aT)aT['remove']();const aU=document['createElement']('div');aU['id']='email-setup-overlay',aU['className']='email-setup-overlay',aU['innerHTML']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22email-setup-modal\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22email-setup-title\x22>Xác\x20thực\x20Email\x20tài\x20khoản</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22email-setup-desc\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20Tài\x20khoản\x20của\x20bạn\x20chưa\x20cấu\x20hình\x20Email.\x20Vui\x20lòng\x20nhập\x20và\x20xác\x20thực\x20Email\x20của\x20bạn\x20để\x20nhận\x20mã\x20OTP\x20khôi\x20phục\x20mật\x20khẩu\x20sau\x20này.\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22email-setup-step1\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22email-setup-group\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20class=\x22email-setup-label\x22>Địa\x20chỉ\x20Email</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22email\x22\x20id=\x22email-setup-address\x22\x20class=\x22email-setup-input\x22\x20placeholder=\x22ten-cua-ban@company.com\x22\x20required>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20type=\x22button\x22\x20id=\x22email-setup-btn-send\x22\x20class=\x22email-setup-btn\x22>Gửi\x20mã\x20OTP</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22email-setup-step2\x22\x20style=\x22display:\x20none;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22email-setup-group\x22\x20style=\x22margin-bottom:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20class=\x22email-setup-label\x22\x20id=\x22email-setup-sent-label\x22>Mã\x20OTP\x20(6\x20chữ\x20số)</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20id=\x22email-setup-otp\x22\x20class=\x22email-setup-input\x22\x20placeholder=\x22Nhập\x206\x20chữ\x20số...\x22\x20maxlength=\x226\x22\x20pattern=\x22[0-9]*\x22\x20oninput=\x22this.value\x20=\x20this.value.replace(/[^0-9]/g,\x20\x27\x27)\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20gap:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20type=\x22button\x22\x20id=\x22email-setup-btn-back\x22\x20class=\x22email-setup-btn\x20email-setup-btn-ghost\x22\x20style=\x22flex:\x201;\x22>Quay\x20lại</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20type=\x22button\x22\x20id=\x22email-setup-btn-verify\x22\x20class=\x22email-setup-btn\x22\x20style=\x22flex:\x202;\x22>Xác\x20nhận</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20',document['body']['appendChild'](aU),setTimeout(()=>aU['classList']['add']('active'),0xa);const aV=document['getElementById']('email-setup-btn-send'),aW=document['getElementById']('email-setup-btn-verify'),aX=document['getElementById']('email-setup-btn-back'),aY=document['getElementById']('email-setup-address'),aZ=document['getElementById']('email-setup-otp'),b0=document['getElementById']('email-setup-step1'),b1=document['getElementById']('email-setup-step2');let b2='';aV['onclick']=async()=>{const b3=aY['value']['trim']();if(!b3)return C('Vui\x20lòng\x20nhập\x20địa\x20chỉ\x20Email!','error');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/['test'](b3))return C('Địa\x20chỉ\x20Email\x20không\x20hợp\x20lệ!','error');aV['disabled']=!![],aV['textContent']='Đang\x20gửi\x20mã\x20OTP...';try{await v('/api/auth/send-email-otp','POST',{'username':aR,'email':b3}),b2=b3,C('Đã\x20gửi\x20mã\x20OTP\x20tới\x20email\x20của\x20bạn!','success'),b0['style']['display']='none',b1['style']['display']='block',aZ['value']='',aZ['focus']();}catch(b4){C(b4['message']||'Lỗi\x20gửi\x20mã\x20OTP!','error');}finally{aV['disabled']=![],aV['textContent']='Gửi\x20mã\x20OTP';}},aX['onclick']=()=>{b1['style']['display']='none',b0['style']['display']='block',aY['focus']();},aW['onclick']=async()=>{const b3=aZ['value']['trim']();if(!b3||b3['length']!==0x6)return C('Vui\x20lòng\x20nhập\x20mã\x20OTP\x20gồm\x206\x20chữ\x20số!','error');aW['disabled']=!![],aW['textContent']='Đang\x20xác\x20nhận...';try{await v('/api/auth/verify-email-otp','POST',{'username':aR,'email':b2,'otpCode':b3}),C('Xác\x20thực\x20email\x20thành\x20công!','success'),aU['classList']['remove']('active'),setTimeout(()=>aU['remove'](),0x12c);if(aS)aS(b2);}catch(b4){C(b4['message']||'Mã\x20OTP\x20không\x20chính\x20xác!','error');}finally{aW['disabled']=![],aW['textContent']='Xác\x20nhận';}};}async function aQ(aR,aS){const aT=Math['floor'](0x186a0+Math['random']()*0xdbba0)['toString']();D('Cấp\x20lại\x20mật\x20khẩu','Bạn\x20có\x20chắc\x20muốn\x20cấp\x20lại\x20mật\x20khẩu\x20cho\x20nhân\x20viên\x20<strong>'+aS+'</strong>?<br>Mật\x20khẩu\x20mới\x20tự\x20động\x20tạo\x20là:\x20<strong\x20style=\x22font-size:\x2016px;\x20color:\x20var(--accent-orange);\x22>'+aT+'</strong>',[{'text':'Hủy','class':'btn-ghost'},{'text':'Cấp\x20mật\x20khẩu\x20mới','class':'btn\x20btn-primary\x20btn-sm','action':async()=>{try{await v('/api/users/'+aR,'PUT',{'password':aT,'pendingPasswordReset':![]}),await a7(),C('Đã\x20cấp\x20lại\x20mật\x20khẩu\x20mới\x20cho\x20'+aS+'\x20thành\x20công!\x20Mật\x20khẩu\x20là:\x20'+aT,'success',0x1f40);}catch(aU){C(aU['message'],'error');}}}]);}window['editRecordDialog']=aE,window['deleteRecord']=ad,window['approveRecord']=ae,window['rejectRecord']=af,window['resetUserDevice']=aH,window['approveUnlinkDevice']=aJ,window['rejectUnlinkDevice']=aK,window['editUserDialog']=aG,window['deleteUser']=ac,window['addTeamFromModal']=Z,window['renameTeamFromModal']=a0,window['deleteTeamFromModal']=a1,window['handleDatabaseCleanup']=ao,window['forgotPasswordDialog']=aN,window['approvePasswordReset']=aQ;}());
+(function() {
+/**
+ * OT Manager - Desktop App (Admin)
+ * Giá» lĂ m chĂ­nh: 7:00 - 16:30
+ * Nghá»‰ trÆ°a: 11:50 - 13:20
+ * OT trÆ°a: 12:20 - 13:20 (1 tiáº¿ng)
+ *
+ * Sá»­ dá»¥ng Server API Ä‘á»ƒ Ä‘á»“ng bá»™ dá»¯ liá»‡u vá»›i mobile
+ */
+
+// Safe localStorage wrapper to support sessionStorage fallback seamlessly
+const localStorage = {
+    getItem(key) {
+        try {
+            return window.localStorage.getItem(key) || window.sessionStorage.getItem(key);
+        } catch (e) {
+            return this._data[key] || null;
+        }
+    },
+    setItem(key, val) {
+        try {
+            window.localStorage.setItem(key, val);
+            window.sessionStorage.setItem(key, val);
+        } catch (e) {
+            this._data[key] = val;
+        }
+    },
+    removeItem(key) {
+        try {
+            window.localStorage.removeItem(key);
+            window.sessionStorage.removeItem(key);
+        } catch (e) {
+            delete this._data[key];
+        }
+    },
+    _data: {}
+};
+
+// Prevent developer tools and right click
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+    if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C' || e.key === 'K')) ||
+        (e.ctrlKey && e.key === 'u')
+    ) {
+        e.preventDefault();
+    }
+});
+
+const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+const isGitHubPages = window.location.hostname.includes('github.io') || window.location.hostname.includes('otmanager.id.vn');
+let savedServerIp = localStorage.getItem('ot_server_ip') || 'https://api.otmanager.id.vn';
+if (isGitHubPages && (
+    savedServerIp.includes('otms.onrender.com') ||
+    savedServerIp.includes('ot-manager-server.onrender.com') ||
+    savedServerIp.includes('ot-manager-server-jbxd.onrender.com') ||
+    savedServerIp.includes('github.io') ||
+    savedServerIp.includes('otmanager.id.vn')
+)) {
+    localStorage.removeItem('ot_server_ip');
+    savedServerIp = 'https://api.otmanager.id.vn';
+}
+const localServerUrl = isGitHubPages ? savedServerIp : window.location.origin;
+let API_BASE = localServerUrl;
+const OT_LUNCH_HOURS = 1;
+const WORK_END = '16:30';
+let TEAMS = [];
+const PROVINCES = [
+    "An Giang", "BĂ  Rá»‹a â€“ VÅ©ng TĂ u", "Báº¡c LiĂªu", "Báº¯c Giang", "Báº¯c Káº¡n", "Báº¯c Ninh", "Báº¿n Tre", "BĂ¬nh DÆ°Æ¡ng", "BĂ¬nh Äá»‹nh", "BĂ¬nh PhÆ°á»›c", "BĂ¬nh Thuáº­n", "CĂ  Mau", "Cáº§n ThÆ¡", "Cao Báº±ng", "ÄĂ  Náºµng", "Äáº¯k Láº¯k", "Äáº¯k NĂ´ng", "Äiá»‡n BiĂªn", "Äá»“ng Nai", "Äá»“ng ThĂ¡p", "Gia Lai", "HĂ  Giang", "HĂ  Nam", "HĂ  Ná»™i", "HĂ  TÄ©nh", "Háº£i DÆ°Æ¡ng", "Háº£i PhĂ²ng", "Háº­u Giang", "HĂ²a BĂ¬nh", "HÆ°ng YĂªn", "KhĂ¡nh HĂ²a", "KiĂªn Giang", "Kon Tum", "Lai ChĂ¢u", "Láº¡ng SÆ¡n", "LĂ o Cai", "LĂ¢m Äá»“ng", "Long An", "Nam Äá»‹nh", "Nghá»‡ An", "Ninh BĂ¬nh", "Ninh Thuáº­n", "PhĂº Thá»", "PhĂº YĂªn", "Quáº£ng BĂ¬nh", "Quáº£ng Nam", "Quáº£ng NgĂ£i", "Quáº£ng Ninh", "Quáº£ng Trá»‹", "SĂ³c TrÄƒng", "SÆ¡n La", "TĂ¢y Ninh", "ThĂ¡i BĂ¬nh", "ThĂ¡i NguyĂªn", "Thanh HĂ³a", "Thá»«a ThiĂªn Huáº¿", "Tiá»n Giang", "TP. Há»“ ChĂ­ Minh", "TrĂ  Vinh", "TuyĂªn Quang", "VÄ©nh Long", "VÄ©nh PhĂºc", "YĂªn BĂ¡i"
+];
+
+let currentAdminRecType = 'ot';
+let currentEmpRecType = 'ot';
+let loadedUsers = [];
+let loadedRecords = [];
+
+// Report Redesign global state variables
+let reportSearchQuery = '';
+let reportSortColumn = 'total'; // 'name', 'days', 'total'
+let reportSortOrder = 'desc'; // 'asc', 'desc'
+
+async function loadTeams() {
+    try {
+        const res = await api('/api/teams');
+        TEAMS = res.teams || [];
+    } catch (e) {
+        console.error('Lá»—i load teams:', e);
+        TEAMS = ['Team 1', 'Team 2', 'Team 3', 'Team 4', 'Team 5', 'Team 6', 'Team 7', 'Team 8', 'Team 9', 'Team 10'];
+    }
+    populateTeamFilters();
+}
+
+function populateTeamFilters() {
+    const adminFilter = document.getElementById('admin-filter-team');
+    const reportFilter = document.getElementById('report-filter-team');
+    
+    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+    const isSuperAdmin = currentUser && (currentUser.isSuperAdmin || currentUser.username === 'admin');
+    
+    const optionsHtml = `
+        <option value="">Táº¥t cáº£ Team</option>
+        ${isSuperAdmin ? '<option value="admin">admin</option>' : ''}
+        <option value="unassigned">ChÆ°a phĂ¢n team</option>
+        ${TEAMS.map(t => {
+            const name = typeof t === 'string' ? t : (t.name || '');
+            return `<option value="${name}">${name}</option>`;
+        }).join('')}
+    `;
+    
+    if (adminFilter) {
+        const val = adminFilter.value;
+        adminFilter.innerHTML = optionsHtml;
+        if (val && [...adminFilter.options].some(opt => opt.value === val)) {
+            adminFilter.value = val;
+        }
+    }
+    if (reportFilter) {
+        const val = reportFilter.value;
+        reportFilter.innerHTML = optionsHtml;
+        if (val && [...reportFilter.options].some(opt => opt.value === val)) {
+            reportFilter.value = val;
+        }
+    }
+}
+
+// Add blink-red style rules dynamically
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes blink-red {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+`;
+document.head.appendChild(style);
+
+// ==================== API CLIENT ====================
+const apiCache = new Map();
+
+async function api(endpoint, method = 'GET', body = null) {
+    const isGet = method.toUpperCase() === 'GET';
+    const cacheKey = endpoint;
+
+    // Clear cache immediately on write operations
+    if (!isGet) {
+        apiCache.clear();
+    }
+
+    if (isGet && apiCache.has(cacheKey)) {
+        return apiCache.get(cacheKey);
+    }
+
+    const promise = (async () => {
+        const opts = {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+        };
+        // Gá»­i JWT Token náº¿u cĂ³
+        const token = localStorage.getItem('ot_auth_token');
+        if (token) {
+            opts.headers['Authorization'] = `Bearer ${token}`;
+        }
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        if (currentUser && currentUser.id) {
+            opts.headers['x-user-id'] = currentUser.id;
+        }
+        if (body) opts.body = JSON.stringify(body);
+        const res = await fetch(`${API_BASE}${endpoint}`, opts);
+        const data = await res.json();
+        if (!res.ok) {
+            if ((res.status === 401 || res.status === 403) && 
+                !endpoint.includes('/api/auth/login') && 
+                !endpoint.includes('/api/auth/verify-email-otp') && 
+                !endpoint.includes('/api/auth/forgot-password')) {
+                localStorage.removeItem('ot_auth_token');
+                localStorage.removeItem('ot_current_user');
+                window.location.reload();
+            }
+            throw new Error(data.error || 'Lá»—i káº¿t ná»‘i server');
+        }
+        return data;
+    })();
+
+    if (isGet) {
+        apiCache.set(cacheKey, promise);
+        // Tá»± Ä‘á»™ng xoĂ¡ cache sau 1 giĂ¢y Ä‘á»ƒ Ä‘áº£m báº£o dá»¯ liá»‡u má»›i nháº¥t Ä‘Æ°á»£c náº¡p á»Ÿ cĂ¡c láº§n táº£i sau
+        setTimeout(() => {
+            if (apiCache.get(cacheKey) === promise) {
+                apiCache.delete(cacheKey);
+            }
+        }, 1000);
+    }
+
+    return promise;
+}
+
+// ==================== HELPERS ====================
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+}
+
+function formatDate(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
+}
+
+function formatDateFull(date) {
+    const days = ['Chá»§ nháº­t', 'Thá»© 2', 'Thá»© 3', 'Thá»© 4', 'Thá»© 5', 'Thá»© 6', 'Thá»© 7'];
+    const months = ['thĂ¡ng 1', 'thĂ¡ng 2', 'thĂ¡ng 3', 'thĂ¡ng 4', 'thĂ¡ng 5', 'thĂ¡ng 6',
+                    'thĂ¡ng 7', 'thĂ¡ng 8', 'thĂ¡ng 9', 'thĂ¡ng 10', 'thĂ¡ng 11', 'thĂ¡ng 12'];
+    return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+function timeToMinutes(timeStr) {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+}
+
+function getCurrentMonth() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+async function isPrivateMode() {
+    return new Promise((resolve) => {
+        // Native mobile apps running under file:// protocol must bypass this check
+        if (window.location.protocol === 'file:') {
+            resolve(false);
+            return;
+        }
+
+        // Only run incognito checks in secure contexts (HTTPS or localhost)
+        const isSecureContext = window.location.protocol === 'https:' || 
+                               window.location.hostname === 'localhost' || 
+                               window.location.hostname === '127.0.0.1';
+        if (!isSecureContext) {
+            resolve(false);
+            return;
+        }
+
+        try {
+            const testKey = "__private_test__";
+            localStorage.setItem(testKey, "1");
+            localStorage.removeItem(testKey);
+        } catch (e) {
+            resolve(true);
+            return;
+        }
+
+        // Engine-level detection for Safari
+        const ua = navigator.userAgent.toLowerCase();
+        let toFixedEngineID = 0;
+        let neg = parseInt("-1");
+        try {
+            neg.toFixed(neg);
+        } catch (e) {
+            toFixedEngineID = e.message ? e.message.length : 0;
+        }
+        const isSafari = (ua.includes('safari') && !ua.includes('chrome') && !ua.includes('android')) || 
+                         (toFixedEngineID === 44 || toFixedEngineID === 43);
+
+        if (isSafari) {
+            safariPrivateTest();
+        } else {
+            if (navigator.serviceWorker && typeof navigator.serviceWorker.register === 'function') {
+                navigator.serviceWorker.register('sw.js').then((reg) => {
+                    reg.unregister();
+                    detectChromiumOrFallback();
+                }).catch((err) => {
+                    if (err && err.name === 'SecurityError') {
+                        resolve(true);
+                    } else {
+                        detectChromiumOrFallback();
+                    }
+                });
+            } else {
+                detectChromiumOrFallback();
+            }
+        }
+
+        async function safariPrivateTest() {
+            if (navigator.storage && typeof navigator.storage.getDirectory === 'function') {
+                try {
+                    await navigator.storage.getDirectory();
+                    resolve(false);
+                } catch (e) {
+                    const message = (e instanceof Error && typeof e.message === 'string') ? e.message : String(e);
+                    if (message.includes('unknown transient reason')) {
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
+                }
+            } else if (navigator.maxTouchPoints !== undefined) {
+                // Safari 13-18 IndexedDB Blob test
+                const tmp = String(Math.random());
+                try {
+                    const dbReq = indexedDB.open(tmp, 1);
+                    dbReq.onupgradeneeded = (ev) => {
+                        const db = ev.target.result;
+                        try {
+                            db.createObjectStore('t', { autoIncrement: true }).put(new Blob());
+                            resolve(false);
+                        } catch (err) {
+                            const message = (err instanceof Error && typeof err.message === 'string') ? err.message : String(err);
+                            if (message.includes('are not yet supported')) {
+                                resolve(true);
+                            } else {
+                                resolve(false);
+                            }
+                        } finally {
+                            db.close();
+                            indexedDB.deleteDatabase(tmp);
+                        }
+                    };
+                    dbReq.onerror = () => resolve(false);
+                } catch (err) {
+                    resolve(false);
+                }
+            } else {
+                if (window.openDatabase) {
+                    try {
+                        window.openDatabase(null, null, null, null);
+                        resolve(false);
+                    } catch (e) {
+                        resolve(true);
+                    }
+                } else {
+                    resolve(false);
+                }
+            }
+        }
+
+        function detectChromiumOrFallback() {
+            if (navigator.storage && typeof navigator.storage.getDirectory === 'function' && typeof Worker === 'function') {
+                try {
+                    const src = `(async()=>{try{const r=await navigator.storage.getDirectory(),f=await(await r.getFileHandle('_',{create:true})).createSyncAccessHandle(),b=new Uint8Array(1);let m=1/0;for(let i=0;i<5;i++){f.write(b,{at:0});const s=performance.now();f.flush();const dt=performance.now()-s;if(dt<m)m=dt}f.close();postMessage(m<.04)}catch(e){postMessage(false)}})()`;
+                    const blob = new Blob([src], { type: 'application/javascript' });
+                    const w = new Worker(URL.createObjectURL(blob));
+                    w.onmessage = (e) => {
+                        w.terminate();
+                        if (e.data) {
+                            resolve(true);
+                        } else {
+                            fallbackQuota();
+                        }
+                    };
+                    w.onerror = () => {
+                        w.terminate();
+                        fallbackQuota();
+                    };
+                    setTimeout(() => {
+                        w.terminate();
+                        fallbackQuota();
+                    }, 2000);
+                } catch (err) {
+                    fallbackQuota();
+                }
+            } else {
+                fallbackQuota();
+            }
+        }
+
+        function fallbackQuota() {
+            const isMobile = /android|iphone|ipad|ipod/i.test(ua);
+            if (isMobile) {
+                resolve(false);
+            } else if (navigator.storage && navigator.storage.estimate) {
+                navigator.storage.estimate().then((est) => {
+                    resolve(est.quota < 120000000);
+                }).catch(() => resolve(false));
+            } else {
+                resolve(false);
+            }
+        }
+    });
+}
+
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (container) {
+        container.innerHTML = '';
+    }
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    const icons = { success: 'âœ“', error: 'âœ•', info: 'â„¹' };
+    toast.innerHTML = `<span>${icons[type] || ''}</span> ${message}`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'slideOutRight 0.3s ease forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+function showModal(title, body, buttons = []) {
+    const overlay = document.getElementById('modal-overlay');
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').innerHTML = body;
+    const footer = document.getElementById('modal-footer');
+    footer.innerHTML = '';
+    buttons.forEach(btn => {
+        const button = document.createElement('button');
+        button.className = `btn ${btn.class || 'btn-ghost'}`;
+        button.textContent = btn.text;
+        button.onclick = () => { if (btn.action) btn.action(); closeModal(); };
+        footer.appendChild(button);
+    });
+    overlay.classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('active');
+}
+
+function calculateEveningOT(startTime, endTime) {
+    const startMin = timeToMinutes(startTime);
+    const endMin = timeToMinutes(endTime);
+    if (endMin <= startMin) return 0;
+    return Math.round(((endMin - startMin) / 60) * 100) / 100;
+}
+
+// ==================== SCREEN MANAGEMENT ====================
+function showScreen(screenId) {
+    if (screenId === 'screen-login') {
+        document.documentElement.classList.remove('user-admin-logged-in', 'user-employee-logged-in');
+    } else if (screenId === 'screen-admin') {
+        document.documentElement.classList.add('user-admin-logged-in');
+    } else if (screenId === 'screen-employee') {
+        document.documentElement.classList.add('user-employee-logged-in');
+    }
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+}
+
+// ==================== AUTH ====================
+async function handleEmployeeLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('login-username').value.trim();
+    const errorEl = document.getElementById('login-error-emp');
+    errorEl.textContent = '';
+
+    if (await isPrivateMode()) {
+        errorEl.textContent = 'Há»‡ thá»‘ng khĂ´ng cho phĂ©p Ä‘Äƒng nháº­p tá»« trĂ¬nh duyá»‡t áº©n danh (Incognito Mode) Ä‘á»ƒ Ä‘áº£m báº£o an toĂ n thiáº¿t bá»‹!';
+        return;
+    }
+
+    try {
+        const data = await api('/api/auth/login', 'POST', { username });
+        const user = data.user;
+
+        if (user.role !== 'employee') {
+            errorEl.textContent = 'TĂ i khoáº£n nĂ y khĂ´ng pháº£i lĂ  nhĂ¢n viĂªn!';
+            return;
+        }
+
+        const proceedLogin = (finalUser) => {
+            localStorage.setItem('ot_current_user', JSON.stringify(finalUser));
+            if (data.token) localStorage.setItem('ot_auth_token', data.token);
+            const todayStr = new Date().toISOString().split('T')[0];
+            localStorage.setItem('ot_login_date', todayStr);
+            fetch(`${localServerUrl}/api/version`).then(r => r.json()).then(v => {
+                localStorage.setItem('ot_app_version', v.version || '1.0.0');
+            }).catch(() => {});
+
+            initEmployeeDashboard(finalUser);
+            showScreen('screen-employee');
+            showToast(`Xin chĂ o, ${finalUser.fullname}!`, 'info');
+            e.target.reset();
+        };
+
+        if (data.requireEmailSetup) {
+            showEmailSetupOverlay(username, (verifiedEmail) => {
+                user.email = verifiedEmail;
+                proceedLogin(user);
+            });
+        } else {
+            proceedLogin(user);
+        }
+    } catch (err) {
+        errorEl.textContent = err.message;
+    }
+}
+
+async function handleAdminLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('login-admin-username').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errorEl = document.getElementById('login-error-admin');
+    errorEl.textContent = '';
+
+    if (await isPrivateMode()) {
+        errorEl.textContent = 'Há»‡ thá»‘ng khĂ´ng cho phĂ©p Ä‘Äƒng nháº­p tá»« trĂ¬nh duyá»‡t áº©n danh (Incognito Mode) Ä‘á»ƒ Ä‘áº£m báº£o an toĂ n thiáº¿t bá»‹!';
+        return;
+    }
+
+    try {
+        const data = await api('/api/auth/login', 'POST', { username, password });
+        const user = data.user;
+
+        if (user.role !== 'admin') {
+            errorEl.textContent = 'TĂ i khoáº£n nhĂ¢n viĂªn khĂ´ng Ä‘Æ°á»£c phĂ©p Ä‘Äƒng nháº­p bĂªn pháº§n quáº£n trá»‹!';
+            return;
+        }
+
+        const proceedLogin = (finalUser) => {
+            localStorage.setItem('ot_current_user', JSON.stringify(finalUser));
+            if (data.token) localStorage.setItem('ot_auth_token', data.token);
+            const todayStr = new Date().toISOString().split('T')[0];
+            localStorage.setItem('ot_login_date', todayStr);
+            fetch(`${localServerUrl}/api/version`).then(r => r.json()).then(v => {
+                localStorage.setItem('ot_app_version', v.version || '1.0.0');
+            }).catch(() => {});
+
+            initAdminDashboard(finalUser);
+            showScreen('screen-admin');
+            showToast(`Xin chĂ o, ${finalUser.fullname}!`, 'info');
+            e.target.reset();
+        };
+
+        if (data.requireEmailSetup) {
+            showEmailSetupOverlay(username, (verifiedEmail) => {
+                user.email = verifiedEmail;
+                proceedLogin(user);
+            });
+        } else {
+            proceedLogin(user);
+        }
+    } catch (err) {
+        errorEl.textContent = err.message;
+    }
+}
+
+function checkMidnightLogout() {
+    const currentUser = localStorage.getItem('ot_current_user');
+    if (!currentUser) return;
+
+    const loginDate = localStorage.getItem('ot_login_date');
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (loginDate && loginDate !== todayStr) {
+        logout();
+        showToast('ÄĂ£ qua ngĂ y má»›i, vui lĂ²ng Ä‘Äƒng nháº­p láº¡i.', 'info');
+    }
+}
+
+function logout() {
+    localStorage.removeItem('ot_current_user');
+    localStorage.removeItem('ot_login_date');
+    localStorage.removeItem('ot_mobile_user');
+    localStorage.removeItem('ot_login_time');
+    localStorage.removeItem('ot_auth_token');
+    
+    sessionStorage.removeItem('ot_current_user');
+    sessionStorage.removeItem('ot_login_date');
+    sessionStorage.removeItem('ot_mobile_user');
+    sessionStorage.removeItem('ot_login_time');
+    sessionStorage.removeItem('ot_auth_token');
+    sessionStorage.removeItem('ot_session_temp');
+    
+    if (isElectron) {
+        // Trong Electron, reset vĂ  hiá»ƒn thá»‹ láº¡i mĂ n hĂ¬nh Ä‘Äƒng nháº­p thay vĂ¬ chuyá»ƒn hÆ°á»›ng ra Landing Page
+        showScreen('screen-login');
+        const loginForm = document.getElementById('form-login-admin');
+        if (loginForm) loginForm.reset();
+        return;
+    }
+
+    const needsOtPrefix = window.location.hostname.includes('github.io');
+    const mainPageUrl = needsOtPrefix ? '/OT/index.html' : '/index.html';
+    window.location.href = mainPageUrl;
+}
+
+async function checkGistStatus() {
+    try {
+        const res = await fetch(`${API_BASE}/api/gist-status`);
+        const data = await res.json();
+        if (data.status === 'error') {
+            showModal(
+                'Cáº£nh bĂ¡o Ä‘á»“ng bá»™ Ä‘Ă¡m mĂ¢y',
+                `<p style="color: var(--accent-red); font-weight: 600; font-size: 15px; margin-bottom: 8px;">
+                    â ï¸ Lá»—i Ä‘á»“ng bá»™ Ä‘Ă¡m mĂ¢y (GitHub Gist)
+                </p>
+                <p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                    Chi tiáº¿t lá»—i: <strong>${data.message}</strong>
+                </p>
+                <p style="color: var(--text-muted); font-size: 13px;">
+                    Dá»¯ liá»‡u cá»§a báº¡n sáº½ bá»‹ máº¥t má»—i khi server Render khá»Ÿi Ä‘á»™ng láº¡i hoáº·c táº¡m dá»«ng do dá»‹ch vá»¥ Ä‘Ă¡m mĂ¢y chÆ°a Ä‘Æ°á»£c cáº¥u hĂ¬nh Ä‘Ăºng. Vui lĂ²ng kiá»ƒm tra láº¡i cáº¥u hĂ¬nh biáº¿n mĂ´i trÆ°á»ng (Environment Variables) trĂªn Render Dashboard.
+                </p>`,
+                [{ text: 'ÄĂ³ng', class: 'btn-ghost' }]
+            );
+        }
+    } catch (e) {
+        console.error('Lá»—i kiá»ƒm tra tráº¡ng thĂ¡i Gist:', e);
+    }
+}
+
+// ==================== ADMIN DASHBOARD ====================
+async function initAdminDashboard(user) {
+    const welcomeEl = document.getElementById('admin-welcome');
+    if (welcomeEl) welcomeEl.textContent = `Xin chĂ o, ${user.fullname}`;
+    
+    // Update top header user profile details dynamically
+    const headerFullnameEl = document.getElementById('header-user-fullname');
+    const headerAvatarEl = document.getElementById('header-user-avatar');
+    const headerRoleEl = document.getElementById('header-user-role');
+    if (headerFullnameEl) headerFullnameEl.textContent = user.fullname;
+    if (headerAvatarEl) headerAvatarEl.textContent = user.fullname.charAt(0).toUpperCase();
+    if (headerRoleEl) headerRoleEl.textContent = user.role === 'admin' ? 'Quáº£n lĂ½' : 'NhĂ¢n viĂªn';
+
+    // Click to edit own profile
+    const userProfileEl = document.getElementById('header-user-profile');
+    if (userProfileEl) {
+        userProfileEl.style.cursor = 'pointer';
+        userProfileEl.title = 'Chá»‰nh sá»­a thĂ´ng tin cĂ¡ nhĂ¢n';
+        userProfileEl.style.transition = 'opacity 0.2s';
+        userProfileEl.onmouseover = () => { userProfileEl.style.opacity = '0.8'; };
+        userProfileEl.onmouseout = () => { userProfileEl.style.opacity = '1'; };
+        userProfileEl.onclick = () => {
+            editUserDialog(user.id);
+        };
+    }
+
+    // Setup Notification Bell Click Listener to open pending subtab
+    const bellBtn = document.getElementById('btn-notification-bell');
+    if (bellBtn) {
+        bellBtn.onclick = () => {
+            const tabBtn = document.querySelector('[data-admin-tab="records"]');
+            if (tabBtn) tabBtn.click();
+            
+            const subtabBtn = document.querySelector('[data-subtab="records-pending"]');
+            if (subtabBtn) subtabBtn.click();
+        };
+    }
+
+    document.getElementById('admin-date').textContent = formatDateFull(new Date());
+
+    const currentMonth = getCurrentMonth();
+    document.getElementById('admin-filter-month').value = currentMonth;
+    document.getElementById('report-filter-month').value = currentMonth;
+    const cleanupMonthInput = document.getElementById('cleanup-month-input');
+    if (cleanupMonthInput) {
+        cleanupMonthInput.value = currentMonth;
+    }
+
+    const isAdmin = user && (user.username === 'admin' || user.isSuperAdmin);
+    const adminTeamGroup = document.getElementById('admin-filter-team-group');
+    const reportTeamGroup = document.getElementById('report-filter-team-group');
+    if (adminTeamGroup) {
+        adminTeamGroup.style.display = isAdmin ? 'flex' : 'none';
+    }
+    if (reportTeamGroup) {
+        reportTeamGroup.style.display = isAdmin ? 'flex' : 'none';
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const adminOtDate = document.getElementById('admin-ot-date');
+    if (adminOtDate) {
+        adminOtDate.value = todayStr;
+        adminOtDate.max = todayStr;
+    }
+
+    await Promise.all([
+        loadTeams(),
+        populateUserFilter(),
+        refreshAdminRecords(),
+        refreshAdminUsers(),
+        refreshReport(),
+        refreshAdminStats()
+    ]);
+    checkGistStatus();
+}
+
+let selectedTeamIdForModal = null;
+let modalAllUsers = [];
+
+async function openTeamSettingsModal() {
+    const modalEl = document.querySelector('.modal');
+    if (modalEl) modalEl.style.maxWidth = '950px';
+
+    try {
+        const uData = await api('/api/users');
+        modalAllUsers = uData.users || [];
+    } catch (e) {
+        console.error('Lá»—i khi láº¥y danh sĂ¡ch user:', e);
+    }
+
+    // Táº£i láº¡i danh sĂ¡ch team má»›i nháº¥t tá»« server
+    await loadTeams();
+
+    // Máº·c Ä‘á»‹nh chá»n team Ä‘áº§u tiĂªn náº¿u chÆ°a chá»n team nĂ o
+    if (TEAMS.length > 0 && (!selectedTeamIdForModal || !TEAMS.some(t => t.id === selectedTeamIdForModal))) {
+        selectedTeamIdForModal = TEAMS[0].id;
+    }
+
+    const body = `
+    <div style="display: flex; gap: 20px; height: 500px; text-align: left;">
+        <!-- LEFT PANEL: Danh sĂ¡ch nhĂ³m -->
+        <div style="width: 280px; display: flex; flex-direction: column; border-right: 1px solid var(--border-color); padding-right: 20px;">
+            <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text-secondary);">Danh sĂ¡ch nhĂ³m</h4>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <input type="text" id="input-modal-new-team" class="input-sm" placeholder="TĂªn team má»›i..." style="flex: 1; height: 32px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 8px; font-size:12px;">
+                <button class="btn btn-primary btn-sm" onclick="addTeamFromModal()" style="height: 32px; padding: 0 10px; border-radius:6px; font-size:12px; white-space: nowrap;">ThĂªm</button>
+            </div>
+            <div style="flex: 1; overflow-y: auto;" id="modal-teams-list-container">
+                ${renderModalTeamsRows()}
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: Chi tiáº¿t & ThĂ nh viĂªn -->
+        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;" id="modal-team-details-container">
+            ${renderSelectedTeamDetails()}
+        </div>
+    </div>`;
+
+    showModal('Thiáº¿t láº­p danh sĂ¡ch Team', body, [
+        {
+            text: 'ÄĂ³ng',
+            class: 'btn-ghost',
+            action: () => {
+                if (modalEl) modalEl.style.maxWidth = '';
+            }
+        }
+    ]);
+
+    // Láº¯ng nghe sá»± kiá»‡n click Ä‘Ă³ng modal Ä‘á»ƒ thu há»“i kĂ­ch thÆ°á»›c rá»™ng cá»§a modal
+    const closeBtn = document.getElementById('modal-close');
+    if (closeBtn) {
+        const originalClose = closeBtn.onclick;
+        closeBtn.onclick = () => {
+            if (modalEl) modalEl.style.maxWidth = '';
+            if (originalClose) originalClose();
+            else closeModal();
+        };
+    }
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay) {
+        overlay.onclick = (e) => {
+            if (e.target === e.currentTarget) {
+                if (modalEl) modalEl.style.maxWidth = '';
+                closeModal();
+            }
+        };
+    }
+}
+
+function renderModalTeamsRows() {
+    if (!TEAMS || TEAMS.length === 0) {
+        return '<div style="color: var(--text-muted); text-align: center; padding: 20px; font-size:12px;">ChÆ°a cĂ³ team nĂ o.</div>';
+    }
+    return TEAMS.map(team => {
+        const isSelected = selectedTeamIdForModal === team.id;
+        const bg = isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
+        const border = isSelected ? '1px solid var(--accent-blue)' : '1px solid transparent';
+        const memberCount = modalAllUsers.filter(u => u.team === team.name && u.role === 'employee').length;
+        
+        return `
+        <div onclick="selectTeamInModal('${team.id}')" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; cursor: pointer; background: ${bg}; border: ${border}; transition: all 0.2s;">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-weight: 600; font-size: 13px; color: ${isSelected ? 'var(--accent-blue-text)' : 'var(--text-primary)'};">${team.name}</span>
+                <span style="font-size: 11px; color: var(--text-muted);">${memberCount} nhĂ¢n viĂªn</span>
+            </div>
+            <div style="display: flex; gap: 4px;" onclick="event.stopPropagation();">
+                <button class="btn-icon-only edit" onclick="renameTeamFromModal('${team.name}')" title="Äá»•i tĂªn" style="padding: 4px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                </button>
+                <button class="btn-icon-only delete" onclick="deleteTeamFromModal('${team.name}')" title="XĂ³a" style="padding: 4px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function selectTeamInModal(teamId) {
+    selectedTeamIdForModal = teamId;
+    refreshModalTeamsView();
+}
+
+function refreshModalTeamsView() {
+    const listContainer = document.getElementById('modal-teams-list-container');
+    if (listContainer) {
+        listContainer.innerHTML = renderModalTeamsRows();
+    }
+    const detailsContainer = document.getElementById('modal-team-details-container');
+    if (detailsContainer) {
+        detailsContainer.innerHTML = renderSelectedTeamDetails();
+    }
+}
+
+function renderSelectedTeamDetails() {
+    const team = TEAMS.find(t => t.id === selectedTeamIdForModal);
+    if (!team) {
+        return `
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="margin-bottom: 12px; opacity: 0.5;">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+            </svg>
+            <span>Vui lĂ²ng chá»n hoáº·c thĂªm má»™t team á»Ÿ cá»™t trĂ¡i Ä‘á»ƒ báº¯t Ä‘áº§u thiáº¿t láº­p.</span>
+        </div>`;
+    }
+
+    // ThĂ nh viĂªn hiá»‡n táº¡i (chá»‰ láº¥y NhĂ¢n viĂªn, loáº¡i trá»« Quáº£n lĂ½/TrÆ°á»Ÿng nhĂ³m)
+    const members = modalAllUsers.filter(u => u.team === team.name && u.role === 'employee');
+    // Danh sĂ¡ch á»©ng viĂªn TrÆ°á»Ÿng nhĂ³m (Chá»‰ cĂ¡c tĂ i khoáº£n cĂ³ role === 'admin')
+    const potentialLeaders = modalAllUsers.filter(u => u.role === 'admin');
+    const activeLeaderIds = team.leaderIds || (team.leaderId ? [team.leaderId] : []);
+
+    const leaderCheckboxes = potentialLeaders.map(u => {
+        const isChecked = activeLeaderIds.includes(u.id);
+        return `
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; cursor: pointer; color: var(--text-primary); user-select: none;">
+                <input type="checkbox" class="modal-team-leader-chk" value="${u.id}" ${isChecked ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px; margin: 0;">
+                <span>${u.fullname} (@${u.username})</span>
+            </label>
+        `;
+    }).join('') || '<span style="color: var(--text-muted); font-size: 11px;">ChÆ°a cĂ³ tĂ i khoáº£n Admin nĂ o lĂ m á»©ng viĂªn.</span>';
+
+    const rules = team.autoApproveRules || { normalOT: false, backfill: false, sunday: false, customActivity: false };
+    const activities = team.customActivities || [];
+
+    const activitiesListHtml = activities.length === 0 
+        ? '<div style="color: var(--text-muted); font-size: 11px; padding: 12px 0; text-align:center;">ChÆ°a cáº¥u hĂ¬nh hoáº¡t Ä‘á»™ng ngoĂ i giá» nĂ o.</div>'
+        : activities.map((act, index) => `
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 12px; margin-bottom: 6px; font-size: 12px;">
+                <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
+                    <span style="font-weight: 600;">${act.name}</span>
+                    <span style="font-size: 10px; color: var(--text-muted);">
+                        TĂ­nh cháº¥t: ${act.calcMode === 'trip' ? 'TĂ­nh theo Chuyáº¿n' : 'TĂ­nh theo Giá»'} | NhĂ£n: ${act.detailLabel || 'KhĂ´ng cĂ³'}
+                    </span>
+                </div>
+                <button class="btn-icon-only delete" onclick="deleteActivityFromTeam('${team.id}', ${index})" title="XĂ³a" style="padding: 2px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </button>
+            </div>
+        `).join('');
+
+    const membersListHtml = members.length === 0
+        ? '<div style="color: var(--text-muted); font-size: 11px; text-align: center; padding: 20px;">ChÆ°a cĂ³ thĂ nh viĂªn nĂ o trong team.</div>'
+        : members.map(m => `
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; font-size: 12px;">
+                <span><strong>${m.fullname}</strong> (@${m.username})</span>
+                <button class="btn-icon-only delete" onclick="removeMemberFromTeam('${m.id}')" title="XĂ³a khá»i nhĂ³m" style="padding: 2px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+        `).join('');
+
+    const unassignedEmployees = modalAllUsers.filter(u => u.role === 'employee' && u.team !== team.name);
+    const unassignedOptions = `
+        <option value="">-- Chá»n nhĂ¢n viĂªn Ä‘á»ƒ thĂªm --</option>
+        ${unassignedEmployees.map(u => `<option value="${u.id}">${u.fullname} (${u.team ? 'Äang á»Ÿ: ' + u.team : 'ChÆ°a cĂ³ nhĂ³m'})</option>`).join('')}
+    `;
+
+    return `
+    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding-left: 10px;">
+        <h3 style="margin: 0 0 16px 0; font-size: 15px; color: var(--accent-blue-text); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+            <span>Cáº¥u hĂ¬nh nhĂ³m: ${team.name}</span>
+            <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">Thiáº¿t láº­p Quá»¹ OT & Quy táº¯c</span>
+        </h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; overflow: hidden;">
+            <!-- LEFT SUB-COLUMN: CĂ i Ä‘áº·t vĂ  hoáº¡t Ä‘á»™ng -->
+            <div style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 4px;">
+                <!-- 1. Chá»n TrÆ°á»Ÿng nhĂ³m -->
+                <div class="form-group" style="margin: 0;">
+                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">TrÆ°á»Ÿng nhĂ³m (Leader duyá»‡t OT - CĂ³ thá»ƒ chá»n nhiá»u)</label>
+                    <div style="max-height: 100px; overflow-y: auto; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px;">
+                        ${leaderCheckboxes}
+                    </div>
+                </div>
+
+                <!-- 2. Quy táº¯c tá»± duyá»‡t -->
+                <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+                    <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; display: block;">Quy táº¯c Tá»± Ä‘á»™ng duyá»‡t</span>
+                    
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
+                        <input type="checkbox" id="rule-normal" ${rules.normalOT ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
+                        Tá»± duyá»‡t giá» OT bĂ¬nh thÆ°á»ng
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
+                        <input type="checkbox" id="rule-backfill" ${rules.backfill ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
+                        Tá»± duyá»‡t BĂ¹ tÄƒng ca (Backfill)
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
+                        <input type="checkbox" id="rule-sunday" ${rules.sunday ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
+                        Tá»± duyá»‡t náº¿u Ä‘Äƒng kĂ½ vĂ o Chá»§ nháº­t
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
+                        <input type="checkbox" id="rule-custom" ${rules.customActivity ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
+                        Tá»± duyá»‡t Hoáº¡t Ä‘á»™ng ngoĂ i giá» tĂ¹y chá»‰nh
+                    </label>
+                </div>
+
+                <!-- 3. Quáº£n lĂ½ hoáº¡t Ä‘á»™ng tĂ¹y chá»n -->
+                <div style="display: flex; flex-direction: column; flex: 1; min-height: 200px;">
+                    <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">Hoáº¡t Ä‘á»™ng ngoĂ i giá» cá»§a Team</span>
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;">
+                        <input type="text" id="modal-new-act-name" placeholder="TĂªn hoáº¡t Ä‘á»™ng..." style="flex: 1.5; min-width: 100px; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
+                        <select id="modal-new-act-mode" style="flex: 1.2; min-width: 100px; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 2px; font-size:11px;">
+                            <option value="hour">TĂ­nh theo Giá»</option>
+                            <option value="trip">TĂ­nh theo Chuyáº¿n</option>
+                        </select>
+                        <input type="text" id="modal-new-act-label" placeholder="NhĂ£n (Tá»‰nh Ä‘i xe...)" style="flex: 1.5; min-width: 100px; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
+                        <button class="btn btn-primary btn-sm" onclick="addActivityToTeam('${team.id}')" style="height: 28px; border-radius:6px; font-size:11px; padding:0 10px; white-space:nowrap; flex: 1;">ThĂªm</button>
+                    </div>
+                    <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px; background: rgba(0,0,0,0.05); min-height: 100px;">
+                        ${activitiesListHtml}
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT SUB-COLUMN: Danh sĂ¡ch nhĂ¢n viĂªn -->
+            <div style="display: flex; flex-direction: column; overflow: hidden;">
+                <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">Quáº£n lĂ½ thĂ nh viĂªn (${members.length})</span>
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <select id="modal-add-member-select" style="flex: 1; height: 30px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0 8px; font-size: 11px;">
+                        ${unassignedOptions}
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="addMemberToTeamFromModal('${team.id}')" style="height: 30px; border-radius: 6px; font-size: 11px; padding: 0 10px; white-space:nowrap;">ThĂªm</button>
+                </div>
+                <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px; background: rgba(0,0,0,0.05);">
+                    ${membersListHtml}
+                </div>
+            </div>
+        </div>
+    </div>`;
+}
+
+async function saveTeamSettingsFromModal(teamId) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+
+    const leaderChks = document.querySelectorAll('.modal-team-leader-chk:checked');
+    const leaderIds = Array.from(leaderChks).map(chk => chk.value);
+ 
+    const ruleNormal = document.getElementById('rule-normal')?.checked;
+    const ruleBackfill = document.getElementById('rule-backfill')?.checked;
+    const ruleSunday = document.getElementById('rule-sunday')?.checked;
+    const ruleCustom = document.getElementById('rule-custom')?.checked;
+ 
+    team.leaderIds = leaderIds;
+    team.leaderId = leaderIds[0] || null;
+    team.autoApproveRules = {
+        normalOT: !!ruleNormal,
+        backfill: !!ruleBackfill,
+        sunday: !!ruleSunday,
+        customActivity: !!ruleCustom
+    };
+
+    try {
+        await api('/api/teams', 'POST', { teams: TEAMS });
+        await loadTeams();
+        
+        // Refresh users list locally
+        const uData = await api('/api/users');
+        modalAllUsers = uData.users || [];
+        
+        showToast('ÄĂ£ lÆ°u cáº¥u hĂ¬nh team!');
+        refreshModalTeamsView();
+        await populateUserFilter();
+        await refreshAdminUsers();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function addActivityToTeam(teamId) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+
+    const nameInput = document.getElementById('modal-new-act-name');
+    const modeSelect = document.getElementById('modal-new-act-mode');
+    const labelInput = document.getElementById('modal-new-act-label');
+
+    const name = nameInput?.value.trim();
+    const calcMode = modeSelect?.value;
+    const detailLabel = labelInput?.value.trim();
+
+    if (!name) return showToast('Vui lĂ²ng nháº­p tĂªn hoáº¡t Ä‘á»™ng!', 'error');
+
+    if (!team.customActivities) team.customActivities = [];
+    if (team.customActivities.some(a => a.name.toLowerCase() === name.toLowerCase())) {
+        return showToast('Hoáº¡t Ä‘á»™ng nĂ y Ä‘Ă£ tá»“n táº¡i!', 'error');
+    }
+
+    team.customActivities.push({
+        id: 'act_' + Date.now(),
+        name,
+        calcMode,
+        detailLabel: detailLabel || 'Chi tiáº¿t',
+        placeholder: `Nháº­p ${detailLabel || 'chi tiáº¿t'}...`
+    });
+
+    try {
+        await api('/api/teams', 'POST', { teams: TEAMS });
+        await loadTeams();
+        showToast('ÄĂ£ thĂªm hoáº¡t Ä‘á»™ng!');
+        if (nameInput) nameInput.value = '';
+        if (labelInput) labelInput.value = '';
+        refreshModalTeamsView();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function deleteActivityFromTeam(teamId, index) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+
+    team.customActivities.splice(index, 1);
+
+    try {
+        await api('/api/teams', 'POST', { teams: TEAMS });
+        await loadTeams();
+        showToast('ÄĂ£ xĂ³a hoáº¡t Ä‘á»™ng!');
+        refreshModalTeamsView();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function addMemberToTeamFromModal(teamId) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+
+    const select = document.getElementById('modal-add-member-select');
+    if (!select) return;
+    const userId = select.value;
+    if (!userId) return showToast('Vui lĂ²ng chá»n nhĂ¢n viĂªn!', 'error');
+
+    const user = modalAllUsers.find(u => u.id === userId);
+    if (!user) return;
+
+    try {
+        await api('/api/users/' + userId, 'PUT', { team: team.name });
+        showToast(`ÄĂ£ thĂªm ${user.fullname} vĂ o ${team.name}!`);
+        
+        const uData = await api('/api/users');
+        modalAllUsers = uData.users || [];
+        
+        refreshModalTeamsView();
+        await populateUserFilter();
+        await refreshAdminUsers();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function removeMemberFromTeam(userId) {
+    const user = modalAllUsers.find(u => u.id === userId);
+    if (!user) return;
+
+    try {
+        await api('/api/users/' + userId, 'PUT', { team: '' });
+        showToast(`ÄĂ£ xĂ³a ${user.fullname} khá»i nhĂ³m!`);
+        
+        const uData = await api('/api/users');
+        modalAllUsers = uData.users || [];
+        
+        refreshModalTeamsView();
+        await populateUserFilter();
+        await refreshAdminUsers();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function addTeamFromModal() {
+    const input = document.getElementById('input-modal-new-team');
+    if (!input) return;
+    const teamName = input.value.trim();
+    if (!teamName) return showToast('Vui lĂ²ng nháº­p tĂªn team!', 'error');
+
+    if (TEAMS.some(t => t.name.toLowerCase() === teamName.toLowerCase())) {
+        return showToast('Team nĂ y Ä‘Ă£ tá»“n táº¡i!', 'error');
+    }
+
+    const newTeam = {
+        id: 'team_' + Date.now(),
+        name: teamName,
+        leaderId: null,
+        leaderIds: [],
+        customActivities: [],
+        autoApproveRules: {
+            normalOT: false,
+            backfill: false,
+            sunday: false,
+            customActivity: false
+        }
+    };
+    const updatedTeams = [...TEAMS, newTeam];
+    try {
+        await api('/api/teams', 'POST', { teams: updatedTeams });
+        TEAMS = updatedTeams;
+        input.value = '';
+        showToast('ThĂªm team thĂ nh cĂ´ng!');
+        selectedTeamIdForModal = newTeam.id;
+        refreshModalTeamsView();
+        await populateUserFilter();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function renameTeamFromModal(oldName) {
+    const body = `
+    <div style="text-align: left; padding: 10px 0;">
+        <div style="margin-bottom: 12px; font-weight: 500;">Nháº­p tĂªn team má»›i cho <strong>${oldName}</strong>:</div>
+        <input type="text" id="modal-rename-team-input" class="input-sm" value="${oldName}" style="width: 100%; box-sizing: border-box; height: 36px; padding: 0 12px; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;">
+    </div>`;
+
+    showModal('Äá»•i tĂªn Team', body, [
+        {
+            text: 'Há»§y',
+            class: 'btn-ghost',
+            action: () => {
+                setTimeout(() => openTeamSettingsModal(), 50);
+            }
+        },
+        {
+            text: 'LÆ°u',
+            class: 'btn-primary btn-sm',
+            action: async () => {
+                const input = document.getElementById('modal-rename-team-input');
+                if (!input) return;
+                const newName = input.value.trim();
+                if (!newName) {
+                    showToast('TĂªn team khĂ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng!', 'error');
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                    return;
+                }
+                if (newName === oldName) {
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                    return;
+                }
+                if (TEAMS.some(t => t.name.toLowerCase() === newName.toLowerCase())) {
+                    showToast('TĂªn team nĂ y Ä‘Ă£ tá»“n táº¡i!', 'error');
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                    return;
+                }
+                const updatedTeams = TEAMS.map(t => {
+                    if (t.name === oldName) {
+                        t.name = newName;
+                    }
+                    return t;
+                });
+                try {
+                    await api('/api/teams', 'POST', { teams: updatedTeams, oldName, newName });
+                    TEAMS = updatedTeams;
+                    showToast('Äá»•i tĂªn team thĂ nh cĂ´ng!');
+                    await Promise.all([
+                        populateUserFilter(),
+                        refreshAdminUsers()
+                    ]);
+                } catch (e) {
+                    showToast(e.message, 'error');
+                }
+                setTimeout(() => openTeamSettingsModal(), 50);
+            }
+        }
+    ]);
+}
+
+async function deleteTeamFromModal(teamName) {
+    try {
+        const uData = await api('/api/users');
+        const userCount = uData.users.filter(u => u.team === teamName).length;
+        
+        let confirmMsg = `Báº¡n cĂ³ cháº¯c muá»‘n xĂ³a team "${teamName}"?`;
+        if (userCount > 0) {
+            confirmMsg += `<br><br><span style="color: var(--status-rejected-text); font-weight: bold;">Cáº£nh bĂ¡o: Hiá»‡n cĂ³ ${userCount} nhĂ¢n viĂªn thuá»™c team nĂ y. Há» sáº½ bá»‹ Ä‘Æ°a vá» tráº¡ng thĂ¡i "ChÆ°a phĂ¢n team".</span>`;
+        }
+
+        showModal('XĂ³a Team', confirmMsg, [
+            {
+                text: 'Há»§y',
+                class: 'btn-ghost',
+                action: () => {
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                }
+            },
+            {
+                text: 'XĂ³a',
+                class: 'btn-danger btn-sm',
+                action: async () => {
+                    const updatedTeams = TEAMS.filter(t => t.name !== teamName);
+                    if (selectedTeamIdForModal && !updatedTeams.some(t => t.id === selectedTeamIdForModal)) {
+                        selectedTeamIdForModal = null;
+                    }
+                    try {
+                        await api('/api/teams', 'POST', { teams: updatedTeams, deletedTeam: teamName });
+                        TEAMS = updatedTeams;
+                        showToast('ÄĂ£ xĂ³a team!');
+                        await Promise.all([
+                            populateUserFilter(),
+                            refreshAdminUsers()
+                        ]);
+                    } catch (e) {
+                        showToast(e.message, 'error');
+                    }
+                    setTimeout(() => openTeamSettingsModal(), 50);
+                }
+            }
+        ]);
+    } catch (e) {
+        showToast('Lá»—i khi láº¥y thĂ´ng tin nhĂ¢n viĂªn', 'error');
+        setTimeout(() => openTeamSettingsModal(), 50);
+    }
+}
+
+// Khá»Ÿi táº¡o kĂªnh nháº­n sá»± kiá»‡n thá»i gian thá»±c (SSE)
+function initSseConnection() {
+    if (window.sseSource) {
+        window.sseSource.close();
+    }
+    
+    const sse = new EventSource(`${API_BASE}/api/events`);
+    window.sseSource = sse;
+    
+    sse.onmessage = function(event) {
+        try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'update') {
+                const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+                if (currentUser && currentUser.role === 'admin') {
+                    // Tá»± Ä‘á»™ng lĂ m má»›i dá»¯ liá»‡u khi cĂ³ cáº­p nháº­t tá»« Ä‘iá»‡n thoáº¡i
+                    refreshAdminRecords();
+                    refreshAdminStats();
+                    refreshReport();
+                    refreshAdminUsers();
+                }
+            }
+        } catch (e) {
+            console.error('Lá»—i xá»­ lĂ½ sá»± kiá»‡n SSE:', e);
+        }
+    };
+    
+    sse.onerror = function() {
+        console.warn('Máº¥t káº¿t ná»‘i SSE, Ä‘ang thá»­ káº¿t ná»‘i láº¡i...');
+    };
+}
+
+async function loadMobileInfo() {
+    try {
+        const info = await api('/api/server-info');
+        const el = document.getElementById('mobile-url');
+        if (el) el.textContent = info.url;
+        const el2 = document.getElementById('mobile-url-link');
+        if (el2) el2.href = info.url;
+
+        const qrContainer = document.getElementById('mobile-qr-container');
+        const qrImg = document.getElementById('mobile-qr');
+        if (qrContainer && qrImg && info.url) {
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(info.url)}`;
+            qrContainer.style.display = 'flex';
+        }
+    } catch (e) {}
+}
+
+async function populateUserFilter() {
+    const select = document.getElementById('admin-filter-user');
+    const adminOtUser = document.getElementById('admin-ot-user');
+    try {
+        const data = await api('/api/users');
+        const users = data.users;
+        loadedUsers = users;
+        users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
+
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isSuperAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
+        const managerTeam = currentUser ? (currentUser.team || '') : '';
+
+        if (select) {
+            select.innerHTML = '<option value="">Táº¥t cáº£</option>';
+            users.forEach(u => {
+                if (isSuperAdmin) {
+                    select.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                } else {
+                    if ((u.role === 'employee' && u.team === managerTeam) || (currentUser && u.id === currentUser.id)) {
+                        select.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                    }
+                }
+            });
+        }
+        if (adminOtUser) {
+            adminOtUser.innerHTML = '<option value="">-- Chá»n nhĂ¢n viĂªn --</option>';
+            users.filter(u => u.role === 'employee').forEach(u => {
+                if (isSuperAdmin) {
+                    adminOtUser.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                } else {
+                    if (u.team === managerTeam) {
+                        adminOtUser.innerHTML += `<option value="${u.id}">${u.fullname}</option>`;
+                    }
+                }
+            });
+        }
+    } catch (e) {}
+}
+
+async function refreshAdminStats() {
+    try {
+        const stats = await api('/api/stats');
+        document.getElementById('stat-total-users').textContent = stats.totalUsers;
+        
+        // Update Pending OT
+        const pendingOTVal = stats.pendingOT || 0;
+        document.getElementById('stat-pending-ot').textContent = pendingOTVal;
+        const cardPendingOT = document.getElementById('stat-card-pending-ot');
+        const dotPendingOT = document.getElementById('dot-pending-ot');
+        if (cardPendingOT && dotPendingOT) {
+            if (pendingOTVal > 0) {
+                cardPendingOT.classList.add('has-pending');
+                dotPendingOT.style.display = 'inline-block';
+            } else {
+                cardPendingOT.classList.remove('has-pending');
+                dotPendingOT.style.display = 'none';
+            }
+        }
+
+        // Update Pending Unlinks
+        const pendingUnlinksVal = stats.pendingUnlinks || 0;
+        document.getElementById('stat-pending-unlinks').textContent = pendingUnlinksVal;
+        const cardPendingUnlinks = document.getElementById('stat-card-pending-unlinks');
+        const dotPendingUnlinks = document.getElementById('dot-pending-unlinks');
+        if (cardPendingUnlinks && dotPendingUnlinks) {
+            if (pendingUnlinksVal > 0) {
+                cardPendingUnlinks.classList.add('has-pending');
+                dotPendingUnlinks.style.display = 'inline-block';
+            } else {
+                cardPendingUnlinks.classList.remove('has-pending');
+                dotPendingUnlinks.style.display = 'none';
+            }
+        }
+
+        // Update sidebar unlinks badge
+        const badgePendingUnlinks = document.getElementById('badge-pending-unlinks');
+        if (badgePendingUnlinks) {
+            if (pendingUnlinksVal > 0) {
+                badgePendingUnlinks.textContent = pendingUnlinksVal;
+                badgePendingUnlinks.style.display = 'inline-block';
+            } else {
+                badgePendingUnlinks.style.display = 'none';
+            }
+        }
+
+        // Update bell badge count
+        const totalPending = pendingOTVal + pendingUnlinksVal;
+        const bellBadge = document.getElementById('bell-badge-count');
+        if (bellBadge) {
+            if (totalPending > 0) {
+                bellBadge.textContent = totalPending;
+                bellBadge.style.display = 'block';
+            } else {
+                bellBadge.style.display = 'none';
+            }
+        }
+
+        document.getElementById('stat-total-ot').textContent = stats.totalOTMonth.toFixed(1);
+        const tripsEl = document.getElementById('stat-total-trips');
+        if (tripsEl) tripsEl.textContent = stats.totalTripsMonth || 0;
+
+        let statsLabel = 'Tá»•ng chuyáº¿n xe (ÄĂ£ duyá»‡t)';
+        if (isAdmin) {
+            const hasCustomActivities = typeof TEAMS !== 'undefined' && TEAMS.some(t => typeof t === 'object' && t.customActivities && t.customActivities.length > 0);
+            if (hasCustomActivities) {
+                statsLabel = 'Tá»•ng hoáº¡t Ä‘á»™ng khĂ¡c (ÄĂ£ duyá»‡t)';
+            }
+        } else {
+            const managerTeam = currentUser ? (currentUser.team || '') : '';
+            if (managerTeam && typeof TEAMS !== 'undefined') {
+                const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === managerTeam);
+                const hasCustomActivities = !!(teamObj && teamObj.customActivities && teamObj.customActivities.length > 0);
+                if (hasCustomActivities) {
+                    const activityNames = teamObj.customActivities.map(a => a.name).join(' / ');
+                    statsLabel = `Tá»•ng ${activityNames} (ÄĂ£ duyá»‡t)`;
+                }
+            }
+        }
+
+        const labelEl = document.getElementById('stat-total-trips-label');
+        if (labelEl) labelEl.textContent = statsLabel;
+    } catch (e) {}
+}
+
+async function refreshAdminRecords() {
+    let month = document.getElementById('admin-filter-month').value;
+    const dateFilter = document.getElementById('admin-filter-date') ? document.getElementById('admin-filter-date').value : '';
+    const userId = document.getElementById('admin-filter-user').value;
+    const searchUser = document.getElementById('admin-search-user').value.toLowerCase().trim();
+    const searchNote = document.getElementById('admin-search-note').value.toLowerCase().trim();
+    const filterTeam = document.getElementById('admin-filter-team') ? document.getElementById('admin-filter-team').value : '';
+
+    if (dateFilter) {
+        month = dateFilter.substring(0, 7);
+    }
+
+    try {
+        let url = '/api/records?';
+        if (month) url += `month=${month}&`;
+        if (userId) url += `userId=${userId}&`;
+
+        const data = await api(url);
+        const records = data.records;
+        loadedRecords = records;
+        const usersData = await api('/api/users');
+        const users = usersData.users;
+        loadedUsers = users;
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
+
+        let hasCustomActivities = false;
+        let adminBtnText = '2. Hoáº¡t Ä‘á»™ng khĂ¡c';
+        if (isAdmin) {
+            if (filterTeam && filterTeam !== 'unassigned' && typeof TEAMS !== 'undefined') {
+                const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === filterTeam);
+                hasCustomActivities = !!(teamObj && teamObj.customActivities && teamObj.customActivities.length > 0);
+                if (hasCustomActivities) {
+                    adminBtnText = '2. ' + teamObj.customActivities.map(a => a.name).join(' / ');
+                }
+            } else if (typeof TEAMS !== 'undefined') {
+                hasCustomActivities = TEAMS.some(t => typeof t === 'object' && t.customActivities && t.customActivities.length > 0);
+                if (hasCustomActivities) {
+                    const allActs = [];
+                    TEAMS.forEach(t => {
+                        if (typeof t === 'object' && t.customActivities) {
+                            t.customActivities.forEach(a => {
+                                if (!allActs.includes(a.name)) allActs.push(a.name);
+                            });
+                        }
+                    });
+                    if (allActs.length > 0 && allActs.length <= 3) {
+                        adminBtnText = '2. ' + allActs.join(' / ');
+                    } else {
+                        adminBtnText = '2. Hoáº¡t Ä‘á»™ng khĂ¡c';
+                    }
+                }
+            }
+        } else {
+            const managerTeam = currentUser ? (currentUser.team || '') : '';
+            if (managerTeam && typeof TEAMS !== 'undefined') {
+                const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === managerTeam);
+                hasCustomActivities = !!(teamObj && teamObj.customActivities && teamObj.customActivities.length > 0);
+                if (hasCustomActivities) {
+                    adminBtnText = '2. ' + teamObj.customActivities.map(a => a.name).join(' / ');
+                }
+            }
+        }
+
+        const adminRecTypeSelector = document.getElementById('admin-rec-type-selector');
+        const btnAdminRecTypeTrips = document.getElementById('btn-admin-rec-type-trips');
+        if (hasCustomActivities) {
+            if (adminRecTypeSelector) adminRecTypeSelector.style.display = 'flex';
+            if (btnAdminRecTypeTrips) {
+                btnAdminRecTypeTrips.style.display = 'inline-block';
+                btnAdminRecTypeTrips.textContent = adminBtnText;
+            }
+        } else {
+            if (adminRecTypeSelector) adminRecTypeSelector.style.display = 'none';
+            currentAdminRecType = 'ot';
+        }
+
+        const filteredRecords = records.filter(r => {
+            const user = users.find(u => u.id === r.userId);
+            const matchesUser = !searchUser || (user && (
+                user.fullname.toLowerCase().includes(searchUser) ||
+                user.username.toLowerCase().includes(searchUser)
+            ));
+            const matchesNote = !searchNote || (r.note && r.note.toLowerCase().includes(searchNote));
+            
+            // Filter by Team
+            let matchesTeam = true;
+            if (isAdmin) {
+                if (filterTeam) {
+                    const userTeam = user ? (user.team || '') : '';
+                    if (filterTeam === 'unassigned') {
+                        matchesTeam = (userTeam === '' || userTeam === 'unassigned');
+                    } else {
+                        matchesTeam = (userTeam === filterTeam);
+                    }
+                }
+            } else {
+                // Manager: only see members of their own team (and themselves)
+                const managerTeam = currentUser ? (currentUser.team || '') : '';
+                const userTeam = user ? (user.team || '') : '';
+                matchesTeam = (user && user.id === currentUser.id) || (userTeam && userTeam === managerTeam);
+            }
+
+            // Filter by Date
+            const matchesDate = !dateFilter || r.date === dateFilter;
+
+            return matchesUser && matchesNote && matchesTeam && matchesDate;
+        });
+
+        const approvedTbody = document.getElementById('admin-records-approved-body');
+        const pendingTbody = document.getElementById('admin-records-pending-body');
+        const rejectedTbody = document.getElementById('admin-records-rejected-body');
+
+        // Apply Record Type Filter
+        let recordsFiltered = [];
+        if (currentAdminRecType === 'ot') {
+            recordsFiltered = filteredRecords.filter(r => (!r.customActivity || r.customActivity.trim() === '') && (r.totalHours > 0 || r.isBackfill));
+        } else {
+            recordsFiltered = filteredRecords.filter(r => r.customActivity && r.customActivity.trim() !== '');
+        }
+
+        // Set Table Headers dynamically
+        if (approvedTbody && approvedTbody.previousElementSibling) {
+            if (currentAdminRecType === 'ot') {
+                approvedTbody.previousElementSibling.innerHTML = `<tr>
+                    <th>NhĂ¢n viĂªn</th>
+                    <th>NhĂ³m</th>
+                    <th>NgĂ y</th>
+                    <th>OT TrÆ°a</th>
+                    <th>OT Chiá»u</th>
+                    <th>Khung giá» (Chiá»u)</th>
+                    <th>Tá»•ng OT (giá»)</th>
+                    <th>Ghi chĂº</th>
+                    <th>Tráº¡ng thĂ¡i</th>
+                    <th>Thao tĂ¡c</th>
+                </tr>`;
+            } else {
+                approvedTbody.previousElementSibling.innerHTML = `<tr>
+                    <th>NhĂ¢n viĂªn</th>
+                    <th>NhĂ³m</th>
+                    <th>NgĂ y</th>
+                    <th>Hoáº¡t Ä‘á»™ng</th>
+                    <th>HĂ¬nh thá»©c / Chi tiáº¿t</th>
+                    <th>Ghi chĂº</th>
+                    <th>Tráº¡ng thĂ¡i</th>
+                    <th>Thao tĂ¡c</th>
+                </tr>`;
+            }
+        }
+        if (pendingTbody && pendingTbody.previousElementSibling) {
+            if (currentAdminRecType === 'ot') {
+                pendingTbody.previousElementSibling.innerHTML = `<tr>
+                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="chk-pending-select-all" style="width: 14px; height: 14px; margin: 0; cursor: pointer;"></th>
+                    <th>NhĂ¢n viĂªn</th>
+                    <th>NhĂ³m</th>
+                    <th>NgĂ y</th>
+                    <th>OT TrÆ°a</th>
+                    <th>OT Chiá»u</th>
+                    <th>Khung giá» (Chiá»u)</th>
+                    <th>Tá»•ng OT (giá»)</th>
+                    <th>Ghi chĂº</th>
+                    <th>Thao tĂ¡c</th>
+                </tr>`;
+            } else {
+                pendingTbody.previousElementSibling.innerHTML = `<tr>
+                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="chk-pending-select-all" style="width: 14px; height: 14px; margin: 0; cursor: pointer;"></th>
+                    <th>NhĂ¢n viĂªn</th>
+                    <th>NhĂ³m</th>
+                    <th>NgĂ y</th>
+                    <th>Hoáº¡t Ä‘á»™ng</th>
+                    <th>HĂ¬nh thá»©c / Chi tiáº¿t</th>
+                    <th>Ghi chĂº</th>
+                    <th>Thao tĂ¡c</th>
+                </tr>`;
+            }
+        }
+        if (rejectedTbody && rejectedTbody.previousElementSibling) {
+            if (currentAdminRecType === 'ot') {
+                rejectedTbody.previousElementSibling.innerHTML = `<tr>
+                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="chk-rejected-select-all" style="width: 14px; height: 14px; margin: 0; cursor: pointer;"></th>
+                    <th>NhĂ¢n viĂªn</th>
+                    <th>NhĂ³m</th>
+                    <th>NgĂ y</th>
+                    <th>OT TrÆ°a</th>
+                    <th>OT Chiá»u</th>
+                    <th>Khung giá» (Chiá»u)</th>
+                    <th>Tá»•ng OT (giá»)</th>
+                    <th>Ghi chĂº</th>
+                    <th>Thao tĂ¡c</th>
+                </tr>`;
+            } else {
+                rejectedTbody.previousElementSibling.innerHTML = `<tr>
+                    <th style="width: 40px; text-align: center;"><input type="checkbox" id="chk-rejected-select-all" style="width: 14px; height: 14px; margin: 0; cursor: pointer;"></th>
+                    <th>NhĂ¢n viĂªn</th>
+                    <th>NhĂ³m</th>
+                    <th>NgĂ y</th>
+                    <th>Hoáº¡t Ä‘á»™ng</th>
+                    <th>HĂ¬nh thá»©c / Chi tiáº¿t</th>
+                    <th>Ghi chĂº</th>
+                    <th>Thao tĂ¡c</th>
+                </tr>`;
+            }
+        }
+
+        const approved = recordsFiltered.filter(r => r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
+        const pending = recordsFiltered.filter(r => r.status === 'pending');
+        const rejected = recordsFiltered.filter(r => r.status === 'rejected');
+
+        // Render Approved
+        if (approved.length === 0) {
+            const cols = (currentAdminRecType === 'ot') ? 10 : 8;
+            approvedTbody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="color: var(--text-muted); opacity: 0.6;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="8" y1="12" x2="16" y2="12"/>
+                            </svg>
+                            <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">KhĂ´ng cĂ³ dá»¯ liá»‡u Ä‘Ă£ duyá»‡t</span>
+                            <span style="font-size: 13px; color: var(--text-muted);">KhĂ´ng tĂ¬m tháº¥y báº£n ghi ${currentAdminRecType === 'ot' ? 'tÄƒng ca' : 'hoáº¡t Ä‘á»™ng tĂ¹y chá»n'} nĂ o Ä‘Ă£ Ä‘Æ°á»£c duyá»‡t trong thĂ¡ng nĂ y.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        } else {
+            approvedTbody.innerHTML = approved.map(r => {
+                const user = users.find(u => u.id === r.userId);
+                const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'ChÆ°a phĂ¢n team')) : 'N/A';
+                const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BĂ™ THĂNG TRÆ¯á»C]') || r.note.includes('[TÄ‚NG THĂNG NĂ€Y]')));
+                const employeeCell = `
+                    <div class="user-profile-cell">
+                        <div class="avatar-mini">${user ? user.fullname.charAt(0).toUpperCase() : 'N'}</div>
+                        <div class="user-details">
+                            <span class="user-fullname">${user ? user.fullname : 'N/A'}</span>
+                            <span class="user-username">@${user ? user.username : 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+                const teamBadge = `<span class="tag-team">${teamName}</span>`;
+                const noteDisplay = r.note ? `<span class="text-note" title="${r.note}">${r.note}</span>` : '<span class="text-muted">â€”</span>';
+
+                if (currentAdminRecType === 'ot') {
+                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || 'â€”'}</span> <span class="text-arrow">â†’</span> <span class="text-time">${r.otEnd || 'â€”'}</span>` : '<span class="text-muted">â€”</span>';
+                    const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
+                    return `<tr>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
+                        <td>${r.hasLunchOT ? '<span class="tag tag-yes">âœ“ CĂ³</span>' : '<span class="tag tag-no">KhĂ´ng</span>'}</td>
+                        <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">â€”</span>'}</td>
+                        <td>${timeRange}</td>
+                        <td>${totalOtBadge}</td>
+                        <td>${noteDisplay}</td>
+                        <td>${isBackfill ? '<span class="tag tag-yes" style="background:rgba(16,185,129,0.1); color:#10b981;">BĂ¹ tÄƒng ca</span>' : '<span class="tag tag-no" style="background:rgba(99,102,241,0.1); color:#6366f1;">ThÆ°á»ng</span>'}</td>
+                        <td><div class="action-buttons">
+                            <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'admin')" title="Sá»­a" style="margin-right: 4px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                            <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="XĂ³a">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div></td>
+                    </tr>`;
+                } else {
+                    const detail = r.calcMode === 'trip' 
+                        ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">đŸ ${r.deliveryProvince || 'ChÆ°a rĂµ'}</span>` 
+                        : `<span class="tag" style="background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.3); font-weight: 500;">â±ï¸ ${r.totalHours.toFixed(1)}h</span>`;
+                    
+                    let badgeClass = 'status-approved';
+                    let badgeText = 'ÄĂ£ duyá»‡t';
+                    if (r.status === 'pending') {
+                        badgeClass = 'status-pending';
+                        badgeText = 'Chá» duyá»‡t';
+                    } else if (r.status === 'rejected') {
+                        badgeClass = 'status-rejected';
+                        badgeText = 'Tá»« chá»‘i';
+                    }
+
+                    return `<tr>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
+                        <td><strong>${r.customActivity}</strong></td>
+                        <td>${detail}</td>
+                        <td>${noteDisplay}</td>
+                        <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
+                        <td><div class="action-buttons">
+                            <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'admin')" title="Sá»­a" style="margin-right: 4px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                            </button>
+                            <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="XĂ³a">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div></td>
+                    </tr>`;
+                }
+            }).join('');
+        }
+
+        // Render Pending
+        if (pending.length === 0) {
+            const cols = (currentAdminRecType === 'ot') ? 10 : 8;
+            pendingTbody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="color: var(--accent-green-light); opacity: 0.8;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            <span style="font-size: 15px; font-weight: 600; color: var(--text-primary);">KhĂ´ng cĂ³ yĂªu cáº§u chá» duyá»‡t</span>
+                            <span style="font-size: 13px; color: var(--text-muted);">Táº¥t cáº£ yĂªu cáº§u ${currentAdminRecType === 'ot' ? 'tÄƒng ca' : 'hoáº¡t Ä‘á»™ng tĂ¹y chá»n'} Ä‘Ă£ Ä‘Æ°á»£c xá»­ lĂ½ xong.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        } else {
+            pendingTbody.innerHTML = pending.map(r => {
+                const user = users.find(u => u.id === r.userId);
+                const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'ChÆ°a phĂ¢n team')) : 'N/A';
+                const employeeCell = `
+                    <div class="user-profile-cell">
+                        <div class="avatar-mini">${user ? user.fullname.charAt(0).toUpperCase() : 'N'}</div>
+                        <div class="user-details">
+                            <span class="user-fullname">${user ? user.fullname : 'N/A'}</span>
+                            <span class="user-username">@${user ? user.username : 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+                const teamBadge = `<span class="tag-team">${teamName}</span>`;
+                const noteDisplay = r.note ? `<span class="text-note" title="${r.note}">${r.note}</span>` : '<span class="text-muted">â€”</span>';
+
+                if (currentAdminRecType === 'ot') {
+                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || 'â€”'}</span> <span class="text-arrow">â†’</span> <span class="text-time">${r.otEnd || 'â€”'}</span>` : '<span class="text-muted">â€”</span>';
+                    const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
+                    return `<tr>
+                        <td style="text-align: center;"><input type="checkbox" class="chk-pending-record" value="${r.id}" style="width: 14px; height: 14px; margin: 0; cursor: pointer;" onchange="updatePendingBulkActionsVisibility()"></td>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
+                        <td>${r.hasLunchOT ? '<span class="tag tag-yes">âœ“ CĂ³</span>' : '<span class="tag tag-no">KhĂ´ng</span>'}</td>
+                        <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">â€”</span>'}</td>
+                        <td>${timeRange}</td>
+                        <td>${totalOtBadge}</td>
+                        <td>${noteDisplay}</td>
+                        <td><div class="action-buttons">
+                            <button class="btn btn-green btn-xs" onclick="approveRecord('${r.id}')" title="Duyá»‡t" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
+                                âœ“ Duyá»‡t
+                            </button>
+                            <button class="btn btn-danger btn-xs" onclick="rejectRecord('${r.id}')" title="Tá»« chá»‘i" style="padding: 4px 8px; font-size: 11px;">
+                                âœ• Tá»« chá»‘i
+                            </button>
+                        </div></td>
+                    </tr>`;
+                } else {
+                    const detail = r.calcMode === 'trip' 
+                        ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">đŸ ${r.deliveryProvince || 'ChÆ°a rĂµ'}</span>` 
+                        : `<span class="tag" style="background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.3); font-weight: 500;">â±ï¸ ${r.totalHours.toFixed(1)}h</span>`;
+                    return `<tr>
+                        <td style="text-align: center;"><input type="checkbox" class="chk-pending-record" value="${r.id}" style="width: 14px; height: 14px; margin: 0; cursor: pointer;" onchange="updatePendingBulkActionsVisibility()"></td>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
+                        <td><strong>${r.customActivity}</strong></td>
+                        <td>${detail}</td>
+                        <td>${noteDisplay}</td>
+                        <td><div class="action-buttons">
+                            <button class="btn btn-green btn-xs" onclick="approveRecord('${r.id}')" title="Duyá»‡t" style="margin-right: 4px; padding: 4px 8px; font-size: 11px;">
+                                âœ“ Duyá»‡t
+                            </button>
+                            <button class="btn btn-danger btn-xs" onclick="rejectRecord('${r.id}')" title="Tá»« chá»‘i" style="padding: 4px 8px; font-size: 11px;">
+                                âœ• Tá»« chá»‘i
+                            </button>
+                        </div></td>
+                    </tr>`;
+                }
+            }).join('');
+        }
+
+        // Render Rejected
+        if (rejected.length === 0) {
+            const cols = (currentAdminRecType === 'ot') ? 10 : 8;
+            rejectedTbody.innerHTML = `
+                <tr class="empty-row">
+                    <td colspan="${cols}" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="color: #ef4444; opacity: 0.7;">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="15" y1="9" x2="9" y2="15"/>
+                                <line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                            <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">KhĂ´ng cĂ³ báº£n ghi bá»‹ tá»« chá»‘i</span>
+                            <span style="font-size: 13px; color: var(--text-muted);">KhĂ´ng cĂ³ yĂªu cáº§u ${currentAdminRecType === 'ot' ? 'tÄƒng ca' : 'hoáº¡t Ä‘á»™ng tĂ¹y chá»n'} nĂ o bá»‹ tá»« chá»‘i duyá»‡t.</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        } else {
+            rejectedTbody.innerHTML = rejected.map(r => {
+                const user = users.find(u => u.id === r.userId);
+                const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'ChÆ°a phĂ¢n team')) : 'N/A';
+                const employeeCell = `
+                    <div class="user-profile-cell">
+                        <div class="avatar-mini">${user ? user.fullname.charAt(0).toUpperCase() : 'N'}</div>
+                        <div class="user-details">
+                            <span class="user-fullname">${user ? user.fullname : 'N/A'}</span>
+                            <span class="user-username">@${user ? user.username : 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+                const teamBadge = `<span class="tag-team">${teamName}</span>`;
+                const noteDisplay = r.note ? `<span class="text-note" title="${r.note}">${r.note}</span>` : '<span class="text-muted">â€”</span>';
+ 
+                if (currentAdminRecType === 'ot') {
+                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || 'â€”'}</span> <span class="text-arrow">â†’</span> <span class="text-time">${r.otEnd || 'â€”'}</span>` : '<span class="text-muted">â€”</span>';
+                    const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
+                    return `<tr>
+                        <td style="text-align: center;"><input type="checkbox" class="chk-rejected-record" value="${r.id}" style="width: 14px; height: 14px; margin: 0; cursor: pointer;" onchange="updateRejectedBulkActionsVisibility()"></td>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
+                        <td>${r.hasLunchOT ? '<span class="tag tag-yes">âœ“ CĂ³</span>' : '<span class="tag tag-no">KhĂ´ng</span>'}</td>
+                        <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span class="text-muted">â€”</span>'}</td>
+                        <td>${timeRange}</td>
+                        <td>${totalOtBadge}</td>
+                        <td>${noteDisplay}</td>
+                        <td><div class="action-buttons" style="display: flex; align-items: center; gap: 8px;">
+                            <button class="btn btn-primary btn-xs" onclick="approveRecord('${r.id}')" title="Duyá»‡t láº¡i" style="padding: 4px 8px; font-size: 11px;">
+                                âœ“ Duyá»‡t láº¡i
+                            </button>
+                            <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="XĂ³a" style="padding: 2px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px; color: #ef4444; cursor: pointer;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div></td>
+                    </tr>`;
+                } else {
+                    const detail = r.calcMode === 'trip' 
+                        ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">đŸ ${r.deliveryProvince || 'ChÆ°a rĂµ'}</span>` 
+                        : `<span class="tag" style="background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.3); font-weight: 500;">â±ï¸ ${r.totalHours.toFixed(1)}h</span>`;
+                    return `<tr>
+                        <td style="text-align: center;"><input type="checkbox" class="chk-rejected-record" value="${r.id}" style="width: 14px; height: 14px; margin: 0; cursor: pointer;" onchange="updateRejectedBulkActionsVisibility()"></td>
+                        <td>${employeeCell}</td>
+                        <td>${teamBadge}</td>
+                        <td><span class="text-date">${formatDate(r.date)}</span></td>
+                        <td><strong>${r.customActivity}</strong></td>
+                        <td>${detail}</td>
+                        <td>${noteDisplay}</td>
+                        <td><div class="action-buttons" style="display: flex; align-items: center; gap: 8px;">
+                            <button class="btn btn-primary btn-xs" onclick="approveRecord('${r.id}')" title="Duyá»‡t láº¡i" style="padding: 4px 8px; font-size: 11px;">
+                                âœ“ Duyá»‡t láº¡i
+                            </button>
+                            <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'admin')" title="XĂ³a" style="padding: 2px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px; color: #ef4444; cursor: pointer;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
+                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                            </button>
+                        </div></td>
+                    </tr>`;
+                }
+            }).join('');
+        }
+
+        // Stats & Badges
+        const approvedAll = filteredRecords.filter(r => r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
+        let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0, totalTrips = 0;
+        approvedAll.forEach(r => {
+            totalLunchOT += r.hasLunchOT ? OT_LUNCH_HOURS : 0;
+            totalEveningOT += r.eveningOTHours;
+            totalHours += r.totalHours;
+            if (r.deliveryProvince && r.deliveryProvince.trim() !== '') {
+                totalTrips++;
+            }
+        });
+
+        const badgePendingRecords = document.getElementById('badge-pending-records');
+        if (badgePendingRecords) {
+            if (pending.length > 0) {
+                badgePendingRecords.textContent = pending.length;
+                badgePendingRecords.style.display = 'inline-block';
+            } else {
+                badgePendingRecords.style.display = 'none';
+            }
+        }
+
+        const badgeSubPending = document.getElementById('badge-sub-pending');
+        if (badgeSubPending) {
+            if (pending.length > 0) {
+                badgeSubPending.textContent = pending.length;
+                badgeSubPending.style.display = 'inline-block';
+            } else {
+                badgeSubPending.style.display = 'none';
+            }
+        }
+
+        const badgeSubRejected = document.getElementById('badge-sub-rejected');
+        if (badgeSubRejected) {
+            if (rejected.length > 0) {
+                badgeSubRejected.textContent = rejected.length;
+                badgeSubRejected.style.display = 'inline-block';
+            } else {
+                badgeSubRejected.style.display = 'none';
+            }
+        }
+
+        document.getElementById('admin-table-summary').innerHTML = `
+            <div class="summary-item"><span class="summary-label">Tá»•ng báº£n ghi:</span><span class="summary-value">${approvedAll.length}</span></div>
+            <div class="summary-item"><span class="summary-label">OT TrÆ°a:</span><span class="summary-value">${totalLunchOT.toFixed(1)}h</span></div>
+            <div class="summary-item"><span class="summary-label">OT Chiá»u:</span><span class="summary-value">${totalEveningOT.toFixed(1)}h</span></div>
+            <div class="summary-item"><span class="summary-label">Tá»•ng OT:</span><span class="summary-value">${totalHours.toFixed(1)}h</span></div>
+            <div class="summary-item"><span class="summary-label">Tá»•ng chuyáº¿n xe:</span><span class="summary-value">${totalTrips}</span></div>`;
+
+        // Setup select-all checkbox event listener and hide bulk bar initially
+        setTimeout(() => {
+            const selectAllPendingChk = document.getElementById('chk-pending-select-all');
+            if (selectAllPendingChk) {
+                selectAllPendingChk.onclick = (e) => {
+                    const chks = document.querySelectorAll('.chk-pending-record');
+                    chks.forEach(chk => chk.checked = e.target.checked);
+                    updatePendingBulkActionsVisibility();
+                };
+            }
+            const pendingBulkBar = document.getElementById('pending-bulk-actions');
+            if (pendingBulkBar) pendingBulkBar.style.display = 'none';
+
+            const selectAllRejectedChk = document.getElementById('chk-rejected-select-all');
+            if (selectAllRejectedChk) {
+                selectAllRejectedChk.onclick = (e) => {
+                    const chks = document.querySelectorAll('.chk-rejected-record');
+                    chks.forEach(chk => chk.checked = e.target.checked);
+                    updateRejectedBulkActionsVisibility();
+                };
+            }
+            const rejectedBulkBar = document.getElementById('rejected-bulk-actions');
+            if (rejectedBulkBar) rejectedBulkBar.style.display = 'none';
+        }, 50);
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+async function refreshAdminUsers() {
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isSuperAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
+        const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin' || currentUser.isSuperAdmin);
+
+        const usersData = await api('/api/users');
+        const users = usersData.users;
+        const currentMonth = getCurrentMonth();
+        const recData = await api(`/api/records?month=${currentMonth}`);
+        const records = recData.records;
+
+        // Filter users
+        const employees = users.filter(u => u.role === 'employee');
+        const managers = users.filter(u => u.role === 'admin');
+
+        // Render employees
+        const tbodyEmp = document.getElementById('admin-users-body');
+        tbodyEmp.innerHTML = employees.map((u, i) => {
+            const userRecords = records.filter(r => r.userId === u.id);
+            const totalOT = userRecords.reduce((sum, r) => sum + r.totalHours, 0);
+
+            // NĂºt reset liĂªn káº¿t thiáº¿t bá»‹
+            let deviceUnlinkBtn = '';
+            if (u.deviceId || u.browserDeviceId) {
+                deviceUnlinkBtn = `
+                    <button class="btn-reset btn-reset-mobile" onclick="showUnlinkOptions('${u.id}', '${u.fullname}', ${!!u.deviceId}, ${!!u.browserDeviceId})" title="Há»§y liĂªn káº¿t thiáº¿t bá»‹" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                            <line x1="12" y1="2" x2="12" y2="12"/>
+                        </svg>
+                        Há»§y liĂªn káº¿t
+                    </button>
+                `;
+            }
+            let browserUnlinkBtn = '';
+            let approveBtn = '';
+            if (u.pendingUnlink) {
+                approveBtn = `
+                    <button class="btn-reset btn-reset-approve" onclick="approveUnlinkDevice('${u.id}', '${u.fullname}')" title="Duyá»‡t yĂªu cáº§u huá»· liĂªn káº¿t" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Duyá»‡t Huá»·
+                    </button>
+                    <button class="btn-reset btn-reset-reject" onclick="rejectUnlinkDevice('${u.id}', '${u.fullname}')" title="Tá»« chá»‘i yĂªu cáº§u huá»· liĂªn káº¿t" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                        Tá»« Chá»‘i
+                    </button>
+                `;
+            }
+
+            const unlinkBadge = u.pendingUnlink ? `
+                <span class="unlink-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approveUnlinkDevice('${u.id}', '${u.fullname}')" title="Báº¥m vĂ o Ä‘Ă¢y Ä‘á»ƒ phĂª duyá»‡t huá»· liĂªn káº¿t thiáº¿t bá»‹">
+                    â ï¸ Xin huá»· liĂªn káº¿t
+                </span>
+            ` : '';
+
+            const passwordResetBadge = u.pendingPasswordReset ? `
+                <span class="password-reset-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approvePasswordReset('${u.id}', '${u.fullname}')" title="Báº¥m vĂ o Ä‘Ă¢y Ä‘á»ƒ cáº¥p láº¡i máº­t kháº©u">
+                    â ï¸ Xin cáº¥p láº¡i MK
+                </span>
+            ` : '';
+
+            return `<tr>
+                <td>${i + 1}</td>
+                <td><strong>${u.fullname}</strong>${unlinkBadge}${passwordResetBadge}</td>
+                <td>${u.username}</td>
+                <td><span style="font-weight:600; color:var(--text-secondary);">${u.team || 'ChÆ°a phĂ¢n team'}</span></td>
+                <td><span class="tag tag-employee">NhĂ¢n viĂªn</span></td>
+                <td><span class="text-purple text-bold">${totalOT.toFixed(1)}h</span></td>
+                <td><div class="action-buttons">
+                    ${approveBtn}
+                    ${deviceUnlinkBtn}
+                    ${browserUnlinkBtn}
+                    ${(!u.team || u.team !== 'admin' || isBelongToAdminTeam || (currentUser && currentUser.id === u.id)) ? `
+                    <button class="btn-icon-only edit" onclick="editUserDialog('${u.id}')" title="Sá»­a" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </button>
+                    ` : ''}
+                    ${(!u.team || u.team !== 'admin' || isBelongToAdminTeam) ? `
+                    <button class="btn-icon-only delete" onclick="deleteUser('${u.id}')" title="XĂ³a">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </button>
+                    ` : ''}
+                </div></td>
+            </tr>`;
+        }).join('') || `<tr class="empty-row">
+            <td colspan="7" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="color: var(--text-muted); opacity: 0.6;">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">KhĂ´ng cĂ³ nhĂ¢n viĂªn</span>
+                    <span style="font-size: 13px; color: var(--text-muted);">Hiá»‡n táº¡i chÆ°a cĂ³ nhĂ¢n viĂªn nĂ o trong danh sĂ¡ch.</span>
+                </div>
+            </td>
+        </tr>`;
+
+        // Render managers (admins)
+        const tbodyMgr = document.getElementById('admin-managers-body');
+        tbodyMgr.innerHTML = managers.map((u, i) => {
+            const passwordResetBadge = u.pendingPasswordReset ? `
+                <span class="password-reset-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approvePasswordReset('${u.id}', '${u.fullname}')" title="Báº¥m vĂ o Ä‘Ă¢y Ä‘á»ƒ cáº¥p láº¡i máº­t kháº©u">
+                    â ï¸ Xin cáº¥p láº¡i MK
+                </span>
+            ` : '';
+
+            return `<tr>
+                <td>${i + 1}</td>
+                <td><strong>${u.fullname}</strong>${passwordResetBadge}</td>
+                <td>${u.username}</td>
+                <td><span style="font-weight:600; color:var(--text-secondary);">${u.team === 'admin' ? 'admin' : (u.team || 'admin')}</span></td>
+                <td><span class="tag tag-admin">Quáº£n lĂ½</span></td>
+                <td><div class="action-buttons">
+                    ${(isSuperAdmin && (currentUser && currentUser.id !== u.id)) ? `
+                    <button class="btn-icon-only edit" onclick="editUserDialog('${u.id}')" title="Sá»­a" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </button>
+                    ` : ''}
+                    ${(isSuperAdmin && !u.isSuperAdmin && u.username !== 'admin') ? `
+                        <button class="btn-icon-only delete" onclick="deleteUser('${u.id}')" title="XĂ³a">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    ` : ''}
+                </div></td>
+            </tr>`;
+        }).join('') || `<tr class="empty-row">
+            <td colspan="6" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="color: var(--text-muted); opacity: 0.6;">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">KhĂ´ng cĂ³ quáº£n lĂ½</span>
+                    <span style="font-size: 13px; color: var(--text-muted);">KhĂ´ng tĂ¬m tháº¥y tĂ i khoáº£n quáº£n lĂ½ nĂ o.</span>
+                </div>
+            </td>
+        </tr>`;
+
+        // Render unassigned employees
+        const tbodyUnassigned = document.getElementById('admin-users-unassigned-body');
+        const unassigned = employees.filter(u => !u.team || u.team === 'unassigned');
+        if (tbodyUnassigned) {
+            tbodyUnassigned.innerHTML = unassigned.map((u, i) => {
+                const userRecords = records.filter(r => r.userId === u.id);
+                const totalOT = userRecords.reduce((sum, r) => sum + r.totalHours, 0);
+
+                let deviceUnlinkBtn = '';
+                if (u.deviceId || u.browserDeviceId) {
+                    deviceUnlinkBtn = `
+                        <button class="btn-reset btn-reset-mobile" onclick="showUnlinkOptions('${u.id}', '${u.fullname}', ${!!u.deviceId}, ${!!u.browserDeviceId})" title="Há»§y liĂªn káº¿t thiáº¿t bá»‹" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+                                <line x1="12" y1="2" x2="12" y2="12"/>
+                            </svg>
+                            Há»§y liĂªn káº¿t
+                        </button>
+                    `;
+                }
+                let browserUnlinkBtn = '';
+                let approveBtn = '';
+                if (u.pendingUnlink) {
+                    approveBtn = `
+                        <button class="btn-reset btn-reset-approve" onclick="approveUnlinkDevice('${u.id}', '${u.fullname}')" title="Duyá»‡t yĂªu cáº§u huá»· liĂªn káº¿t" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Duyá»‡t Huá»·
+                        </button>
+                        <button class="btn-reset btn-reset-reject" onclick="rejectUnlinkDevice('${u.id}', '${u.fullname}')" title="Tá»« chá»‘i yĂªu cáº§u huá»· liĂªn káº¿t" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                            Tá»« Chá»‘i
+                        </button>
+                    `;
+                }
+
+                const unlinkBadge = u.pendingUnlink ? `
+                    <span class="unlink-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approveUnlinkDevice('${u.id}', '${u.fullname}')" title="Báº¥m vĂ o Ä‘Ă¢y Ä‘á»ƒ phĂª duyá»‡t huá»· liĂªn káº¿t thiáº¿t bá»‹">
+                        â ï¸ Xin huá»· liĂªn káº¿t
+                    </span>
+                ` : '';
+
+                const passwordResetBadge = u.pendingPasswordReset ? `
+                    <span class="password-reset-badge" style="display:inline-block; font-size:0.75rem; background:rgba(239, 68, 68, 0.15); color:#ef4444; border:1px solid rgba(239, 68, 68, 0.3); padding:2px 8px; border-radius:12px; font-weight:700; margin-left:8px; animation: blink-red 1.5s infinite; cursor:pointer;" onclick="approvePasswordReset('${u.id}', '${u.fullname}')" title="Báº¥m vĂ o Ä‘Ă¢y Ä‘á»ƒ cáº¥p láº¡i máº­t kháº©u">
+                        â ï¸ Xin cáº¥p láº¡i MK
+                    </span>
+                ` : '';
+
+                return `<tr>
+                    <td>${i + 1}</td>
+                    <td><strong>${u.fullname}</strong>${unlinkBadge}${passwordResetBadge}</td>
+                    <td>${u.username}</td>
+                    <td><span style="font-weight:600; color:var(--text-secondary);">${u.team || 'ChÆ°a phĂ¢n team'}</span></td>
+                    <td><span class="tag tag-employee">NhĂ¢n viĂªn</span></td>
+                    <td><span class="text-purple text-bold">${totalOT.toFixed(1)}h</span></td>
+                    <td><div class="action-buttons">
+                        ${approveBtn}
+                        ${deviceUnlinkBtn}
+                        ${browserUnlinkBtn}
+                        ${(!u.team || u.team !== 'admin' || isBelongToAdminTeam || (currentUser && currentUser.id === u.id)) ? `
+                        <button class="btn-icon-only edit" onclick="editUserDialog('${u.id}')" title="Sá»­a" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        ` : ''}
+                        ${(!u.team || u.team !== 'admin' || isBelongToAdminTeam) ? `
+                        <button class="btn-icon-only delete" onclick="deleteUser('${u.id}')" title="XĂ³a">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                        ` : ''}
+                    </div></td>
+                </tr>`;
+            }).join('') || `<tr class="empty-row">
+                <td colspan="7" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="color: var(--text-muted); opacity: 0.6;">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        <span style="font-size: 15px; font-weight: 600; color: var(--text-secondary);">KhĂ´ng cĂ³ nhĂ¢n viĂªn chÆ°a phĂ¢n team</span>
+                        <span style="font-size: 13px; color: var(--text-muted);">Táº¥t cáº£ nhĂ¢n viĂªn Ä‘Ă£ Ä‘Æ°á»£c phĂ¢n bá»• vĂ o cĂ¡c nhĂ³m lĂ m viá»‡c.</span>
+                    </div>
+                </td>
+            </tr>`;
+        }
+
+        // Show/hide unassigned warning alert
+        const warningAlert = document.getElementById('unassigned-warning-alert');
+        if (warningAlert) {
+            if (unassigned.length > 0) {
+                warningAlert.style.display = 'flex';
+            } else {
+                warningAlert.style.display = 'none';
+            }
+        }
+
+        // Update badge for unassigned sub-tab
+        const badgeUnassigned = document.getElementById('badge-sub-unassigned');
+        if (badgeUnassigned) {
+            if (unassigned.length > 0) {
+                badgeUnassigned.textContent = unassigned.length;
+                badgeUnassigned.style.display = 'inline-block';
+            } else {
+                badgeUnassigned.style.display = 'none';
+            }
+        }
+
+    } catch (e) {}
+}
+
+// SVG Chart Renderers for Report Redesign
+function renderTeamBarChart(teamOTs) {
+    const entries = Object.entries(teamOTs).sort((a, b) => b[1] - a[1]);
+    const totalHours = entries.reduce((sum, e) => sum + e[1], 0);
+    if (entries.length === 0 || totalHours === 0) {
+        return `<div class="chart-empty">ChÆ°a cĂ³ dá»¯ liá»‡u Ä‘á»™i nhĂ³m</div>`;
+    }
+    const maxVal = Math.max(...entries.map(e => e[1])) || 1;
+    const width = 400;
+    const rowHeight = 24;
+    const paddingLeft = 110;
+    const paddingRight = 60;
+    const chartHeight = entries.length * rowHeight + 20;
+    
+    let svgHtml = `<svg width="100%" height="${chartHeight}" viewBox="0 0 ${width} ${chartHeight}" style="font-family: inherit;">`;
+    
+    // Gradients definition
+    svgHtml += `
+        <defs>
+            <linearGradient id="barGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#0dd98b" stop-opacity="0.6"/>
+                <stop offset="100%" stop-color="#0dd98b" stop-opacity="0.95"/>
+            </linearGradient>
+        </defs>`;
+        
+    entries.forEach(([team, val], idx) => {
+        const y = idx * rowHeight + 10;
+        const barMaxWidth = width - paddingLeft - paddingRight;
+        const barWidth = (val / maxVal) * barMaxWidth;
+        const displayTeam = team.length > 14 ? team.substring(0, 12) + '..' : team;
+        
+        // Team label
+        svgHtml += `<text x="${paddingLeft - 10}" y="${y + 15}" fill="var(--text-secondary)" font-size="11" font-weight="500" text-anchor="end">${displayTeam}</text>`;
+        // Background bar track
+        svgHtml += `<rect x="${paddingLeft}" y="${y + 4}" width="${barMaxWidth}" height="12" rx="4" fill="rgba(255,255,255,0.03)" />`;
+        // Value bar
+        svgHtml += `<rect x="${paddingLeft}" y="${y + 4}" width="${barWidth}" height="12" rx="4" fill="url(#barGrad)" />`;
+        // Value text
+        svgHtml += `<text x="${paddingLeft + barWidth + 8}" y="${y + 14}" fill="var(--accent-green)" font-size="11" font-weight="bold">${val.toFixed(1)}h</text>`;
+    });
+    
+    svgHtml += `</svg>`;
+    return svgHtml;
+}
+
+function renderTrendLineChart(dailyOTs, month) {
+    const entries = Object.entries(dailyOTs).sort((a, b) => a[0].localeCompare(b[0]));
+    const values = entries.map(e => e[1]);
+    const maxVal = Math.max(...values) || 1;
+    const width = 480;
+    const height = 120;
+    const paddingLeft = 30;
+    const paddingRight = 15;
+    const paddingTop = 15;
+    const paddingBottom = 22;
+    
+    const chartWidth = width - paddingLeft - paddingRight;
+    const chartHeight = height - paddingTop - paddingBottom;
+    
+    const allZero = values.every(v => v === 0);
+    if (allZero) {
+        return `<div class="chart-empty">ChÆ°a cĂ³ dá»¯ liá»‡u xu hÆ°á»›ng ngĂ y</div>`;
+    }
+    
+    let points = [];
+    entries.forEach(([date, val], idx) => {
+        const x = paddingLeft + (idx / (entries.length - 1)) * chartWidth;
+        const y = paddingTop + chartHeight - (val / maxVal) * chartHeight;
+        points.push(`${x},${y}`);
+    });
+    
+    const pointsStr = points.join(' ');
+    // Area polygon points under the line chart
+    const firstPoint = points[0].split(',');
+    const lastPoint = points[points.length - 1].split(',');
+    const areaPointsStr = `${firstPoint[0]},${paddingTop + chartHeight} ${pointsStr} ${lastPoint[0]},${paddingTop + chartHeight}`;
+    
+    let svgHtml = `<svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" style="font-family: inherit;">`;
+    
+    // Gradients definition
+    svgHtml += `
+        <defs>
+            <linearGradient id="areaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#a855f7" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#a855f7" stop-opacity="0.0"/>
+            </linearGradient>
+            <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#0dd98b"/>
+                <stop offset="50%" stop-color="#a855f7"/>
+                <stop offset="100%" stop-color="#3b82f6"/>
+            </linearGradient>
+        </defs>`;
+        
+    // Horizontal gridlines
+    for (let i = 0; i <= 4; i++) {
+        const y = paddingTop + (i / 4) * chartHeight;
+        const label = (maxVal - (i / 4) * maxVal).toFixed(1) + 'h';
+        svgHtml += `<line x1="${paddingLeft}" y1="${y}" x2="${width - paddingRight}" y2="${y}" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="2,2" />`;
+        svgHtml += `<text x="${paddingLeft - 8}" y="${y + 4}" fill="var(--text-muted)" font-size="9" text-anchor="end">${label}</text>`;
+    }
+    
+    // Area under path
+    svgHtml += `<polygon points="${areaPointsStr}" fill="url(#areaGrad)" />`;
+    
+    // Trend line
+    svgHtml += `<polyline points="${pointsStr}" fill="none" stroke="url(#lineGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />`;
+    
+    // Key days (label start, mid, end days)
+    const labelY = height - 10;
+    svgHtml += `<text x="${paddingLeft}" y="${labelY}" fill="var(--text-muted)" font-size="9" text-anchor="start">NgĂ y 1</text>`;
+    svgHtml += `<text x="${paddingLeft + chartWidth / 2}" y="${labelY}" fill="var(--text-muted)" font-size="9" text-anchor="middle">NgĂ y 15</text>`;
+    svgHtml += `<text x="${width - paddingRight}" y="${labelY}" fill="var(--text-muted)" font-size="9" text-anchor="end">NgĂ y ${entries.length}</text>`;
+    
+    svgHtml += `</svg>`;
+    return svgHtml;
+}
+
+// Expandable Detail Row Handler
+window.toggleReportRow = function(row, userId) {
+    const nextRow = row.nextElementSibling;
+    const isExpanded = row.classList.contains('expanded');
+    
+    // Collapse all other detail rows first to keep layout clean
+    document.querySelectorAll('.report-row.expanded').forEach(r => {
+        if (r !== row) {
+            r.classList.remove('expanded');
+            if (r.nextElementSibling && r.nextElementSibling.classList.contains('detail-row')) {
+                r.nextElementSibling.remove();
+            }
+        }
+    });
+    
+    if (isExpanded) {
+        row.classList.remove('expanded');
+        if (nextRow && nextRow.classList.contains('detail-row')) {
+            nextRow.remove();
+        }
+    } else {
+        row.classList.add('expanded');
+        const month = document.getElementById('report-filter-month').value;
+        
+        api(`/api/records?userId=${userId}&month=${month}`).then(data => {
+            const detailedRecords = data.records;
+            const detailRow = document.createElement('tr');
+            detailRow.className = 'detail-row';
+            
+            let recordsHtml = '';
+            if (detailedRecords.length === 0) {
+                recordsHtml = '<div style="padding: 12px; color: var(--text-muted); text-align: center; font-style: italic;">KhĂ´ng cĂ³ chi tiáº¿t tÄƒng ca cho thĂ¡ng nĂ y.</div>';
+            } else {
+                recordsHtml = `
+                    <div class="report-detail-wrapper" style="padding: 16px 24px; background: rgba(0,0,0,0.18); margin: 6px 12px; border-radius: 8px;">
+                        <h5 style="margin-top: 0; margin-bottom: 12px; color: var(--accent-green); font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Chi tiáº¿t lá»‹ch sá»­ lĂ m thĂªm giá»</h5>
+                        <table class="detail-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left;">
+                                    <th style="color: var(--text-secondary); font-weight: 600;">NgĂ y lĂ m viá»‡c</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">OT TrÆ°a</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">OT Chiá»u/Tá»‘i (Khung giá»)</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">Tuyáº¿n Ä‘Æ°á»ng (Xe tá»‰nh)</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">Tráº¡ng thĂ¡i</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">Ghi chĂº</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${detailedRecords.map(r => {
+                                    const hasLunch = r.hasLunchOT ? '1.0 tiáº¿ng' : '-';
+                                    const eveningH = r.eveningOTHours ? `${r.eveningOTHours.toFixed(1)} tiáº¿ng (${r.otStart} - ${r.otEnd})` : '-';
+                                    const province = r.deliveryProvince || '-';
+                                    const statusText = r.status === 'approved' ? '<span class="tag tag-success">ÄĂ£ duyá»‡t</span>' : (r.status === 'pending' ? '<span class="tag tag-warning">Äang chá»</span>' : '<span class="tag tag-danger">Tá»« chá»‘i</span>');
+                                    const isBackfillText = r.isBackfill ? '<span style="font-size: 9px; padding: 2px 5px; background: rgba(245,158,11,0.15); color: var(--accent-orange); border-radius: 4px; font-weight: 800; margin-left: 6px;">BĂ™</span>' : '';
+                                    return `
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                                            <td><strong>${r.date}</strong>${isBackfillText}</td>
+                                            <td>${hasLunch}</td>
+                                            <td>${eveningH}</td>
+                                            <td><span style="color: var(--text-primary);">${province}</span></td>
+                                            <td>${statusText}</td>
+                                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${r.note || ''}">${r.note || '-'}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+            
+            const cell = document.createElement('td');
+            cell.colSpan = 8;
+            cell.innerHTML = recordsHtml;
+            detailRow.appendChild(cell);
+            
+            row.parentNode.insertBefore(detailRow, row.nextSibling);
+        }).catch(err => {
+            console.error('Error fetching details:', err);
+            showToast('Lá»—i khi táº£i chi tiáº¿t', 'error');
+        });
+    }
+};
+
+async function refreshReport() {
+    const month = document.getElementById('report-filter-month').value;
+    const filterTeam = document.getElementById('report-filter-team') ? document.getElementById('report-filter-team').value : '';
+    const searchVal = document.getElementById('report-search-name') ? document.getElementById('report-search-name').value : '';
+    
+    try {
+        const usersData = await api('/api/users');
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
+        
+        let users = usersData.users.filter(u => u.role === 'employee');
+        
+        if (isAdmin) {
+            if (filterTeam) {
+                users = users.filter(u => {
+                    const userTeam = u.team || '';
+                    if (filterTeam === 'unassigned') {
+                        return userTeam === '' || userTeam === 'unassigned';
+                    }
+                    return userTeam === filterTeam;
+                });
+            }
+        } else {
+            const managerTeam = currentUser ? (currentUser.team || '') : '';
+            users = users.filter(u => u.team && u.team === managerTeam);
+        }
+
+        const recData = await api(`/api/records?month=${month}`);
+        const records = recData.records.filter(r => {
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BĂ™ THĂNG TRÆ¯á»C]') || r.note.includes('[TÄ‚NG THĂNG NĂ€Y]')));
+            return r.status === 'approved' || (!isBackfill && r.status !== 'pending' && r.status !== 'rejected');
+        });
+        
+        // --- 1. Compute Overall Dashboard KPI Stats & Charts (prior to search filtration) ---
+        let totalOTHours = 0;
+        let activeEmployeesSet = new Set();
+        const teamOTs = {};
+        const dailyOTs = {};
+        
+        // Initialize daily trend map
+        const year = parseInt(month.substring(0, 4));
+        const monthVal = parseInt(month.substring(5, 7));
+        const daysInMonth = new Date(year, monthVal, 0).getDate();
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dayStr = `${month}-${String(d).padStart(2, '0')}`;
+            dailyOTs[dayStr] = 0;
+        }
+
+        users.forEach(u => {
+            const ur = records.filter(r => r.userId === u.id);
+            const lunchH = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
+            const eveningH = ur.reduce((s, r) => s + r.eveningOTHours, 0);
+            const totalH = lunchH + eveningH;
+            
+            if (totalH > 0) {
+                totalOTHours += totalH;
+                activeEmployeesSet.add(u.id);
+            }
+            
+            // Team stats
+            const teamName = u.team === 'admin' ? 'admin' : (u.team || 'ChÆ°a phĂ¢n team');
+            teamOTs[teamName] = (teamOTs[teamName] || 0) + totalH;
+        });
+        
+        // Sum daily trend
+        records.forEach(r => {
+            const belongsToMatchingUser = users.some(u => u.id === r.userId);
+            if (belongsToMatchingUser && dailyOTs[r.date] !== undefined) {
+                const lunchH = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
+                const eveningH = r.eveningOTHours || 0;
+                dailyOTs[r.date] += (lunchH + eveningH);
+            }
+        });
+        
+        // Find top team
+        let topTeam = '-';
+        let maxTeamHours = 0;
+        Object.entries(teamOTs).forEach(([team, val]) => {
+            if (val > maxTeamHours) {
+                maxTeamHours = val;
+                topTeam = `${team} (${val.toFixed(1)}h)`;
+            }
+        });
+        
+        // Update DOM KPIs
+        const activeCount = activeEmployeesSet.size;
+        const avgHours = activeCount > 0 ? (totalOTHours / activeCount) : 0;
+        
+        document.getElementById('rep-stat-total-hours').textContent = `${totalOTHours.toFixed(1)}h`;
+        document.getElementById('rep-stat-avg-hours').textContent = `${avgHours.toFixed(1)}h`;
+        document.getElementById('rep-stat-active-users').textContent = activeCount.toString();
+        const topTeamEl = document.getElementById('rep-stat-top-team');
+        topTeamEl.textContent = topTeam;
+        topTeamEl.title = topTeam;
+        
+
+
+        // --- 2. Filter list by search query & Calculate Row Data ---
+        let filteredUsers = [...users];
+        if (searchVal) {
+            const query = searchVal.toLowerCase().trim();
+            filteredUsers = filteredUsers.filter(u => u.fullname.toLowerCase().includes(query) || (u.team && u.team.toLowerCase().includes(query)));
+        }
+        
+        const userReportData = filteredUsers.map(u => {
+            const ur = records.filter(r => r.userId === u.id);
+            const days = ur.length;
+            const lunchH = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
+            const eveningH = ur.reduce((s, r) => s + r.eveningOTHours, 0);
+            const totalH = lunchH + eveningH;
+            return { user: u, days, lunchH, eveningH, totalH };
+        });
+        
+        // --- 3. Sorting ---
+        userReportData.sort((a, b) => {
+            let valA, valB;
+            if (reportSortColumn === 'name') {
+                valA = a.user.fullname.toLowerCase();
+                valB = b.user.fullname.toLowerCase();
+            } else if (reportSortColumn === 'days') {
+                valA = a.days;
+                valB = b.days;
+            } else { // 'total'
+                valA = a.totalH;
+                valB = b.totalH;
+            }
+            
+            if (valA < valB) return reportSortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return reportSortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        // Update Sorting Indicators
+        ['name', 'days', 'total'].forEach(col => {
+            const ind = document.getElementById(`sort-ind-${col}`);
+            if (ind) {
+                ind.className = 'sort-indicator';
+                if (reportSortColumn === col) {
+                    ind.classList.add(reportSortOrder);
+                }
+            }
+        });
+
+        // --- 4. Render Table Body ---
+        const tbody = document.getElementById('report-body');
+        if (userReportData.length === 0) {
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="7">KhĂ´ng tĂ¬m tháº¥y káº¿t quáº£ phĂ¹ há»£p</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = userReportData.map((data, i) => {
+            const { user: u, days, lunchH, eveningH, totalH } = data;
+            const teamName = u.team === 'admin' ? 'admin' : (u.team || 'ChÆ°a phĂ¢n team');
+
+            return `<tr class="report-row" onclick="toggleReportRow(this, '${u.id}')">
+                <td>${i + 1}</td>
+                <td>
+                    <div class="employee-name-cell">
+                        <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        <strong>${u.fullname}</strong>
+                    </div>
+                </td>
+                <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
+                <td style="text-align: center;">${days} ngĂ y</td>
+                <td style="text-align: center;">${lunchH.toFixed(1)}h</td>
+                <td style="text-align: center;">${eveningH.toFixed(1)}h</td>
+                <td style="text-align: center;"><span class="text-purple text-bold" style="font-size: 13px;">${totalH.toFixed(1)}h</span></td>
+            </tr>`;
+        }).join('');
+        
+        // Váº½ biá»ƒu Ä‘á»“ phĂ¢n tĂ­ch trá»±c quan
+        try {
+            renderAnalyticsCharts(teamOTs, dailyOTs);
+        } catch (err) {
+            console.error("Lá»—i váº½ biá»ƒu Ä‘á»“ phĂ¢n tĂ­ch:", err);
+        }
+    } catch (e) {
+        console.error('Lá»—i khi váº½ bĂ¡o cĂ¡o:', e);
+    }
+}
+
+function renderAnalyticsCharts(teamOTs, dailyOTs) {
+    // 1. Váº½ biá»ƒu Ä‘á»“ cá»™t ngang theo Team
+    const teamBarsContainer = document.getElementById('chart-teams-bars');
+    if (teamBarsContainer) {
+        const teamEntries = Object.entries(teamOTs).sort((a, b) => b[1] - a[1]); // Sáº¯p xáº¿p giáº£m dáº§n
+        const maxHours = teamEntries.length > 0 ? Math.max(...teamEntries.map(e => e[1])) : 0;
+        
+        if (teamEntries.length === 0 || maxHours === 0) {
+            teamBarsContainer.innerHTML = '<div style="text-align: center; color: #71717a; padding: 20px 0; font-size: 0.9rem;">KhĂ´ng cĂ³ dá»¯ liá»‡u tÄƒng ca</div>';
+        } else {
+            teamBarsContainer.innerHTML = teamEntries.map(([team, hours]) => {
+                const percent = maxHours > 0 ? (hours / maxHours) * 100 : 0;
+                return `
+                    <div class="chart-team-row">
+                        <span class="chart-team-label" title="${team}">${team}</span>
+                        <div class="chart-team-progress-wrapper">
+                            <div class="chart-team-progress" style="width: ${percent}%;"></div>
+                        </div>
+                        <span class="chart-team-value">${hours.toFixed(1)}h</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
+    // 2. Váº½ biá»ƒu Ä‘á»“ xu hÆ°á»›ng theo ngĂ y cá»§a thĂ¡ng
+    const daysTrendContainer = document.getElementById('chart-days-trend');
+    if (daysTrendContainer) {
+        const dailyEntries = Object.entries(dailyOTs).sort((a, b) => a[0].localeCompare(b[0])); // NgĂ y tÄƒng dáº§n
+        const maxDailyHours = dailyEntries.length > 0 ? Math.max(...dailyEntries.map(e => e[1])) : 0;
+        
+        if (dailyEntries.length === 0 || maxDailyHours === 0) {
+            daysTrendContainer.innerHTML = '<div style="text-align: center; color: #71717a; width: 100%; font-size: 0.9rem;">KhĂ´ng cĂ³ dá»¯ liá»‡u biáº¿n Ä‘á»™ng</div>';
+        } else {
+            daysTrendContainer.innerHTML = dailyEntries.map(([dateStr, hours]) => {
+                const dayNum = parseInt(dateStr.substring(8, 10));
+                const percent = maxDailyHours > 0 ? (hours / maxDailyHours) * 100 : 0;
+                return `
+                    <div class="chart-day-column">
+                        <div class="chart-day-tooltip">NgĂ y ${dayNum}: ${hours.toFixed(1)}h</div>
+                        <div class="chart-day-bar" style="--height: ${percent}%;"></div>
+                        <span class="chart-day-label">${dayNum}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+}
+
+function deleteUser(userId) {
+    showModal('XĂ³a nhĂ¢n viĂªn', 'Báº¡n cĂ³ cháº¯c muá»‘n xĂ³a nhĂ¢n viĂªn nĂ y?<br>Táº¥t cáº£ dá»¯ liá»‡u tÄƒng ca cÅ©ng sáº½ bá»‹ xĂ³a.', [
+        { text: 'Há»§y', class: 'btn-ghost' },
+        { text: 'XĂ³a', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                await api(`/api/users/${userId}`, 'DELETE');
+                await Promise.all([populateUserFilter(), refreshAdminUsers(), refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+                showToast('ÄĂ£ xĂ³a nhĂ¢n viĂªn');
+            } catch (e) { showToast(e.message, 'error'); }
+        }}
+    ]);
+}
+
+function deleteRecord(recordId, source) {
+    showModal('XĂ³a báº£n ghi', 'Báº¡n cĂ³ cháº¯c muá»‘n xĂ³a báº£n ghi tÄƒng ca nĂ y?', [
+        { text: 'Há»§y', class: 'btn-ghost' },
+        { text: 'XĂ³a', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                await api(`/api/records/${recordId}`, 'DELETE');
+                if (source === 'admin') {
+                    await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+                } else {
+                    await refreshEmployeeRecords();
+                }
+                showToast('ÄĂ£ xĂ³a báº£n ghi');
+            } catch (e) { showToast(e.message, 'error'); }
+        }}
+    ]);
+}
+
+async function approveRecord(recordId) {
+    try {
+        await api(`/api/records/${recordId}`, 'PUT', { status: 'approved' });
+        showToast('ÄĂ£ duyá»‡t báº£n ghi tÄƒng ca!');
+        await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function rejectRecord(recordId) {
+    showModal('Tá»« chá»‘i báº£n ghi', 'Báº¡n cĂ³ cháº¯c muá»‘n tá»« chá»‘i báº£n ghi tÄƒng ca nĂ y?', [
+        { text: 'Há»§y', class: 'btn-ghost' },
+        { text: 'Tá»« chá»‘i', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                await api(`/api/records/${recordId}`, 'PUT', { status: 'rejected' });
+                await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+                showToast('ÄĂ£ tá»« chá»‘i báº£n ghi');
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+function updatePendingBulkActionsVisibility() {
+    const chks = document.querySelectorAll('.chk-pending-record');
+    const checkedChks = document.querySelectorAll('.chk-pending-record:checked');
+    const selectAllChk = document.getElementById('chk-pending-select-all');
+    
+    if (selectAllChk) {
+        selectAllChk.checked = chks.length > 0 && chks.length === checkedChks.length;
+    }
+    
+    const bulkBar = document.getElementById('pending-bulk-actions');
+    const countText = document.getElementById('pending-selected-count');
+    
+    if (bulkBar && countText) {
+        if (checkedChks.length > 0) {
+            bulkBar.style.display = 'flex';
+            countText.textContent = `ÄĂ£ chá»n ${checkedChks.length} báº£n ghi`;
+        } else {
+            bulkBar.style.display = 'none';
+        }
+    }
+}
+
+async function bulkApproveRecords() {
+    const checkedChks = document.querySelectorAll('.chk-pending-record:checked');
+    const recordIds = Array.from(checkedChks).map(chk => chk.value);
+    if (recordIds.length === 0) return;
+
+    showModal('Duyá»‡t hĂ ng loáº¡t', `Báº¡n cĂ³ cháº¯c cháº¯n muá»‘n duyá»‡t ${recordIds.length} báº£n ghi Ä‘Ă£ chá»n khĂ´ng?`, [
+        { text: 'Há»§y', class: 'btn-ghost' },
+        { text: 'Duyá»‡t', class: 'btn btn-primary btn-sm', action: async () => {
+            try {
+                showToast(`Äang duyá»‡t ${recordIds.length} báº£n ghi...`, 'info');
+                await Promise.all(recordIds.map(id => api(`/api/records/${id}`, 'PUT', { status: 'approved' })));
+                showToast(`ÄĂ£ duyá»‡t thĂ nh cĂ´ng ${recordIds.length} báº£n ghi!`);
+                await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+async function bulkRejectRecords() {
+    const checkedChks = document.querySelectorAll('.chk-pending-record:checked');
+    const recordIds = Array.from(checkedChks).map(chk => chk.value);
+    if (recordIds.length === 0) return;
+
+    showModal('Tá»« chá»‘i hĂ ng loáº¡t', `Báº¡n cĂ³ cháº¯c cháº¯n muá»‘n tá»« chá»‘i ${recordIds.length} báº£n ghi Ä‘Ă£ chá»n khĂ´ng?`, [
+        { text: 'Há»§y', class: 'btn-ghost' },
+        { text: 'Tá»« chá»‘i', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                showToast(`Äang tá»« chá»‘i ${recordIds.length} báº£n ghi...`, 'info');
+                await Promise.all(recordIds.map(id => api(`/api/records/${id}`, 'PUT', { status: 'rejected' })));
+                showToast(`ÄĂ£ tá»« chá»‘i thĂ nh cĂ´ng ${recordIds.length} báº£n ghi!`);
+                await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+function updateRejectedBulkActionsVisibility() {
+    const chks = document.querySelectorAll('.chk-rejected-record');
+    const checkedChks = document.querySelectorAll('.chk-rejected-record:checked');
+    const selectAllChk = document.getElementById('chk-rejected-select-all');
+    
+    if (selectAllChk) {
+        selectAllChk.checked = chks.length > 0 && chks.length === checkedChks.length;
+    }
+    
+    const bulkBar = document.getElementById('rejected-bulk-actions');
+    const countText = document.getElementById('rejected-selected-count');
+    
+    if (bulkBar && countText) {
+        if (checkedChks.length > 0) {
+            bulkBar.style.display = 'flex';
+            countText.textContent = `ÄĂ£ chá»n ${checkedChks.length} báº£n ghi`;
+        } else {
+            bulkBar.style.display = 'none';
+        }
+    }
+}
+
+async function bulkApproveRejectedRecords() {
+    const checkedChks = document.querySelectorAll('.chk-rejected-record:checked');
+    const recordIds = Array.from(checkedChks).map(chk => chk.value);
+    if (recordIds.length === 0) return;
+
+    showModal('Duyá»‡t láº¡i hĂ ng loáº¡t', `Báº¡n cĂ³ cháº¯c cháº¯n muá»‘n duyá»‡t láº¡i ${recordIds.length} báº£n ghi Ä‘Ă£ chá»n khĂ´ng?`, [
+        { text: 'Há»§y', class: 'btn-ghost' },
+        { text: 'Duyá»‡t láº¡i', class: 'btn btn-primary btn-sm', action: async () => {
+            try {
+                showToast(`Äang duyá»‡t láº¡i ${recordIds.length} báº£n ghi...`, 'info');
+                await Promise.all(recordIds.map(id => api(`/api/records/${id}`, 'PUT', { status: 'approved' })));
+                showToast(`ÄĂ£ duyá»‡t láº¡i thĂ nh cĂ´ng ${recordIds.length} báº£n ghi!`);
+                await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+async function bulkDeleteRejectedRecords() {
+    const checkedChks = document.querySelectorAll('.chk-rejected-record:checked');
+    const recordIds = Array.from(checkedChks).map(chk => chk.value);
+    if (recordIds.length === 0) return;
+
+    showModal('XĂ³a hĂ ng loáº¡t', `Báº¡n cĂ³ cháº¯c cháº¯n muá»‘n xĂ³a vÄ©nh viá»…n ${recordIds.length} báº£n ghi Ä‘Ă£ chá»n khĂ´ng?`, [
+        { text: 'Há»§y', class: 'btn-ghost' },
+        { text: 'XĂ³a', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                showToast(`Äang xĂ³a ${recordIds.length} báº£n ghi...`, 'info');
+                await Promise.all(recordIds.map(id => api(`/api/records/${id}`, 'DELETE')));
+                showToast(`ÄĂ£ xĂ³a thĂ nh cĂ´ng ${recordIds.length} báº£n ghi!`);
+                await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+async function exportExcel() {
+    const month = document.getElementById('report-filter-month').value;
+    const parts = month.split('-');
+    const displayMonth = parts.length === 2 ? `${parts[1]}-${parts[0]}` : month;
+    const filterTeam = document.getElementById('report-filter-team') ? document.getElementById('report-filter-team').value : '';
+    try {
+        const usersData = await api('/api/users');
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
+        
+        let users = usersData.users;
+        
+        if (isAdmin) {
+            // Filter by selected team
+            if (filterTeam) {
+users = users.filter(u => {
+                    const userTeam = u.team || '';
+                    if (filterTeam === 'unassigned') {
+                        return userTeam === '' || userTeam === 'unassigned';
+                    }
+                    return userTeam === filterTeam;
+                });
+            }
+        } else {
+            // Manager: only export reports of their team and themselves
+            const managerTeam = currentUser ? (currentUser.team || '') : '';
+            users = users.filter(u => u.id === currentUser.id || (u.team && u.team === managerTeam));
+        }
+
+        users.sort((a, b) => a.fullname.localeCompare(b.fullname, 'vi'));
+
+        const recData = await api(`/api/records?month=${month}`);
+        const records = recData.records.filter(r => {
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BĂ™ THĂNG TRÆ¯á»C]') || r.note.includes('[TÄ‚NG THĂNG NĂ€Y]')));
+            return r.status === 'approved' || (!isBackfill && r.status !== 'pending' && r.status !== 'rejected');
+        });
+
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const exportTime = `${formatDateFull(now)} lĂºc ${timeStr}`;
+
+        // Khá»Ÿi táº¡o workbook má»›i cá»§a ExcelJS
+        const workbook = new ExcelJS.Workbook();
+        
+        // ------------------ SHEET 1: Tá»”NG Há»¢P ------------------
+        const wsSummary = workbook.addWorksheet('Tá»•ng Há»£p', {
+            views: [{ showGridLines: true }]
+        });
+
+        // 1. TiĂªu Ä‘á» chĂ­nh
+        wsSummary.mergeCells('A1:G1');
+        const title1 = wsSummary.getCell('A1');
+        title1.value = `BĂO CĂO TÄ‚NG CA - THĂNG ${displayMonth}`;
+        title1.font = { name: 'Times New Roman', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+        title1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } }; // Navy Blue Ä‘áº­m
+        title1.alignment = { vertical: 'middle', horizontal: 'center' };
+        wsSummary.getRow(1).height = 40;
+
+        // 2. NgĂ y xuáº¥t bĂ¡o cĂ¡o
+        wsSummary.mergeCells('A2:G2');
+        const subtitle1 = wsSummary.getCell('A2');
+        subtitle1.value = `NgĂ y xuáº¥t bĂ¡o cĂ¡o: ${exportTime}`;
+        subtitle1.font = { name: 'Times New Roman', size: 10, italic: true, color: { argb: 'FF4B5563' } };
+        subtitle1.alignment = { vertical: 'middle', horizontal: 'center' };
+        wsSummary.getRow(2).height = 20;
+
+        // 3. DĂ²ng trá»‘ng
+        wsSummary.getRow(3).height = 15;
+
+        // 4. TiĂªu Ä‘á» báº£ng
+        wsSummary.getCell('A4').value = "I. Báº¢NG Tá»”NG Há»¢P GIá»œ TÄ‚NG CA & CHUYáº¾N ÄI XE";
+        wsSummary.getCell('A4').font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF1F2937' } };
+        wsSummary.getRow(4).height = 22;
+
+        // 5. Headers
+        const headers1 = ["STT", "Há» vĂ  tĂªn", "Team", "MĂ£ nhĂ¢n viĂªn", "Sá»‘ ngĂ y OT", "Tá»•ng OT (giá»)", "Tá»•ng chuyáº¿n xe"];
+        wsSummary.getRow(5).values = headers1;
+        wsSummary.getRow(5).height = 28;
+        wsSummary.getRow(5).font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        
+        for (let col = 1; col <= 7; col++) {
+            const cell = wsSummary.getCell(5, col);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B6CB0' } }; // Medium Navy/Blue
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                left: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                bottom: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                right: { style: 'thin', color: { argb: 'FF9CA3AF' } }
+            };
+        }
+
+        // 6. Dá»¯ liá»‡u nhĂ¢n viĂªn
+        let summaryStartRow = 6;
+        users.forEach((u, i) => {
+            const ur = records.filter(r => r.userId === u.id);
+            const days = ur.length;
+            const lh = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
+            const eh = ur.reduce((s, r) => s + r.eveningOTHours, 0);
+            const trips = ur.filter(r => r.calcMode === 'trip' || (!r.calcMode && r.deliveryProvince && r.deliveryProvince.trim() !== '')).length;
+
+            const rowNum = summaryStartRow + i;
+            const row = wsSummary.getRow(rowNum);
+            row.values = [
+                i + 1,
+                u.fullname,
+                u.team === 'admin' ? 'admin' : (u.team || 'ChÆ°a phĂ¢n team'),
+                u.username,
+                days,
+                lh + eh,
+                trips
+            ];
+            row.height = 22;
+            row.font = { name: 'Times New Roman', size: 10 };
+
+            for (let col = 1; col <= 7; col++) {
+                const cell = row.getCell(col);
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                };
+
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+                if (col === 1 || col === 5 || col === 7) {
+                    cell.numFmt = '0';
+                } else if (col === 6) {
+                    cell.numFmt = '#,##0.0';
+                }
+            }
+        });
+
+        // Thiáº¿t láº­p bá»™ lá»c tá»± Ä‘á»™ng cho Summary Sheet
+        wsSummary.autoFilter = 'A5:G' + (summaryStartRow + users.length - 1);
+
+
+
+        // Äá»™ rá»™ng cá»™t
+        wsSummary.columns = [
+            { width: 8 },   // STT
+            { width: 28 },  // Há» vĂ  tĂªn
+            { width: 18 },  // NhĂ³m
+            { width: 16 },  // MĂ£ nhĂ¢n viĂªn
+            { width: 14 },  // Sá»‘ ngĂ y OT
+            { width: 18 },  // Tá»•ng OT
+            { width: 18 }   // Tá»•ng chuyáº¿n xe
+        ];
+
+        // ------------------ SHEET 2: CHI TIáº¾T ------------------
+        const wsDetail = workbook.addWorksheet('Chi Tiáº¿t', {
+            views: [{ showGridLines: true }]
+        });
+
+        // 1. TiĂªu Ä‘á» chĂ­nh
+        wsDetail.mergeCells('A1:I1');
+        const title2 = wsDetail.getCell('A1');
+        title2.value = `CHI TIáº¾T TÄ‚NG CA - THĂNG ${displayMonth}`;
+        title2.font = { name: 'Times New Roman', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+        title2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } }; // Navy Blue Ä‘áº­m
+        title2.alignment = { vertical: 'middle', horizontal: 'center' };
+        wsDetail.getRow(1).height = 40;
+
+        // 2. NgĂ y xuáº¥t bĂ¡o cĂ¡o
+        wsDetail.mergeCells('A2:I2');
+        const subtitle2 = wsDetail.getCell('A2');
+        subtitle2.value = `NgĂ y xuáº¥t bĂ¡o cĂ¡o: ${exportTime}`;
+        subtitle2.font = { name: 'Times New Roman', size: 10, italic: true, color: { argb: 'FF4B5563' } };
+        subtitle2.alignment = { vertical: 'middle', horizontal: 'center' };
+        wsDetail.getRow(2).height = 20;
+
+        // 3. DĂ²ng trá»‘ng
+        wsDetail.getRow(3).height = 15;
+
+        // 4. TiĂªu Ä‘á» báº£ng
+        wsDetail.getCell('A4').value = "II. Báº¢NG CHI TIáº¾T TÄ‚NG CA Tá»ªNG NGĂ€Y";
+        wsDetail.getCell('A4').font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF1F2937' } };
+        wsDetail.getRow(4).height = 22;
+
+        // 5. Headers
+        const headers2 = ["STT", "NgĂ y", "Há» vĂ  tĂªn", "Team", "MĂ£ nhĂ¢n viĂªn", "Thá»i gian OT", "Tá»•ng OT (giá»)", "Hoáº¡t Ä‘á»™ng / Chuyáº¿n Ä‘i", "Ghi chĂº"];
+        wsDetail.getRow(5).values = headers2;
+        wsDetail.getRow(5).height = 28;
+        wsDetail.getRow(5).font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        
+        for (let col = 1; col <= 9; col++) {
+            const cell = wsDetail.getCell(5, col);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B6CB0' } }; // Medium Navy/Blue
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                left: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                bottom: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                right: { style: 'thin', color: { argb: 'FF9CA3AF' } }
+            };
+        }
+
+        // 6. Äiá»n dá»¯ liá»‡u chi tiáº¿t
+        let currentDetailRow = 6;
+        let detailedIdx = 1;
+        let isFirstUser = true;
+
+        users.forEach(u => {
+            const userRecords = records.filter(r => r.userId === u.id);
+            if (userRecords.length === 0) return;
+            userRecords.sort((a, b) => a.date.localeCompare(b.date));
+
+            // ThĂªm dĂ²ng trá»‘ng ngÄƒn cĂ¡ch giá»¯a cĂ¡c nhĂ¢n viĂªn
+            if (!isFirstUser) {
+                wsDetail.addRow([]);
+                wsDetail.getRow(currentDetailRow).height = 14;
+                for (let col = 1; col <= 9; col++) {
+                    const cell = wsDetail.getCell(currentDetailRow, col);
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } }; // Slate 100
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                    };
+                }
+                currentDetailRow++;
+            }
+            isFirstUser = false;
+
+            userRecords.forEach(r => {
+                let timeRange = 'â€”';
+                if (r.hasLunchOT && r.eveningOTHours > 0) {
+                    timeRange = `12:20-13:20, ${r.otStart}-${r.otEnd}`;
+                } else if (r.hasLunchOT) {
+                    timeRange = '12:20-13:20';
+                } else if (r.eveningOTHours > 0) {
+                    timeRange = `${r.otStart}-${r.otEnd}`;
+                }
+
+                let activityVal = 'â€”';
+                if (r.customActivity) {
+                    if (r.calcMode === 'trip') {
+                        activityVal = `${r.customActivity}${r.deliveryProvince ? ': ' + r.deliveryProvince : ''}`;
+                    } else {
+                        activityVal = r.customActivity;
+                    }
+                } else if (r.deliveryProvince && r.deliveryProvince.trim() !== '') {
+                    activityVal = r.deliveryProvince;
+                }
+
+                const row = wsDetail.getRow(currentDetailRow);
+                row.values = [
+                    detailedIdx++,
+                    formatDate(r.date),
+                    u.fullname,
+                    u.team === 'admin' ? 'admin' : (u.team || 'ChÆ°a phĂ¢n team'),
+                    u.username,
+                    timeRange,
+                    r.totalHours,
+                    activityVal,
+                    r.note || 'â€”'
+                ];
+                row.height = 22;
+                row.font = { name: 'Times New Roman', size: 10 };
+
+                for (let col = 1; col <= 9; col++) {
+                    const cell = row.getCell(col);
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                    };
+
+                    cell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+                    if (col === 1) {
+                        cell.numFmt = '0';
+                    } else if (col === 7) {
+                        cell.numFmt = '#,##0.0';
+                    }
+                }
+                currentDetailRow++;
+            });
+        });
+
+        // 7. Tá»•ng cá»™ng chi tiáº¿t
+        if (detailedIdx > 1) {
+            // Ăp dá»¥ng bá»™ lá»c cho toĂ n bá»™ vĂ¹ng dá»¯ liá»‡u chi tiáº¿t (tá»« dĂ²ng 5 Ä‘áº¿n dĂ²ng cuá»‘i cĂ¹ng trÆ°á»›c dĂ²ng tá»•ng cá»™ng)
+            wsDetail.autoFilter = 'A5:I' + (currentDetailRow - 1);
+        } else {
+            wsDetail.mergeCells(`A${currentDetailRow}:I${currentDetailRow}`);
+            const emptyCell = wsDetail.getCell(`A${currentDetailRow}`);
+            emptyCell.value = "ChÆ°a cĂ³ dá»¯ liá»‡u chi tiáº¿t tÄƒng ca cho thĂ¡ng nĂ y.";
+            emptyCell.alignment = { vertical: 'middle', horizontal: 'center' };
+            wsDetail.getRow(currentDetailRow).height = 30;
+        }
+
+        // Äá»™ rá»™ng cá»™t sheet Chi tiáº¿t
+        wsDetail.columns = [
+            { width: 8 },   // STT
+            { width: 14 },  // NgĂ y
+            { width: 28 },  // Há» vĂ  tĂªn
+            { width: 18 },  // NhĂ³m
+            { width: 16 },  // MĂ£ nhĂ¢n viĂªn
+            { width: 24 },  // Thá»i gian OT
+            { width: 16 },  // Tá»•ng OT (giá»)
+            { width: 20 },  // Äi xe (Tá»‰nh)
+            { width: 35 }   // Ghi chĂº
+        ];
+
+        // 8. LÆ°u file Excel
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bao-cao-tang-ca-chi-tiet-${month}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        showToast('ÄĂ£ xuáº¥t file Excel chi tiáº¿t cĂ³ Ä‘á»‹nh dáº¡ng!');
+    } catch (e) {
+        showToast('Lá»—i xuáº¥t Excel: ' + e.message, 'error');
+        console.error(e);
+    }
+}
+
+async function handleCloseMonth() {
+    const month = document.getElementById('report-filter-month').value;
+    if (!month) {
+        showToast('Vui lĂ²ng chá»n thĂ¡ng cáº§n chá»‘t cĂ´ng!', 'error');
+        return;
+    }
+
+    // BÆ°á»›c 1: YĂªu cáº§u táº£i bĂ¡o cĂ¡o Excel trÆ°á»›c
+    showModal(
+        'XĂ¡c nháº­n Chá»‘t cĂ´ng & KhĂ³a thĂ¡ng',
+        `<p style="font-size: 14px; line-height: 1.6; color: var(--text-primary);">
+            Há»‡ thá»‘ng yĂªu cáº§u báº¡n Ä‘Ă£ xuáº¥t bĂ¡o cĂ¡o Excel lÆ°u trá»¯ vá» mĂ¡y tĂ­nh trÆ°á»›c khi thá»±c hiá»‡n.<br><br>
+            <strong>Báº¡n Ä‘Ă£ táº£i bĂ¡o cĂ¡o Excel thĂ¡ng ${month} vá» chÆ°a?</strong>
+         </p>`,
+        [
+            {
+                text: 'ChÆ°a táº£i (Táº£i ngay)',
+                class: 'btn-ghost',
+                action: async () => {
+                    await exportExcel();
+                }
+            },
+            {
+                text: 'ÄĂ£ táº£i (KhĂ³a thĂ¡ng)',
+                class: 'btn-primary',
+                action: () => {
+                    setTimeout(() => {
+                        // BÆ°á»›c 2: Cáº£nh bĂ¡o vĂ  xĂ¡c nháº­n khĂ³a thĂ¡ng
+                        showModal(
+                            'XĂC NHáº¬N KHĂ“A THĂNG',
+                            `<p style="font-size: 14px; line-height: 1.6; color: var(--text-primary);">
+                                Thao tĂ¡c nĂ y sáº½ **khĂ³a ghi nháº­n tÄƒng ca** cá»§a thĂ¡ng ${month}.<br><br>
+                                Sau khi khĂ³a, nhĂ¢n viĂªn Ä‘Äƒng kĂ½ OT trong thĂ¡ng nĂ y sáº½ pháº£i Ä‘Æ°á»£c **Quáº£n lĂ½ phĂª duyá»‡t** má»›i Ä‘Æ°á»£c tĂ­nh.<br><br>
+                                Báº¡n cĂ³ cháº¯c cháº¯n muá»‘n khĂ³a thĂ¡ng ${month}?
+                             </p>`,
+                            [
+                                {
+                                    text: 'Há»§y bá»',
+                                    class: 'btn-ghost',
+                                    action: null
+                                },
+                                {
+                                    text: 'XĂ¡c nháº­n khĂ³a thĂ¡ng',
+                                    class: 'btn-warning',
+                                    action: async () => {
+                                        try {
+                                            showToast('Äang thá»±c hiá»‡n khĂ³a thĂ¡ng...');
+                                            const res = await api('/api/records/close-month', 'POST', { month });
+                                            showToast('KhĂ³a thĂ¡ng thĂ nh cĂ´ng!');
+                                            await Promise.all([
+                                                refreshAdminRecords(),
+                                                refreshAdminStats(),
+                                                refreshReport()
+                                            ]);
+                                        } catch (err) {
+                                            showToast(err.message, 'error');
+                                        }
+                                    }
+                                }
+                            ]
+                        );
+                    }, 50);
+                }
+            }
+        ]
+    );
+}
+
+async function handleDatabaseCleanup() {
+    const monthInput = document.getElementById('cleanup-month-input');
+    if (!monthInput) return;
+    const month = monthInput.value;
+    if (!month) {
+        showToast('Vui lĂ²ng chá»n thĂ¡ng cáº§n dá»n dáº¹p!', 'error');
+        return;
+    }
+
+    // BÆ°á»›c 1: YĂªu cáº§u táº£i bĂ¡o cĂ¡o Excel trÆ°á»›c
+    showModal(
+        'XĂ¡c nháº­n Chá»‘t cĂ´ng & Dá»n dáº¹p',
+        `<p style="font-size: 14px; line-height: 1.6; color: var(--text-primary);">
+            Há»‡ thá»‘ng yĂªu cáº§u báº¡n Ä‘Ă£ xuáº¥t bĂ¡o cĂ¡o Excel lÆ°u trá»¯ vá» mĂ¡y tĂ­nh trÆ°á»›c khi thá»±c hiá»‡n.<br><br>
+            <strong>Báº¡n Ä‘Ă£ táº£i bĂ¡o cĂ¡o Excel thĂ¡ng ${month} vá» chÆ°a?</strong>
+         </p>`,
+        [
+            {
+                text: 'ChÆ°a táº£i (Táº£i ngay)',
+                class: 'btn-ghost',
+                action: async () => {
+                    const originalFilterVal = document.getElementById('report-filter-month').value;
+                    document.getElementById('report-filter-month').value = month;
+                    await exportExcel();
+                    document.getElementById('report-filter-month').value = originalFilterVal;
+                }
+            },
+            {
+                text: 'ÄĂ£ táº£i (Tiáº¿p tá»¥c dá»n dáº¹p)',
+                class: 'btn-primary',
+                action: () => {
+                    setTimeout(() => {
+                        // BÆ°á»›c 2: Cáº£nh bĂ¡o xĂ³a dá»¯ liá»‡u vÄ©nh viá»…n trĂªn Server
+                        showModal(
+                            'Cáº¢NH BĂO QUAN TRá»ŒNG',
+                            `<p style="font-size: 14px; line-height: 1.6; color: var(--accent-red); font-weight: 600;">
+                                Cáº¢NH BĂO: Táº¥t cáº£ dá»¯ liá»‡u tÄƒng ca cá»§a thĂ¡ng ${month} vĂ  cĂ¡c thĂ¡ng cÅ© hÆ¡n sáº½ bá»‹ xĂ³a sáº¡ch khá»i Server.<br><br>
+                                Há»‡ thá»‘ng sáº½ tá»± Ä‘á»™ng táº¡o file sao lÆ°u trĂªn Server vĂ  GitHub Gist, tuy nhiĂªn dá»¯ liá»‡u hiá»ƒn thá»‹ hiá»‡n táº¡i sáº½ bá»‹ xĂ³a vÄ©nh viá»…n.<br><br>
+                                Thao tĂ¡c nĂ y KHĂ”NG THá»‚ HOĂ€N TĂC! Báº¡n váº«n muá»‘n tiáº¿p tá»¥c?
+                             </p>`,
+                            [
+                                {
+                                    text: 'Há»§y bá»',
+                                    class: 'btn-ghost',
+                                    action: null
+                                },
+                                {
+                                    text: 'XĂ¡c nháº­n xĂ³a dá»¯ liá»‡u',
+                                    class: 'btn-danger',
+                                    action: async () => {
+                                        try {
+                                            showToast('Äang thá»±c hiá»‡n dá»n dáº¹p...');
+                                            const res = await api('/api/records/cleanup', 'POST', { month });
+                                            showToast('Dá»n dáº¹p dá»¯ liá»‡u thĂ nh cĂ´ng!');
+                                            await Promise.all([
+                                                refreshAdminRecords(),
+                                                refreshAdminStats(),
+                                                refreshReport()
+                                            ]);
+                                        } catch (err) {
+                                            showToast(err.message, 'error');
+                                        }
+                                    }
+                                }
+                            ]
+                        );
+                    }, 50);
+                }
+            }
+        ]
+    );
+}
+
+// ==================== EMPLOYEE DASHBOARD ====================
+async function initEmployeeDashboard(user) {
+    const welcomeEl = document.getElementById('emp-welcome');
+    if (welcomeEl) welcomeEl.textContent = `Xin chĂ o, ${user.fullname}`;
+    
+    const empNameEl = document.getElementById('emp-user-fullname');
+    if (empNameEl) empNameEl.textContent = user.fullname;
+    
+    const empAvatarEl = document.getElementById('emp-user-avatar');
+    if (empAvatarEl && user.fullname) {
+        empAvatarEl.textContent = user.fullname.trim().charAt(0).toUpperCase();
+    }
+
+    const dateEl = document.getElementById('emp-date');
+    if (dateEl) dateEl.textContent = formatDateFull(new Date());
+    
+    const todayStr = new Date().toISOString().split('T')[0];
+    document.getElementById('ot-date').value = todayStr;
+    document.getElementById('ot-date').max = todayStr;
+    document.getElementById('emp-filter-month').value = getCurrentMonth();
+    setupEmployeeCustomActivitiesUI();
+    updateOTPreview();
+    await refreshEmployeeRecords();
+}
+
+function updateOTPreview() {
+    const otBackfill = document.getElementById('ot-backfill');
+    const isBackfill = otBackfill ? otBackfill.checked : false;
+    const previewItems = document.getElementById('preview-items');
+    const previewTotal = document.getElementById('preview-total');
+    let items = [];
+    let total = 0;
+
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
+
+    const checkedChk = document.querySelector('.ot-custom-activity-checkbox:checked');
+    if (checkedChk) {
+        customActivity = checkedChk.dataset.actName;
+        calcMode = checkedChk.dataset.actMode;
+        const input = document.querySelector(`.ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+        customDetail = input ? input.value.trim() : '';
+    }
+
+    const hasTrip = calcMode === 'trip' && !!customActivity;
+    const province = customDetail;
+
+    const dateEl = document.getElementById('ot-date');
+    const dateVal = dateEl ? dateEl.value : '';
+    const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
+
+    if (isBackfill) {
+        const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
+        if (hoursVal > 0) {
+            items.push({ label: 'BĂ¹ tÄƒng ca', value: `${hoursVal.toFixed(1)} giá»` });
+            total = hoursVal;
+        }
+    } else if (isSunday) {
+        const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
+        if (hoursVal > 0) {
+            items.push({ label: 'TÄƒng ca Chá»§ Nháº­t', value: `${hoursVal.toFixed(1)} giá»` });
+            total = hoursVal;
+        }
+    } else {
+        const hasLunch = document.getElementById('ot-lunch').checked;
+        const otStart = document.getElementById('ot-start').value;
+        const otEnd = document.getElementById('ot-end').value;
+
+        if (hasLunch) {
+            items.push({ label: 'OT TrÆ°a (12:20 - 13:20)', value: `${OT_LUNCH_HOURS} giá»` });
+            total += OT_LUNCH_HOURS;
+        }
+
+        if (otStart && otEnd) {
+            const eveningHours = calculateEveningOT(otStart, otEnd);
+            if (eveningHours > 0) {
+                items.push({ label: `OT Chiá»u (${otStart} - ${otEnd})`, value: `${eveningHours.toFixed(1)} giá»` });
+                total += eveningHours;
+            }
+        }
+    }
+
+    if (customActivity && calcMode === 'hour') {
+        items.push({ label: 'Hoáº¡t Ä‘á»™ng', value: customActivity });
+    }
+
+    if (hasTrip && province) {
+        items.push({ label: customActivity, value: province });
+    }
+
+    previewItems.innerHTML = items.length === 0
+        ? '<div class="preview-item"><span>ChÆ°a cĂ³ OT nĂ o Ä‘Æ°á»£c chá»n</span></div>'
+        : items.map(i => `<div class="preview-item"><span>${i.label}</span><span class="preview-item-value">${i.value}</span></div>`).join('');
+    previewTotal.textContent = total.toFixed(1);
+
+    // Cáº­p nháº­t tĂ­nh báº¯t buá»™c cá»§a ghi chĂº
+    const noteEl = document.getElementById('ot-note');
+    if (noteEl) {
+        if (hasTrip && total === 0) {
+            noteEl.required = false;
+            noteEl.placeholder = "Máº·c Ä‘á»‹nh: " + customActivity + " " + province;
+        } else {
+            noteEl.required = true;
+            noteEl.placeholder = "LĂ½ do tÄƒng ca, phĂ¢n cĂ´ng cĂ´ng viá»‡c...";
+        }
+    }
+}
+
+function updateAdminOTPreview() {
+    const targetSelf = document.getElementById('admin-ot-target-self');
+    const targetEmp = document.getElementById('admin-ot-target-emp');
+    const userSelect = document.getElementById('admin-ot-user');
+    const otDate = document.getElementById('admin-ot-date');
+    const otBackfill = document.getElementById('admin-ot-backfill');
+    const backfillHours = document.getElementById('admin-ot-backfill-hours');
+    const otLunch = document.getElementById('admin-ot-lunch');
+    const otStart = document.getElementById('admin-ot-start');
+    const otEnd = document.getElementById('admin-ot-end');
+    const otNote = document.getElementById('admin-ot-note');
+
+    // Element bindings
+    const ticketTarget = document.getElementById('preview-ticket-target');
+    const ticketDate = document.getElementById('preview-ticket-date');
+    const ticketLunch = document.getElementById('preview-ticket-lunch');
+    const ticketEvening = document.getElementById('preview-ticket-evening');
+    const ticketTotal = document.getElementById('preview-ticket-total');
+    const ticketNote = document.getElementById('preview-ticket-note');
+
+    if (!ticketTarget) return; // not rendered yet
+
+    // 1. Target
+    if (targetSelf && targetSelf.checked) {
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || '{}');
+        ticketTarget.innerHTML = `<span class="badge badge-admin" style="font-size: 10px;">CĂ¡ nhĂ¢n</span> <strong>${currentUser.fullname || 'Quáº£n lĂ½'}</strong>`;
+    } else if (targetEmp && targetEmp.checked && userSelect) {
+        const selectedText = userSelect.options[userSelect.selectedIndex]?.text || '';
+        ticketTarget.innerHTML = `<span class="badge badge-employee" style="font-size: 10px;">NhĂ¢n viĂªn</span> <strong>${selectedText.replace(/^[^-]+-\s*/, '') || 'ChÆ°a chá»n'}</strong>`;
+    }
+
+    // 2. Date
+    if (otDate && otDate.value) {
+        const d = new Date(otDate.value);
+        if (!isNaN(d.getTime())) {
+            const formatted = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            ticketDate.textContent = formatted;
+        } else {
+            ticketDate.textContent = '-';
+        }
+    } else {
+        ticketDate.textContent = 'ChÆ°a chá»n ngĂ y';
+    }
+
+    // 3. Custom Activity
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
+
+    const checkedChk = document.querySelector('.admin-ot-custom-activity-checkbox:checked');
+    if (checkedChk) {
+        customActivity = checkedChk.dataset.actName;
+        calcMode = checkedChk.dataset.actMode;
+        const input = document.querySelector(`.admin-ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+        customDetail = input ? input.value.trim() : '';
+    }
+
+    const ticketActGroup = document.getElementById('preview-ticket-activity-group');
+    const ticketActLabel = document.getElementById('preview-ticket-activity-label');
+    const ticketActValue = document.getElementById('preview-ticket-activity');
+
+    if (ticketActGroup && ticketActLabel && ticketActValue) {
+        if (customActivity) {
+            ticketActGroup.style.display = 'flex';
+            ticketActLabel.textContent = customActivity;
+            if (calcMode === 'trip') {
+                ticketActValue.textContent = customDetail || 'ChÆ°a nháº­p chi tiáº¿t';
+            } else {
+                ticketActValue.innerHTML = `<span class="preview-active-badge">âœ“ ÄÄƒng kĂ½</span>`;
+            }
+        } else {
+            ticketActGroup.style.display = 'none';
+        }
+    }
+
+    const hasTrip = calcMode === 'trip' && !!customActivity;
+    const province = customDetail;
+
+    // 4. Lunch, Evening and Total Hours
+    let total = 0;
+    const isBackfill = otBackfill && otBackfill.checked;
+    const dateVal = otDate ? otDate.value : '';
+    const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
+
+    if (isBackfill) {
+        const hours = parseFloat(backfillHours?.value) || 0;
+        ticketLunch.textContent = '-';
+        ticketEvening.textContent = `BĂ¹ tÄƒng ca: ${hours.toFixed(1)} giá»`;
+        total = hours;
+    } else if (isSunday) {
+        const hours = parseFloat(backfillHours?.value) || 0;
+        ticketLunch.textContent = '-';
+        ticketEvening.textContent = `TÄƒng ca Chá»§ Nháº­t: ${hours.toFixed(1)} giá»`;
+        total = hours;
+    } else {
+        // Lunch
+        if (otLunch && otLunch.checked) {
+            ticketLunch.innerHTML = `<span class="preview-active-badge">âœ“ ÄÄƒng kĂ½</span> (${OT_LUNCH_HOURS} giá»)`;
+            total += OT_LUNCH_HOURS;
+        } else {
+            ticketLunch.textContent = 'KhĂ´ng Ä‘Äƒng kĂ½';
+        }
+
+        // Evening
+        if (otStart && otEnd && otStart.value && otEnd.value) {
+            const eveningHours = calculateEveningOT(otStart.value, otEnd.value);
+            if (eveningHours > 0) {
+                ticketEvening.innerHTML = `<span class="preview-active-badge">âœ“ ${otStart.value} - ${otEnd.value}</span> (${eveningHours.toFixed(1)} giá»)`;
+                total += eveningHours;
+            } else {
+                ticketEvening.textContent = 'KhĂ´ng Ä‘Äƒng kĂ½';
+            }
+        } else {
+            ticketEvening.textContent = 'KhĂ´ng Ä‘Äƒng kĂ½';
+        }
+    }
+
+    // Total
+    ticketTotal.textContent = `${total.toFixed(1)} giá»`;
+
+    // Cáº­p nháº­t tĂ­nh báº¯t buá»™c cá»§a ghi chĂº cho Admin
+    if (otNote) {
+        if (hasTrip && total === 0) {
+            otNote.required = false;
+            otNote.placeholder = "Máº·c Ä‘á»‹nh: " + customActivity + " " + province;
+        } else {
+            otNote.required = true;
+            otNote.placeholder = "LĂ½ do tÄƒng ca, phĂ¢n cĂ´ng cĂ´ng viá»‡c...";
+        }
+    }
+
+    // Note
+    if (otNote && otNote.value.trim()) {
+        ticketNote.textContent = otNote.value.trim();
+    } else if (hasTrip && total === 0) {
+        ticketNote.textContent = "Máº·c Ä‘á»‹nh: " + customActivity + " " + province;
+    } else {
+        ticketNote.textContent = 'ChÆ°a cĂ³ ghi chĂº...';
+    }
+}
+
+async function handleOTSubmit(e) {
+    e.preventDefault();
+    const user = JSON.parse(localStorage.getItem('ot_current_user'));
+    if (!user) return;
+
+    const date = document.getElementById('ot-date').value;
+    const otBackfill = document.getElementById('ot-backfill');
+    const isBackfill = otBackfill ? otBackfill.checked : false;
+    const hasLunch = isBackfill ? false : document.getElementById('ot-lunch').checked;
+    const otStart = document.getElementById('ot-start').value;
+    const otEnd = document.getElementById('ot-end').value;
+    let note = document.getElementById('ot-note').value.trim();
+    const errorEl = document.getElementById('ot-error');
+    const successEl = document.getElementById('ot-success');
+    errorEl.textContent = '';
+    successEl.textContent = '';
+
+    if (!date) { errorEl.textContent = 'Vui lĂ²ng chá»n ngĂ y!'; return; }
+
+    const todayStr = new Date(Date.now() + 7 * 3600000).toISOString().split('T')[0];
+    const currentMonth = todayStr.substring(0, 7);
+    const selectedMonth = date.substring(0, 7);
+    if (selectedMonth < currentMonth && !isBackfill) {
+        errorEl.textContent = 'Äá»ƒ chá»n ngĂ y thuá»™c thĂ¡ng cÅ©, vui lĂ²ng tĂ­ch chá»n "BĂ¹ tÄƒng ca"!';
+        return;
+    }
+
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
+
+    const checkedChk = document.querySelector('.ot-custom-activity-checkbox:checked');
+    if (checkedChk) {
+        customActivity = checkedChk.dataset.actName;
+        calcMode = checkedChk.dataset.actMode;
+        const input = document.querySelector(`.ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+        customDetail = input ? input.value.trim() : '';
+    }
+
+    const hasTrip = calcMode === 'trip' && !!customActivity;
+    const province = customDetail;
+
+    if (hasTrip && !province) {
+        let detailLabel = 'chi tiáº¿t';
+        const userTeam = user.team || '';
+        const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+        const actObj = teamObj?.customActivities?.find(a => a.name === customActivity);
+        if (actObj && actObj.detailLabel) detailLabel = actObj.detailLabel;
+        errorEl.textContent = `Vui lĂ²ng nháº­p ${detailLabel.toLowerCase()}!`;
+        return;
+    }
+
+    let eveningHours = 0;
+    let totalHours = 0;
+
+    const isSunday = new Date(date + 'T00:00:00').getDay() === 0;
+
+    if (isBackfill || isSunday) {
+        const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
+        if (hoursVal <= 0) { errorEl.textContent = isSunday ? 'Vui lĂ²ng nháº­p sá»‘ giá» tÄƒng ca Chá»§ Nháº­t há»£p lá»‡!' : 'Vui lĂ²ng nháº­p sá»‘ giá» bĂ¹ há»£p lá»‡!'; return; }
+        totalHours = hoursVal;
+        eveningHours = hoursVal;
+        if (isBackfill) {
+            note = '[BĂ™ THĂNG TRÆ¯á»C] ' + note;
+        }
+    } else {
+        eveningHours = calculateEveningOT(otStart, otEnd);
+        const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
+        totalHours = lunchHours + eveningHours;
+        if (totalHours <= 0 && !hasTrip) { errorEl.textContent = 'Vui lĂ²ng chá»n Ă­t nháº¥t má»™t loáº¡i OT hoáº·c hoáº¡t Ä‘á»™ng ngoĂ i giá»!'; return; }
+    }
+
+    if (hasTrip && totalHours === 0 && !note) {
+        note = customActivity + ' ' + province;
+    } else if (!note) {
+        errorEl.textContent = 'Vui lĂ²ng nháº­p ghi chĂº!';
+        return;
+    }
+
+    try {
+        const data = await api('/api/records', 'POST', {
+            userId: user.id, date, hasLunchOT: (isBackfill || isSunday) ? false : hasLunch,
+            otStart: (!(isBackfill || isSunday) && eveningHours > 0) ? otStart : '',
+            otEnd: (!(isBackfill || isSunday) && eveningHours > 0) ? otEnd : '',
+            eveningOTHours: eveningHours, totalHours, note, isBackfill,
+            deliveryProvince: hasTrip ? province : '',
+            customActivity,
+            calcMode,
+            createdMonth: isBackfill ? getCurrentMonth() : date.substring(0, 7)
+        });
+
+        const action = data.updated ? 'ÄĂ£ cáº­p nháº­t' : 'ÄĂ£ lÆ°u';
+        successEl.textContent = `${action} ${totalHours.toFixed(1)} giá» tÄƒng ca!`;
+        showToast(`${action} ${totalHours.toFixed(1)} giá» tÄƒng ca`);
+
+        if (otBackfill) otBackfill.checked = false;
+        const normalInputs = document.getElementById('ot-normal-inputs');
+        const backfillGroup = document.getElementById('ot-backfill-hours-group');
+        if (normalInputs) normalInputs.style.display = 'block';
+        if (backfillGroup) backfillGroup.style.display = 'none';
+        
+        // Restore label and backfill toggle switch display
+        const labelEl = backfillGroup ? backfillGroup.querySelector('label') : null;
+        if (labelEl) labelEl.textContent = 'Sá»‘ giá» tÄƒng ca cáº§n bĂ¹:';
+        const backfillRow = otBackfill ? otBackfill.closest('.checkbox-label') || otBackfill.closest('.switch-label') : null;
+        if (backfillRow) backfillRow.style.display = '';
+        
+        const backfillHoursEl = document.getElementById('ot-backfill-hours');
+        if (backfillHoursEl) backfillHoursEl.value = '';
+
+        document.getElementById('ot-lunch').checked = false;
+        document.getElementById('ot-start').value = '16:30';
+        document.getElementById('ot-end').value = '16:30';
+        document.getElementById('ot-note').value = '';
+        
+        document.querySelectorAll('.ot-custom-activity-checkbox').forEach(chk => {
+            chk.checked = false;
+        });
+        document.querySelectorAll('.ot-custom-activity-detail').forEach(input => {
+            input.value = '';
+        });
+        const otCustomActGroup = document.getElementById('ot-custom-activity-group');
+        if (otCustomActGroup) otCustomActGroup.style.display = 'none';
+
+        updateOTPreview();
+        await refreshEmployeeRecords();
+        setTimeout(() => { successEl.textContent = ''; }, 3000);
+    } catch (err) {
+        errorEl.textContent = err.message;
+    }
+}
+
+async function handleAdminOTSubmit(e) {
+    e.preventDefault();
+    const targetSelf = document.getElementById('admin-ot-target-self');
+    let userId = '';
+    if (targetSelf && targetSelf.checked) {
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        userId = currentUser ? currentUser.id : '';
+    } else {
+        userId = document.getElementById('admin-ot-user').value;
+    }
+    const date = document.getElementById('admin-ot-date').value;
+    const adminOtBackfill = document.getElementById('admin-ot-backfill');
+    const isBackfill = adminOtBackfill ? adminOtBackfill.checked : false;
+    const hasLunch = isBackfill ? false : document.getElementById('admin-ot-lunch').checked;
+    const otStart = document.getElementById('admin-ot-start').value;
+    const otEnd = document.getElementById('admin-ot-end').value;
+    let note = document.getElementById('admin-ot-note').value.trim();
+    const errorEl = document.getElementById('admin-ot-error');
+    const successEl = document.getElementById('admin-ot-success');
+    errorEl.textContent = '';
+    successEl.textContent = '';
+
+    if (!userId) { errorEl.textContent = 'Vui lĂ²ng chá»n nhĂ¢n viĂªn!'; return; }
+    if (!date) { errorEl.textContent = 'Vui lĂ²ng chá»n ngĂ y!'; return; }
+
+    let customActivity = '';
+    let calcMode = '';
+    let customDetail = '';
+
+    const checkedChk = document.querySelector('.admin-ot-custom-activity-checkbox:checked');
+    if (checkedChk) {
+        customActivity = checkedChk.dataset.actName;
+        calcMode = checkedChk.dataset.actMode;
+        const input = document.querySelector(`.admin-ot-custom-activity-detail[data-act-id="${checkedChk.dataset.actId}"]`);
+        customDetail = input ? input.value.trim() : '';
+    }
+
+    const hasTrip = calcMode === 'trip' && !!customActivity;
+    const province = customDetail;
+
+    if (hasTrip && !province) {
+        let detailLabel = 'chi tiáº¿t';
+        if (userId) {
+            const foundUser = loadedUsers.find(u => u.id === userId);
+            const userTeam = foundUser ? (foundUser.team || '') : '';
+            const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+            const actObj = teamObj?.customActivities?.find(a => a.name === customActivity);
+            if (actObj && actObj.detailLabel) detailLabel = actObj.detailLabel;
+        }
+        errorEl.textContent = `Vui lĂ²ng nháº­p ${detailLabel.toLowerCase()}!`;
+        return;
+    }
+
+    let eveningHours = 0;
+    let totalHours = 0;
+
+    const isSunday = new Date(date + 'T00:00:00').getDay() === 0;
+
+    if (isBackfill || isSunday) {
+        const hoursVal = parseFloat(document.getElementById('admin-ot-backfill-hours').value) || 0;
+        if (hoursVal <= 0) { errorEl.textContent = isSunday ? 'Vui lĂ²ng nháº­p sá»‘ giá» tÄƒng ca Chá»§ Nháº­t há»£p lá»‡!' : 'Vui lĂ²ng nháº­p sá»‘ giá» bĂ¹ há»£p lá»‡!'; return; }
+        totalHours = hoursVal;
+        eveningHours = hoursVal;
+        if (isBackfill) {
+            note = '[BĂ™ THĂNG TRÆ¯á»C] ' + note;
+        }
+    } else {
+        eveningHours = calculateEveningOT(otStart, otEnd);
+        const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
+        totalHours = lunchHours + eveningHours;
+        if (totalHours <= 0 && !hasTrip) { errorEl.textContent = 'Vui lĂ²ng chá»n Ă­t nháº¥t má»™t loáº¡i OT hoáº·c hoáº¡t Ä‘á»™ng ngoĂ i giá»!'; return; }
+    }
+
+    if (hasTrip && totalHours === 0 && !note) {
+        note = customActivity + ' ' + province;
+    } else if (!note) {
+        errorEl.textContent = 'Vui lĂ²ng nháº­p ghi chĂº!';
+        return;
+    }
+
+    try {
+        const data = await api('/api/records', 'POST', {
+            userId, date, hasLunchOT: (isBackfill || isSunday) ? false : hasLunch,
+            otStart: (!(isBackfill || isSunday) && eveningHours > 0) ? otStart : '',
+            otEnd: (!(isBackfill || isSunday) && eveningHours > 0) ? otEnd : '',
+            eveningOTHours: eveningHours, totalHours, note, isBackfill,
+            deliveryProvince: hasTrip ? province : '',
+            customActivity,
+            calcMode,
+            createdMonth: isBackfill ? getCurrentMonth() : date.substring(0, 7)
+        });
+
+        const action = data.updated ? 'ÄĂ£ cáº­p nháº­t' : 'ÄĂ£ lÆ°u';
+        successEl.textContent = `${action} ${totalHours.toFixed(1)} giá» tÄƒng ca thĂ nh cĂ´ng!`;
+        showToast(`${action} ${totalHours.toFixed(1)} giá» tÄƒng ca`);
+
+        document.getElementById('admin-ot-user').value = '';
+        if (targetSelf) {
+            targetSelf.checked = true;
+            const event = new Event('change');
+            targetSelf.dispatchEvent(event);
+        }
+        if (adminOtBackfill) adminOtBackfill.checked = false;
+        const normalInputs = document.getElementById('admin-ot-normal-inputs');
+        const backfillGroup = document.getElementById('admin-ot-backfill-hours-group');
+        if (normalInputs) normalInputs.style.display = 'block';
+        if (backfillGroup) backfillGroup.style.display = 'none';
+        
+        // Restore label and backfill toggle switch display
+        const labelEl = backfillGroup ? backfillGroup.querySelector('label') : null;
+        if (labelEl) labelEl.textContent = 'Sá»‘ giá» tÄƒng ca cáº§n bĂ¹';
+        const backfillRow = adminOtBackfill ? adminOtBackfill.closest('.switch-label') || adminOtBackfill.closest('.checkbox-label') : null;
+        if (backfillRow) backfillRow.style.display = '';
+        
+        const backfillHoursEl = document.getElementById('admin-ot-backfill-hours');
+        if (backfillHoursEl) backfillHoursEl.value = '';
+
+        document.getElementById('admin-ot-lunch').checked = false;
+        document.getElementById('admin-ot-start').value = '16:30';
+        document.getElementById('admin-ot-end').value = '16:30';
+        document.getElementById('admin-ot-note').value = '';
+        
+        document.querySelectorAll('.admin-ot-custom-activity-checkbox').forEach(chk => {
+            chk.checked = false;
+        });
+        document.querySelectorAll('.admin-ot-custom-activity-detail').forEach(input => {
+            input.value = '';
+        });
+        const adminOtCustomActGroup = document.getElementById('admin-ot-custom-activity-group');
+        if (adminOtCustomActGroup) adminOtCustomActGroup.style.display = 'none';
+
+        const todayStr2 = new Date().toISOString().split('T')[0];
+        const adminOtDateEl = document.getElementById('admin-ot-date');
+        if (adminOtDateEl) adminOtDateEl.value = todayStr2;
+
+        updateAdminOTPreview();
+        setTimeout(() => { successEl.textContent = ''; }, 3000);
+        await refreshAdminStats();
+        await refreshAdminRecords();
+        await refreshReport();
+    } catch (err) {
+        errorEl.textContent = err.message;
+    }
+}
+ async function refreshEmployeeRecords() {
+    const user = JSON.parse(localStorage.getItem('ot_current_user'));
+    if (!user) return;
+
+    // Check custom activities setup for user's team
+    const userTeam = user.team || '';
+    let hasCustomActivities = false;
+    let empBtnText = '2. Hoáº¡t Ä‘á»™ng khĂ¡c';
+    if (userTeam && userTeam !== 'admin' && typeof TEAMS !== 'undefined') {
+        const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+        if (teamObj && teamObj.customActivities && teamObj.customActivities.length > 0) {
+            hasCustomActivities = true;
+            empBtnText = '2. ' + teamObj.customActivities.map(a => a.name).join(' / ');
+        }
+    }
+
+    const recTypeSelector = document.getElementById('emp-rec-type-selector');
+    const btnEmpRecTypeTrips = document.getElementById('btn-emp-rec-type-trips');
+    if (hasCustomActivities) {
+        if (recTypeSelector) recTypeSelector.style.display = 'flex';
+        if (btnEmpRecTypeTrips) {
+            btnEmpRecTypeTrips.style.display = 'inline-block';
+            btnEmpRecTypeTrips.textContent = empBtnText;
+        }
+    } else {
+        if (recTypeSelector) recTypeSelector.style.display = 'none';
+        currentEmpRecType = 'ot';
+    }
+
+    const month = document.getElementById('emp-filter-month').value;
+    try {
+        const data = await api(`/api/records?userId=${user.id}&month=${month}`);
+        const records = data.records;
+        const tbody = document.getElementById('emp-records-body');
+
+        // Stats calculation (based on all records of this month)
+        let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0;
+        records.forEach(r => {
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BĂ™ THĂNG TRÆ¯á»C]') || r.note.includes('[TÄ‚NG THĂNG NĂ€Y]')));
+            const isApproved = r.status !== 'pending' && r.status !== 'rejected';
+            
+            if (isApproved) {
+                if (!r.customActivity || r.calcMode === 'hour') {
+                    const lh = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
+                    totalLunchOT += lh;
+                    totalEveningOT += isBackfill ? 0 : (r.eveningOTHours || 0);
+                    totalHours += r.totalHours;
+                }
+            }
+        });
+
+        // Apply Record Type Filter
+        let recordsFiltered = [];
+        if (currentEmpRecType === 'ot') {
+            recordsFiltered = records.filter(r => (!r.customActivity || r.customActivity.trim() === '') && (r.totalHours > 0 || r.isBackfill));
+        } else {
+            recordsFiltered = records.filter(r => r.customActivity && r.customActivity.trim() !== '');
+        }
+
+        // Set Table Headers dynamically
+        if (tbody && tbody.previousElementSibling) {
+            if (currentEmpRecType === 'ot') {
+                tbody.previousElementSibling.innerHTML = `<tr>
+                    <th>NgĂ y</th>
+                    <th>OT TrÆ°a</th>
+                    <th>OT Chiá»u</th>
+                    <th>Giá» BÄ</th>
+                    <th>Giá» KT</th>
+                    <th>Tá»•ng (giá»)</th>
+                    <th>Tráº¡ng thĂ¡i</th>
+                    <th>Ghi chĂº</th>
+                    <th>Thao tĂ¡c</th>
+                </tr>`;
+            } else {
+                tbody.previousElementSibling.innerHTML = `<tr>
+                    <th>NgĂ y</th>
+                    <th>Hoáº¡t Ä‘á»™ng</th>
+                    <th>HĂ¬nh thá»©c / Chi tiáº¿t</th>
+                    <th>Tráº¡ng thĂ¡i</th>
+                    <th>Ghi chĂº</th>
+                    <th>Thao tĂ¡c</th>
+                </tr>`;
+            }
+        }
+
+        const totalCustom = records.filter(r => r.customActivity && r.status !== 'rejected').length;
+        const customCardHTML = hasCustomActivities ? `
+            <div class="stat-card stat-card-orange" style="border-left-color: var(--accent-orange);">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">${totalCustom}</span>
+                    <span class="stat-label">Hoáº¡t Ä‘á»™ng khĂ¡c</span>
+                </div>
+            </div>
+        ` : '';
+
+        const statsHtml = `
+            <div class="stat-card stat-card-purple">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">${records.filter(r => !r.customActivity || r.calcMode === 'hour').length}</span>
+                    <span class="stat-label">Sá»‘ ngĂ y OT</span>
+                </div>
+            </div>
+            <div class="stat-card stat-card-orange">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">${totalLunchOT.toFixed(1)}h</span>
+                    <span class="stat-label">OT TrÆ°a</span>
+                </div>
+            </div>
+            <div class="stat-card stat-card-blue">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">${totalEveningOT.toFixed(1)}h</span>
+                    <span class="stat-label">OT Chiá»u</span>
+                </div>
+            </div>
+            <div class="stat-card stat-card-green">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value">${totalHours.toFixed(1)}h</span>
+                    <span class="stat-label">Tá»•ng OT</span>
+                </div>
+            </div>
+            ${customCardHTML}
+        `;
+
+        if (recordsFiltered.length === 0) {
+            const cols = (currentEmpRecType === 'ot') ? 9 : 6;
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}">ChÆ°a cĂ³ dá»¯ liá»‡u ${currentEmpRecType === 'ot' ? 'tÄƒng ca' : 'hoáº¡t Ä‘á»™ng tĂ¹y chá»n'}</td></tr>`;
+            const statsCardsEl = document.getElementById('emp-stats-cards');
+            if (statsCardsEl) {
+                statsCardsEl.innerHTML = statsHtml;
+            }
+            return;
+        }
+
+        tbody.innerHTML = recordsFiltered.map(r => {
+            let badgeClass = 'status-approved';
+            let badgeText = 'ÄĂ£ duyá»‡t';
+            if (r.status === 'pending') {
+                badgeClass = 'status-pending';
+                badgeText = 'Chá» duyá»‡t';
+            } else if (r.status === 'rejected') {
+                badgeClass = 'status-rejected';
+                badgeText = 'Tá»« chá»‘i';
+            }
+
+            if (currentEmpRecType === 'ot') {
+                return `<tr>
+                    <td>${formatDate(r.date)}</td>
+                    <td>${r.hasLunchOT ? '<span class="tag tag-yes">âœ“ CĂ³</span>' : '<span class="tag tag-no">KhĂ´ng</span>'}</td>
+                    <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span style="color:var(--text-muted)">â€”</span>'}</td>
+                    <td>${r.otStart || 'â€”'}</td>
+                    <td>${r.otEnd || 'â€”'}</td>
+                    <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
+                    <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
+                    <td>${r.note || '<span style="color:var(--text-muted)">â€”</span>'}</td>
+                    <td><div class="action-buttons">
+                        <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'employee')" title="Sá»­a" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'employee')" title="XĂ³a">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    </div></td>
+                </tr>`;
+            } else {
+                const detail = r.calcMode === 'trip' 
+                    ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">đŸ ${r.deliveryProvince || 'ChÆ°a rĂµ'}</span>` 
+                    : `<span class="tag" style="background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.3); font-weight: 500;">â±ï¸ ${r.totalHours.toFixed(1)}h</span>`;
+                return `<tr>
+                    <td>${formatDate(r.date)}</td>
+                    <td><strong>${r.customActivity}</strong></td>
+                    <td>${detail}</td>
+                    <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
+                    <td>${r.note || '<span style="color:var(--text-muted)">â€”</span>'}</td>
+                    <td><div class="action-buttons">
+                        <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'employee')" title="Sá»­a" style="margin-right: 4px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        <button class="btn-icon-only delete" onclick="deleteRecord('${r.id}', 'employee')" title="XĂ³a">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2-2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    </div></td>
+                </tr>`;
+            }
+        }).join('');
+
+        const statsCardsEl = document.getElementById('emp-stats-cards');
+        if (statsCardsEl) {
+            statsCardsEl.innerHTML = statsHtml;
+        }
+    } catch (e) {}
+}
+
+// ==================== CLOUD WAKING & SYNC CONFIG ====================
+async function initCloudConfig() {
+    try {
+        if (isGitHubPages) {
+            // Khi cháº¡y trĂªn web (otmanager.id.vn / GitHub Pages), luĂ´n dĂ¹ng API Cloud
+            API_BASE = 'https://api.otmanager.id.vn';
+        } else if (window.OT_CLOUD_URL) {
+            // Chá»‰ Electron má»›i dĂ¹ng URL tá»« server-config.js (localhost)
+            API_BASE = window.OT_CLOUD_URL;
+        } else {
+            API_BASE = 'https://api.otmanager.id.vn';
+        }
+        if (API_BASE.endsWith('/')) {
+            API_BASE = API_BASE.slice(0, -1);
+        }
+        console.log("[Desktop App] API Base trá» tá»›i Cloud:", API_BASE);
+
+        if (isElectron) {
+            // Thá»­ káº¿t ná»‘i nhanh xem server cĂ³ Ä‘ang hoáº¡t Ä‘á»™ng khĂ´ng
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1500); // 1.5s timeout cho ping nhanh
+                const res = await fetch(`${API_BASE}/api/server-info`, { 
+                    method: 'GET', 
+                    mode: 'cors',
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                if (res.ok) {
+                    console.log("[Cloud] Server is already awake. Direct entry.");
+                    initSseConnection();
+                    return;
+                }
+            } catch (e) {
+                console.log("[Cloud] Server seems asleep or network slow, showing wakeup loader.");
+            }
+
+            showCloudWakeupOverlay();
+            await wakeupCloudServer();
+        } else {
+            initSseConnection();
+        }
+    } catch (e) {
+        console.error("Lá»—i cáº¥u hĂ¬nh káº¿t ná»‘i Cloud:", e);
+    }
+}
+
+function showCloudWakeupOverlay() {
+    if (document.getElementById('cloud-wakeup-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'cloud-wakeup-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.backgroundColor = 'rgba(15, 15, 26, 0.95)';
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.zIndex = '99999';
+    overlay.style.color = '#ffffff';
+    overlay.style.fontFamily = 'Inter, sans-serif';
+    overlay.style.transition = 'opacity 0.5s ease';
+
+    overlay.innerHTML = `
+        <div style="text-align: center; max-width: 400px; padding: 20px;">
+            <div style="width: 50px; height: 50px; border: 3px solid rgba(16, 185, 129, 0.2); border-top: 3px solid #10b981; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+            <h3 style="margin-top: 0; color: #10b981; font-size: 1.3rem; margin-bottom: 10px;">Äang káº¿t ná»‘i Ä‘áº¿n há»‡ thá»‘ng...</h3>
+            <p style="font-size: 0.9rem; color: #a1a1aa; line-height: 1.5; margin-bottom: 8px;">Há»‡ thá»‘ng Ä‘ang chuáº©n bá»‹ tĂ i nguyĂªn vĂ  thiáº¿t láº­p Ä‘Æ°á»ng truyá»n báº£o máº­t.</p>
+            <p style="font-size: 0.8rem; color: #71717a; font-style: italic;">Vui lĂ²ng Ä‘á»£i trong giĂ¢y lĂ¡t...</p>
+        </div>
+        <style>
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        </style>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function hideCloudWakeupOverlay() {
+    const overlay = document.getElementById('cloud-wakeup-overlay');
+    if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.remove(), 500);
+    }
+}
+
+async function wakeupCloudServer() {
+    let attempts = 0;
+    const maxAttempts = 30; // Thá»­ tá»‘i Ä‘a 30 láº§n (~60 giĂ¢y)
+    
+    while (attempts < maxAttempts) {
+        try {
+            console.log(`[Cloud] Thá»­ káº¿t ná»‘i Ä‘áº¿n Cloud Server (Láº§n ${attempts + 1})...`);
+            const res = await fetch(`${API_BASE}/api/server-info`, { method: 'GET', mode: 'cors' });
+            if (res.ok) {
+                console.log("[Cloud] Káº¿t ná»‘i thĂ nh cĂ´ng! Server Ä‘Ă£ hoáº¡t Ä‘á»™ng.");
+                hideCloudWakeupOverlay();
+                initSseConnection();
+                return true;
+            }
+        } catch (e) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        attempts++;
+    }
+    
+    const overlay = document.getElementById('cloud-wakeup-overlay');
+    if (overlay) {
+        overlay.innerHTML = `
+            <div style="text-align: center; max-width: 400px; padding: 20px;">
+                <div style="font-size: 3rem; margin-bottom: 20px;">â ï¸</div>
+                <h3 style="margin-top: 0; color: #ef4444; font-size: 1.3rem; margin-bottom: 10px;">Lá»—i Káº¿t Ná»‘i</h3>
+                <p style="font-size: 0.9rem; color: #a1a1aa; line-height: 1.5; margin-bottom: 20px;">KhĂ´ng thá»ƒ káº¿t ná»‘i Ä‘áº¿n Cloud Server. Vui lĂ²ng kiá»ƒm tra láº¡i káº¿t ná»‘i máº¡ng hoáº·c tráº¡ng thĂ¡i dá»‹ch vá»¥ cá»§a Render.</p>
+                <div style="display:flex; gap: 10px; justify-content: center;">
+                    <button onclick="window.location.reload()" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-right: 10px;">Thá»­ láº¡i</button>
+                    <button onclick="document.getElementById('cloud-wakeup-overlay').remove()" style="background: #27272a; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">DĂ¹ng Offline</button>
+                </div>
+            </div>
+        `;
+    }
+    return false;
+}
+
+function compareVersions(v1, v2) {
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+        const p1 = parts1[i] || 0;
+        const p2 = parts2[i] || 0;
+        if (p1 < p2) return -1;
+        if (p1 > p2) return 1;
+    }
+    return 0;
+}
+
+async function checkUpdateManual() {
+    if (!isElectron) return;
+    showToast('Äang kiá»ƒm tra báº£n cáº­p nháº­t...', 'info');
+    try {
+        const cloudUrl = window.OT_CLOUD_URL || API_BASE;
+
+        if (!cloudUrl) {
+            showModal(
+                'Kiá»ƒm tra cáº­p nháº­t',
+                `<p style="color: var(--text-secondary); line-height: 1.6;">
+                    á»¨ng dá»¥ng Ä‘ang hoáº¡t Ä‘á»™ng á»Ÿ cháº¿ Ä‘á»™ Offline (khĂ´ng káº¿t ná»‘i Cloud Server).<br><br>
+                    Äá»ƒ sá»­ dá»¥ng tĂ­nh nÄƒng kiá»ƒm tra cáº­p nháº­t, vui lĂ²ng cáº¥u hĂ¬nh <strong>serverUrl</strong> (Ä‘Æ°á»ng dáº«n Cloud Server Render) trong file <code>config.json</code> á»Ÿ thÆ° má»¥c gá»‘c cá»§a á»©ng dá»¥ng.
+                </p>`,
+                [{ text: 'ÄĂ³ng', class: 'btn-ghost' }]
+            );
+            return;
+        }
+
+        // 2. Láº¥y version hiá»‡n táº¡i cá»§a á»©ng dá»¥ng local
+        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.4.4';
+        const localBuildTime = window.OT_LOCAL_BUILD_TIME || parseInt(localStorage.getItem('ot_app_build_time')) || 0;
+
+        // 3. Láº¥y version má»›i nháº¥t trĂªn Cloud Server
+        const cloudRes = await fetch(`${cloudUrl}/api/version`);
+        const cloudData = await cloudRes.json();
+        const cloudVer = cloudData.version || '1.0.0';
+        const cloudBuildTime = cloudData.buildTime || 0;
+
+        const cmp = compareVersions(localVer, cloudVer);
+        const hasHotfix = cmp === 0 && localBuildTime > 0 && cloudBuildTime > (localBuildTime + 60000); // CĂ³ báº£n vĂ¡ lá»—i má»›i hÆ¡n Ă­t nháº¥t 1 phĂºt
+
+        if (cmp < 0 || hasHotfix) {
+            const checkRes = await fetch(`${cloudUrl}/download/desktop?check=true`);
+            const checkData = await checkRes.json();
+
+            if (checkData.ready) {
+                const title = hasHotfix ? 'CĂ³ báº£n vĂ¡ lá»—i má»›i!' : 'CĂ³ phiĂªn báº£n má»›i!';
+                const bodyText = hasHotfix ?
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        PhĂ¡t hiá»‡n báº£n vĂ¡ lá»—i (hotfix) má»›i cho phiĂªn báº£n hiá»‡n táº¡i:<br>
+                        â€¢ PhiĂªn báº£n: <strong style="color: var(--accent-green-light);">v${localVer}</strong><br>
+                        â€¢ Báº£n vĂ¡ má»›i hÆ¡n báº£n Ä‘ang cĂ i trĂªn mĂ¡y.
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        Báº¡n cĂ³ muá»‘n táº£i vá» vĂ  cáº­p nháº­t báº£n vĂ¡ lá»—i nĂ y ngay khĂ´ng?
+                    </p>` :
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        PhĂ¡t hiá»‡n phiĂªn báº£n má»›i cá»§a á»©ng dá»¥ng trĂªn há»‡ thá»‘ng Cloud:<br>
+                        â€¢ PhiĂªn báº£n hiá»‡n táº¡i: <strong style="color: var(--accent-orange);">v${localVer}</strong><br>
+                        â€¢ PhiĂªn báº£n má»›i nháº¥t: <strong style="color: var(--accent-green-light);">v${cloudVer}</strong>
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        Báº¡n cĂ³ muá»‘n táº£i xuá»‘ng phiĂªn báº£n má»›i nháº¥t ngay trong á»©ng dá»¥ng khĂ´ng?
+                    </p>`;
+
+                showModal(
+                    title,
+                    bodyText,
+                    [
+                        { text: 'Äá»ƒ sau', class: 'btn-ghost' },
+                        { 
+                            text: hasHotfix ? 'VĂ¡ lá»—i ngay' : 'Táº£i vá» ngay', 
+                            class: 'btn btn-primary btn-sm', 
+                            action: async () => {
+                                if (hasHotfix) {
+                                    showToast('Äang táº£i vĂ  Ă¡p dá»¥ng báº£n vĂ¡ nhanh...', 'info');
+                                    try {
+                                        let result;
+                                        if (window.electronAPI && window.electronAPI.applyHotfix) {
+                                            result = await window.electronAPI.applyHotfix(cloudUrl, cloudBuildTime);
+                                        } else {
+                                            const res = await fetch(`${localServerUrl}/api/apply-hotfix`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ cloudUrl, buildTime: cloudBuildTime })
+                                            });
+                                            result = await res.json();
+                                        }
+                                        if (result.success) {
+                                            showToast('ÄĂ£ Ă¡p dá»¥ng báº£n vĂ¡ thĂ nh cĂ´ng! Äang tá»± khá»Ÿi Ä‘á»™ng láº¡i...', 'success');
+                                            setTimeout(() => {
+                                                window.location.reload();
+                                            }, 1500);
+                                        } else {
+                                            throw new Error(result.message || 'Lá»—i khĂ´ng xĂ¡c Ä‘á»‹nh');
+                                        }
+                                    } catch (err) {
+                                        showToast(`Lá»—i khi vĂ¡: ${err.message}. Vui lĂ²ng thá»­ láº¡i sau hoáº·c táº£i báº£n cĂ i Ä‘áº·t má»›i.`, 'error');
+                                    }
+                                } else {
+                                    const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
+                                    try {
+                                        showToast('Äang chuáº©n bá»‹ táº£i báº£n cáº­p nháº­t...', 'info');
+                                        if (window.electronAPI && window.electronAPI.triggerUpdate) {
+                                            window.electronAPI.triggerUpdate(downloadUrl, cloudVer);
+                                            showToast('Báº¯t Ä‘áº§u táº£i xuá»‘ng báº£n cáº­p nháº­t!', 'success');
+                                        } else {
+                                            const res = await fetch(`${localServerUrl}/api/trigger-update`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ downloadUrl, version: cloudVer })
+                                            });
+                                            if (!res.ok) {
+                                                const errData = await res.json().catch(() => ({}));
+                                                throw new Error(errData.message || `HTTP ${res.status}`);
+                                            }
+                                            showToast('Báº¯t Ä‘áº§u táº£i xuá»‘ng báº£n cáº­p nháº­t!', 'success');
+                                        }
+                                    } catch (e) {
+                                        console.error('Lá»—i khi kĂ­ch hoáº¡t cáº­p nháº­t:', e);
+                                        showToast('KhĂ´ng thá»ƒ tá»± Ä‘á»™ng táº£i xuá»‘ng. Äang má»Ÿ trĂ¬nh duyá»‡t Ä‘á»ƒ táº£i...', 'warning');
+                                        window.open(downloadUrl, '_blank');
+                                    }
+                                }
+                            } 
+                        }
+                    ]
+                );
+            } else {
+                showModal(
+                    'Báº£n cáº­p nháº­t chÆ°a sáºµn sĂ ng',
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        PhiĂªn báº£n <strong style="color: var(--accent-green-light);">v${cloudVer}</strong> Ä‘Ă£ Ä‘Æ°á»£c phĂ¡t hĂ nh nhÆ°ng file cĂ i Ä‘áº·t (.exe) chÆ°a sáºµn sĂ ng Ä‘á»ƒ táº£i.<br><br>
+                        â€¢ PhiĂªn báº£n hiá»‡n táº¡i: <strong>v${localVer}</strong>
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        File bá»™ cĂ i Ä‘áº·t (.exe) cĂ³ thá»ƒ chÆ°a Ä‘Æ°á»£c upload lĂªn GitHub Releases. Vui lĂ²ng thá»­ láº¡i sau hoáº·c má»Ÿ GitHub Releases Ä‘á»ƒ kiá»ƒm tra.
+                    </p>`,
+                    [
+                        { text: 'ÄĂ³ng', class: 'btn-ghost' },
+                        { 
+                            text: 'Má»Ÿ GitHub Releases', 
+                            class: 'btn btn-primary btn-sm', 
+                            action: () => {
+                                window.open('https://github.com/hieuto706-max/OT/releases', '_blank');
+                            } 
+                        }
+                    ]
+                );
+            }
+        } else {
+            showModal(
+                'Kiá»ƒm tra cáº­p nháº­t',
+                `<p style="color: var(--accent-green-light); font-weight: 600; font-size: 15px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    âœ“ Báº¡n Ä‘ang dĂ¹ng phiĂªn báº£n má»›i nháº¥t
+                </p>
+                <p style="color: var(--text-secondary); line-height: 1.6;">
+                    â€¢ PhiĂªn báº£n hiá»‡n táº¡i: <strong>v${localVer}</strong><br>
+                    á»¨ng dá»¥ng cá»§a báº¡n hoĂ n toĂ n tÆ°Æ¡ng thĂ­ch vĂ  Ä‘Ă£ Ä‘Æ°á»£c cáº­p nháº­t Ä‘áº§y Ä‘á»§.
+                </p>`,
+                [{ text: 'ÄĂ³ng', class: 'btn-ghost' }]
+            );
+        }
+    } catch (err) {
+        showToast('KhĂ´ng thá»ƒ káº¿t ná»‘i Ä‘áº¿n Cloud Server. MĂ¡y chá»§ Ä‘Ă¡m mĂ¢y cĂ³ thá»ƒ Ä‘ang khá»Ÿi Ä‘á»™ng (máº¥t khoáº£ng 1 phĂºt) hoáº·c táº¡m ngÆ°ng hoáº¡t Ä‘á»™ng. Vui lĂ²ng thá»­ láº¡i sau!', 'error');
+        console.error('Lá»—i check cáº­p nháº­t:', err);
+    }
+}
+
+async function checkUpdateSilent() {
+    if (!isElectron) return;
+    try {
+        const cloudUrl = window.OT_CLOUD_URL || API_BASE;
+        if (!cloudUrl) return;
+
+        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.4.4';
+        const localBuildTime = window.OT_LOCAL_BUILD_TIME || parseInt(localStorage.getItem('ot_app_build_time')) || 0;
+
+        const cloudRes = await fetch(`${cloudUrl}/api/version`);
+        const cloudData = await cloudRes.json();
+        const cloudVer = cloudData.version || '1.0.0';
+        const cloudBuildTime = cloudData.buildTime || 0;
+
+        const cmp = compareVersions(localVer, cloudVer);
+        const hasHotfix = cmp === 0 && localBuildTime > 0 && cloudBuildTime > (localBuildTime + 60000); // CĂ³ báº£n vĂ¡ lá»—i má»›i hÆ¡n Ă­t nháº¥t 1 phĂºt
+
+        if (cmp < 0 || hasHotfix) {
+            const checkRes = await fetch(`${cloudUrl}/download/desktop?check=true`);
+            const checkData = await checkRes.json();
+
+            if (checkData.ready) {
+                const title = hasHotfix ? 'CĂ³ báº£n vĂ¡ lá»—i má»›i!' : 'CĂ³ phiĂªn báº£n má»›i!';
+                const bodyText = hasHotfix ?
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        PhĂ¡t hiá»‡n báº£n vĂ¡ lá»—i (hotfix) má»›i cho phiĂªn báº£n hiá»‡n táº¡i:<br>
+                        â€¢ PhiĂªn báº£n: <strong style="color: var(--accent-green-light);">v${localVer}</strong><br>
+                        â€¢ Báº£n vĂ¡ má»›i hÆ¡n báº£n Ä‘ang cĂ i trĂªn mĂ¡y.
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        Báº¡n cĂ³ muá»‘n táº£i vá» vĂ  cáº­p nháº­t báº£n vĂ¡ lá»—i nĂ y ngay khĂ´ng?
+                    </p>` :
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        PhĂ¡t hiá»‡n phiĂªn báº£n má»›i cá»§a á»©ng dá»¥ng trĂªn há»‡ thá»‘ng Cloud:<br>
+                        â€¢ PhiĂªn báº£n hiá»‡n táº¡i: <strong style="color: var(--accent-orange);">v${localVer}</strong><br>
+                        â€¢ PhiĂªn báº£n má»›i nháº¥t: <strong style="color: var(--accent-green-light);">v${cloudVer}</strong>
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        Báº¡n cĂ³ muá»‘n táº£i xuá»‘ng phiĂªn báº£n má»›i nháº¥t ngay trong á»©ng dá»¥ng khĂ´ng?
+                    </p>`;
+
+                showModal(
+                    title,
+                    bodyText,
+                    [
+                        { text: 'Äá»ƒ sau', class: 'btn-ghost' },
+                        { 
+                            text: hasHotfix ? 'VĂ¡ lá»—i ngay' : 'Táº£i vá» ngay', 
+                            class: 'btn btn-primary btn-sm', 
+                            action: async () => {
+                                if (hasHotfix) {
+                                    showToast('Äang táº£i vĂ  Ă¡p dá»¥ng báº£n vĂ¡ nhanh...', 'info');
+                                    try {
+                                        let result;
+                                        if (window.electronAPI && window.electronAPI.applyHotfix) {
+                                            result = await window.electronAPI.applyHotfix(cloudUrl, cloudBuildTime);
+                                        } else {
+                                            const res = await fetch(`${localServerUrl}/api/apply-hotfix`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ cloudUrl, buildTime: cloudBuildTime })
+                                            });
+                                            result = await res.json();
+                                        }
+                                        if (result.success) {
+                                            showToast('ÄĂ£ Ă¡p dá»¥ng báº£n vĂ¡ thĂ nh cĂ´ng! Äang tá»± khá»Ÿi Ä‘á»™ng láº¡i...', 'success');
+                                            setTimeout(() => {
+                                                window.location.reload();
+                                            }, 1500);
+                                        } else {
+                                            throw new Error(result.message || 'Lá»—i khĂ´ng xĂ¡c Ä‘á»‹nh');
+                                        }
+                                    } catch (err) {
+                                        showToast(`Lá»—i khi vĂ¡: ${err.message}. Vui lĂ²ng thá»­ láº¡i sau hoáº·c táº£i báº£n cĂ i Ä‘áº·t má»›i.`, 'error');
+                                    }
+                                } else {
+                                    const downloadUrl = cloudData.desktopDownloadUrl || `${cloudUrl}/download/desktop`;
+                                    try {
+                                        showToast('Äang chuáº©n bá»‹ táº£i báº£n cáº­p nháº­t...', 'info');
+                                        if (window.electronAPI && window.electronAPI.triggerUpdate) {
+                                            window.electronAPI.triggerUpdate(downloadUrl, cloudVer);
+                                            showToast('Báº¯t Ä‘áº§u táº£i xuá»‘ng báº£n cáº­p nháº­t!', 'success');
+                                        } else {
+                                            const res = await fetch(`${localServerUrl}/api/trigger-update`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ downloadUrl, version: cloudVer })
+                                            });
+                                            if (!res.ok) {
+                                                const errData = await res.json().catch(() => ({}));
+                                                throw new Error(errData.message || `HTTP ${res.status}`);
+                                            }
+                                            showToast('Báº¯t Ä‘áº§u táº£i xuá»‘ng báº£n cáº­p nháº­t!', 'success');
+                                        }
+                                    } catch (e) {
+                                        console.error('Lá»—i khi kĂ­ch hoáº¡t cáº­p nháº­t:', e);
+                                        showToast('KhĂ´ng thá»ƒ tá»± Ä‘á»™ng táº£i xuá»‘ng. Äang má»Ÿ trĂ¬nh duyá»‡t Ä‘á»ƒ táº£i...', 'warning');
+                                        window.open(downloadUrl, '_blank');
+                                    }
+                                }
+                            } 
+                        }
+                    ]
+                );
+            } else {
+                showModal(
+                    'Báº£n cáº­p nháº­t chÆ°a sáºµn sĂ ng',
+                    `<p style="color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                        PhiĂªn báº£n <strong style="color: var(--accent-green-light);">v${cloudVer}</strong> Ä‘Ă£ Ä‘Æ°á»£c phĂ¡t hĂ nh nhÆ°ng file cĂ i Ä‘áº·t (.exe) chÆ°a sáºµn sĂ ng Ä‘á»ƒ táº£i.<br><br>
+                        â€¢ PhiĂªn báº£n hiá»‡n táº¡i: <strong>v${localVer}</strong>
+                    </p>
+                    <p style="color: var(--text-muted); font-size: 13px;">
+                        File bá»™ cĂ i Ä‘áº·t (.exe) cĂ³ thá»ƒ chÆ°a Ä‘Æ°á»£c upload lĂªn GitHub Releases. Vui lĂ²ng thá»­ láº¡i sau hoáº·c má»Ÿ GitHub Releases Ä‘á»ƒ kiá»ƒm tra.
+                    </p>`,
+                    [
+                        { text: 'ÄĂ³ng', class: 'btn-ghost' },
+                        { 
+                            text: 'Má»Ÿ GitHub Releases', 
+                            class: 'btn btn-primary btn-sm', 
+                            action: () => {
+                                window.open('https://github.com/hieuto706-max/OT/releases', '_blank');
+                            } 
+                        }
+                    ]
+                );
+            }
+        }
+    } catch (err) {
+        console.error('Lá»—i check cáº­p nháº­t ngáº§m:', err);
+    }
+}
+
+function handleDateChange() {
+    const otDateEl = document.getElementById('ot-date');
+    if (!otDateEl) return;
+    
+    const dateVal = otDateEl.value;
+    const normalInputs = document.getElementById('ot-normal-inputs');
+    const backfillGroup = document.getElementById('ot-backfill-hours-group');
+    const customActGroup = document.getElementById('ot-custom-activity-group');
+    const backfillCheckbox = document.getElementById('ot-backfill');
+    
+    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+    const userTeam = currentUser ? (currentUser.team || '') : '';
+    const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+    const activities = (teamObj && teamObj.customActivities) ? teamObj.customActivities : [];
+    
+    const labelEl = backfillGroup ? backfillGroup.querySelector('label') : null;
+    
+    if (dateVal) {
+        const isSunday = new Date(dateVal + 'T00:00:00').getDay() === 0;
+        const isBackfill = backfillCheckbox ? backfillCheckbox.checked : false;
+        
+        if (isSunday) {
+            if (normalInputs) normalInputs.style.display = 'none';
+            if (backfillGroup) backfillGroup.style.display = 'block';
+            if (labelEl) labelEl.textContent = 'Sá»‘ giá» tÄƒng ca Chá»§ Nháº­t:';
+            
+            if (activities.length > 0) {
+                if (customActGroup) customActGroup.style.display = 'block';
+            }
+            
+            const backfillRow = backfillCheckbox ? backfillCheckbox.closest('.checkbox-label') || backfillCheckbox.closest('.switch-label') : null;
+            if (backfillRow) backfillRow.style.display = 'none';
+        } else {
+            const backfillRow = backfillCheckbox ? backfillCheckbox.closest('.checkbox-label') || backfillCheckbox.closest('.switch-label') : null;
+            if (backfillRow) backfillRow.style.display = '';
+            if (labelEl) labelEl.textContent = 'Sá»‘ giá» tÄƒng ca cáº§n bĂ¹:';
+            
+            if (isBackfill) {
+                if (normalInputs) normalInputs.style.display = 'none';
+                if (backfillGroup) backfillGroup.style.display = 'block';
+                if (customActGroup) customActGroup.style.display = 'none';
+            } else {
+                if (normalInputs) normalInputs.style.display = 'block';
+                if (backfillGroup) backfillGroup.style.display = 'none';
+                if (activities.length > 0) {
+                    if (customActGroup) customActGroup.style.display = 'block';
+                }
+            }
+        }
+    }
+    updateOTPreview();
+}
+
+function handleAdminDateChange() {
+    const otDateEl = document.getElementById('admin-ot-date');
+    if (!otDateEl) return;
+    
+    const dateVal = otDateEl.value;
+    const normalInputs = document.getElementById('admin-ot-normal-inputs');
+    const backfillGroup = document.getElementById('admin-ot-backfill-hours-group');
+    const customActGroup = document.getElementById('admin-ot-custom-activity-group');
+    const backfillCheckbox = document.getElementById('admin-ot-backfill');
+    
+    let userTeam = '';
+    const targetSelf = document.getElementById('admin-ot-target-self');
+    if (targetSelf && targetSelf.checked) {
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        userTeam = currentUser ? (currentUser.team || '') : '';
+    } else {
+        const userSelect = document.getElementById('admin-ot-user');
+        const userId = userSelect ? userSelect.value : '';
+        const foundUser = loadedUsers.find(u => u.id === userId);
+        userTeam = foundUser ? (foundUser.team || '') : '';
+    }
+    const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+    const activities = (teamObj && teamObj.customActivities) ? teamObj.customActivities : [];
+    
+    const labelEl = backfillGroup ? backfillGroup.querySelector('label') : null;
+    
+    if (dateVal) {
+        const isSunday = new Date(dateVal + 'T00:00:00').getDay() === 0;
+        const isBackfill = backfillCheckbox ? backfillCheckbox.checked : false;
+        
+        if (isSunday) {
+            if (normalInputs) normalInputs.style.display = 'none';
+            if (backfillGroup) backfillGroup.style.display = 'block';
+            if (labelEl) labelEl.textContent = 'Sá»‘ giá» tÄƒng ca Chá»§ Nháº­t';
+            
+            if (activities.length > 0) {
+                if (customActGroup) customActGroup.style.display = 'block';
+            }
+            
+            const backfillRow = backfillCheckbox ? backfillCheckbox.closest('.switch-label') || backfillCheckbox.closest('.checkbox-label') : null;
+            if (backfillRow) backfillRow.style.display = 'none';
+        } else {
+            const backfillRow = backfillCheckbox ? backfillCheckbox.closest('.switch-label') || backfillCheckbox.closest('.checkbox-label') : null;
+            if (backfillRow) backfillRow.style.display = '';
+            if (labelEl) labelEl.textContent = 'Sá»‘ giá» tÄƒng ca cáº§n bĂ¹';
+            
+            if (isBackfill) {
+                if (normalInputs) normalInputs.style.display = 'none';
+                if (backfillGroup) backfillGroup.style.display = 'block';
+                if (customActGroup) customActGroup.style.display = 'none';
+            } else {
+                if (normalInputs) normalInputs.style.display = 'block';
+                if (backfillGroup) backfillGroup.style.display = 'none';
+                if (activities.length > 0) {
+                    if (customActGroup) customActGroup.style.display = 'block';
+                }
+            }
+        }
+    }
+    updateAdminOTPreview();
+}
+
+// ==================== EVENT LISTENERS ====================
+document.addEventListener('DOMContentLoaded', () => {
+    if (!isElectron) {
+        document.body.classList.add('is-web-browser');
+    }
+
+    // Admin record type tab selector click handlers
+    const btnAdminRecTypeOt = document.getElementById('btn-admin-rec-type-ot');
+    const btnAdminRecTypeTrips = document.getElementById('btn-admin-rec-type-trips');
+    if (btnAdminRecTypeOt && btnAdminRecTypeTrips) {
+        btnAdminRecTypeOt.addEventListener('click', () => {
+            currentAdminRecType = 'ot';
+            btnAdminRecTypeOt.classList.remove('btn-ghost');
+            btnAdminRecTypeOt.classList.add('btn-primary');
+            btnAdminRecTypeTrips.classList.remove('btn-primary');
+            btnAdminRecTypeTrips.classList.add('btn-ghost');
+            refreshAdminRecords();
+        });
+        btnAdminRecTypeTrips.addEventListener('click', () => {
+            currentAdminRecType = 'trips';
+            btnAdminRecTypeTrips.classList.remove('btn-ghost');
+            btnAdminRecTypeTrips.classList.add('btn-primary');
+            btnAdminRecTypeOt.classList.remove('btn-primary');
+            btnAdminRecTypeOt.classList.add('btn-ghost');
+            refreshAdminRecords();
+        });
+    }
+
+    // Employee record type tab selector click handlers
+    const btnEmpRecTypeOt = document.getElementById('btn-emp-rec-type-ot');
+    const btnEmpRecTypeTrips = document.getElementById('btn-emp-rec-type-trips');
+    if (btnEmpRecTypeOt && btnEmpRecTypeTrips) {
+        btnEmpRecTypeOt.addEventListener('click', () => {
+            currentEmpRecType = 'ot';
+            btnEmpRecTypeOt.classList.remove('btn-ghost');
+            btnEmpRecTypeOt.classList.add('btn-primary');
+            btnEmpRecTypeTrips.classList.remove('btn-primary');
+            btnEmpRecTypeTrips.classList.add('btn-ghost');
+            refreshEmployeeRecords();
+        });
+        btnEmpRecTypeTrips.addEventListener('click', () => {
+            currentEmpRecType = 'trips';
+            btnEmpRecTypeTrips.classList.remove('btn-ghost');
+            btnEmpRecTypeTrips.classList.add('btn-primary');
+            btnEmpRecTypeOt.classList.remove('btn-primary');
+            btnEmpRecTypeOt.classList.add('btn-ghost');
+            refreshEmployeeRecords();
+        });
+    }
+    const otDateEl = document.getElementById('ot-date');
+    if (otDateEl) {
+        otDateEl.max = new Date().toISOString().split('T')[0];
+        otDateEl.addEventListener('change', handleDateChange);
+        otDateEl.addEventListener('input', handleDateChange);
+    }
+
+    // Populate provinces-datalist
+    const provincesDatalist = document.getElementById('provinces-datalist');
+    if (provincesDatalist) {
+        provincesDatalist.innerHTML = PROVINCES.map(p => `<option value="${p}"></option>`).join('');
+    }
+
+    // Bind change/input listeners for Employee trip fields
+    const otHasTrip = document.getElementById('ot-has-trip');
+    const otProvinceGroup = document.getElementById('ot-province-group');
+    const otProvinceInput = document.getElementById('ot-province');
+    if (otHasTrip) {
+        otHasTrip.addEventListener('change', function() {
+            if (this.checked) {
+                if (otProvinceGroup) otProvinceGroup.style.display = 'block';
+                if (otProvinceInput) otProvinceInput.required = true;
+            } else {
+                if (otProvinceGroup) otProvinceGroup.style.display = 'none';
+                if (otProvinceInput) {
+                    otProvinceInput.required = false;
+                    otProvinceInput.value = '';
+                }
+            }
+            updateOTPreview();
+        });
+    }
+    if (otProvinceInput) {
+        otProvinceInput.addEventListener('input', updateOTPreview);
+        otProvinceInput.addEventListener('change', updateOTPreview);
+    }
+
+    // Bind change/input listeners for Admin trip fields
+    const adminOtHasTrip = document.getElementById('admin-ot-has-trip');
+    const adminOtProvinceGroup = document.getElementById('admin-ot-province-group');
+    const adminOtProvinceInput = document.getElementById('admin-ot-province');
+    if (adminOtHasTrip) {
+        adminOtHasTrip.addEventListener('change', function() {
+            if (this.checked) {
+                if (adminOtProvinceGroup) adminOtProvinceGroup.style.display = 'block';
+                if (adminOtProvinceInput) adminOtProvinceInput.required = true;
+            } else {
+                if (adminOtProvinceGroup) adminOtProvinceGroup.style.display = 'none';
+                if (adminOtProvinceInput) {
+                    adminOtProvinceInput.required = false;
+                    adminOtProvinceInput.value = '';
+                }
+            }
+            updateAdminOTPreview();
+        });
+    }
+    if (adminOtProvinceInput) {
+        adminOtProvinceInput.addEventListener('input', updateAdminOTPreview);
+        adminOtProvinceInput.addEventListener('change', updateAdminOTPreview);
+    }
+
+    // Hide check update button on Web (non-Electron)
+    const btnCheckUpdate = document.getElementById('btn-check-update');
+    if (btnCheckUpdate) {
+        if (!isElectron) {
+            btnCheckUpdate.style.display = 'none';
+        } else {
+            btnCheckUpdate.style.display = 'flex';
+        }
+    }
+
+    if (isElectron) {
+        // Tá»± Ä‘á»™ng kiá»ƒm tra cáº­p nháº­t ngáº§m khi khá»Ÿi Ä‘á»™ng
+        checkUpdateSilent();
+        // Äá»‹nh ká»³ má»—i 30 phĂºt kiá»ƒm tra cáº­p nháº­t má»™t láº§n
+        setInterval(checkUpdateSilent, 30 * 60 * 1000);
+    }
+
+    // Kiá»ƒm tra qua 00h (Ä‘Äƒng nháº­p ngĂ y má»›i)
+    checkMidnightLogout();
+
+    // ThĂªm láº¯ng nghe sá»± kiá»‡n focus cá»­a sá»• Ä‘á»ƒ kiá»ƒm tra qua 00h
+    window.addEventListener('focus', checkMidnightLogout);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            checkMidnightLogout();
+        }
+    });
+
+    // HĂ m khá»Ÿi cháº¡y báº¥t Ä‘á»“ng bá»™ Ä‘á»ƒ cáº¥u hĂ¬nh Cloud, check version vĂ  táº£i dá»¯ liá»‡u dashboard
+    async function runAsyncInit() {
+        // 1. Cáº¥u hĂ¬nh vĂ  Ä‘á»“ng bá»™ hĂ³a Cloud Server trÆ°á»›c khi táº£i trang dashboard
+        await initCloudConfig();
+
+        // 2. Kiá»ƒm tra phiĂªn báº£n vĂ  tráº¡ng thĂ¡i session Ä‘á»ƒ quyáº¿t Ä‘á»‹nh tá»± Ä‘á»™ng Ä‘Äƒng nháº­p
+        try {
+            const versionRes = await fetch(`${localServerUrl}/api/version`);
+            const versionData = await versionRes.json();
+            const currentVersion = versionData.version || '1.0.0';
+
+            const verEl = document.getElementById('login-version');
+            if (verEl) {
+                const valEl = verEl.querySelector('.login-ver-val');
+                if (valEl) {
+                    valEl.textContent = 'v' + currentVersion;
+                } else {
+                    verEl.textContent = 'PhiĂªn báº£n v' + currentVersion;
+                }
+            }
+
+            const storedVersion = localStorage.getItem('ot_app_version');
+            const isSessionActive = sessionStorage.getItem('ot_session_active');
+
+            // Náº¿u lĂ  phiĂªn lĂ m viá»‡c má»›i (app bá»‹ táº¯t hoĂ n toĂ n vĂ  báº­t láº¡i)
+            if (isElectron && !isSessionActive) {
+                // Náº¿u khĂ´ng pháº£i lĂ  cáº­p nháº­t (phiĂªn báº£n cÅ© vĂ  má»›i giá»‘ng nhau)
+                if (storedVersion === currentVersion) {
+                    // Táº¯t app hoĂ n toĂ n vĂ  báº­t láº¡i báº£n cÅ© -> báº¯t Ä‘Äƒng nháº­p láº¡i, dá»n sáº¡ch session cÅ©
+                    localStorage.removeItem('ot_current_user');
+                    localStorage.removeItem('ot_login_date');
+                    localStorage.removeItem('ot_mobile_user');
+                    localStorage.removeItem('ot_login_time');
+                    localStorage.removeItem('ot_auth_token');
+                } else {
+                    // ÄĂ¢y lĂ  cáº­p nháº­t phiĂªn báº£n -> giá»¯ nguyĂªn login, chá»‰ cáº­p nháº­t version lÆ°u trá»¯
+                    localStorage.setItem('ot_app_version', currentVersion);
+                }
+                // ÄĂ¡nh dáº¥u session hiá»‡n táº¡i lĂ  active
+                sessionStorage.setItem('ot_session_active', 'true');
+            } else if (!isElectron) {
+                // TrĂªn web, chá»‰ cáº§n cáº­p nháº­t version lÆ°u trá»¯, khĂ´ng log out
+                localStorage.setItem('ot_app_version', currentVersion);
+            }
+        } catch (e) {
+            console.error('Lá»—i kiá»ƒm tra phiĂªn báº£n:', e);
+            const verEl = document.getElementById('login-version');
+            if (verEl) {
+                const valEl = verEl.querySelector('.login-ver-val');
+                if (valEl) {
+                    valEl.textContent = 'v1.4.4';
+                } else {
+                    verEl.textContent = 'PhiĂªn báº£n v1.4.4';
+                }
+            }
+        }
+
+        // Force logout after 5 AM check
+        const token = localStorage.getItem('ot_auth_token');
+        if (token) {
+            const parts = token.split('.');
+            if (parts.length === 3) {
+                try {
+                    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+                    if (payload.iat) {
+                        const now = new Date();
+                        const today5AM = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 5, 0, 0, 0);
+                        if (now.getTime() < today5AM.getTime()) {
+                            today5AM.setDate(today5AM.getDate() - 1);
+                        }
+                        if ((payload.iat * 1000) < today5AM.getTime()) {
+                            localStorage.removeItem('ot_auth_token');
+                            localStorage.removeItem('ot_current_user');
+                            window.location.reload();
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    localStorage.removeItem('ot_auth_token');
+                    localStorage.removeItem('ot_current_user');
+                    window.location.reload();
+                    return;
+                }
+            }
+        }
+
+        // Táº£i dá»¯ liá»‡u dashboard náº¿u cĂ³ user Ä‘Ă£ Ä‘Äƒng nháº­p (Äá»c láº¡i sau khi Ä‘Ă£ dá»n dáº¹p session má»›i náº¿u cĂ³)
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        if (currentUser && token) {
+            try {
+                if (currentUser.role === 'admin') {
+                    if (!currentUser.email) {
+                        showEmailSetupOverlay(currentUser.username, (verifiedEmail) => {
+                            currentUser.email = verifiedEmail;
+                            localStorage.setItem('ot_current_user', JSON.stringify(currentUser));
+                            localStorage.removeItem('ot_require_email_setup');
+                            initAdminDashboard(currentUser);
+                            showScreen('screen-admin');
+                        });
+                    } else {
+                        await initAdminDashboard(currentUser);
+                        showScreen('screen-admin');
+                    }
+                } else {
+                    await initEmployeeDashboard(currentUser);
+                    showScreen('screen-employee');
+                }
+            } catch (err) {
+                console.error('[Dashboard] Lá»—i khá»Ÿi táº¡o dá»¯ liá»‡u:', err);
+                if (isElectron) {
+                    showScreen('screen-login');
+                } else {
+                    const needsOtPrefix = window.location.hostname.includes('github.io');
+                    const mainPageUrl = needsOtPrefix ? '/OT/index.html' : '/index.html';
+                    window.location.href = mainPageUrl;
+                }
+            }
+        } else {
+            // Náº¿u khĂ´ng cĂ³ session trĂªn báº£n Web, chuyá»ƒn hÆ°á»›ng tháº³ng vá» Landing Page
+            if (!isElectron) {
+                const needsOtPrefix = window.location.hostname.includes('github.io');
+                const mainPageUrl = needsOtPrefix ? '/OT/index.html' : '/index.html';
+                window.location.href = mainPageUrl;
+            }
+        }
+
+        // Káº¿t ná»‘i SSE Ä‘á»ƒ nháº­n sá»± kiá»‡n thá»i gian thá»±c
+        initSseConnection();
+    }
+
+    // Cháº¡y cĂ¡c tĂ¡c vá»¥ Cloud & Data ngáº§m khĂ´ng lĂ m block giao diá»‡n Ä‘Äƒng nháº­p
+    runAsyncInit();
+
+    // Click events for stat cards
+    const cardPendingOt = document.getElementById('stat-card-pending-ot');
+    if (cardPendingOt) {
+        cardPendingOt.addEventListener('click', () => {
+            const recordsTab = document.querySelector('.admin-tab[data-admin-tab="records"]');
+            if (recordsTab) recordsTab.click();
+            const pendingSubTab = document.querySelector('.sub-tab[data-subtab="subtab-content-records-pending"]');
+            if (pendingSubTab) pendingSubTab.click();
+        });
+    }
+
+    const cardPendingUnlinks = document.getElementById('stat-card-pending-unlinks');
+    if (cardPendingUnlinks) {
+        cardPendingUnlinks.addEventListener('click', () => {
+            const usersTab = document.querySelector('.admin-tab[data-admin-tab="users"]');
+            if (usersTab) usersTab.click();
+            const employeesSubTab = document.querySelector('.sub-tab[data-subtab="subtab-content-employees"]');
+            if (employeesSubTab) employeesSubTab.click();
+        });
+    }
+
+    // Login tabs (NhĂ¢n viĂªn / Quáº£n lĂ½)
+    const tabEmployeeBtn = document.getElementById('btn-tab-employee');
+    const tabAdminBtn = document.getElementById('btn-tab-admin');
+    const formLoginEmployee = document.getElementById('form-login-employee');
+    const formLoginAdmin = document.getElementById('form-login-admin');
+
+    if (tabEmployeeBtn && tabAdminBtn && formLoginEmployee && formLoginAdmin) {
+        tabEmployeeBtn.addEventListener('click', () => {
+            tabEmployeeBtn.classList.add('active');
+            tabAdminBtn.classList.remove('active');
+            formLoginEmployee.classList.add('active');
+            formLoginAdmin.classList.remove('active');
+            formLoginEmployee.style.display = 'block';
+            formLoginAdmin.style.display = 'none';
+            const errorEl = document.getElementById('login-error-emp');
+            if (errorEl) errorEl.textContent = '';
+        });
+
+        tabAdminBtn.addEventListener('click', () => {
+            tabAdminBtn.classList.add('active');
+            tabEmployeeBtn.classList.remove('active');
+            formLoginAdmin.classList.add('active');
+            formLoginEmployee.classList.remove('active');
+            formLoginAdmin.style.display = 'block';
+            formLoginEmployee.style.display = 'none';
+            const errorEl = document.getElementById('login-error-admin');
+            if (errorEl) errorEl.textContent = '';
+        });
+    }
+
+    // Admin tabs
+    document.querySelectorAll('.admin-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(`admin-tab-${tab.dataset.adminTab}`).classList.add('active');
+            
+            // Cáº­p nháº­t tiĂªu Ä‘á» header Ä‘á»™ng
+            const headerTitleEl = document.getElementById('admin-header-title');
+            if (headerTitleEl) {
+                const spanText = tab.querySelector('span');
+                if (spanText) {
+                    headerTitleEl.textContent = spanText.textContent;
+                }
+            }
+        });
+    });
+
+    // Employee tabs
+    document.querySelectorAll('.emp-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.emp-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.emp-tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            const targetContent = document.getElementById(`emp-tab-${tab.dataset.empTab}`);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+            
+            // Cáº­p nháº­t tiĂªu Ä‘á» header Ä‘á»™ng
+            const headerTitleEl = document.getElementById('emp-header-title');
+            if (headerTitleEl) {
+                const spanText = tab.querySelector('span');
+                if (spanText) {
+                    headerTitleEl.textContent = spanText.textContent;
+                }
+            }
+        });
+    });
+
+    // User sub-tabs
+    document.querySelectorAll('.sub-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const parent = tab.closest('.panel');
+            parent.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+            parent.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
+            
+            tab.classList.add('active');
+            const target = tab.dataset.subtab;
+            parent.querySelector(`#subtab-content-${target}`).classList.add('active');
+        });
+    });
+
+    // Show/hide password toggle
+    const btnTogglePassword = document.getElementById('btn-toggle-password');
+    const inputPassword = document.getElementById('login-password');
+    if (btnTogglePassword && inputPassword) {
+        btnTogglePassword.addEventListener('click', () => {
+            const isPassword = inputPassword.getAttribute('type') === 'password';
+            inputPassword.setAttribute('type', isPassword ? 'text' : 'password');
+            btnTogglePassword.innerHTML = isPassword 
+                ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                   </svg>`
+                : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                   </svg>`;
+        });
+    }
+
+    // Forms
+    const formEmp = document.getElementById('form-login-employee');
+    if (formEmp) formEmp.addEventListener('submit', handleEmployeeLogin);
+
+    const formAdm = document.getElementById('form-login-admin');
+    if (formAdm) formAdm.addEventListener('submit', handleAdminLogin);
+    document.getElementById('form-ot').addEventListener('submit', handleOTSubmit);
+
+    // Admin Add OT form
+    const adminFormOt = document.getElementById('admin-form-ot');
+    if (adminFormOt) {
+        adminFormOt.addEventListener('submit', handleAdminOTSubmit);
+        const adminOtStart = document.getElementById('admin-ot-start');
+        if (adminOtStart) {
+            const syncAdminOtEnd = () => {
+                const startVal = adminOtStart.value;
+                const endVal = document.getElementById('admin-ot-end').value;
+                if (startVal && endVal) {
+                    const s = timeToMinutes(startVal);
+                    const e = timeToMinutes(endVal);
+                    if (e <= s) {
+                        document.getElementById('admin-ot-end').value = startVal;
+                    }
+                }
+            };
+            adminOtStart.addEventListener('change', syncAdminOtEnd);
+            adminOtStart.addEventListener('input', syncAdminOtEnd);
+        }
+        const adminOtBackfill = document.getElementById('admin-ot-backfill');
+        if (adminOtBackfill) {
+            adminOtBackfill.addEventListener('change', function() {
+                const normalInputs = document.getElementById('admin-ot-normal-inputs');
+                const backfillGroup = document.getElementById('admin-ot-backfill-hours-group');
+                const customActGroup = document.getElementById('admin-ot-custom-activity-group');
+                if (this.checked) {
+                    if (normalInputs) normalInputs.style.display = 'none';
+                    if (backfillGroup) backfillGroup.style.display = 'block';
+                    if (customActGroup) customActGroup.style.display = 'none';
+                    const lunchEl = document.getElementById('admin-ot-lunch');
+                    if (lunchEl) lunchEl.checked = false;
+                    const startEl = document.getElementById('admin-ot-start');
+                    if (startEl) startEl.value = '16:30';
+                    const endEl = document.getElementById('admin-ot-end');
+                    if (endEl) endEl.value = '16:30';
+                } else {
+                    if (normalInputs) normalInputs.style.display = 'block';
+                    if (backfillGroup) backfillGroup.style.display = 'none';
+                    const targetSelf = document.getElementById('admin-ot-target-self');
+                    let userId = '';
+                    if (targetSelf && !targetSelf.checked) {
+                        userId = document.getElementById('admin-ot-user').value;
+                    }
+                    setupAdminCustomActivitiesUI(userId);
+                }
+            });
+        }
+        const adminOtTargetSelf = document.getElementById('admin-ot-target-self');
+        const adminOtTargetEmp = document.getElementById('admin-ot-target-emp');
+        if (adminOtTargetSelf && adminOtTargetEmp) {
+            const userGroup = document.getElementById('admin-ot-user-group');
+            const userSelect = document.getElementById('admin-ot-user');
+            adminOtTargetSelf.addEventListener('change', function() {
+                if (this.checked) {
+                    if (userGroup) userGroup.style.display = 'none';
+                    if (userSelect) {
+                        userSelect.required = false;
+                        userSelect.value = '';
+                    }
+                    setupAdminCustomActivitiesUI('');
+                }
+            });
+            adminOtTargetEmp.addEventListener('change', function() {
+                if (this.checked) {
+                    if (userGroup) userGroup.style.display = 'block';
+                    if (userSelect) {
+                        userSelect.required = true;
+                    }
+                    setupAdminCustomActivitiesUI(userSelect.value);
+                }
+            });
+            if (userSelect) {
+                userSelect.addEventListener('change', function() {
+                    setupAdminCustomActivitiesUI(this.value);
+                });
+            }
+        }
+
+        // Live preview listeners
+        const previewTriggerEls = [
+            'admin-ot-target-self', 'admin-ot-target-emp', 'admin-ot-user',
+            'admin-ot-date', 'admin-ot-backfill', 'admin-ot-backfill-hours',
+            'admin-ot-lunch', 'admin-ot-start', 'admin-ot-end', 'admin-ot-note'
+        ];
+        previewTriggerEls.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', updateAdminOTPreview);
+                el.addEventListener('input', updateAdminOTPreview);
+            }
+        });
+        const adminOtDateEl = document.getElementById('admin-ot-date');
+        if (adminOtDateEl) {
+            adminOtDateEl.addEventListener('change', handleAdminDateChange);
+            adminOtDateEl.addEventListener('input', handleAdminDateChange);
+        }
+        
+        // Initial preview render call
+        setTimeout(updateAdminOTPreview, 100);
+    }
+
+    // Logout
+    document.getElementById('btn-logout-admin').addEventListener('click', logout);
+    document.getElementById('btn-logout-emp').addEventListener('click', logout);
+
+    // Update Check
+    if (btnCheckUpdate) {
+        btnCheckUpdate.addEventListener('click', checkUpdateManual);
+    }
+
+    // OT Preview
+    document.getElementById('ot-lunch').addEventListener('change', updateOTPreview);
+    document.getElementById('ot-lunch').addEventListener('input', updateOTPreview);
+    document.getElementById('ot-start').addEventListener('change', updateOTPreview);
+    document.getElementById('ot-start').addEventListener('input', updateOTPreview);
+    document.getElementById('ot-end').addEventListener('change', updateOTPreview);
+    document.getElementById('ot-end').addEventListener('input', updateOTPreview);
+
+    const syncOtEnd = () => {
+        const startVal = document.getElementById('ot-start').value;
+        const endVal = document.getElementById('ot-end').value;
+        if (startVal && endVal) {
+            const s = timeToMinutes(startVal);
+            const e = timeToMinutes(endVal);
+            if (e <= s) {
+                document.getElementById('ot-end').value = startVal;
+                updateOTPreview();
+            }
+        }
+    };
+    document.getElementById('ot-start').addEventListener('change', syncOtEnd);
+    document.getElementById('ot-start').addEventListener('input', syncOtEnd);
+
+    const otBackfill = document.getElementById('ot-backfill');
+    if (otBackfill) {
+        otBackfill.addEventListener('change', function() {
+            const normalInputs = document.getElementById('ot-normal-inputs');
+            const backfillGroup = document.getElementById('ot-backfill-hours-group');
+            const customActGroup = document.getElementById('ot-custom-activity-group');
+            if (this.checked) {
+                if (normalInputs) normalInputs.style.display = 'none';
+                if (backfillGroup) backfillGroup.style.display = 'block';
+                if (customActGroup) customActGroup.style.display = 'none';
+                const lunchEl = document.getElementById('ot-lunch');
+                if (lunchEl) lunchEl.checked = false;
+                const startEl = document.getElementById('ot-start');
+                if (startEl) startEl.value = '16:30';
+                const endEl = document.getElementById('ot-end');
+                if (endEl) endEl.value = '16:30';
+            } else {
+                if (normalInputs) normalInputs.style.display = 'block';
+                if (backfillGroup) backfillGroup.style.display = 'none';
+                setupEmployeeCustomActivitiesUI();
+            }
+            updateOTPreview();
+        });
+    }
+    const otBackfillHours = document.getElementById('ot-backfill-hours');
+    if (otBackfillHours) {
+        otBackfillHours.addEventListener('input', updateOTPreview);
+        otBackfillHours.addEventListener('change', updateOTPreview);
+    }
+
+    // Filters
+    document.getElementById('admin-filter-month').addEventListener('change', refreshAdminRecords);
+    const adminFilterDate = document.getElementById('admin-filter-date');
+    if (adminFilterDate) {
+        adminFilterDate.addEventListener('change', refreshAdminRecords);
+    }
+    document.getElementById('admin-filter-user').addEventListener('change', refreshAdminRecords);
+    document.getElementById('admin-search-user').addEventListener('input', refreshAdminRecords);
+    document.getElementById('admin-search-note').addEventListener('input', refreshAdminRecords);
+    document.getElementById('emp-filter-month').addEventListener('change', refreshEmployeeRecords);
+    document.getElementById('report-filter-month').addEventListener('change', refreshReport);
+
+    const adminFilterTeam = document.getElementById('admin-filter-team');
+    if (adminFilterTeam) {
+        adminFilterTeam.addEventListener('change', refreshAdminRecords);
+    }
+    const reportFilterTeam = document.getElementById('report-filter-team');
+    if (reportFilterTeam) {
+        reportFilterTeam.addEventListener('change', refreshReport);
+    }
+
+    const reportSearch = document.getElementById('report-search-name');
+    if (reportSearch) {
+        reportSearch.addEventListener('input', (e) => {
+            reportSearchQuery = e.target.value;
+            refreshReport();
+        });
+    }
+
+    const handleReportSort = (column) => {
+        if (reportSortColumn === column) {
+            reportSortOrder = reportSortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+            reportSortColumn = column;
+            reportSortOrder = 'desc';
+        }
+        refreshReport();
+    };
+
+    const thName = document.getElementById('th-report-name');
+    if (thName) thName.addEventListener('click', () => handleReportSort('name'));
+
+    const thDays = document.getElementById('th-report-days');
+    if (thDays) thDays.addEventListener('click', () => handleReportSort('days'));
+
+    const thTotal = document.getElementById('th-report-total');
+    if (thTotal) thTotal.addEventListener('click', () => handleReportSort('total'));
+
+    // Export & Cleanup
+    document.getElementById('btn-export').addEventListener('click', exportExcel);
+    document.getElementById('btn-close-month').addEventListener('click', handleCloseMonth);
+
+    // Toggle Report Charts
+    const btnToggleCharts = document.getElementById('btn-toggle-charts');
+    const chartsPanel = document.getElementById('charts-panel');
+    if (btnToggleCharts && chartsPanel) {
+        // Restore state on load
+        const savedShowCharts = localStorage.getItem('ot_show_report_charts') === 'true';
+        if (savedShowCharts) {
+            chartsPanel.style.display = 'block';
+            btnToggleCharts.style.backgroundColor = '#10b981';
+            btnToggleCharts.style.borderColor = '#10b981';
+            btnToggleCharts.style.color = '#ffffff';
+        }
+        
+        btnToggleCharts.addEventListener('click', () => {
+            const isHidden = chartsPanel.style.display === 'none' || !chartsPanel.style.display;
+            if (isHidden) {
+                chartsPanel.style.display = 'block';
+                btnToggleCharts.style.backgroundColor = '#10b981';
+                btnToggleCharts.style.borderColor = '#10b981';
+                btnToggleCharts.style.color = '#ffffff';
+                localStorage.setItem('ot_show_report_charts', 'true');
+            } else {
+                chartsPanel.style.display = 'none';
+                btnToggleCharts.style.backgroundColor = '#27272a';
+                btnToggleCharts.style.borderColor = '#3f3f46';
+                btnToggleCharts.style.color = '#e4e4e7';
+                localStorage.setItem('ot_show_report_charts', 'false');
+            }
+        });
+    }
+    const btnCleanupDatabase = document.getElementById('btn-cleanup-database');
+    if (btnCleanupDatabase) {
+        btnCleanupDatabase.addEventListener('click', handleDatabaseCleanup);
+    }
+
+    // Modal
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('modal-overlay').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeModal();
+    });
+
+    // Add User trigger
+    const btnAddUser = document.getElementById('btn-add-user');
+    if (btnAddUser) {
+        btnAddUser.addEventListener('click', addUserDialog);
+    }
+
+    // Team Settings trigger
+    const btnTeamSettings = document.getElementById('btn-team-settings');
+    if (btnTeamSettings) {
+        btnTeamSettings.addEventListener('click', openTeamSettingsModal);
+    }
+
+});
+
+// ==================== DYNAMIC DIALOGS (ADD/EDIT) ====================
+async function editRecordDialog(recordId, source) {
+    try {
+        let record = loadedRecords.find(r => r.id === recordId);
+        if (!record) {
+            const data = await api(`/api/records`);
+            loadedRecords = data.records || [];
+            record = loadedRecords.find(r => r.id === recordId);
+        }
+        if (!record) return showToast('KhĂ´ng tĂ¬m tháº¥y báº£n ghi', 'error');
+
+        const isBackfill = record.isBackfill || (record.note && (record.note.includes('[BĂ™ THĂNG TRÆ¯á»C]') || record.note.includes('[TÄ‚NG THĂNG NĂ€Y]')));
+        const cleanedNote = record.note ? record.note.replace('[BĂ™ THĂNG TRÆ¯á»C] ', '').replace('[BĂ™ THĂNG TRÆ¯á»C]', '').replace('[TÄ‚NG THĂNG NĂ€Y] ', '').replace('[TÄ‚NG THĂNG NĂ€Y]', '').trim() : '';
+
+        const body = `
+        <form id="modal-form-record" class="login-form active" style="text-align: left; padding: 0;">
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">NgĂ y tÄƒng ca</label>
+                <div class="input-wrapper">
+                    <input type="date" id="modal-rec-date" value="${record.date}" max="${new Date().toISOString().split('T')[0]}" style="padding-left:12px; height:38px; border-radius:8px;" required>
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label class="switch-label" for="modal-rec-backfill">
+                    <input type="checkbox" id="modal-rec-backfill" ${isBackfill ? 'checked' : ''}>
+                    <span class="switch-slider"></span>
+                    <span class="switch-text">BĂ¹ tÄƒng ca</span>
+                </label>
+            </div>
+
+            <!-- Backfill hours input -->
+            <div class="form-group" id="modal-rec-backfill-hours-group" style="display: ${isBackfill ? 'block' : 'none'}; margin-bottom: 15px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Sá»‘ giá» tÄƒng ca cáº§n bĂ¹</label>
+                <input type="number" id="modal-rec-backfill-hours" step="0.1" min="0.1" max="24" value="${isBackfill ? record.totalHours : ''}" placeholder="Nháº­p sá»‘ giá» bĂ¹ (vĂ­ dá»¥: 8.0)" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+            </div>
+
+            <!-- Normal OT inputs -->
+            <div id="modal-rec-normal-inputs" style="display: ${isBackfill ? 'none' : 'block'};">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label class="switch-label" for="modal-rec-lunch">
+                        <input type="checkbox" id="modal-rec-lunch" ${record.hasLunchOT ? 'checked' : ''}>
+                        <span class="switch-slider"></span>
+                        <span class="switch-text">TÄƒng ca trÆ°a (12:20 - 13:20)</span>
+                    </label>
+                </div>
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;">Báº¯t Ä‘áº§u OT chiá»u</label>
+                        <input type="time" id="modal-rec-start" value="${record.otStart || '16:30'}" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+                    </div>
+                    <div>
+                        <label style="display:block;margin-bottom:6px;font-weight:600;">Káº¿t thĂºc OT chiá»u</label>
+                        <input type="time" id="modal-rec-end" value="${record.otEnd || '16:30'}" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- NhĂ³m Hoáº¡t Ä‘á»™ng ngoĂ i giá» tĂ¹y chá»‰nh (Sá»­a) -->
+            <div id="modal-rec-custom-activity-group" style="display: none; margin-bottom: 15px;">
+                <div id="modal-rec-custom-activities-list"></div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Ghi chĂº</label>
+                <textarea id="modal-rec-note" class="input-sm" style="width:100%; height:60px; resize:none; box-sizing:border-box; padding:10px;" required>${cleanedNote}</textarea>
+            </div>
+        </form>`;
+
+        showModal('Chá»‰nh sá»­a tÄƒng ca', body, [
+            { text: 'Há»§y', class: 'btn-ghost' },
+            { text: 'LÆ°u', class: 'btn btn-primary btn-sm', action: async () => {
+                const date = document.getElementById('modal-rec-date').value;
+                const recBackfill = document.getElementById('modal-rec-backfill');
+                const isRecBackfill = recBackfill ? recBackfill.checked : false;
+                const hasLunch = isRecBackfill ? false : (document.getElementById('modal-rec-lunch') ? document.getElementById('modal-rec-lunch').checked : false);
+                const otStart = document.getElementById('modal-rec-start') ? document.getElementById('modal-rec-start').value : '';
+                const otEnd = document.getElementById('modal-rec-end') ? document.getElementById('modal-rec-end').value : '';
+                let note = document.getElementById('modal-rec-note').value.trim();
+
+                if (!date) return showToast('Vui lĂ²ng chá»n ngĂ y!', 'error');
+
+                // Get selected custom activity info
+                const checkedAct = document.querySelector('.modal-rec-custom-activity-checkbox:checked');
+                const customActivity = checkedAct ? checkedAct.dataset.actName : '';
+                const customActivityMode = checkedAct ? checkedAct.dataset.actMode : '';
+                
+                const detailGroup = checkedAct ? document.getElementById(`modal-rec-custom-activity-detail-group-${checkedAct.dataset.actId}`) : null;
+                const detailInput = detailGroup ? detailGroup.querySelector('.modal-rec-custom-activity-detail') : null;
+                const detailValue = detailInput ? detailInput.value.trim() : '';
+
+                if (checkedAct && !detailValue) {
+                    return showToast('Vui lĂ²ng nháº­p chi tiáº¿t cho hoáº¡t Ä‘á»™ng ngoĂ i giá»!', 'error');
+                }
+
+                let eveningHours = 0;
+                let totalHours = 0;
+
+                if (isRecBackfill) {
+                    const hoursVal = parseFloat(document.getElementById('modal-rec-backfill-hours').value) || 0;
+                    if (hoursVal <= 0) return showToast('Vui lĂ²ng nháº­p sá»‘ giá» bĂ¹ há»£p lá»‡!', 'error');
+                    totalHours = hoursVal;
+                    eveningHours = hoursVal;
+                    note = '[BĂ™ THĂNG TRÆ¯á»C] ' + note;
+                } else {
+                    eveningHours = calculateEveningOT(otStart, otEnd);
+                    const lunchHours = hasLunch ? OT_LUNCH_HOURS : 0;
+                    totalHours = lunchHours + eveningHours;
+                    if (totalHours <= 0 && !checkedAct) return showToast('Vui lĂ²ng chá»n Ă­t nháº¥t má»™t loáº¡i OT hoáº·c hoáº¡t Ä‘á»™ng ngoĂ i giá»!', 'error');
+                }
+
+                const deliveryProvince = checkedAct && customActivityMode === 'trip' ? detailValue : '';
+
+                if (checkedAct && totalHours === 0 && !note) {
+                    note = `${customActivity} ${detailValue}`;
+                } else if (!note) {
+                    return showToast('Vui lĂ²ng nháº­p ghi chĂº!', 'error');
+                }
+
+                try {
+                    await api(`/api/records/${recordId}`, 'PUT', {
+                        date,
+                        hasLunchOT: isRecBackfill ? false : hasLunch,
+                        otStart: (!isRecBackfill && eveningHours > 0) ? otStart : '',
+                        otEnd: (!isRecBackfill && eveningHours > 0) ? otEnd : '',
+                        eveningOTHours: eveningHours,
+                        totalHours,
+                        deliveryProvince,
+                        customActivity,
+                        calcMode: customActivityMode || (record.calcMode || ''),
+                        note,
+                        isBackfill: isRecBackfill,
+                        createdMonth: isRecBackfill ? getCurrentMonth() : date.substring(0, 7)
+                    });
+                    showToast('ÄĂ£ cáº­p nháº­t báº£n ghi tÄƒng ca!');
+                    if (source === 'admin') {
+                        await Promise.all([refreshAdminRecords(), refreshAdminStats(), refreshReport()]);
+                    } else {
+                        await refreshEmployeeRecords();
+                    }
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            }}
+        ]);
+
+        // Load custom activities list in edit modal
+        const listContainer = document.getElementById('modal-rec-custom-activities-list');
+        const activityGroup = document.getElementById('modal-rec-custom-activity-group');
+        
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        let userTeam = '';
+        if (currentUser && currentUser.role === 'employee') {
+            userTeam = currentUser.team || '';
+        } else {
+            const foundUser = loadedUsers.find(u => u.id === record.userId);
+            userTeam = foundUser ? (foundUser.team || '') : '';
+        }
+        
+        const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+        const activities = (teamObj && teamObj.customActivities) ? teamObj.customActivities : [];
+        
+        if (activities.length > 0) {
+            if (activityGroup) activityGroup.style.display = isBackfill ? 'none' : 'block';
+            
+            let activeActName = record.customActivity || '';
+            // Backward compatibility: map legacy travel record to the first trip activity
+            if (!activeActName && record.deliveryProvince) {
+                const firstTripAct = activities.find(a => a.calcMode === 'trip');
+                activeActName = firstTripAct ? firstTripAct.name : (activities[0]?.name || '');
+            }
+            
+            if (listContainer) {
+                listContainer.innerHTML = activities.map(act => {
+                    const isSelected = act.name === activeActName;
+                    const detailValue = isSelected ? (record.deliveryProvince || '') : '';
+                    
+                    return `
+                    <div class="custom-activity-item" style="margin-bottom: 14px; text-align: left;">
+                        <label class="switch-label" for="modal-chk-${act.id}" style="display: inline-flex; align-items: center; gap: 12px; cursor: pointer;">
+                            <input type="checkbox" id="modal-chk-${act.id}" class="modal-rec-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleModalCustomActivityInput('${act.id}')" ${isSelected ? 'checked' : ''}>
+                            <span class="switch-slider"></span>
+                            <span class="switch-text" style="display: flex; flex-direction: column; gap: 2px;">
+                                <strong>${act.name}</strong>
+                                <small style="font-size: 11px; color: var(--text-secondary);">TĂ­nh cháº¥t: ${act.calcMode === 'trip' ? 'TĂ­nh theo Chuyáº¿n' : 'TĂ­nh theo Giá»'}</small>
+                            </span>
+                        </label>
+                        <div class="form-group" id="modal-rec-custom-activity-detail-group-${act.id}" style="display: ${isSelected ? 'block' : 'none'}; margin-top: 8px; padding: 0 4px; margin-bottom: 0;">
+                            <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiáº¿t'}</label>
+                            <input type="text" class="modal-rec-custom-activity-detail" data-act-id="${act.id}" placeholder="${act.placeholder || 'Nháº­p chi tiáº¿t...'}" value="${detailValue}" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
+                        </div>
+                    </div>
+                `}).join('');
+            }
+            
+            // Adjust note requirement based on whether any activity is selected initially
+            const noteEl = document.getElementById('modal-rec-note');
+            if (activeActName && noteEl) {
+                noteEl.required = false;
+                noteEl.placeholder = `Máº·c Ä‘á»‹nh: ${activeActName}...`;
+            }
+        } else {
+            if (activityGroup) activityGroup.style.display = 'none';
+        }
+
+        const modalBackfill = document.getElementById('modal-rec-backfill');
+        if (modalBackfill) {
+            modalBackfill.addEventListener('change', function() {
+                const normalInputs = document.getElementById('modal-rec-normal-inputs');
+                const backfillGroup = document.getElementById('modal-rec-backfill-hours-group');
+                const customActGroup = document.getElementById('modal-rec-custom-activity-group');
+                if (this.checked) {
+                    if (normalInputs) normalInputs.style.display = 'none';
+                    if (backfillGroup) backfillGroup.style.display = 'block';
+                    if (customActGroup) customActGroup.style.display = 'none';
+                    // Uncheck custom activities
+                    document.querySelectorAll('.modal-rec-custom-activity-checkbox').forEach(c => {
+                        c.checked = false;
+                        const dg = document.getElementById(`modal-rec-custom-activity-detail-group-${c.dataset.actId}`);
+                        if (dg) dg.style.display = 'none';
+                    });
+                    const lunchEl = document.getElementById('modal-rec-lunch');
+                    if (lunchEl) lunchEl.checked = false;
+                    const startEl = document.getElementById('modal-rec-start');
+                    if (startEl) startEl.value = '16:30';
+                    const endEl = document.getElementById('modal-rec-end');
+                    if (endEl) endEl.value = '16:30';
+                } else {
+                    if (normalInputs) normalInputs.style.display = 'block';
+                    if (customActGroup && activities.length > 0) customActGroup.style.display = 'block';
+                    if (backfillGroup) backfillGroup.style.display = 'none';
+                }
+            });
+        }
+
+        const modalStart = document.getElementById('modal-rec-start');
+        const modalEnd = document.getElementById('modal-rec-end');
+        if (modalStart && modalEnd) {
+            const syncModalEnd = () => {
+                const s = timeToMinutes(modalStart.value);
+                const e = timeToMinutes(modalEnd.value);
+                if (e <= s) {
+                    modalEnd.value = modalStart.value;
+                }
+            };
+            modalStart.addEventListener('change', syncModalEnd);
+            modalStart.addEventListener('input', syncModalEnd);
+        }
+    } catch (e) {
+        showToast('Lá»—i táº£i dá»¯ liá»‡u báº£n ghi', 'error');
+    }
+}
+
+async function addUserDialog() {
+    let admins = [];
+    if (loadedUsers && loadedUsers.length > 0) {
+        admins = loadedUsers.filter(u => u.role === 'admin');
+    } else {
+        try {
+            const uData = await api('/api/users');
+            loadedUsers = uData.users || [];
+            admins = loadedUsers.filter(u => u.role === 'admin');
+        } catch (e) {
+            console.error('Lá»—i láº¥y danh sĂ¡ch admin:', e);
+        }
+    }
+    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+    const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
+
+    const body = `
+    <form id="modal-form-add-user" class="login-form active" style="text-align: left; padding: 0;">
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">Há» vĂ  tĂªn</label>
+            <input type="text" id="modal-user-fullname" placeholder="Nguyá»…n VÄƒn A" class="input-sm" style="width:100%; box-sizing:border-box;" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">TĂªn Ä‘Äƒng nháº­p</label>
+            <input type="text" id="modal-user-username" placeholder="Chá»‰ viáº¿t liá»n, khĂ´ng dáº¥u" class="input-sm" style="width:100%; box-sizing:border-box;" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">Äá»‹a chá»‰ Email</label>
+            <input type="email" id="modal-user-email" placeholder="ten-cua-ban@company.com" class="input-sm" style="width:100%; box-sizing:border-box;">
+        </div>
+        <div class="form-group" id="modal-user-password-group" style="margin-bottom: 15px;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">Máº­t kháº©u</label>
+            <input type="password" id="modal-user-password" placeholder="Máº­t kháº©u (bá» trá»‘ng Ä‘á»‘i vá»›i nhĂ¢n viĂªn)" class="input-sm" style="width:100%; box-sizing:border-box;">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">Vai trĂ²</label>
+            <select id="modal-user-role" class="input-sm" style="width:100%; box-sizing:border-box;">
+                <option value="employee">NhĂ¢n viĂªn (Äiá»‡n thoáº¡i)</option>
+                <option value="admin">Quáº£n lĂ½ (Desktop)</option>
+            </select>
+        </div>
+        <div class="form-group" id="modal-user-manager-group" style="margin-bottom: 0;">
+            <label style="display:block;margin-bottom:6px;font-weight:600;">Team</label>
+            <select id="modal-user-team" class="input-sm" style="width:100%; box-sizing:border-box;">
+                <option value="">-- ChÆ°a phĂ¢n team --</option>
+                ${isAdmin ? '<option value="admin">admin</option>' : ''}
+                ${TEAMS.map(t => {
+                    const name = typeof t === 'string' ? t : (t.name || '');
+                    return `<option value="${name}">${name}</option>`;
+                }).join('')}
+            </select>
+        </div>
+    </form>`;
+
+    showModal('ThĂªm nhĂ¢n viĂªn má»›i', body, [
+        { text: 'Há»§y', class: 'btn-ghost' },
+        { text: 'ThĂªm', class: 'btn btn-primary btn-sm', action: async () => {
+            const fullname = document.getElementById('modal-user-fullname').value.trim();
+            const username = document.getElementById('modal-user-username').value.trim();
+            const email = document.getElementById('modal-user-email') ? document.getElementById('modal-user-email').value.trim() : '';
+            const password = document.getElementById('modal-user-password').value;
+            const role = document.getElementById('modal-user-role').value;
+            const team = document.getElementById('modal-user-team') ? document.getElementById('modal-user-team').value : '';
+
+            if (!fullname || !username) return showToast('Vui lĂ²ng Ä‘iá»n há» tĂªn vĂ  tĂªn Ä‘Äƒng nháº­p!', 'error');
+            if (username.length < 3) return showToast('TĂªn Ä‘Äƒng nháº­p tá»‘i thiá»ƒu 3 kĂ½ tá»±!', 'error');
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showToast('Äá»‹a chá»‰ Email khĂ´ng há»£p lá»‡!', 'error');
+            
+            if (role === 'admin') {
+                if (!password) return showToast('TĂ i khoáº£n quáº£n lĂ½ báº¯t buá»™c pháº£i nháº­p máº­t kháº©u!', 'error');
+                if (password.length < 4) return showToast('Máº­t kháº©u tá»‘i thiá»ƒu 4 kĂ½ tá»±!', 'error');
+            }
+
+            try {
+                await api('/api/auth/register', 'POST', { fullname, username, password: password || '123', role, team, email });
+                showToast('ThĂªm nhĂ¢n viĂªn thĂ nh cĂ´ng!');
+                await Promise.all([populateUserFilter(), refreshAdminUsers(), refreshAdminStats(), refreshReport()]);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }}
+    ]);
+
+    const roleSelect = document.getElementById('modal-user-role');
+    const passwordGroup = document.getElementById('modal-user-password-group');
+    if (roleSelect && passwordGroup) {
+        const togglePassword = () => {
+            if (roleSelect.value === 'employee') {
+                passwordGroup.style.display = 'none';
+                document.getElementById('modal-user-password').value = '';
+            } else {
+                passwordGroup.style.display = 'block';
+            }
+        };
+        roleSelect.addEventListener('change', togglePassword);
+        togglePassword();
+    }
+}
+
+async function editUserDialog(userId) {
+    try {
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        const isSuperAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
+        const isBelongToAdminTeam = currentUser && (currentUser.team === 'admin' || currentUser.username === 'admin' || currentUser.isSuperAdmin);
+
+        let user = loadedUsers.find(u => u.id === userId);
+        if (!user) {
+            const data = await api('/api/users');
+            loadedUsers = data.users || [];
+            user = loadedUsers.find(u => u.id === userId);
+        }
+        if (!user) return showToast('KhĂ´ng tĂ¬m tháº¥y nhĂ¢n viĂªn', 'error');
+
+        // Chá»‰ cĂ³ báº£n thĂ¢n Quáº£n trá»‹ viĂªn tá»‘i cao má»›i Ä‘Æ°á»£c sá»­a thĂ´ng tin cá»§a chĂ­nh mĂ¬nh
+        if (user.isSuperAdmin && currentUser.id !== user.id) {
+            return showToast('Báº¡n khĂ´ng cĂ³ quyá»n chá»‰nh sá»­a tĂ i khoáº£n Quáº£n trá»‹ viĂªn tá»‘i cao!', 'error');
+        }
+
+        // PhĂ¢n quyá»n: cĂ¡c quáº£n lĂ½ khĂ´ng Ä‘Æ°á»£c sá»­a thĂ´ng tin cá»§a nhau, chá»‰ cĂ³ superadmin má»›i Ä‘Æ°á»£c sá»­a thĂ´ng tin quáº£n lĂ½
+        if (user.role === 'admin' && currentUser.id !== user.id && !isSuperAdmin) {
+            return showToast('Chá»‰ cĂ³ Quáº£n trá»‹ viĂªn tá»‘i cao má»›i Ä‘Æ°á»£c chá»‰nh sá»­a tĂ i khoáº£n cá»§a quáº£n lĂ½ khĂ¡c!', 'error');
+        }
+
+        const body = `
+        <form id="modal-form-edit-user" style="text-align: left; padding: 5px; display: flex; flex-direction: column; gap: 18px; font-family: 'Inter', sans-serif; color: #e4e4e7;">
+            <!-- Grid for Basic Fields -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa;">Há» vĂ  tĂªn</label>
+                    <input type="text" id="modal-user-fullname" value="${user.fullname}" class="input-sm" style="width:100%; box-sizing:border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; color: #fff; transition: all 0.3s;" required>
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa;">TĂªn Ä‘Äƒng nháº­p</label>
+                    <input type="text" id="modal-user-username" value="${user.username}" class="input-sm" style="width:100%; box-sizing:border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; color: #fff; transition: all 0.3s;" required>
+                </div>
+            </div>
+
+            <!-- Email Field (Crucial, styled nicely) -->
+            <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                <label style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa;">Äá»‹a chá»‰ Email</label>
+                <div style="position: relative;">
+                    <input type="email" id="modal-user-email" value="${user.email || ''}" placeholder="ten-cua-ban@company.com" class="input-sm" style="width:100%; box-sizing:border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 10px 10px 38px; color: #fff; transition: all 0.3s;">
+                    <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #71717a;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Role & Team (Hidden for SuperAdmin or when editing yourself, shown for others) -->
+            <div id="modal-edit-user-role-team-group" style="display: ${(user.isSuperAdmin || currentUser.id === user.id) ? 'none' : 'grid'}; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa;">Vai trĂ²</label>
+                    <select id="modal-user-role" class="input-sm" style="width:100%; box-sizing:border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; color: #fff; height: 42px;">
+                        <option value="employee" ${user.role === 'employee' ? 'selected' : ''}>NhĂ¢n viĂªn (Äiá»‡n thoáº¡i)</option>
+                        <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Quáº£n lĂ½ (Desktop)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="modal-edit-user-manager-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.85rem; font-weight: 600; color: #a1a1aa;">Team</label>
+                    <select id="modal-user-team" class="input-sm" style="width:100%; box-sizing:border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; color: #fff; height: 42px;">
+                        <option value="">-- ChÆ°a phĂ¢n team --</option>
+                        ${isSuperAdmin ? `<option value="admin" ${user.team === 'admin' ? 'selected' : ''}>admin</option>` : ''}
+                        ${TEAMS.map(t => {
+                            const name = typeof t === 'string' ? t : (t.name || '');
+                            return `<option value="${name}" ${user.team === name ? 'selected' : ''}>${name}</option>`;
+                        }).join('')}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Password Reset Section -->
+            <div id="modal-user-password-trigger-wrapper" style="margin-top: 5px;">
+                <button type="button" id="btn-change-password-trigger" style="width:100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(255, 255, 255, 0.04); border: 1px dashed rgba(255, 255, 255, 0.2); border-radius: 8px; color: #e4e4e7; padding: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.08)'; this.style.borderColor='rgba(255,255,255,0.3)';" onmouseout="this.style.background='rgba(255,255,255,0.04)'; this.style.borderColor='rgba(255,255,255,0.2)';">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="color: #fbbf24;"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                    Äá»•i máº­t kháº©u tĂ i khoáº£n
+                </button>
+            </div>
+            <div class="form-group" id="modal-user-password-group" style="display: none; flex-direction: column; gap: 6px; animation: fadeIn 0.3s ease;">
+                <label style="font-size: 0.85rem; font-weight: 600; color: #ef4444;">Máº­t kháº©u má»›i</label>
+                <input type="password" id="modal-user-password" placeholder="Nháº­p máº­t kháº©u má»›i" class="input-sm" style="width:100%; box-sizing:border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px; color: #fff;">
+            </div>
+
+            <!-- OTP Verification Section -->
+            <div id="modal-otp-verification-section" style="display: none; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 15px; margin-top: 5px; animation: fadeIn 0.3s ease;">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem; font-weight: 700; color: #10b981; margin-bottom: 10px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    XĂ¡c thá»±c thay Ä‘á»•i qua OTP
+                </label>
+                <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                    <input type="text" id="modal-verification-otp" placeholder="Nháº­p mĂ£ OTP" class="input-sm" style="flex: 1; text-align: center; font-size: 1.1rem; letter-spacing: 4px; font-weight: bold; background: rgba(0,0,0,0.2); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 8px; color: #fff;" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    <button type="button" id="btn-send-verification-otp" style="background: #10b981; color: #020604; border: none; border-radius: 8px; padding: 0 16px; font-weight: bold; cursor: pointer; transition: all 0.2s; white-space: nowrap;" onmouseover="this.style.background='#059669';" onmouseout="this.style.background='#10b981';">Gá»­i OTP</button>
+                </div>
+                <p style="font-size: 0.8rem; color: #a1a1aa; margin: 0;" id="verification-otp-status"></p>
+            </div>
+        </form>`;
+
+        showModal('Sá»­a thĂ´ng tin nhĂ¢n viĂªn', body, [
+            { text: 'Há»§y', class: 'btn-ghost' },
+            { text: 'LÆ°u', class: 'btn btn-primary btn-sm', action: async () => {
+                const fullname = document.getElementById('modal-user-fullname').value.trim();
+                const username = document.getElementById('modal-user-username').value.trim();
+                const passwordGroupEl = document.getElementById('modal-user-password-group');
+                const password = passwordGroupEl && passwordGroupEl.style.display !== 'none' ? document.getElementById('modal-user-password').value : '';
+                const role = document.getElementById('modal-user-role') ? document.getElementById('modal-user-role').value : user.role;
+                const team = document.getElementById('modal-user-team') ? document.getElementById('modal-user-team').value : user.team;
+                const email = document.getElementById('modal-user-email').value.trim();
+
+                const otpSection = document.getElementById('modal-otp-verification-section');
+                const isOtpVisible = otpSection && otpSection.style.display !== 'none';
+                const otpVal = isOtpVisible ? document.getElementById('modal-verification-otp').value.trim() : '';
+
+                if (!fullname || !username) return showToast('Vui lĂ²ng Ä‘iá»n há» tĂªn vĂ  tĂªn Ä‘Äƒng nháº­p!', 'error');
+                if (username.length < 3) return showToast('TĂªn Ä‘Äƒng nháº­p tá»‘i thiá»ƒu 3 kĂ½ tá»±!', 'error');
+                if (isOtpVisible && !otpVal) return showToast('Vui lĂ²ng nháº­p mĂ£ OTP xĂ¡c thá»±c thay Ä‘á»•i!', 'error');
+
+                const payload = { fullname, username, role, team, email };
+                if (password) {
+                    if (password.length < 4) return showToast('Máº­t kháº©u tá»‘i thiá»ƒu 4 kĂ½ tá»±!', 'error');
+                    payload.password = password;
+                }
+                if (isOtpVisible) {
+                    payload.otpCode = otpVal;
+                }
+
+                try {
+                    await api(`/api/users/${userId}`, 'PUT', payload);
+                    showToast('Cáº­p nháº­t nhĂ¢n viĂªn thĂ nh cĂ´ng!');
+                    if (currentUser && currentUser.id === userId) {
+                        const updatedUser = { ...currentUser, fullname, username, role, team };
+                        localStorage.setItem('ot_current_user', JSON.stringify(updatedUser));
+                        const elUserName = document.getElementById('user-fullname');
+                        if (elUserName) elUserName.textContent = fullname;
+                    }
+                    await Promise.all([populateUserFilter(), refreshAdminUsers(), refreshAdminRecords(), refreshReport(), refreshAdminStats()]);
+                } catch (err) {
+                    showToast(err.message, 'error');
+                }
+            }}
+        ]);
+
+        const passwordTrigger = document.getElementById('btn-change-password-trigger');
+        const passwordGroup = document.getElementById('modal-user-password-group');
+        const passwordTriggerWrapper = document.getElementById('modal-user-password-trigger-wrapper');
+        const otpSection = document.getElementById('modal-otp-verification-section');
+        const emailInput = document.getElementById('modal-user-email');
+        const otpStatus = document.getElementById('verification-otp-status');
+        const btnSendOtp = document.getElementById('btn-send-verification-otp');
+        
+        let isChangePasswordClicked = false;
+
+        const checkVerificationNeeded = () => {
+            if (user.role !== 'admin') {
+                if (otpSection) otpSection.style.display = 'none';
+                return;
+            }
+            const isEmailChanged = emailInput.value.trim().toLowerCase() !== (user.email || '').toLowerCase();
+            const isPasswordGroupVisible = passwordGroup && passwordGroup.style.display !== 'none';
+            if (isEmailChanged || isPasswordGroupVisible) {
+                if (otpSection) otpSection.style.display = 'block';
+            } else {
+                if (otpSection) otpSection.style.display = 'none';
+            }
+        };
+
+        if (emailInput) {
+            emailInput.addEventListener('input', checkVerificationNeeded);
+            emailInput.addEventListener('change', checkVerificationNeeded);
+        }
+        
+        if (passwordTrigger && passwordGroup && passwordTriggerWrapper) {
+            passwordTrigger.onclick = () => {
+                isChangePasswordClicked = true;
+                passwordTriggerWrapper.style.display = 'none';
+                passwordGroup.style.display = 'block';
+                checkVerificationNeeded();
+                const inputPass = document.getElementById('modal-user-password');
+                if (inputPass) inputPass.focus();
+            };
+        }
+
+        if (btnSendOtp) {
+            let countdown = 0;
+            let timer = null;
+            btnSendOtp.onclick = async (e) => {
+                e.preventDefault();
+                const targetEmail = emailInput.value.trim();
+                if (!targetEmail) {
+                    return showToast('Vui lĂ²ng Ä‘iá»n Email há»£p lá»‡ Ä‘á»ƒ nháº­n mĂ£ OTP!', 'error');
+                }
+                btnSendOtp.disabled = true;
+                otpStatus.textContent = 'Äang gá»­i mĂ£ OTP...';
+                otpStatus.style.color = '#a1a1aa';
+                try {
+                    await api('/api/auth/send-email-otp', 'POST', { username: user.username, email: targetEmail });
+                    showToast('ÄĂ£ gá»­i mĂ£ OTP xĂ¡c nháº­n Ä‘áº¿n email!');
+                    otpStatus.textContent = `MĂ£ OTP Ä‘Ă£ Ä‘Æ°á»£c gá»­i tá»›i ${targetEmail}. Hiá»‡u lá»±c trong 5 phĂºt.`;
+                    otpStatus.style.color = '#10b981';
+                    
+                    countdown = 60;
+                    btnSendOtp.disabled = true;
+                    timer = setInterval(() => {
+                        countdown--;
+                        if (countdown <= 0) {
+                            clearInterval(timer);
+                            btnSendOtp.disabled = false;
+                            btnSendOtp.textContent = 'Gá»­i OTP';
+                        } else {
+                            btnSendOtp.textContent = `Gá»­i láº¡i (${countdown}s)`;
+                        }
+                    }, 1000);
+                } catch (err) {
+                    showToast(err.message, 'error');
+                    otpStatus.textContent = `Lá»—i: ${err.message}`;
+                    otpStatus.style.color = '#ef4444';
+                    btnSendOtp.disabled = false;
+                }
+            };
+        }
+
+        const roleSelect = document.getElementById('modal-user-role');
+        if (roleSelect) {
+            const togglePassword = () => {
+                if (roleSelect.value === 'employee') {
+                    if (passwordTriggerWrapper) passwordTriggerWrapper.style.display = 'none';
+                    if (passwordGroup) passwordGroup.style.display = 'none';
+                    const inputPass = document.getElementById('modal-user-password');
+                    if (inputPass) inputPass.value = '';
+                } else {
+                    if (isChangePasswordClicked) {
+                        if (passwordTriggerWrapper) passwordTriggerWrapper.style.display = 'none';
+                        if (passwordGroup) passwordGroup.style.display = 'block';
+                    } else {
+                        if (passwordTriggerWrapper) passwordTriggerWrapper.style.display = 'block';
+                        if (passwordGroup) passwordGroup.style.display = 'none';
+                    }
+                }
+                checkVerificationNeeded();
+            };
+            roleSelect.addEventListener('change', togglePassword);
+            togglePassword();
+        }
+    } catch (e) {
+        showToast('Lá»—i táº£i dá»¯ liá»‡u ngÆ°á»i dĂ¹ng', 'error');
+    }
+}
+
+async function resetUserDevice(userId, fullname, type = 'mobile') {
+    const label = type === 'mobile' ? 'App Ä‘iá»‡n thoáº¡i' : 'TrĂ¬nh duyá»‡t web';
+    const payload = type === 'mobile' ? { deviceId: null } : { browserDeviceId: null };
+    showModal('XĂ³a liĂªn káº¿t thiáº¿t bá»‹', `Báº¡n cĂ³ cháº¯c muá»‘n xĂ³a liĂªn káº¿t <strong>${label}</strong> cá»§a nhĂ¢n viĂªn <strong>${fullname}</strong>?<br>Sau khi xĂ³a, nhĂ¢n viĂªn nĂ y cĂ³ thá»ƒ Ä‘Äƒng nháº­p trĂªn thiáº¿t bá»‹/trĂ¬nh duyá»‡t má»›i.`, [
+        { text: 'Há»§y', class: 'btn-ghost' },
+        { text: 'XĂ³a liĂªn káº¿t', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                await api(`/api/users/${userId}`, 'PUT', payload);
+                await refreshAdminUsers();
+                showToast(`ÄĂ£ xĂ³a liĂªn káº¿t ${label}!`);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+function showUnlinkOptions(userId, fullname, hasMobile, hasWeb) {
+    showModal('XĂ³a táº¥t cáº£ liĂªn káº¿t thiáº¿t bá»‹', `Báº¡n cĂ³ cháº¯c muá»‘n xĂ³a táº¥t cáº£ liĂªn káº¿t (App Ä‘iá»‡n thoáº¡i & TrĂ¬nh duyá»‡t web) cá»§a nhĂ¢n viĂªn <strong>${fullname}</strong>?<br>Sau khi xĂ³a, nhĂ¢n viĂªn nĂ y cĂ³ thá»ƒ Ä‘Äƒng nháº­p trĂªn thiáº¿t bá»‹/trĂ¬nh duyá»‡t má»›i.`, [
+        { text: 'Há»§y', class: 'btn-ghost' },
+        { text: 'XĂ³a liĂªn káº¿t', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                await api(`/api/users/${userId}`, 'PUT', { deviceId: null, browserDeviceId: null });
+                await refreshAdminUsers();
+                showToast(`ÄĂ£ xĂ³a toĂ n bá»™ liĂªn káº¿t thiáº¿t bá»‹ cá»§a ${fullname}!`);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+window.showUnlinkOptions = showUnlinkOptions;
+
+async function approveUnlinkDevice(userId, fullname) {
+    showModal('Duyá»‡t huá»· liĂªn káº¿t thiáº¿t bá»‹', `Báº¡n cĂ³ cháº¯c muá»‘n phĂª duyá»‡t yĂªu cáº§u huá»· liĂªn káº¿t thiáº¿t bá»‹ cá»§a nhĂ¢n viĂªn <strong>${fullname}</strong>?<br>Thao tĂ¡c nĂ y sáº½ reset liĂªn káº¿t cáº£ App Ä‘iá»‡n thoáº¡i vĂ  TrĂ¬nh duyá»‡t, nhĂ¢n viĂªn sáº½ tá»± Ä‘á»™ng Ä‘Äƒng xuáº¥t.`, [
+        { text: 'Há»§y', class: 'btn-ghost' },
+        { text: 'Duyá»‡t', class: 'btn btn-primary btn-sm', action: async () => {
+            try {
+                await api(`/api/users/${userId}`, 'PUT', { deviceId: null, browserDeviceId: null, pendingUnlink: false });
+                await refreshAdminUsers();
+                showToast('ÄĂ£ duyá»‡t yĂªu cáº§u huá»· liĂªn káº¿t thiáº¿t bá»‹!');
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+async function rejectUnlinkDevice(userId, fullname) {
+    showModal('Tá»« chá»‘i huá»· liĂªn káº¿t thiáº¿t bá»‹', `Báº¡n cĂ³ cháº¯c muá»‘n tá»« chá»‘i yĂªu cáº§u huá»· liĂªn káº¿t thiáº¿t bá»‹ cá»§a nhĂ¢n viĂªn <strong>${fullname}</strong>?`, [
+        { text: 'Há»§y', class: 'btn-ghost' },
+        { text: 'Tá»« chá»‘i', class: 'btn btn-danger btn-sm', action: async () => {
+            try {
+                await api(`/api/users/${userId}`, 'PUT', { pendingUnlink: false });
+                await refreshAdminUsers();
+                showToast('ÄĂ£ tá»« chá»‘i yĂªu cáº§u huá»· liĂªn káº¿t thiáº¿t bá»‹!');
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+
+// ==================== CUSTOM ACTIVITIES UI FOR DESKTOP ====================
+function setupAdminCustomActivitiesUI(userId) {
+    const listContainer = document.getElementById('admin-ot-custom-activities-list');
+    const activityGroup = document.getElementById('admin-ot-custom-activity-group');
+    if (!listContainer) return;
+
+    // Reset container first
+    listContainer.innerHTML = '';
+    
+    // Find the user's team
+    let userTeam = '';
+    if (userId) {
+        const foundUser = loadedUsers.find(u => u.id === userId);
+        userTeam = foundUser ? (foundUser.team || '') : '';
+    } else {
+        // Target is self
+        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+        userTeam = currentUser ? (currentUser.team || '') : '';
+    }
+
+    if (!userTeam || userTeam === 'admin') {
+        if (activityGroup) activityGroup.style.display = 'none';
+        return;
+    }
+
+    // Find the team settings of userTeam in TEAMS
+    const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+    const activities = (teamObj && teamObj.customActivities) ? teamObj.customActivities : [];
+
+    const isBackfillChecked = document.getElementById('admin-ot-backfill')?.checked || false;
+    const dateVal = document.getElementById('admin-ot-date')?.value || '';
+    const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
+
+    if (activities.length > 0) {
+        if (activityGroup) activityGroup.style.display = (isBackfillChecked && !isSunday) ? 'none' : 'block';
+
+        listContainer.innerHTML = activities.map(act => `
+            <div class="custom-activity-item" style="margin-bottom: 14px; text-align: left;">
+                <label class="switch-label" for="admin-chk-${act.id}" style="display: inline-flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <input type="checkbox" id="admin-chk-${act.id}" class="admin-ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleAdminCustomActivityInput('${act.id}')">
+                    <span class="switch-slider"></span>
+                    <span class="switch-text" style="display: flex; flex-direction: column; gap: 2px;">
+                        <strong>${act.name}</strong>
+                        <small style="font-size: 11px; color: var(--text-secondary);">TĂ­nh cháº¥t: ${act.calcMode === 'trip' ? 'TĂ­nh theo Chuyáº¿n' : 'TĂ­nh theo Giá»'}</small>
+                    </span>
+                </label>
+                <div class="form-group" id="admin-ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding: 0 4px; margin-bottom: 0;">
+                    <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiáº¿t'}</label>
+                    <input type="text" class="admin-ot-custom-activity-detail" data-act-id="${act.id}" placeholder="${act.placeholder || 'Nháº­p chi tiáº¿t...'}" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
+                </div>
+            </div>
+        `).join('');
+
+        // Bind input listeners for new text inputs to update preview dynamically
+        document.querySelectorAll('.admin-ot-custom-activity-detail').forEach(input => {
+            input.addEventListener('input', updateAdminOTPreview);
+        });
+    } else {
+        if (activityGroup) activityGroup.style.display = 'none';
+    }
+}
+
+window.toggleAdminCustomActivityInput = function(actId) {
+    const chk = document.querySelector(`.admin-ot-custom-activity-checkbox[data-act-id="${actId}"]`);
+    if (chk && chk.checked) {
+        // Tá»± Ä‘á»™ng bá» chá»n cĂ¡c checkbox hoáº¡t Ä‘á»™ng khĂ¡c (chá»‰ cho phĂ©p chá»n tá»‘i Ä‘a 1 hoáº¡t Ä‘á»™ng)
+        document.querySelectorAll('.admin-ot-custom-activity-checkbox').forEach(other => {
+            if (other !== chk) {
+                other.checked = false;
+                // áº¨n chi tiáº¿t cá»§a checkbox kia Ä‘i
+                const otherDetailGroup = document.getElementById(`admin-ot-custom-activity-detail-group-${other.dataset.actId}`);
+                if (otherDetailGroup) otherDetailGroup.style.display = 'none';
+            }
+        });
+        
+        // Hiá»ƒn thá»‹ khung nháº­p chi tiáº¿t cá»§a hoáº¡t Ä‘á»™ng nĂ y
+        const detailGroup = document.getElementById(`admin-ot-custom-activity-detail-group-${actId}`);
+        if (detailGroup) detailGroup.style.display = 'block';
+    } else {
+        // áº¨n khung nháº­p chi tiáº¿t
+        const detailGroup = document.getElementById(`admin-ot-custom-activity-detail-group-${actId}`);
+        if (detailGroup) detailGroup.style.display = 'none';
+    }
+    updateAdminOTPreview();
+};
+
+window.toggleModalCustomActivityInput = function(actId) {
+    const chk = document.querySelector(`.modal-rec-custom-activity-checkbox[data-act-id="${actId}"]`);
+    const noteEl = document.getElementById('modal-rec-note');
+    if (chk && chk.checked) {
+        // Tá»± Ä‘á»™ng bá» chá»n cĂ¡c checkbox hoáº¡t Ä‘á»™ng khĂ¡c
+        document.querySelectorAll('.modal-rec-custom-activity-checkbox').forEach(other => {
+            if (other !== chk) {
+                other.checked = false;
+                const otherDetailGroup = document.getElementById(`modal-rec-custom-activity-detail-group-${other.dataset.actId}`);
+                if (otherDetailGroup) otherDetailGroup.style.display = 'none';
+            }
+        });
+        
+        // Hiá»ƒn thá»‹ khung nháº­p chi tiáº¿t cá»§a hoáº¡t Ä‘á»™ng nĂ y
+        const detailGroup = document.getElementById(`modal-rec-custom-activity-detail-group-${actId}`);
+        if (detailGroup) {
+            detailGroup.style.display = 'block';
+            const detailInput = detailGroup.querySelector('.modal-rec-custom-activity-detail');
+            if (detailInput) detailInput.required = true;
+        }
+        if (noteEl) {
+            noteEl.required = false;
+            noteEl.placeholder = `Máº·c Ä‘á»‹nh: ${chk.dataset.actName}...`;
+        }
+    } else {
+        // áº¨n khung nháº­p chi tiáº¿t
+        const detailGroup = document.getElementById(`modal-rec-custom-activity-detail-group-${actId}`);
+        if (detailGroup) {
+            detailGroup.style.display = 'none';
+            const detailInput = detailGroup.querySelector('.modal-rec-custom-activity-detail');
+            if (detailInput) {
+                detailInput.required = false;
+                detailInput.value = '';
+            }
+        }
+        // Kiá»ƒm tra xem cĂ²n checkbox nĂ o khĂ¡c Ä‘Æ°á»£c chá»n khĂ´ng
+        const anyChecked = document.querySelector('.modal-rec-custom-activity-checkbox:checked');
+        if (!anyChecked && noteEl) {
+            noteEl.required = true;
+            noteEl.placeholder = "LĂ½ do tÄƒng ca, phĂ¢n cĂ´ng cĂ´ng viá»‡c...";
+        }
+    }
+};
+
+
+function setupEmployeeCustomActivitiesUI() {
+    const listContainer = document.getElementById('ot-custom-activities-list');
+    const activityGroup = document.getElementById('ot-custom-activity-group');
+    if (!listContainer) return;
+
+    // Reset container first
+    listContainer.innerHTML = '';
+    
+    const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+    const userTeam = currentUser ? (currentUser.team || '') : '';
+
+    if (!userTeam || userTeam === 'admin') {
+        if (activityGroup) activityGroup.style.display = 'none';
+        return;
+    }
+
+    // Find the team settings of userTeam in TEAMS
+    const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === userTeam);
+    const activities = (teamObj && teamObj.customActivities) ? teamObj.customActivities : [];
+
+    const isBackfillChecked = document.getElementById('ot-backfill')?.checked || false;
+    const dateVal = document.getElementById('ot-date')?.value || '';
+    const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
+
+    if (activities.length > 0) {
+        if (activityGroup) activityGroup.style.display = (isBackfillChecked && !isSunday) ? 'none' : 'block';
+
+        listContainer.innerHTML = activities.map(act => `
+            <div class="custom-activity-item" style="margin-bottom: 14px; text-align: left;">
+                <label class="switch-label" for="chk-${act.id}" style="display: inline-flex; align-items: center; gap: 12px; cursor: pointer;">
+                    <input type="checkbox" id="chk-${act.id}" class="ot-custom-activity-checkbox" data-act-id="${act.id}" data-act-name="${act.name}" data-act-mode="${act.calcMode}" onchange="toggleEmployeeCustomActivityInput('${act.id}')">
+                    <span class="switch-slider"></span>
+                    <span class="switch-text" style="display: flex; flex-direction: column; gap: 2px;">
+                        <strong>${act.name}</strong>
+                        <small style="font-size: 11px; color: var(--text-secondary);">TĂ­nh cháº¥t: ${act.calcMode === 'trip' ? 'TĂ­nh theo Chuyáº¿n' : 'TĂ­nh theo Giá»'}</small>
+                    </span>
+                </label>
+                <div class="form-group" id="ot-custom-activity-detail-group-${act.id}" style="display: none; margin-top: 8px; padding: 0 4px; margin-bottom: 0;">
+                    <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">${act.detailLabel || 'Chi tiáº¿t'}</label>
+                    <input type="text" class="ot-custom-activity-detail" data-act-id="${act.id}" placeholder="${act.placeholder || 'Nháº­p chi tiáº¿t...'}" style="width: 100%; height: 38px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0 10px; font-size: 14px;">
+                </div>
+            </div>
+        `).join('');
+
+        // Bind input listeners for new text inputs to update preview dynamically
+        document.querySelectorAll('.ot-custom-activity-detail').forEach(input => {
+            input.addEventListener('input', updateOTPreview);
+        });
+    } else {
+        if (activityGroup) activityGroup.style.display = 'none';
+    }
+}
+
+window.toggleEmployeeCustomActivityInput = function(actId) {
+    const chk = document.querySelector(`.ot-custom-activity-checkbox[data-act-id="${actId}"]`);
+    if (chk && chk.checked) {
+        // Tá»± Ä‘á»™ng bá» chá»n cĂ¡c checkbox hoáº¡t Ä‘á»™ng khĂ¡c (chá»‰ cho phĂ©p chá»n tá»‘i Ä‘a 1 hoáº¡t Ä‘á»™ng)
+        document.querySelectorAll('.ot-custom-activity-checkbox').forEach(other => {
+            if (other !== chk) {
+                other.checked = false;
+                // áº¨n chi tiáº¿t cá»§a checkbox kia Ä‘i
+                const otherDetailGroup = document.getElementById(`ot-custom-activity-detail-group-${other.dataset.actId}`);
+                if (otherDetailGroup) otherDetailGroup.style.display = 'none';
+            }
+        });
+        
+        // Hiá»ƒn thá»‹ khung nháº­p chi tiáº¿t cá»§a hoáº¡t Ä‘á»™ng nĂ y
+        const detailGroup = document.getElementById(`ot-custom-activity-detail-group-${actId}`);
+        if (detailGroup) detailGroup.style.display = 'block';
+    } else {
+        // áº¨n khung nháº­p chi tiáº¿t
+        const detailGroup = document.getElementById(`ot-custom-activity-detail-group-${actId}`);
+        if (detailGroup) detailGroup.style.display = 'none';
+    }
+    updateOTPreview();
+};
+
+async function forgotPasswordDialog() {
+    const modalBody = `
+        <div id="modal-form-forgot-password" class="login-form active" style="text-align: left; padding: 0;">
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">TĂªn Ä‘Äƒng nháº­p</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="forgot-username" placeholder="Nháº­p tĂªn Ä‘Äƒng nháº­p..." class="input-sm" style="flex:1; box-sizing:border-box;" required>
+                    <button type="button" id="btn-forgot-send-otp" class="btn btn-primary btn-sm" style="height:38px; white-space:nowrap; font-size:12px;">Gá»­i OTP</button>
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">MĂ£ OTP xĂ¡c thá»±c (Nháº­n qua Email)</label>
+                <input type="text" id="forgot-otp" placeholder="Nháº­p mĂ£ OTP 6 chá»¯ sá»‘..." class="input-sm" style="width:100%; box-sizing:border-box;" required maxlength="6" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Máº­t kháº©u má»›i</label>
+                <input type="password" id="forgot-new-password" placeholder="Nháº­p máº­t kháº©u má»›i..." class="input-sm" style="width:100%; box-sizing:border-box;" required>
+            </div>
+        </div>
+    `;
+    
+    showModal('QuĂªn máº­t kháº©u', modalBody, [
+        { text: 'Há»§y', class: 'btn-ghost' },
+        { text: 'Äáº·t láº¡i máº­t kháº©u', class: 'btn btn-primary btn-sm', action: async () => {
+            const username = document.getElementById('forgot-username').value.trim();
+            const otpCode = document.getElementById('forgot-otp').value.trim();
+            const newPassword = document.getElementById('forgot-new-password').value.trim();
+            
+            if (!username || !otpCode || !newPassword) {
+                return showToast('Vui lĂ²ng nháº­p Ä‘áº§y Ä‘á»§ thĂ´ng tin!', 'error');
+            }
+            if (newPassword.length < 4) {
+                return showToast('Máº­t kháº©u má»›i pháº£i cĂ³ Ă­t nháº¥t 4 kĂ½ tá»±!', 'error');
+            }
+            
+            try {
+                const res = await api('/api/auth/forgot-password', 'POST', { username, otpCode, newPassword });
+                showToast(res.message || 'Äáº·t láº¡i máº­t kháº©u thĂ nh cĂ´ng!', 'success');
+            } catch (e) {
+                showToast(e.message || 'Lá»—i Ä‘áº·t láº¡i máº­t kháº©u!', 'error');
+            }
+        }}
+    ]);
+
+    const btnSendOtp = document.getElementById('btn-forgot-send-otp');
+    if (btnSendOtp) {
+        btnSendOtp.onclick = async () => {
+            const username = document.getElementById('forgot-username').value.trim();
+            if (!username) {
+                return showToast('Vui lĂ²ng nháº­p TĂªn Ä‘Äƒng nháº­p trÆ°á»›c!', 'error');
+            }
+            btnSendOtp.disabled = true;
+            btnSendOtp.textContent = 'Gá»­i...';
+            try {
+                await api('/api/auth/send-email-otp', 'POST', { username });
+                showToast('MĂ£ OTP Ä‘Ă£ Ä‘Æ°á»£c gá»­i Ä‘áº¿n Email liĂªn káº¿t cá»§a tĂ i khoáº£n!', 'success');
+            } catch (e) {
+                showToast(e.message || 'Lá»—i gá»­i OTP!', 'error');
+            } finally {
+                btnSendOtp.disabled = false;
+                btnSendOtp.textContent = 'Gá»­i OTP';
+            }
+        };
+    }
+}
+
+// ==================== EMAIL SETUP MODAL FOR FIRST LOGIN ====================
+function injectEmailSetupModalStyle() {
+    if (document.getElementById('email-setup-style')) return;
+    const style = document.createElement('style');
+    style.id = 'email-setup-style';
+    style.textContent = `
+        .email-setup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .email-setup-overlay.active {
+            opacity: 1;
+        }
+        .email-setup-modal {
+            background: rgba(30, 41, 59, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            padding: 30px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+            color: #f8fafc;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: left;
+        }
+        .email-setup-overlay.active .email-setup-modal {
+            transform: scale(1);
+        }
+        .email-setup-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+        .email-setup-desc {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .email-setup-group {
+            margin-bottom: 20px;
+        }
+        .email-setup-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .email-setup-input {
+            width: 100%;
+            height: 42px;
+            padding: 0 14px;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #f8fafc;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+        .email-setup-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        .email-setup-btn {
+            width: 100%;
+            height: 42px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .email-setup-btn:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+        .email-setup-btn:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .email-setup-btn-ghost {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #cbd5e1;
+        }
+        .email-setup-btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function showEmailSetupOverlay(username, onVerified) {
+    injectEmailSetupModalStyle();
+    
+    const oldOverlay = document.getElementById('email-setup-overlay');
+    if (oldOverlay) oldOverlay.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'email-setup-overlay';
+    overlay.className = 'email-setup-overlay';
+    
+    overlay.innerHTML = `
+        <div class="email-setup-modal">
+            <div class="email-setup-title">XĂ¡c thá»±c Email tĂ i khoáº£n</div>
+            <div class="email-setup-desc">
+                TĂ i khoáº£n cá»§a báº¡n chÆ°a cáº¥u hĂ¬nh Email. Vui lĂ²ng nháº­p vĂ  xĂ¡c thá»±c Email cá»§a báº¡n Ä‘á»ƒ nháº­n mĂ£ OTP khĂ´i phá»¥c máº­t kháº©u sau nĂ y.
+            </div>
+            
+            <div id="email-setup-step1">
+                <div class="email-setup-group">
+                    <label class="email-setup-label">Äá»‹a chá»‰ Email</label>
+                    <input type="email" id="email-setup-address" class="email-setup-input" placeholder="ten-cua-ban@company.com" required>
+                </div>
+                <button type="button" id="email-setup-btn-send" class="email-setup-btn">Gá»­i mĂ£ OTP</button>
+            </div>
+            
+            <div id="email-setup-step2" style="display: none;">
+                <div class="email-setup-group" style="margin-bottom: 12px;">
+                    <label class="email-setup-label" id="email-setup-sent-label">MĂ£ OTP (6 chá»¯ sá»‘)</label>
+                    <input type="text" id="email-setup-otp" class="email-setup-input" placeholder="Nháº­p 6 chá»¯ sá»‘..." maxlength="6" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" id="email-setup-btn-back" class="email-setup-btn email-setup-btn-ghost" style="flex: 1;">Quay láº¡i</button>
+                    <button type="button" id="email-setup-btn-verify" class="email-setup-btn" style="flex: 2;">XĂ¡c nháº­n</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.classList.add('active'), 10);
+    
+    const btnSend = document.getElementById('email-setup-btn-send');
+    const btnVerify = document.getElementById('email-setup-btn-verify');
+    const btnBack = document.getElementById('email-setup-btn-back');
+    const inputEmail = document.getElementById('email-setup-address');
+    const inputOtp = document.getElementById('email-setup-otp');
+    
+    const step1 = document.getElementById('email-setup-step1');
+    const step2 = document.getElementById('email-setup-step2');
+    
+    let targetEmail = '';
+    
+    btnSend.onclick = async () => {
+        const email = inputEmail.value.trim();
+        if (!email) {
+            return showToast('Vui lĂ²ng nháº­p Ä‘á»‹a chá»‰ Email!', 'error');
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return showToast('Äá»‹a chá»‰ Email khĂ´ng há»£p lá»‡!', 'error');
+        }
+        
+        btnSend.disabled = true;
+        btnSend.textContent = 'Äang gá»­i mĂ£ OTP...';
+        
+        try {
+            await api('/api/auth/send-email-otp', 'POST', { username, email });
+            targetEmail = email;
+            
+            showToast('ÄĂ£ gá»­i mĂ£ OTP tá»›i email cá»§a báº¡n!', 'success');
+            step1.style.display = 'none';
+            step2.style.display = 'block';
+            inputOtp.value = '';
+            inputOtp.focus();
+        } catch (e) {
+            showToast(e.message || 'Lá»—i gá»­i mĂ£ OTP!', 'error');
+        } finally {
+            btnSend.disabled = false;
+            btnSend.textContent = 'Gá»­i mĂ£ OTP';
+        }
+    };
+    
+    btnBack.onclick = () => {
+        step2.style.display = 'none';
+        step1.style.display = 'block';
+        inputEmail.focus();
+    };
+    
+    btnVerify.onclick = async () => {
+        const otpCode = inputOtp.value.trim();
+        if (!otpCode || otpCode.length !== 6) {
+            return showToast('Vui lĂ²ng nháº­p mĂ£ OTP gá»“m 6 chá»¯ sá»‘!', 'error');
+        }
+        
+        btnVerify.disabled = true;
+        btnVerify.textContent = 'Äang xĂ¡c nháº­n...';
+        
+        try {
+            await api('/api/auth/verify-email-otp', 'POST', { username, email: targetEmail, otpCode });
+            showToast('XĂ¡c thá»±c email thĂ nh cĂ´ng!', 'success');
+            
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 300);
+            
+            if (onVerified) onVerified(targetEmail);
+        } catch (e) {
+            showToast(e.message || 'MĂ£ OTP khĂ´ng chĂ­nh xĂ¡c!', 'error');
+        } finally {
+            btnVerify.disabled = false;
+            btnVerify.textContent = 'XĂ¡c nháº­n';
+        }
+    };
+}
+
+async function approvePasswordReset(userId, fullname) {
+    const randomPassword = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit random password
+    showModal('Cáº¥p láº¡i máº­t kháº©u', `Báº¡n cĂ³ cháº¯c muá»‘n cáº¥p láº¡i máº­t kháº©u cho nhĂ¢n viĂªn <strong>${fullname}</strong>?<br>Máº­t kháº©u má»›i tá»± Ä‘á»™ng táº¡o lĂ : <strong style="font-size: 16px; color: var(--accent-orange);">${randomPassword}</strong>`, [
+        { text: 'Há»§y', class: 'btn-ghost' },
+        { text: 'Cáº¥p máº­t kháº©u má»›i', class: 'btn btn-primary btn-sm', action: async () => {
+            try {
+                await api(`/api/users/${userId}`, 'PUT', { password: randomPassword, pendingPasswordReset: false });
+                await refreshAdminUsers();
+                showToast(`ÄĂ£ cáº¥p láº¡i máº­t kháº©u má»›i cho ${fullname} thĂ nh cĂ´ng! Máº­t kháº©u lĂ : ${randomPassword}`, 'success', 8000);
+            } catch (e) {
+                showToast(e.message, 'error');
+            }
+        }}
+    ]);
+}
+
+// Expose global methods for inline HTML onclick handlers
+window.editRecordDialog = editRecordDialog;
+window.deleteRecord = deleteRecord;
+window.approveRecord = approveRecord;
+window.rejectRecord = rejectRecord;
+window.resetUserDevice = resetUserDevice;
+window.approveUnlinkDevice = approveUnlinkDevice;
+window.rejectUnlinkDevice = rejectUnlinkDevice;
+window.editUserDialog = editUserDialog;
+window.deleteUser = deleteUser;
+window.addTeamFromModal = addTeamFromModal;
+window.renameTeamFromModal = renameTeamFromModal;
+window.deleteTeamFromModal = deleteTeamFromModal;
+window.handleDatabaseCleanup = handleDatabaseCleanup;
+window.forgotPasswordDialog = forgotPasswordDialog;
+window.approvePasswordReset = approvePasswordReset;
+})();
+
+
+

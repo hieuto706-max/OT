@@ -686,7 +686,6 @@ function migrateTeams(db) {
         if (!team.leaderIds) {
             team.leaderIds = team.leaderId ? [team.leaderId] : [];
             migrated = true;
-        }
         if (!team.customActivities) {
             team.customActivities = [];
             migrated = true;
@@ -704,9 +703,9 @@ function migrateTeams(db) {
     return migrated;
 }
 
-async function loadDB() {
-    if (dbCache) return JSON.parse(JSON.stringify(dbCache));
-    if (dbLoadingPromise) return dbLoadingPromise.then(res => JSON.parse(JSON.stringify(res)));
+async function loadDB(clone = true) {
+    if (dbCache) return clone ? JSON.parse(JSON.stringify(dbCache)) : dbCache;
+    if (dbLoadingPromise) return dbLoadingPromise.then(res => clone ? JSON.parse(JSON.stringify(res)) : res);
 
     dbLoadingPromise = (async () => {
         if (config.DATABASE_URL) {
@@ -813,7 +812,7 @@ async function loadDB() {
         return defaultDB;
     })();
 
-    return dbLoadingPromise.then(res => JSON.parse(JSON.stringify(res)));
+    return dbLoadingPromise.then(res => clone ? JSON.parse(JSON.stringify(res)) : res);
 }
 
 function saveDB(data) {

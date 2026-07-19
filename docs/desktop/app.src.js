@@ -658,9 +658,9 @@ async function initAdminDashboard(user) {
         adminOtDate.max = todayStr;
     }
 
-    await loadTeams();
-    await populateUserFilter();
     await Promise.all([
+        loadTeams(),
+        populateUserFilter(),
         refreshAdminRecords(),
         refreshAdminUsers(),
         refreshReport(),
