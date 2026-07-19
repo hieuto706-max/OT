@@ -1056,7 +1056,7 @@ async function handleAPI(req, res, urlPath, method) {
             totalUsers: employees.length,
             pendingOT: pendingRecords.length,
             pendingUnlinks: pendingUnlinksCount,
-            totalOTMonth: approvedRecords.filter(r => !r.customActivity || r.calcMode === 'hour').reduce((s, r) => s + r.totalHours, 0),
+            totalOTMonth: approvedRecords.reduce((s, r) => s + r.totalHours, 0),
             totalTripsMonth: approvedRecords.filter(r => r.customActivity && (r.calcMode === 'trip' || !r.calcMode)).length
         };
         
@@ -1101,7 +1101,7 @@ async function handleAPI(req, res, urlPath, method) {
             totalUsers: employees.length,
             pendingOT: pendingRecords.length,
             pendingUnlinks: pendingUnlinksCount,
-            totalOTMonth: approvedRecords.filter(r => !r.customActivity || r.calcMode === 'hour').reduce((s, r) => s + r.totalHours, 0),
+            totalOTMonth: approvedRecords.reduce((s, r) => s + r.totalHours, 0),
             totalTripsMonth: approvedRecords.filter(r => r.customActivity && (r.calcMode === 'trip' || !r.calcMode)).length
         });
     }
