@@ -221,7 +221,7 @@ const AuthController = {
         const { userId: reqUserId, userRole: reqUserRole } = req;
 
         // Phân quyền: Chỉ Admin/Sub-Admin mới được tạo tài khoản
-        if (req.user && reqUserRole !== 'admin') {
+        if (reqUserRole !== 'admin') {
             return sendError(res, 403, 'Chỉ quản trị viên mới được tạo tài khoản mới!', req);
         }
 

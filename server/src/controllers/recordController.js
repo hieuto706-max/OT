@@ -83,7 +83,7 @@ const RecordController = {
         if (!userId || !date) return sendError(res, 400, 'Thiếu thông tin!');
 
         // Phân quyền: Nhân viên chỉ được tạo bản ghi cho chính mình
-        if (req.user && reqUserRole === 'employee' && reqUserId !== userId) {
+        if (reqUserRole === 'employee' && reqUserId !== userId) {
             return sendError(res, 403, 'Bạn chỉ được ghi nhận tăng ca cho chính mình!', req);
         }
 
@@ -247,7 +247,7 @@ const RecordController = {
             }
 
             // Phân quyền: Nhân viên chỉ được xóa bản ghi của chính mình
-            if (req.user && reqUserRole === 'employee' && record.userId !== reqUserId) {
+            if (reqUserRole === 'employee' && record.userId !== reqUserId) {
                 return sendError(res, 403, 'Bạn chỉ được xóa bản ghi của chính mình!', req);
             }
         }
@@ -279,7 +279,7 @@ const RecordController = {
         }
 
         // Phân quyền: Nhân viên chỉ được sửa bản ghi của chính mình
-        if (req.user && reqUserRole === 'employee' && record.userId !== reqUserId) {
+        if (reqUserRole === 'employee' && record.userId !== reqUserId) {
             return sendError(res, 403, 'Bạn chỉ được sửa bản ghi của chính mình!', req);
         }
 
