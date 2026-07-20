@@ -202,5 +202,7 @@ async function sendDailyPushReminders(dateStr, loadDB, saveDB) {
 module.exports = {
     VAPID_PUBLIC_KEY,
     sendPushNotification,
-    startDailyReminderJob
+    startDailyReminderJob,
+    fcmInitialized,
+    admin
 };
