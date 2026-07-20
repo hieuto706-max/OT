@@ -488,15 +488,6 @@ async function handleAdminLogin(e) {
     }
 
     try {
-        if (await isPrivateMode()) {
-            errorEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = submitBtn.dataset.originalText || 'Đăng nhập';
-            }
-            return;
-        }
-
         const data = await api('/api/auth/login', 'POST', { username, password });
         const user = data.user;
 
