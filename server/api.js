@@ -1,6 +1,7 @@
 const { authenticateToken } = require('./utils');
 const UserRepository = require('./src/repositories/userRepository');
 const { sendError } = require('./src/utils/http');
+const { checkLimit } = require('./src/utils/rateLimiter');
 
 // Import Controllers
 const AuthController = require('./src/controllers/authController');
@@ -11,23 +12,28 @@ const NotificationController = require('./src/controllers/notificationController
 const SystemController = require('./src/controllers/systemController');
 
 async function handleAPI(req, res, urlPath, method) {
-    // --- Xác thực JWT Token ---
+    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+
+    // --- 1. Rate Limiting (Giới hạn tần suất) ---
+    // Giới hạn gửi OTP: Tối đa 3 lần / 10 phút
+    if (urlPath === '/api/auth/send-email-otp' && method === 'POST') {
+        if (!checkLimit(ip, 'otp', 3, 10 * 60 * 1000)) {
+            return sendError(res, 429, 'Bạn đã yêu cầu gửi mã OTP quá nhiều lần. Vui lòng thử lại sau 10 phút!', req);
+        }
+    }
+    // Giới hạn đăng nhập: Tối đa 10 lần / 5 phút
+    if (urlPath === '/api/auth/login' && method === 'POST') {
+        if (!checkLimit(ip, 'login', 10, 5 * 60 * 1000)) {
+            return sendError(res, 429, 'Đăng nhập thất bại hoặc thử quá nhiều lần. Vui lòng thử lại sau 5 phút!', req);
+        }
+    }
+    // Giới hạn chung toàn hệ thống: Tối đa 150 request / phút
+    if (!checkLimit(ip, 'global', 150, 60 * 1000)) {
+        return sendError(res, 429, 'Quá nhiều yêu cầu từ địa chỉ IP này. Vui lòng thử lại sau!', req);
+    }
+
+    // --- 2. Xác thực JWT Token & Phân Quyền ---
     const jwtPayload = authenticateToken(req);
-    // Fallback: Hỗ trợ cơ chế cũ (x-user-id header) để backward compatible trong giai đoạn chuyển đổi
-    const reqUserId = jwtPayload ? jwtPayload.userId : req.headers['x-user-id'];
-    const reqDeviceId = jwtPayload ? jwtPayload.deviceId : req.headers['x-device-id'];
-    const reqUserRole = jwtPayload ? jwtPayload.role : null;
-    const reqUserTeam = jwtPayload ? jwtPayload.team : null;
-
-    // Gắn thông tin user vào request để các route sử dụng
-    req.user = jwtPayload || null;
-    req.userId = reqUserId;
-    req.userRole = reqUserRole;
-    req.userTeam = reqUserTeam;
-    req.deviceId = reqDeviceId;
-
-    // --- Phân quyền: Các API nhạy cảm yêu cầu JWT ---
-    // Bỏ qua auth cho: login, forgot-password, request-unlink, version, server-info, cloud-url, gist-status
     const publicEndpoints = [
         '/api/auth/login', 
         '/api/auth/forgot-password', 
@@ -44,9 +50,35 @@ async function handleAPI(req, res, urlPath, method) {
     ];
     const isPublicEndpoint = publicEndpoints.some(ep => urlPath === ep || urlPath.startsWith(ep + '/'));
 
-    if (!isPublicEndpoint && !jwtPayload && !req.headers['x-user-id']) {
-        return sendError(res, 401, 'Yêu cầu xác thực! Vui lòng đăng nhập lại.', req);
+    // Fallback: Hỗ trợ cơ chế cũ (x-user-id header) cho tài khoản nhân viên (employee)
+    let reqUserId = jwtPayload ? jwtPayload.userId : req.headers['x-user-id'];
+    let reqDeviceId = jwtPayload ? jwtPayload.deviceId : req.headers['x-device-id'];
+    let reqUserRole = jwtPayload ? jwtPayload.role : null;
+    let reqUserTeam = jwtPayload ? jwtPayload.team : null;
+
+    if (!isPublicEndpoint && !jwtPayload) {
+        if (req.headers['x-user-id']) {
+            const tempUser = await UserRepository.findById(req.headers['x-user-id']);
+            if (tempUser && tempUser.role === 'employee') {
+                // Tương thích ngược: Chỉ cho phép nhân viên dùng header x-user-id
+                reqUserId = tempUser.id;
+                reqUserRole = tempUser.role;
+                reqUserTeam = tempUser.team;
+            } else {
+                // Admin/Sub-admin bắt buộc phải có chữ ký token JWT hợp lệ
+                return sendError(res, 401, 'Yêu cầu xác thực JWT! Vui lòng đăng nhập lại.', req);
+            }
+        } else {
+            return sendError(res, 401, 'Yêu cầu xác thực! Vui lòng đăng nhập lại.', req);
+        }
     }
+
+    // Gắn thông tin user vào request để các route sử dụng
+    req.user = jwtPayload || null;
+    req.userId = reqUserId;
+    req.userRole = reqUserRole;
+    req.userTeam = reqUserTeam;
+    req.deviceId = reqDeviceId;
 
     // Kiểm tra xem tài khoản có bị xóa khỏi hệ thống hoặc bị hủy liên kết thiết bị không
     if (reqUserId && !urlPath.startsWith('/api/auth/')) {
