@@ -2878,7 +2878,48 @@ async function bulkDeleteRejectedRecords() {
     ]);
 }
 
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const exists = document.querySelector(`script[src="${src}"]`);
+        if (exists) {
+            if (window.ExcelJS) return resolve();
+            exists.onload = resolve;
+            exists.onerror = reject;
+            return;
+        }
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.body.appendChild(s);
+    });
+}
+
 async function exportExcel() {
+    if (typeof ExcelJS === 'undefined') {
+        const originalBtn = document.activeElement;
+        let originalText = '';
+        if (originalBtn && originalBtn.tagName === 'BUTTON') {
+            originalBtn.disabled = true;
+            originalText = originalBtn.textContent;
+            originalBtn.textContent = 'Đang tải thư viện Excel...';
+        }
+        try {
+            await loadScript('exceljs.min.js');
+        } catch (err) {
+            showToast('Lỗi tải thư viện Excel, vui lòng thử lại!', 'error');
+            if (originalBtn) {
+                originalBtn.disabled = false;
+                originalBtn.textContent = originalText;
+            }
+            return;
+        }
+        if (originalBtn) {
+            originalBtn.disabled = false;
+            originalBtn.textContent = originalText;
+        }
+    }
+
     const month = document.getElementById('report-filter-month').value;
     const parts = month.split('-');
     const displayMonth = parts.length === 2 ? `${parts[1]}-${parts[0]}` : month;
