@@ -17,6 +17,23 @@ function sendError(res, statusCode, message, req) {
     sendJSON(res, statusCode, { error: message }, req);
 }
 
+function sanitizeObject(obj) {
+    if (typeof obj !== 'object' || obj === null) return obj;
+    if (Array.isArray(obj)) {
+        obj.forEach(sanitizeObject);
+        return obj;
+    }
+    const unsafeKeys = ['__proto__', 'constructor', 'prototype'];
+    for (const key of Object.keys(obj)) {
+        if (unsafeKeys.includes(key)) {
+            delete obj[key];
+        } else if (typeof obj[key] === 'object') {
+            sanitizeObject(obj[key]);
+        }
+    }
+    return obj;
+}
+
 function parseBody(req) {
     return new Promise((resolve, reject) => {
         let body = '';
@@ -30,7 +47,8 @@ function parseBody(req) {
         });
         req.on('end', () => {
             try {
-                resolve(body ? JSON.parse(body) : {});
+                const parsed = body ? JSON.parse(body) : {};
+                resolve(sanitizeObject(parsed));
             } catch (e) {
                 reject(e);
             }
@@ -42,5 +60,6 @@ function parseBody(req) {
 module.exports = {
     sendJSON,
     sendError,
-    parseBody
+    parseBody,
+    sanitizeObject
 };
