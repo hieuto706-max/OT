@@ -15,8 +15,8 @@ function logError(message, ...args) {
 // ==================== PASSWORD HASHING ====================
 function hashPassword(password) {
     const salt = crypto.randomBytes(16).toString('hex');
-    const hash = crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
-    return `pbkdf2$100000$${salt}$${hash}`;
+    const hash = crypto.pbkdf2Sync(password, salt, 20000, 64, 'sha512').toString('hex');
+    return `pbkdf2$20000$${salt}$${hash}`;
 }
 
 function verifyPassword(password, stored) {

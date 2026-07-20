@@ -84,6 +84,17 @@ const AuthController = {
             return sendError(res, 401, 'Sai mật khẩu!', req);
         }
 
+        // Tự động nâng cấp mật khẩu cũ (100.000 vòng) sang chuẩn mới nhanh hơn (20.000 vòng)
+        if (user.password.startsWith('pbkdf2$100000$')) {
+            try {
+                const newHash = hashPassword(password || '');
+                await UserRepository.update(user.id, { password: newHash });
+                user.password = newHash;
+            } catch (e) {
+                console.error('[Password Upgrade] Lỗi tự động nâng cấp mật khẩu:', e.message);
+            }
+        }
+
         const { password: _, ...safeUser } = user;
         const token = signJWT({ userId: user.id, role: user.role, team: user.team || '' }, 24 * 3600);
         const requireEmailSetup = user.role === 'admin' && !user.email;
