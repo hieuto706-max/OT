@@ -104,7 +104,11 @@ const RecordController = {
         const currentMonth = today.substring(0, 7);
         const closedMonths = await RecordRepository.getClosedMonths();
         const isMonthClosed = closedMonths && closedMonths.includes(recordMonth);
-        const isBackfill = !!body.isBackfill || isMonthClosed || (note && (note.includes('[BÙ THÁNG TRƯỚC]') || note.includes('[TĂNG THÁNG NÀY]')));
+        const isBackfill = !!body.isBackfill || (note && (note.includes('[BÙ THÁNG TRƯỚC]') || note.includes('[TĂNG THÁNG NÀY]')));
+
+        if (isMonthClosed && !isBackfill) {
+            return sendError(res, 400, 'Tháng này đã chốt công, vui lòng tích chọn "Bù" để đăng ký tăng ca bù!');
+        }
 
         let resolvedRole = reqUserRole;
         if (!resolvedRole && reqUserId) {
@@ -309,7 +313,11 @@ const RecordController = {
         const currentRecMonth = currentRecDate.substring(0, 7);
         const isMonthClosed = closedMonths && closedMonths.includes(currentRecMonth);
         const currentNote = updates.note;
-        const isBackfill = !!body.isBackfill || isMonthClosed || (currentNote && (currentNote.includes('[BÙ THÁNG TRƯỚC]') || currentNote.includes('[TĂNG THÁNG NÀY]')));
+        const isBackfill = !!body.isBackfill || (currentNote && (currentNote.includes('[BÙ THÁNG TRƯỚC]') || currentNote.includes('[TĂNG THÁNG NÀY]')));
+
+        if (isMonthClosed && !isBackfill) {
+            return sendError(res, 400, 'Tháng này đã chốt công, vui lòng tích chọn "Bù" để sửa đổi tăng ca bù!');
+        }
 
         updates.isBackfill = isBackfill;
 
