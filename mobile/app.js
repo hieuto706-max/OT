@@ -359,6 +359,25 @@ function getOTCoefficient(dateStr, holidaysList = []) {
     return 1.5;
 }
 
+function getStandardWorkingDays(monthStr) {
+    if (!monthStr || !/^\d{4}-\d{2}$/.test(monthStr)) {
+        return 26;
+    }
+    const parts = monthStr.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    let workingDays = 0;
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month - 1, day);
+        const dayOfWeek = date.getDay();
+        if (dayOfWeek !== 0) { // Exclude Sunday
+            workingDays++;
+        }
+    }
+    return workingDays;
+}
+
 // Tạo vân tay trình duyệt để giữ cố định Device ID trên Web ngay cả khi xóa lịch sử
 function getBrowserFingerprint(username) {
     if (!username) {
@@ -1769,15 +1788,21 @@ async function loadProfileStats() {
         mobileOTRecords = mergedRecords;
         
         const savedSalary = localStorage.getItem('emp_basic_salary') || '';
-        const savedDays = localStorage.getItem('emp_standard_days') || '26';
+        const savedDays = localStorage.getItem('emp_standard_days') || '';
         
         const salaryInput = document.getElementById('mobile-basic-salary');
         const daysInput = document.getElementById('mobile-standard-days');
         if (salaryInput && salaryInput.value === '') {
             salaryInput.value = savedSalary;
         }
-        if (daysInput && daysInput.value === '26' && savedDays !== '26') {
-            daysInput.value = savedDays;
+        
+        const autoDays = getStandardWorkingDays(month);
+        if (daysInput) {
+            if (savedDays !== '') {
+                daysInput.value = savedDays;
+            } else {
+                daysInput.value = autoDays;
+            }
         }
         
         setTimeout(() => {

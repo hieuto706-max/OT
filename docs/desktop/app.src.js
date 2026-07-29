@@ -220,6 +220,25 @@ function getOTCoefficient(dateStr, holidaysList = []) {
     return 1.5;
 }
 
+function getStandardWorkingDays(monthStr) {
+    if (!monthStr || !/^\d{4}-\d{2}$/.test(monthStr)) {
+        return 26;
+    }
+    const parts = monthStr.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    let workingDays = 0;
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month - 1, day);
+        const dayOfWeek = date.getDay();
+        if (dayOfWeek !== 0) { // Exclude Sunday
+            workingDays++;
+        }
+    }
+    return workingDays;
+}
+
 function formatDateFull(date) {
     const days = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
     const months = ['tháng 1', 'tháng 2', 'tháng 3', 'tháng 4', 'tháng 5', 'tháng 6',
@@ -4391,15 +4410,21 @@ async function handleAdminOTSubmit(e) {
 
         // Load private salary inputs
         const savedSalary = localStorage.getItem('emp_basic_salary') || '';
-        const savedDays = localStorage.getItem('emp_standard_days') || '26';
+        const savedDays = localStorage.getItem('emp_standard_days') || '';
         
         const salaryInput = document.getElementById('emp-basic-salary');
         const daysInput = document.getElementById('emp-standard-days');
         if (salaryInput && salaryInput.value === '') {
             salaryInput.value = savedSalary;
         }
-        if (daysInput && daysInput.value === '26' && savedDays !== '26') {
-            daysInput.value = savedDays;
+        
+        const autoDays = getStandardWorkingDays(month);
+        if (daysInput) {
+            if (savedDays !== '') {
+                daysInput.value = savedDays;
+            } else {
+                daysInput.value = autoDays;
+            }
         }
         
         setTimeout(() => {
