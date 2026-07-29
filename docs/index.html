@@ -28,7 +28,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="landing.css?v=1.4.6">
+    <link rel="stylesheet" href="landing.css?v=1.4.7">
     <!-- Prevent login portal flashing if already logged in -->
     <style id="anti-flash-style">
       html.user-logged-in #login-welcome-box {
@@ -116,7 +116,7 @@
                     </defs>
                 </svg>
                 <span class="logo-text">OT Manager</span>
-                <span class="web-version-badge">v1.4.6</span>
+                <span class="web-version-badge">v1.4.7</span>
             </div>
             <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle navigation">
                 <div class="hamburger-bar"></div>
@@ -610,6 +610,24 @@
                     <h2 class="section-title text-center">Nhật ký cập nhật hệ thống</h2>
                     <div class="changelog-timeline">
                         
+                        <!-- Item: v1.4.7 -->
+                        <div class="changelog-item">
+                            <div class="changelog-header-btn">
+                                <span class="changelog-badge">v1.4.7</span>
+                                <span class="changelog-date">30/07/2026</span>
+                                <span class="changelog-chevron">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="changelog-body-expand">
+                                <ul class="changelog-list">
+                                    <li>**Độ chính xác giờ quy đổi:** Loại bỏ hoàn toàn việc làm tròn số giờ quy đổi để hiển thị chính xác các khoảng thời gian lẻ (ví dụ: hiển thị chi tiết 0.25h, 0.75h thay vì làm tròn về một chữ số thập phân), đảm bảo bảng lương công bằng 100%.</li>
+                                </ul>
+                            </div>
+                        </div>
+
                         <!-- Item: v1.4.6 -->
                         <div class="changelog-item">
                             <div class="changelog-header-btn">
@@ -1036,6 +1054,6 @@
         </div>
     </div>
 
-    <script src="landing.js?v=1.4.6"></script>
+    <script src="landing.js?v=1.4.7"></script>
 </body>
 </html>

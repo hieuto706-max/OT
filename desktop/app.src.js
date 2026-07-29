@@ -2737,8 +2737,8 @@ window.toggleReportRow = function(row, userId) {
                                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
                                             <td><strong>${formatDate(r.date)}</strong>${isBackfillText}</td>
                                             <td>${coefText}</td>
-                                            <td><strong>${actualHours.toFixed(1)}</strong> giờ</td>
-                                            <td><strong style="color:var(--accent-green);">${eqHours.toFixed(1)}</strong> giờ</td>
+                                            <td><strong>${parseFloat(actualHours.toFixed(2))}</strong> giờ</td>
+                                            <td><strong style="color:var(--accent-green);">${parseFloat(eqHours.toFixed(2))}</strong> giờ</td>
                                             <td><span style="color: var(--text-primary);">${province}</span></td>
                                             <td>${statusText}</td>
                                             <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${r.note || ''}">${r.note || '-'}</td>
@@ -2854,7 +2854,7 @@ async function refreshReport(cachedUsers, cachedRecords) {
         Object.entries(teamOTs).forEach(([team, val]) => {
             if (val > maxTeamHours) {
                 maxTeamHours = val;
-                topTeam = `${team} (${val.toFixed(1)}h)`;
+                topTeam = `${team} (${parseFloat(val.toFixed(2))}h)`;
             }
         });
         
@@ -2862,8 +2862,8 @@ async function refreshReport(cachedUsers, cachedRecords) {
         const activeCount = activeEmployeesSet.size;
         const avgHours = activeCount > 0 ? (totalOTHours / activeCount) : 0;
         
-        document.getElementById('rep-stat-total-hours').textContent = `${totalOTHours.toFixed(1)}h`;
-        document.getElementById('rep-stat-avg-hours').textContent = `${avgHours.toFixed(1)}h`;
+        document.getElementById('rep-stat-total-hours').textContent = `${parseFloat(totalOTHours.toFixed(2))}h`;
+        document.getElementById('rep-stat-avg-hours').textContent = `${parseFloat(avgHours.toFixed(2))}h`;
         document.getElementById('rep-stat-active-users').textContent = activeCount.toString();
         const topTeamEl = document.getElementById('rep-stat-top-team');
         topTeamEl.textContent = topTeam;
@@ -2938,9 +2938,9 @@ async function refreshReport(cachedUsers, cachedRecords) {
                 </td>
                 <td><span class="tag" style="background: rgba(156,163,175,0.1); color: var(--text-primary);">${teamName}</span></td>
                 <td style="text-align: center;">${days} ngày</td>
-                <td style="text-align: center;">${lunchH.toFixed(1)}h</td>
-                <td style="text-align: center;">${eveningH.toFixed(1)}h</td>
-                <td style="text-align: center;"><span class="text-purple text-bold" style="font-size: 13px;">${totalH.toFixed(1)}h</span></td>
+                <td style="text-align: center;">${parseFloat(lunchH.toFixed(2))}h</td>
+                <td style="text-align: center;">${parseFloat(eveningH.toFixed(2))}h</td>
+                <td style="text-align: center;"><span class="text-purple text-bold" style="font-size: 13px;">${parseFloat(totalH.toFixed(2))}h</span></td>
             </tr>`;
         }).join('');
         
@@ -2973,7 +2973,7 @@ function renderAnalyticsCharts(teamOTs, dailyOTs) {
                         <div class="chart-team-progress-wrapper">
                             <div class="chart-team-progress" style="width: ${percent}%;"></div>
                         </div>
-                        <span class="chart-team-value">${hours.toFixed(1)}h</span>
+                        <span class="chart-team-value">${parseFloat(hours.toFixed(2))}h</span>
                     </div>
                 `;
             }).join('');
@@ -2994,7 +2994,7 @@ function renderAnalyticsCharts(teamOTs, dailyOTs) {
                 const percent = maxDailyHours > 0 ? (hours / maxDailyHours) * 100 : 0;
                 return `
                     <div class="chart-day-column">
-                        <div class="chart-day-tooltip">Ngày ${dayNum}: ${hours.toFixed(1)}h</div>
+                        <div class="chart-day-tooltip">Ngày ${dayNum}: ${parseFloat(hours.toFixed(2))}h</div>
                         <div class="chart-day-bar" style="--height: ${percent}%;"></div>
                         <span class="chart-day-label">${dayNum}</span>
                     </div>
@@ -3896,13 +3896,13 @@ function updateOTPreview() {
     if (isBackfill) {
         const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
         if (hoursVal > 0) {
-            items.push({ label: 'Bù tăng ca', value: `${hoursVal.toFixed(1)} giờ` });
+            items.push({ label: 'Bù tăng ca', value: `${parseFloat(hoursVal.toFixed(2))} giờ` });
             total = hoursVal;
         }
     } else if (isSunday) {
         const hoursVal = parseFloat(document.getElementById('ot-backfill-hours').value) || 0;
         if (hoursVal > 0) {
-            items.push({ label: 'Tăng ca Chủ Nhật', value: `${hoursVal.toFixed(1)} giờ` });
+            items.push({ label: 'Tăng ca Chủ Nhật', value: `${parseFloat(hoursVal.toFixed(2))} giờ` });
             total = hoursVal;
         }
     } else {
@@ -3918,7 +3918,7 @@ function updateOTPreview() {
         if (otStart && otEnd) {
             const eveningHours = calculateEveningOT(otStart, otEnd);
             if (eveningHours > 0) {
-                items.push({ label: `OT Chiều (${otStart} - ${otEnd})`, value: `${eveningHours.toFixed(1)} giờ` });
+                items.push({ label: `OT Chiều (${otStart} - ${otEnd})`, value: `${parseFloat(eveningHours.toFixed(2))} giờ` });
                 total += eveningHours;
             }
         }
@@ -3935,7 +3935,7 @@ function updateOTPreview() {
     previewItems.innerHTML = items.length === 0
         ? '<div class="preview-item"><span>Chưa có OT nào được chọn</span></div>'
         : items.map(i => `<div class="preview-item"><span>${i.label}</span><span class="preview-item-value">${i.value}</span></div>`).join('');
-    previewTotal.textContent = total.toFixed(1);
+    previewTotal.textContent = parseFloat(total.toFixed(2));
 
     // Cập nhật tính bắt buộc của ghi chú
     const noteEl = document.getElementById('ot-note');
@@ -4037,12 +4037,12 @@ function updateAdminOTPreview() {
     if (isBackfill) {
         const hours = parseFloat(backfillHours?.value) || 0;
         ticketLunch.textContent = '-';
-        ticketEvening.textContent = `Bù tăng ca: ${hours.toFixed(1)} giờ`;
+        ticketEvening.textContent = `Bù tăng ca: ${parseFloat(hours.toFixed(2))} giờ`;
         total = hours;
     } else if (isSunday) {
         const hours = parseFloat(backfillHours?.value) || 0;
         ticketLunch.textContent = '-';
-        ticketEvening.textContent = `Tăng ca Chủ Nhật: ${hours.toFixed(1)} giờ`;
+        ticketEvening.textContent = `Tăng ca Chủ Nhật: ${parseFloat(hours.toFixed(2))} giờ`;
         total = hours;
     } else {
         // Lunch
@@ -4057,7 +4057,7 @@ function updateAdminOTPreview() {
         if (otStart && otEnd && otStart.value && otEnd.value) {
             const eveningHours = calculateEveningOT(otStart.value, otEnd.value);
             if (eveningHours > 0) {
-                ticketEvening.innerHTML = `<span class="preview-active-badge">✓ ${otStart.value} - ${otEnd.value}</span> (${eveningHours.toFixed(1)} giờ)`;
+                ticketEvening.innerHTML = `<span class="preview-active-badge">✓ ${otStart.value} - ${otEnd.value}</span> (${parseFloat(eveningHours.toFixed(2))} giờ)`;
                 total += eveningHours;
             } else {
                 ticketEvening.textContent = 'Không đăng ký';
@@ -4068,7 +4068,7 @@ function updateAdminOTPreview() {
     }
 
     // Total
-    ticketTotal.textContent = `${total.toFixed(1)} giờ`;
+    ticketTotal.textContent = `${parseFloat(total.toFixed(2))} giờ`;
 
     // Cập nhật tính bắt buộc của ghi chú cho Admin
     if (otNote) {
@@ -4183,8 +4183,8 @@ async function handleOTSubmit(e) {
         });
 
         const action = data.updated ? 'Đã cập nhật' : 'Đã lưu';
-        successEl.textContent = `${action} ${totalHours.toFixed(1)} giờ tăng ca!`;
-        showToast(`${action} ${totalHours.toFixed(1)} giờ tăng ca`);
+        successEl.textContent = `${action} ${parseFloat(totalHours.toFixed(2))} giờ tăng ca!`;
+        showToast(`${action} ${parseFloat(totalHours.toFixed(2))} giờ tăng ca`);
 
         if (otBackfill) otBackfill.checked = false;
         const normalInputs = document.getElementById('ot-normal-inputs');
@@ -4316,8 +4316,8 @@ async function handleAdminOTSubmit(e) {
         });
 
         const action = data.updated ? 'Đã cập nhật' : 'Đã lưu';
-        successEl.textContent = `${action} ${totalHours.toFixed(1)} giờ tăng ca thành công!`;
-        showToast(`${action} ${totalHours.toFixed(1)} giờ tăng ca`);
+        successEl.textContent = `${action} ${parseFloat(totalHours.toFixed(2))} giờ tăng ca thành công!`;
+        showToast(`${action} ${parseFloat(totalHours.toFixed(2))} giờ tăng ca`);
 
         document.getElementById('admin-ot-user').value = '';
         if (targetSelf) {
@@ -4544,7 +4544,7 @@ async function handleAdminOTSubmit(e) {
                      </svg>
                  </div>
                  <div class="stat-info">
-                     <span class="stat-value">${totalHours.toFixed(1)}h <span style="font-size: 11px; font-weight: normal; color: var(--text-secondary);">(QĐ: ${totalEqHours.toFixed(1)}h)</span></span>
+                     <span class="stat-value">${totalHours.toFixed(1)}h <span style="font-size: 11px; font-weight: normal; color: var(--text-secondary);">(QĐ: ${parseFloat(totalEqHours.toFixed(2))}h)</span></span>
                      <span class="stat-label">Tổng OT (Gốc / Quy đổi)</span>
                  </div>
              </div>
@@ -4585,7 +4585,7 @@ async function handleAdminOTSubmit(e) {
                     <td>
                         <div style="display:flex; flex-direction:column; align-items:center; gap:2px; margin: 4px 0;">
                             <span class="badge-total-ot" style="font-weight:700;">Gốc: ${actualHours.toFixed(1)}h</span>
-                            <span class="tag tag-success" style="font-size:10px; font-weight:700; background:rgba(16,185,129,0.15); color:var(--accent-green); padding: 1px 4px; border-radius:4px; white-space:nowrap;">QĐ: ${eqHours.toFixed(1)}h</span>
+                            <span class="tag tag-success" style="font-size:10px; font-weight:700; background:rgba(16,185,129,0.15); color:var(--accent-green); padding: 1px 4px; border-radius:4px; white-space:nowrap;">QĐ: ${parseFloat(eqHours.toFixed(2))}h</span>
                         </div>
                     </td>
                     <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
