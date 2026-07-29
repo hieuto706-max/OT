@@ -3682,19 +3682,9 @@ async function loadSystemSettings() {
             OT_LUNCH_HOURS = Number(settings.lunchOTHours) || 1;
             WORK_END = settings.eveningOTStart || "16:30";
             
-            const inputCompany = document.getElementById('setting-company-name-input');
-            if (inputCompany) {
-                inputCompany.value = settings.companyName || "Hệ thống OT Manager";
-            }
-            
             const inputLunch = document.getElementById('setting-lunch-ot-input');
             if (inputLunch) {
                 inputLunch.value = settings.lunchOTHours !== undefined ? settings.lunchOTHours : 1.0;
-            }
-            
-            const inputEvening = document.getElementById('setting-evening-ot-start-input');
-            if (inputEvening) {
-                inputEvening.value = settings.eveningOTStart || "16:30";
             }
             
             const inputUnlink = document.getElementById('setting-auto-unlink-input');
@@ -3713,21 +3703,15 @@ async function loadSystemSettings() {
 }
 
 async function saveCompanySettings() {
-    const inputCompany = document.getElementById('setting-company-name-input');
     const inputLunch = document.getElementById('setting-lunch-ot-input');
-    const inputEvening = document.getElementById('setting-evening-ot-start-input');
     const inputUnlink = document.getElementById('setting-auto-unlink-input');
     const inputHolidays = document.getElementById('setting-holidays-input');
     
-    if (!inputCompany || !inputLunch || !inputEvening || !inputUnlink || !inputHolidays) return;
+    if (!inputLunch || !inputUnlink || !inputHolidays) return;
     
-    const companyValue = inputCompany.value.trim();
-    if (!companyValue) {
-        return showToast('Tên công ty không được để trống!', 'error');
-    }
-    
+    const companyValue = currentSystemSettings.companyName || "Hệ thống OT Manager";
     const lunchValue = parseFloat(inputLunch.value) || 1.0;
-    const eveningValue = inputEvening.value || "16:30";
+    const eveningValue = currentSystemSettings.eveningOTStart || "16:30";
     const unlinkValue = inputUnlink.checked;
     const holidaysValue = inputHolidays.value.trim();
     
@@ -3768,6 +3752,22 @@ async function saveCompanySettings() {
         }
     }
 }
+
+function toggleSettingsCollapse() {
+    const body = document.getElementById('settings-collapsible-body');
+    const icon = document.getElementById('settings-collapse-icon');
+    if (body) {
+        const isCollapsed = body.style.display === 'none' || body.style.display === '';
+        if (isCollapsed) {
+            body.style.display = 'flex';
+            if (icon) icon.style.transform = 'rotate(180deg)';
+        } else {
+            body.style.display = 'none';
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        }
+    }
+}
+window.toggleSettingsCollapse = toggleSettingsCollapse;
 
 async function handleDatabaseCleanup() {
     const monthInput = document.getElementById('cleanup-month-input');

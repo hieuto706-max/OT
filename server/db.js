@@ -175,7 +175,7 @@ async function initPGTable() {
 
         // Bảng cấu hình hệ thống
         await client.query(`
-            CREATE TABLE IF NOT EXISTS pg_settings (
+            CREATE TABLE IF NOT EXISTS ot_settings (
                 key VARCHAR(100) PRIMARY KEY,
                 value TEXT NOT NULL,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -254,7 +254,7 @@ async function loadDBFromPG() {
             const recordsRes = await client.query('SELECT * FROM pg_records ORDER BY date DESC, created_at');
             const teamsRes = await client.query('SELECT data FROM pg_teams');
             const closedRes = await client.query('SELECT month FROM pg_closed_months');
-            const settingsRes = await client.query('SELECT * FROM pg_settings');
+            const settingsRes = await client.query('SELECT * FROM ot_settings');
 
             await client.query('COMMIT');
 
@@ -383,12 +383,12 @@ async function saveDBToPG(data) {
             `, [m]);
         }
 
-        // === Đồng bộ bảng pg_settings ===
-        await client.query('DELETE FROM pg_settings');
+        // === Đồng bộ bảng ot_settings ===
+        await client.query('DELETE FROM ot_settings');
         if (data.settings) {
             for (const [key, value] of Object.entries(data.settings)) {
                 await client.query(`
-                    INSERT INTO pg_settings (key, value) VALUES ($1, $2)
+                    INSERT INTO ot_settings (key, value) VALUES ($1, $2)
                 `, [key, value]);
             }
         }
