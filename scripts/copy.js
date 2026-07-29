@@ -129,14 +129,17 @@ if (fs.existsSync(resourcesSrc)) {
     });
 }
 
-// Ghi tệp build.json chứa timestamp bản dựng mới để hỗ trợ cập nhật vá lỗi (hotfix) không đổi số phiên bản
+// Ghi tệp build.json chứa timestamp bản dựng mới và version để hỗ trợ cập nhật vá lỗi (hotfix) và định danh phiên bản
 try {
+    const pkgPath = path.join(__dirname, '..', 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
     const buildPath = path.join(__dirname, '..', 'server', 'build.json');
     const buildData = {
+        version: pkg.version,
         buildTime: Date.now()
     };
     fs.writeFileSync(buildPath, JSON.stringify(buildData, null, 2), 'utf8');
-    console.log(`Generated build.json with buildTime: ${buildData.buildTime}`);
+    console.log(`Generated build.json with version: ${buildData.version}, buildTime: ${buildData.buildTime}`);
 } catch (e) {
     console.error('Lỗi khi ghi build.json:', e.message);
 }

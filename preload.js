@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 let cloudUrl = 'https://api.otmanager.id.vn';
-let localVersion = '1.4.4';
+let localVersion = '1.4.7';
 let localBuildTime = 0;
 
 // Phát hiện app đã được đóng gói (.asar) hay đang chạy dev
