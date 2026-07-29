@@ -1803,10 +1803,23 @@ async function loadProfileStats() {
         const hasCustomActivities = !!(teamSettings && teamSettings.customActivities && teamSettings.customActivities.length > 0);
         const totalCustom = approvedRecords.filter(r => r.customActivity && r.customActivity.trim() !== '').length;
 
+        const holidays = (mobileSystemSettings.holidays || "")
+            .split(',')
+            .map(d => d.trim())
+            .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+
+        let totalEq = 0;
+        approvedRecords.forEach(r => {
+            if (!r.customActivity || r.calcMode === 'hour') {
+                const coef = getOTCoefficient(r.date, holidays);
+                totalEq += (r.totalHours || 0) * coef;
+            }
+        });
+
         document.getElementById('stat-days').textContent = days;
         document.getElementById('stat-lunch').textContent = lunch.toFixed(1);
         document.getElementById('stat-evening').textContent = evening.toFixed(1);
-        document.getElementById('stat-total').textContent = total.toFixed(1);
+        document.getElementById('stat-total').innerHTML = `${total.toFixed(1)}<span style="font-size: 0.65rem; font-weight: normal; color: var(--text-muted); display: block; margin-top: 2px; white-space: nowrap;">(QĐ: ${totalEq.toFixed(1)}h)</span>`;
         
         const tripsEl = document.getElementById('stat-trips');
         const tripsWrapper = document.getElementById('mobile-stat-trips-wrapper');

@@ -4407,7 +4407,7 @@ async function handleAdminOTSubmit(e) {
         }, 50);
 
         // Stats calculation (based on all records of this month)
-        let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0;
+        let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0, totalEqHours = 0;
         records.forEach(r => {
             const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
             const isApproved = r.status !== 'pending' && r.status !== 'rejected';
@@ -4418,6 +4418,9 @@ async function handleAdminOTSubmit(e) {
                     totalLunchOT += lh;
                     totalEveningOT += isBackfill ? 0 : (r.eveningOTHours || 0);
                     totalHours += r.totalHours;
+
+                    const coef = getOTCoefficient(r.date, holidays);
+                    totalEqHours += (r.totalHours || 0) * coef;
                 }
             }
         });
@@ -4509,17 +4512,17 @@ async function handleAdminOTSubmit(e) {
                     <span class="stat-label">OT Chiều</span>
                 </div>
             </div>
-            <div class="stat-card stat-card-green">
-                <div class="stat-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                    </svg>
-                </div>
-                <div class="stat-info">
-                    <span class="stat-value">${totalHours.toFixed(1)}h</span>
-                    <span class="stat-label">Tổng OT</span>
-                </div>
-            </div>
+             <div class="stat-card stat-card-green">
+                 <div class="stat-icon">
+                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                         <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                     </svg>
+                 </div>
+                 <div class="stat-info">
+                     <span class="stat-value">${totalHours.toFixed(1)}h <span style="font-size: 11px; font-weight: normal; color: var(--text-secondary);">(QĐ: ${totalEqHours.toFixed(1)}h)</span></span>
+                     <span class="stat-label">Tổng OT (Gốc / Quy đổi)</span>
+                 </div>
+             </div>
             ${customCardHTML}
         `;
 
