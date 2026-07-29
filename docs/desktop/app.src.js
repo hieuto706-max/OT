@@ -2689,6 +2689,7 @@ window.toggleReportRow = function(row, userId) {
         const month = document.getElementById('report-filter-month').value;
         
         api(`/api/records?userId=${userId}&month=${month}`).then(data => {
+            const detailedRecords = data.records || [];
             const holidays = (currentSystemSettings.holidays || "")
                 .split(',')
                 .map(d => d.trim())

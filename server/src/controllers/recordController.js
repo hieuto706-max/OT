@@ -104,8 +104,7 @@ const RecordController = {
         const currentMonth = today.substring(0, 7);
         const closedMonths = await RecordRepository.getClosedMonths();
         const isMonthClosed = closedMonths && closedMonths.includes(recordMonth);
-        const isPastMonth = recordMonth < currentMonth;
-        const isBackfill = !!body.isBackfill || isMonthClosed || isPastMonth || (note && (note.includes('[BÙ THÁNG TRƯỚC]') || note.includes('[TĂNG THÁNG NÀY]')));
+        const isBackfill = !!body.isBackfill || isMonthClosed || (note && (note.includes('[BÙ THÁNG TRƯỚC]') || note.includes('[TĂNG THÁNG NÀY]')));
 
         let resolvedRole = reqUserRole;
         if (!resolvedRole && reqUserId) {
@@ -309,9 +308,8 @@ const RecordController = {
         const currentRecDate = updates.date;
         const currentRecMonth = currentRecDate.substring(0, 7);
         const isMonthClosed = closedMonths && closedMonths.includes(currentRecMonth);
-        const isPastMonth = currentRecMonth < currentMonth;
         const currentNote = updates.note;
-        const isBackfill = !!body.isBackfill || isMonthClosed || isPastMonth || (currentNote && (currentNote.includes('[BÙ THÁNG TRƯỚC]') || currentNote.includes('[TĂNG THÁNG NÀY]')));
+        const isBackfill = !!body.isBackfill || isMonthClosed || (currentNote && (currentNote.includes('[BÙ THÁNG TRƯỚC]') || currentNote.includes('[TĂNG THÁNG NÀY]')));
 
         updates.isBackfill = isBackfill;
 
