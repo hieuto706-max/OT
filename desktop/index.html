@@ -27,7 +27,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.4.4">
+    <link rel="stylesheet" href="style.css?v=1.4.5">
     <style>
       /* Styles for the analytics charts */
       .chart-team-row {
@@ -241,7 +241,7 @@
                     <p id="login-error-admin" class="form-error"></p>
                 </form>
                 <div class="login-version" id="login-version" style="margin-top: 20px; text-align: center; color: var(--text-muted); font-size: 11px; line-height: 1.6;">
-                    <div>Phiên bản <span class="login-ver-val">v1.4.4</span></div>
+                    <div>Phiên bản <span class="login-ver-val">v1.4.5</span></div>
                     <div>Phát triển bởi: Đội ngũ phát triển OT Manager</div>
                     <div>Hỗ trợ kỹ thuật: support@otmanager.id.vn</div>
                     <div style="margin-top: 8px; font-size: 10px; opacity: 0.8; max-width: 280px; margin-left: auto; margin-right: auto; line-height: 1.4;">
@@ -928,7 +928,10 @@
 
                             <!-- Note -->
                             <div class="form-group">
-                                <label for="admin-ot-note" class="field-label">Ghi chú công việc</label>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <label for="admin-ot-note" class="field-label" style="margin: 0;">Ghi chú công việc</label>
+                                    <select id="admin-ot-predefined-reasons" class="input-sm" style="max-width: 220px; height: 26px; padding: 0 4px; font-size: 11px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; display: none;"></select>
+                                </div>
                                 <textarea id="admin-ot-note" placeholder="Lý do tăng ca, phân công công việc..." style="width:100%; min-height:80px; padding:10px 12px; box-sizing:border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px; resize:vertical;" required></textarea>
                             </div>
 
@@ -1031,6 +1034,60 @@
                                 Thiết lập Team
                             </button>
                         </div>
+
+                        <!-- Card 1.5: Company Configuration -->
+                        <div class="card" style="background: var(--bg-glass); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <h4 style="margin: 0 0 12px 0; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="color:var(--accent-orange);">
+                                        <path d="M3 21h18M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2M5 21V7m14 14V7M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4M8 11h2m4 0h2"/>
+                                    </svg>
+                                    Cấu hình Chung & Báo cáo
+                                </h4>
+                                <p style="font-size: 13px; color: var(--text-secondary); margin: 0 0 16px 0; line-height: 1.5;">
+                                    Quản lý tên doanh nghiệp hiển thị trên Excel, thiết lập thời gian làm thêm ca trưa/tối và cấu hình bảo mật thiết bị nhân viên.
+                                </p>
+                                <div class="form-group" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: 0;">Tên Công ty / Doanh nghiệp:</label>
+                                    <input type="text" id="setting-company-name-input" class="input-sm" style="width: 100%;" placeholder="Ví dụ: Công ty Cổ phần ABC">
+                                </div>
+                                <div style="display: flex; gap: 12px; margin-bottom: 14px;">
+                                    <div class="form-group" style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                                        <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: 0;">Số giờ OT Trưa:</label>
+                                        <input type="number" id="setting-lunch-ot-input" class="input-sm" style="width: 100%;" min="0.5" max="4.0" step="0.5" placeholder="Mặc định: 1.0">
+                                    </div>
+                                    <div class="form-group" style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                                        <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: 0;">Bắt đầu ca tối:</label>
+                                        <input type="time" id="setting-evening-ot-start-input" class="input-sm" style="width: 100%;">
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 16px;">
+                                    <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 4px 0;">
+                                        <span style="font-size: 13px; color: var(--text-secondary);">
+                                            <strong>Tự động duyệt đổi thiết bị</strong>
+                                            <p style="margin: 2px 0 0 0; font-size: 11px; color: var(--text-muted); font-weight: normal; line-height: 1.3;">Hủy liên kết thiết bị cũ tự động ngay khi nhân viên yêu cầu.</p>
+                                        </span>
+                                        <div class="switch-control">
+                                            <input type="checkbox" id="setting-auto-unlink-input">
+                                            <span class="switch-slider"></span>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: 0;">Danh sách ngày nghỉ Lễ (YYYY-MM-DD, cách bởi dấu phẩy):</label>
+                                    <textarea id="setting-holidays-input" class="input-sm" style="width: 100%; height: 50px; font-family: monospace; font-size: 11px; resize: none; padding: 6px;" placeholder="Ví dụ: 2026-01-01, 2026-04-30, 2026-05-01"></textarea>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" id="btn-save-company-settings" style="width: fit-content;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                    <polyline points="17 21 17 13 7 13 7 21"/>
+                                    <polyline points="7 3 7 8 15 8"/>
+                                </svg>
+                                Lưu thiết lập
+                            </button>
+                        </div>
+                        
                         <!-- Card 2: Memory/Database Cleanup -->
                         <div class="card" style="background: var(--bg-glass); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; display: flex; flex-direction: column; justify-content: space-between;">
                             <div>
@@ -1228,7 +1285,10 @@
 
 
                             <div class="form-group">
-                                <label for="ot-note">Ghi chú</label>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <label for="ot-note" style="margin: 0;">Ghi chú</label>
+                                    <select id="ot-predefined-reasons" class="input-sm" style="max-width: 220px; height: 26px; padding: 0 4px; font-size: 11px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; display: none;"></select>
+                                </div>
                                 <textarea id="ot-note" placeholder="Lý do tăng ca, phân công công việc..." required></textarea>
                             </div>
 
@@ -1302,6 +1362,38 @@
                                 Tổng hợp giờ làm việc tăng ca
                             </h3>
                         </div>
+                        
+                        <!-- Panel nhập lương bảo mật (Chỉ lưu ở LocalStorage của máy) -->
+                        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; margin: 20px; display: flex; flex-direction: column; gap: 15px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="color: var(--accent-orange);">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                </svg>
+                                <span style="font-size: 14px; font-weight: 700; color: var(--text-primary);">Tính toán Thu nhập tăng ca (Bảo mật - Chỉ lưu trên máy bạn)</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: 0;">Lương cơ bản tháng (VND):</label>
+                                    <input type="number" id="emp-basic-salary" class="input-sm" style="width: 100%;" min="0" placeholder="Ví dụ: 9000000" oninput="updateEmployeeOTIncome()">
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; gap: 6px;">
+                                    <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin: 0;">Số ngày công tiêu chuẩn (ngày/tháng):</label>
+                                    <input type="number" id="emp-standard-days" class="input-sm" style="width: 100%;" min="1" max="31" value="26" oninput="updateEmployeeOTIncome()">
+                                </div>
+                            </div>
+                            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: var(--radius-md); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span style="font-size: 11px; color: var(--text-secondary); display: block;">Thu nhập tăng ca dự kiến (tháng này):</span>
+                                    <strong id="emp-ot-income-total" style="font-size: 18px; color: var(--accent-green);">0 VND</strong>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-size: 11px; color: var(--text-muted); display: block;">Lương 1 giờ làm việc:</span>
+                                    <span id="emp-hourly-rate" style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">0 VND/h</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="stats-row" id="emp-stats-cards" style="margin-bottom: 0;">
                             <!-- Will be dynamically populated by JS -->
                         </div>
@@ -1330,9 +1422,9 @@
     <datalist id="provinces-datalist"></datalist>
 
     <script>
-        window.OT_LOCAL_VERSION = window.OT_LOCAL_VERSION || '1.4.4';
+        window.OT_LOCAL_VERSION = window.OT_LOCAL_VERSION || '1.4.5';
     </script>
     <script src="server-config.js" defer></script>
-    <script src="app.js?v=1.4.4" defer></script>
+    <script src="app.js?v=1.4.5" defer></script>
 </body>
 </html>

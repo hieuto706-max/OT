@@ -4,6 +4,30 @@ const JavaScriptObfuscator = require('javascript-obfuscator');
 
 console.log('Starting sync & obfuscation process...');
 
+// Generate build timestamp
+const buildTime = Date.now();
+
+// Automatically update CACHE_NAME in both desktop/sw.js and mobile/sw.js
+try {
+    const swDesktopPath = path.join(__dirname, '..', 'desktop', 'sw.js');
+    if (fs.existsSync(swDesktopPath)) {
+        let swContent = fs.readFileSync(swDesktopPath, 'utf8');
+        swContent = swContent.replace(/const CACHE_NAME = ['"].*?['"];/g, `const CACHE_NAME = 'ot-manager-build-${buildTime}';`);
+        fs.writeFileSync(swDesktopPath, swContent, 'utf8');
+        console.log(`Updated desktop/sw.js CACHE_NAME to: ot-manager-build-${buildTime}`);
+    }
+    
+    const swMobilePath = path.join(__dirname, '..', 'mobile', 'sw.js');
+    if (fs.existsSync(swMobilePath)) {
+        let swContent = fs.readFileSync(swMobilePath, 'utf8');
+        swContent = swContent.replace(/const CACHE_NAME = ['"].*?['"];/g, `const CACHE_NAME = 'ot-manager-build-${buildTime}';`);
+        fs.writeFileSync(swMobilePath, swContent, 'utf8');
+        console.log(`Updated mobile/sw.js CACHE_NAME to: ot-manager-build-${buildTime}`);
+    }
+} catch (e) {
+    console.error('Error updating sw.js versions:', e.message);
+}
+
 // Cấu hình xáo trộn mã nguồn mức độ nhẹ (giống thu gọn code - minification) để tránh bị Antivirus chặn nhầm
 const obfuscateConfig = {
     compact: true,

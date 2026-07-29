@@ -67,7 +67,12 @@ const UserController = {
                 teamSettings = team;
             }
         }
-        return sendJSON(res, 200, { user: { ...safeUser, teamSettings } });
+        
+        const { loadDB } = require('../../db');
+        const db = await loadDB();
+        const settings = db.settings || { companyName: "Hệ thống OT Manager" };
+        
+        return sendJSON(res, 200, { user: { ...safeUser, teamSettings, settings } });
     },
 
     async delete(req, res, urlPath) {

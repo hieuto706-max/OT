@@ -63,8 +63,8 @@ if (isGitHubPages && (
 }
 const localServerUrl = isGitHubPages ? savedServerIp : window.location.origin;
 let API_BASE = localServerUrl;
-const OT_LUNCH_HOURS = 1;
-const WORK_END = '16:30';
+let OT_LUNCH_HOURS = 1;
+let WORK_END = '16:30';
 let TEAMS = [];
 const PROVINCES = [
     "An Giang", "Bà Rịa – Vũng Tàu", "Bạc Liêu", "Bắc Giang", "Bắc Kạn", "Bắc Ninh", "Bến Tre", "Bình Dương", "Bình Định", "Bình Phước", "Bình Thuận", "Cà Mau", "Cần Thơ", "Cao Bằng", "Đà Nẵng", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp", "Gia Lai", "Hà Giang", "Hà Nam", "Hà Nội", "Hà Tĩnh", "Hải Dương", "Hải Phòng", "Hậu Giang", "Hòa Bình", "Hưng Yên", "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu", "Lạng Sơn", "Lào Cai", "Lâm Đồng", "Long An", "Nam Định", "Nghệ An", "Ninh Bình", "Ninh Thuận", "Phú Thọ", "Phú Yên", "Quảng Bình", "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sóc Trăng", "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang", "TP. Hồ Chí Minh", "Trà Vinh", "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
@@ -74,6 +74,7 @@ let currentAdminRecType = 'ot';
 let currentEmpRecType = 'ot';
 let loadedUsers = [];
 let loadedRecords = [];
+let employeeOTRecords = [];
 
 // Report Redesign global state variables
 let reportSearchQuery = '';
@@ -206,6 +207,17 @@ function generateId() {
 function formatDate(dateStr) {
     const [y, m, d] = dateStr.split('-');
     return `${d}/${m}/${y}`;
+}
+
+function getOTCoefficient(dateStr, holidaysList = []) {
+    if (holidaysList && holidaysList.includes(dateStr)) {
+        return 3.0;
+    }
+    const date = new Date(dateStr + 'T00:00:00');
+    if (date.getDay() === 0) {
+        return 2.0;
+    }
+    return 1.5;
 }
 
 function formatDateFull(date) {
@@ -675,7 +687,8 @@ async function initAdminDashboard(user) {
             refreshAdminRecords(dashboardData.records, dashboardData.users),
             refreshAdminUsers(dashboardData.users, dashboardData.records),
             refreshReport(dashboardData.users, dashboardData.records),
-            refreshAdminStats(dashboardData.stats)
+            refreshAdminStats(dashboardData.stats),
+            loadSystemSettings()
         ]);
     } catch (e) {
         console.error('Lỗi khi tải dữ liệu Dashboard hàng loạt:', e);
@@ -696,7 +709,7 @@ let modalAllUsers = [];
 
 async function openTeamSettingsModal() {
     const modalEl = document.querySelector('.modal');
-    if (modalEl) modalEl.style.maxWidth = '950px';
+    if (modalEl) modalEl.style.maxWidth = '980px';
 
     try {
         const uData = await api('/api/users');
@@ -714,26 +727,26 @@ async function openTeamSettingsModal() {
     }
 
     const body = `
-    <div style="display: flex; gap: 20px; height: 500px; text-align: left;">
+    <div class="team-settings-container">
         <!-- LEFT PANEL: Danh sách nhóm -->
-        <div style="width: 280px; display: flex; flex-direction: column; border-right: 1px solid var(--border-color); padding-right: 20px;">
-            <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text-secondary);">Danh sách nhóm</h4>
+        <div class="team-settings-left">
+            <h4 style="margin: 0 0 12px 0; font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Danh sách nhóm</h4>
             <div style="display: flex; gap: 8px; margin-bottom: 12px;">
                 <input type="text" id="input-modal-new-team" class="input-sm" placeholder="Tên team mới..." style="flex: 1; height: 32px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 8px; font-size:12px;">
                 <button class="btn btn-primary btn-sm" onclick="addTeamFromModal()" style="height: 32px; padding: 0 10px; border-radius:6px; font-size:12px; white-space: nowrap;">Thêm</button>
             </div>
-            <div style="flex: 1; overflow-y: auto;" id="modal-teams-list-container">
+            <div style="flex: 1; overflow-y: auto;" id="modal-teams-list-container" class="modal-teams-list">
                 ${renderModalTeamsRows()}
             </div>
         </div>
 
-        <!-- RIGHT PANEL: Chi tiết & Thành viên -->
-        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;" id="modal-team-details-container">
+        <!-- RIGHT PANEL: Chi tiết & Cấu hình -->
+        <div class="team-settings-right" id="modal-team-details-container">
             ${renderSelectedTeamDetails()}
         </div>
     </div>`;
 
-    showModal('Thiết lập danh sách Team', body, [
+    showModal('Thiết lập cấu hình Team', body, [
         {
             text: 'Đóng',
             class: 'btn-ghost',
@@ -770,13 +783,12 @@ function renderModalTeamsRows() {
     }
     return TEAMS.map(team => {
         const isSelected = selectedTeamIdForModal === team.id;
-        const bg = isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent';
-        const border = isSelected ? '1px solid var(--accent-blue)' : '1px solid transparent';
+        const activeClass = isSelected ? 'active' : '';
         const memberCount = modalAllUsers.filter(u => u.team === team.name && u.role === 'employee').length;
         
         return `
-        <div onclick="selectTeamInModal('${team.id}')" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; cursor: pointer; background: ${bg}; border: ${border}; transition: all 0.2s;">
-            <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div onclick="selectTeamInModal('${team.id}')" class="team-modal-card ${activeClass}">
+            <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
                 <span style="font-weight: 600; font-size: 13px; color: ${isSelected ? 'var(--accent-blue-text)' : 'var(--text-primary)'};">${team.name}</span>
                 <span style="font-size: 11px; color: var(--text-muted);">${memberCount} nhân viên</span>
             </div>
@@ -822,28 +834,40 @@ function renderSelectedTeamDetails() {
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                 <circle cx="9" cy="7" r="4"/>
             </svg>
-            <span>Vui lòng chọn hoặc thêm một team ở cột trái để bắt đầu thiết lập.</span>
+            <span style="font-size: 13px;">Vui lòng chọn hoặc thêm một team ở cột trái để bắt đầu thiết lập.</span>
         </div>`;
     }
 
-    // Thành viên hiện tại (chỉ lấy Nhân viên, loại trừ Quản lý/Trưởng nhóm)
+    // Thành viên hiện tại (chỉ lấy Nhân viên)
     const members = modalAllUsers.filter(u => u.team === team.name && u.role === 'employee');
     // Danh sách ứng viên Trưởng nhóm (Chỉ các tài khoản có role === 'admin')
     const potentialLeaders = modalAllUsers.filter(u => u.role === 'admin');
     const activeLeaderIds = team.leaderIds || (team.leaderId ? [team.leaderId] : []);
 
-    const leaderCheckboxes = potentialLeaders.map(u => {
+    const leaderItems = potentialLeaders.map(u => {
         const isChecked = activeLeaderIds.includes(u.id);
+        const isPrimary = team.leaderId === u.id;
+        
         return `
-            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; cursor: pointer; color: var(--text-primary); user-select: none;">
-                <input type="checkbox" class="modal-team-leader-chk" value="${u.id}" ${isChecked ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px; margin: 0;">
-                <span>${u.fullname} (@${u.username})</span>
-            </label>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-radius: 6px; background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); font-size: 12px; margin-bottom: 6px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-primary); user-select: none; margin: 0; flex: 1; text-align: left;">
+                    <input type="checkbox" class="modal-team-leader-chk" value="${u.id}" ${isChecked ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px; margin: 0;">
+                    <span>${u.fullname} (@${u.username})</span>
+                </label>
+                ${isChecked ? `
+                    <button class="btn-icon-only" onclick="setPrimaryLeader('${team.id}', '${u.id}')" title="${isPrimary ? 'Trưởng nhóm chính (Click để hủy)' : 'Đặt làm Trưởng nhóm chính'}" style="padding: 2px; color: ${isPrimary ? '#f59e0b' : 'var(--text-muted)'}; margin-left: 6px;">
+                        <svg viewBox="0 0 24 24" fill="${isPrimary ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" width="14" height="14">
+                            <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zM5 20h14a1 1 0 0 1 1 1v1H4v-1a1 1 0 0 1 1-1z"/>
+                        </svg>
+                    </button>
+                ` : ''}
+            </div>
         `;
     }).join('') || '<span style="color: var(--text-muted); font-size: 11px;">Chưa có tài khoản Admin nào làm ứng viên.</span>';
 
     const rules = team.autoApproveRules || { normalOT: false, backfill: false, sunday: false, customActivity: false };
     const activities = team.customActivities || [];
+    const reasons = team.predefinedReasons || [];
 
     const activitiesListHtml = activities.length === 0 
         ? '<div style="color: var(--text-muted); font-size: 11px; padding: 12px 0; text-align:center;">Chưa cấu hình hoạt động ngoài giờ nào.</div>'
@@ -852,7 +876,7 @@ function renderSelectedTeamDetails() {
                 <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
                     <span style="font-weight: 600;">${act.name}</span>
                     <span style="font-size: 10px; color: var(--text-muted);">
-                        Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến' : 'Tính theo Giờ'} | Nhãn: ${act.detailLabel || 'Không có'}
+                        Tính chất: ${act.calcMode === 'trip' ? 'Tính theo Chuyến 🚚' : 'Tính theo Giờ ⏱️'} | Nhãn: ${act.detailLabel || 'Không có'}
                     </span>
                 </div>
                 <button class="btn-icon-only delete" onclick="deleteActivityFromTeam('${team.id}', ${index})" title="Xóa" style="padding: 2px;">
@@ -863,11 +887,24 @@ function renderSelectedTeamDetails() {
             </div>
         `).join('');
 
+    const reasonsListHtml = reasons.length === 0
+        ? '<div style="color: var(--text-muted); font-size: 11px; padding: 12px 0; text-align:center;">Chưa cấu hình lý do mẫu nào.</div>'
+        : reasons.map((reason, index) => `
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 12px; margin-bottom: 6px; font-size: 12px;">
+                <span style="font-weight: 500; text-align: left; flex: 1; padding-right: 8px;">${reason}</span>
+                <button class="btn-icon-only delete" onclick="deletePredefinedReason('${team.id}', ${index})" title="Xóa" style="padding: 2px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </button>
+            </div>
+        `).join('');
+
     const membersListHtml = members.length === 0
         ? '<div style="color: var(--text-muted); font-size: 11px; text-align: center; padding: 20px;">Chưa có thành viên nào trong team.</div>'
         : members.map(m => `
-            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; font-size: 12px;">
-                <span><strong>${m.fullname}</strong> (@${m.username})</span>
+            <div class="modal-member-row" style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 6px; padding: 6px 10px; margin-bottom: 6px; font-size: 12px;">
+                <span class="member-name-text"><strong>${m.fullname}</strong> (@${m.username})</span>
                 <button class="btn-icon-only delete" onclick="removeMemberFromTeam('${m.id}')" title="Xóa khỏi nhóm" style="padding: 2px;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
                         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -882,77 +919,153 @@ function renderSelectedTeamDetails() {
         ${unassignedEmployees.map(u => `<option value="${u.id}">${u.fullname} (${u.team ? 'Đang ở: ' + u.team : 'Chưa có nhóm'})</option>`).join('')}
     `;
 
+    // Tính tổng giờ OT tháng hiện tại của team để làm Quota Bar
+    const teamUserIds = members.map(u => u.id);
+    const approvedTeamRecords = loadedRecords.filter(r => teamUserIds.includes(r.userId) && (r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected')));
+    const totalHoursApproved = approvedTeamRecords.reduce((s, r) => s + (r.totalHours || 0), 0);
+
+    const maxHours = team.maxOTHours || 0;
+    const progressPercent = maxHours > 0 ? Math.min((totalHoursApproved / maxHours) * 100, 100) : 0;
+    let progressColor = '#10b981'; // Green
+    if (progressPercent >= 80 && progressPercent < 100) {
+        progressColor = '#f59e0b'; // Orange
+    } else if (progressPercent >= 100) {
+        progressColor = '#ef4444'; // Red
+    }
+
     return `
     <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding-left: 10px;">
         <h3 style="margin: 0 0 16px 0; font-size: 15px; color: var(--accent-blue-text); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
             <span>Cấu hình nhóm: ${team.name}</span>
-            <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">Thiết lập Quỹ OT & Quy tắc</span>
+            <span style="font-size: 11px; color: var(--text-muted); font-weight: normal;">Hạn mức, Quy tắc & Lý do</span>
         </h3>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; overflow: hidden;">
-            <!-- LEFT SUB-COLUMN: Cài đặt và hoạt động -->
-            <div style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 4px;">
-                <!-- 1. Chọn Trưởng nhóm -->
-                <div class="form-group" style="margin: 0;">
-                    <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Trưởng nhóm (Leader duyệt OT - Có thể chọn nhiều)</label>
-                    <div style="max-height: 100px; overflow-y: auto; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px;">
-                        ${leaderCheckboxes}
+        <div style="display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto; padding-right: 4px;" class="settings-section-scroll">
+            
+            <!-- Phân khu 1: Thông tin chung & Hạn mức -->
+            <div class="settings-section-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span class="settings-section-title" style="margin-bottom: 0;">📊 Tiêu hao ngân sách OT</span>
+                    <button class="btn btn-ghost btn-sm" onclick="cloneTeamSettingsModal('${team.id}')" style="height: 24px; padding: 0 8px; font-size: 11px; border-radius: 4px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="margin-right: 4px; vertical-align: middle; display: inline-block;">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>Sao chép cấu hình
+                    </button>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                    <span>Tổng giờ đã duyệt tháng này: <strong style="color: var(--accent-green);">${totalHoursApproved.toFixed(1)}h</strong></span>
+                    <span>Hạn mức tối đa: <strong>${maxHours > 0 ? maxHours + 'h' : 'Không hạn mức'}</strong></span>
+                </div>
+                ${maxHours > 0 ? `
+                    <div class="quota-bar-container" title="Đã sử dụng ${progressPercent.toFixed(1)}% ngân sách">
+                        <div class="quota-bar-fill" style="width: ${progressPercent}%; background: ${progressColor};"></div>
+                    </div>
+                ` : ''}
+                <div style="display: flex; gap: 8px; margin-top: 10px; align-items: center;">
+                    <label style="font-size: 11px; color: var(--text-secondary); margin: 0; white-space: nowrap;">Đặt hạn mức mới (giờ):</label>
+                    <input type="number" id="team-quota-input" class="input-sm" value="${maxHours || ''}" placeholder="Vô hạn (Nhập 0)" style="flex: 1; height: 26px; font-size: 11px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 0 6px;">
+                    <button class="btn btn-primary btn-sm" onclick="saveTeamQuota('${team.id}')" style="height: 26px; padding: 0 8px; font-size: 11px; border-radius: 4px;">Lưu</button>
+                </div>
+            </div>
+
+            <!-- Phân khu 2: Trưởng nhóm và Quy tắc tự duyệt -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <!-- Trưởng nhóm -->
+                <div class="settings-section-card" style="margin-bottom: 0;">
+                    <span class="settings-section-title">👑 Trưởng nhóm (Leader phê duyệt)</span>
+                    <div style="max-height: 120px; overflow-y: auto; padding-right: 4px;">
+                        ${leaderItems}
                     </div>
                 </div>
-
-                <!-- 2. Quy tắc tự duyệt -->
-                <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px;">
-                    <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 2px; display: block;">Quy tắc Tự động duyệt</span>
-                    
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
-                        <input type="checkbox" id="rule-normal" ${rules.normalOT ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
-                        Tự duyệt giờ OT bình thường
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
-                        <input type="checkbox" id="rule-backfill" ${rules.backfill ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
-                        Tự duyệt Bù tăng ca (Backfill)
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
-                        <input type="checkbox" id="rule-sunday" ${rules.sunday ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
-                        Tự duyệt nếu đăng ký vào Chủ nhật
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; cursor: pointer; user-select: none; color: var(--text-primary);">
-                        <input type="checkbox" id="rule-custom" ${rules.customActivity ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')" style="width: 13px; height: 13px;">
-                        Tự duyệt Hoạt động ngoài giờ tùy chỉnh
-                    </label>
-                </div>
-
-                <!-- 3. Quản lý hoạt động tùy chọn -->
-                <div style="display: flex; flex-direction: column; flex: 1; min-height: 200px;">
-                    <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">Hoạt động ngoài giờ của Team</span>
-                    <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;">
-                        <input type="text" id="modal-new-act-name" placeholder="Tên hoạt động..." style="flex: 1.5; min-width: 100px; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
-                        <select id="modal-new-act-mode" style="flex: 1.2; min-width: 100px; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 2px; font-size:11px;">
-                            <option value="hour">Tính theo Giờ</option>
-                            <option value="trip">Tính theo Chuyến</option>
-                        </select>
-                        <input type="text" id="modal-new-act-label" placeholder="Nhãn (Tỉnh đi xe...)" style="flex: 1.5; min-width: 100px; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
-                        <button class="btn btn-primary btn-sm" onclick="addActivityToTeam('${team.id}')" style="height: 28px; border-radius:6px; font-size:11px; padding:0 10px; white-space:nowrap; flex: 1;">Thêm</button>
-                    </div>
-                    <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px; background: rgba(0,0,0,0.05); min-height: 100px;">
-                        ${activitiesListHtml}
+                
+                <!-- Quy tắc phê duyệt -->
+                <div class="settings-section-card" style="margin-bottom: 0;">
+                    <span class="settings-section-title">⚡ Quy tắc tự động phê duyệt</span>
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                        <div class="switch-container">
+                            <span>Tự duyệt OT bình thường</span>
+                            <label class="switch-control">
+                                <input type="checkbox" id="rule-normal" ${rules.normalOT ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        <div class="switch-container">
+                            <span>Tự duyệt Bù tăng ca (Backfill)</span>
+                            <label class="switch-control">
+                                <input type="checkbox" id="rule-backfill" ${rules.backfill ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        <div class="switch-container">
+                            <span>Tự duyệt đăng ký Chủ nhật</span>
+                            <label class="switch-control">
+                                <input type="checkbox" id="rule-sunday" ${rules.sunday ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        <div class="switch-container">
+                            <span>Tự duyệt hoạt động tùy chỉnh</span>
+                            <label class="switch-control">
+                                <input type="checkbox" id="rule-custom" ${rules.customActivity ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- RIGHT SUB-COLUMN: Danh sách nhân viên -->
-            <div style="display: flex; flex-direction: column; overflow: hidden;">
-                <span style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block;">Quản lý thành viên (${members.length})</span>
+            <!-- Phân khu 3: Quản lý Hoạt động & Lý do mẫu -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <!-- Hoạt động tùy chọn -->
+                <div class="settings-section-card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 230px;">
+                    <span class="settings-section-title">⚙️ Hoạt động ngoài giờ của Team</span>
+                    <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+                        <input type="text" id="modal-new-act-name" placeholder="Tên hoạt động..." style="flex: 1.5; min-width: 0; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
+                        <select id="modal-new-act-mode" style="flex: 1.2; min-width: 0; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 2px; font-size:11px;">
+                            <option value="hour">Tính giờ ⏱️</option>
+                            <option value="trip">Tính chuyến 🚚</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 4px; margin-bottom: 8px;">
+                        <input type="text" id="modal-new-act-label" placeholder="Nhãn phụ (Tỉnh đi xe...)" style="flex: 2; min-width: 0; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
+                        <button class="btn btn-primary btn-sm" onclick="addActivityToTeam('${team.id}')" style="height: 28px; border-radius:6px; font-size:11px; padding:0 10px; white-space:nowrap; flex: 1;">Thêm</button>
+                    </div>
+                    <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px; background: rgba(0,0,0,0.1); min-height: 80px;">
+                        ${activitiesListHtml}
+                    </div>
+                </div>
+
+                <!-- Lý do mẫu -->
+                <div class="settings-section-card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 230px;">
+                    <span class="settings-section-title">✏️ Lý do tăng ca mặc định (Mẫu)</span>
+                    <div style="display: flex; gap: 4px; margin-bottom: 8px;">
+                        <input type="text" id="modal-new-reason" placeholder="Ví dụ: Hỗ trợ kiểm kho..." style="flex: 2; min-width: 0; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 8px; font-size:11px;">
+                        <button class="btn btn-primary btn-sm" onclick="addPredefinedReason('${team.id}')" style="height: 28px; border-radius:6px; font-size:11px; padding:0 10px; white-space:nowrap; flex: 1;">Thêm</button>
+                    </div>
+                    <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px; background: rgba(0,0,0,0.1); min-height: 80px;">
+                        ${reasonsListHtml}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phân khu 4: Quản lý thành viên -->
+            <div class="settings-section-card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 230px;">
+                <span class="settings-section-title">👥 Quản lý thành viên (${members.length})</span>
                 <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                     <select id="modal-add-member-select" style="flex: 1; height: 30px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0 8px; font-size: 11px;">
                         ${unassignedOptions}
                     </select>
-                    <button class="btn btn-primary btn-sm" onclick="addMemberToTeamFromModal('${team.id}')" style="height: 30px; border-radius: 6px; font-size: 11px; padding: 0 10px; white-space:nowrap;">Thêm</button>
+                    <button class="btn btn-primary btn-sm" onclick="addMemberToTeamFromModal('${team.id}')" style="height: 30px; border-radius: 6px; font-size: 11px; padding: 0 10px; white-space:nowrap;">Thêm nhân viên</button>
                 </div>
-                <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px; background: rgba(0,0,0,0.05);">
+                <div style="margin-bottom: 8px;">
+                    <input type="text" id="modal-search-member-input" oninput="filterModalMembersList()" placeholder="Tìm kiếm nhanh thành viên..." style="width: 100%; box-sizing: border-box; height: 28px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0 8px; font-size: 11px;">
+                </div>
+                <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 6px; background: rgba(0,0,0,0.1);" id="modal-members-list-box">
                     ${membersListHtml}
                 </div>
             </div>
+            
         </div>
     </div>`;
 }
@@ -970,7 +1083,13 @@ async function saveTeamSettingsFromModal(teamId) {
     const ruleCustom = document.getElementById('rule-custom')?.checked;
  
     team.leaderIds = leaderIds;
-    team.leaderId = leaderIds[0] || null;
+    // ensure current leaderId is still valid or pick first leader
+    if (team.leaderId && !leaderIds.includes(team.leaderId)) {
+        team.leaderId = leaderIds[0] || null;
+    } else if (!team.leaderId) {
+        team.leaderId = leaderIds[0] || null;
+    }
+    
     team.autoApproveRules = {
         normalOT: !!ruleNormal,
         backfill: !!ruleBackfill,
@@ -994,6 +1113,156 @@ async function saveTeamSettingsFromModal(teamId) {
         showToast(e.message, 'error');
     }
 }
+
+async function setPrimaryLeader(teamId, leaderId) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+    
+    if (team.leaderId === leaderId) {
+        team.leaderId = null; // Unset primary
+    } else {
+        team.leaderId = leaderId;
+        if (!team.leaderIds.includes(leaderId)) {
+            team.leaderIds.push(leaderId);
+        }
+    }
+    
+    try {
+        await api('/api/teams', 'POST', { teams: TEAMS });
+        await loadTeams();
+        showToast('Đã cập nhật Trưởng nhóm chính!');
+        refreshModalTeamsView();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function saveTeamQuota(teamId) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+    const input = document.getElementById('team-quota-input');
+    if (!input) return;
+    const val = parseInt(input.value) || 0;
+    team.maxOTHours = val >= 0 ? val : 0;
+    try {
+        await api('/api/teams', 'POST', { teams: TEAMS });
+        await loadTeams();
+        showToast('Đã cập nhật hạn mức OT!');
+        refreshModalTeamsView();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+function cloneTeamSettingsModal(teamId) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+    
+    const otherTeams = TEAMS.filter(t => t.id !== teamId);
+    if (otherTeams.length === 0) {
+        return showToast('Không có nhóm khác để sao chép cấu hình!', 'error');
+    }
+    
+    const options = otherTeams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+    const body = `
+    <div style="text-align: left; padding: 10px 0;">
+        <div style="margin-bottom: 12px; font-weight: 500;">Chọn nhóm nguồn để sao chép cấu hình sang nhóm <strong>${team.name}</strong>:</div>
+        <select id="modal-clone-source-select" style="width: 100%; box-sizing: border-box; height: 36px; padding: 0 12px; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;">
+            ${options}
+        </select>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; line-height: 1.4;">
+            * Hành động này sẽ sao chép toàn bộ <strong>Quy tắc tự duyệt</strong>, <strong>Hoạt động ngoài giờ</strong> và <strong>Lý do tăng ca mẫu</strong> từ nhóm nguồn. Dữ liệu thành viên và Trưởng nhóm hiện tại sẽ được giữ nguyên.
+        </p>
+    </div>`;
+    
+    showModal('Sao chép cấu hình Team', body, [
+        {
+            text: 'Hủy',
+            class: 'btn-ghost',
+            action: () => {
+                setTimeout(() => openTeamSettingsModal(), 50);
+            }
+        },
+        {
+            text: 'Sao chép',
+            class: 'btn-primary btn-sm',
+            action: async () => {
+                const select = document.getElementById('modal-clone-source-select');
+                if (!select) return;
+                const sourceId = select.value;
+                const sourceTeam = TEAMS.find(t => t.id === sourceId);
+                if (!sourceTeam) return;
+                
+                // Copy configurations
+                team.autoApproveRules = JSON.parse(JSON.stringify(sourceTeam.autoApproveRules || {}));
+                team.customActivities = JSON.parse(JSON.stringify(sourceTeam.customActivities || []));
+                team.predefinedReasons = JSON.parse(JSON.stringify(sourceTeam.predefinedReasons || []));
+                team.maxOTHours = sourceTeam.maxOTHours || 0;
+                
+                try {
+                    await api('/api/teams', 'POST', { teams: TEAMS });
+                    await loadTeams();
+                    showToast(`Đã sao chép cấu hình từ nhóm ${sourceTeam.name} sang nhóm ${team.name}!`);
+                } catch (e) {
+                    showToast(e.message, 'error');
+                }
+                setTimeout(() => openTeamSettingsModal(), 50);
+            }
+        }
+    ]);
+}
+
+async function addPredefinedReason(teamId) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+    const input = document.getElementById('modal-new-reason');
+    const val = input?.value.trim();
+    if (!val) return showToast('Vui lòng nhập lý do mẫu!', 'error');
+    
+    if (!team.predefinedReasons) team.predefinedReasons = [];
+    if (team.predefinedReasons.includes(val)) {
+        return showToast('Lý do mẫu này đã tồn tại!', 'error');
+    }
+    
+    team.predefinedReasons.push(val);
+    try {
+        await api('/api/teams', 'POST', { teams: TEAMS });
+        await loadTeams();
+        showToast('Đã thêm lý do mẫu!');
+        if (input) input.value = '';
+        refreshModalTeamsView();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+async function deletePredefinedReason(teamId, index) {
+    const team = TEAMS.find(t => t.id === teamId);
+    if (!team) return;
+    
+    team.predefinedReasons.splice(index, 1);
+    try {
+        await api('/api/teams', 'POST', { teams: TEAMS });
+        await loadTeams();
+        showToast('Đã xóa lý do mẫu!');
+        refreshModalTeamsView();
+    } catch (e) {
+        showToast(e.message, 'error');
+    }
+}
+
+window.filterModalMembersList = function() {
+    const query = document.getElementById('modal-search-member-input')?.value.toLowerCase().trim() || '';
+    const memberRows = document.querySelectorAll('.modal-member-row');
+    memberRows.forEach(row => {
+        const text = row.querySelector('.member-name-text')?.textContent.toLowerCase() || '';
+        if (text.includes(query)) {
+            row.style.display = 'flex';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+};
 
 async function addActivityToTeam(teamId) {
     const team = TEAMS.find(t => t.id === teamId);
@@ -1335,7 +1604,12 @@ async function populateUserFilter(cachedUsers) {
 
 async function refreshAdminStats(cachedStats) {
     try {
-        const stats = cachedStats || await api('/api/stats');
+        let stats = cachedStats;
+        if (!stats) {
+            const adminFilterMonthEl = document.getElementById('admin-filter-month');
+            const month = adminFilterMonthEl ? adminFilterMonthEl.value : '';
+            stats = await api(`/api/stats?month=${month}`);
+        }
         document.getElementById('stat-total-users').textContent = stats.totalUsers;
         
         // Update Pending OT
@@ -1436,8 +1710,10 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
 
         const isDefaultFilter = !dateFilter && !userId && !searchUser && !searchNote && !filterTeam;
         if (isDefaultFilter && cachedRecords && cachedUsers) {
-            records = cachedRecords;
+            records = [...cachedRecords];
             users = cachedUsers;
+            // Sắp xếp các bản ghi mới nhất lên đầu
+            records.sort((a, b) => b.date.localeCompare(a.date));
         } else {
             let url = '/api/records?';
             if (month) url += `month=${month}&`;
@@ -1503,6 +1779,11 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
             if (adminRecTypeSelector) adminRecTypeSelector.style.display = 'none';
             currentAdminRecType = 'ot';
         }
+
+        const holidays = (currentSystemSettings.holidays || "")
+            .split(',')
+            .map(d => d.trim())
+            .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
 
         const filteredRecords = records.filter(r => {
             const user = users.find(u => u.id === r.userId);
@@ -1908,8 +2189,8 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
         let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0, totalTrips = 0;
         approvedAll.forEach(r => {
             totalLunchOT += r.hasLunchOT ? OT_LUNCH_HOURS : 0;
-            totalEveningOT += r.eveningOTHours;
-            totalHours += r.totalHours;
+            totalEveningOT += r.eveningOTHours || 0;
+            totalHours += r.totalHours || 0;
             if (r.deliveryProvince && r.deliveryProvince.trim() !== '') {
                 totalTrips++;
             }
@@ -2389,7 +2670,11 @@ window.toggleReportRow = function(row, userId) {
         const month = document.getElementById('report-filter-month').value;
         
         api(`/api/records?userId=${userId}&month=${month}`).then(data => {
-            const detailedRecords = data.records;
+            const holidays = (currentSystemSettings.holidays || "")
+                .split(',')
+                .map(d => d.trim())
+                .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+
             const detailRow = document.createElement('tr');
             detailRow.className = 'detail-row';
             
@@ -2404,8 +2689,9 @@ window.toggleReportRow = function(row, userId) {
                             <thead>
                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.08); text-align: left;">
                                     <th style="color: var(--text-secondary); font-weight: 600;">Ngày làm việc</th>
-                                    <th style="color: var(--text-secondary); font-weight: 600;">OT Trưa</th>
-                                    <th style="color: var(--text-secondary); font-weight: 600;">OT Chiều/Tối (Khung giờ)</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">Hệ số</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">Giờ thực tế</th>
+                                    <th style="color: var(--text-secondary); font-weight: 600;">Giờ quy đổi</th>
                                     <th style="color: var(--text-secondary); font-weight: 600;">Tuyến đường (Xe tỉnh)</th>
                                     <th style="color: var(--text-secondary); font-weight: 600;">Trạng thái</th>
                                     <th style="color: var(--text-secondary); font-weight: 600;">Ghi chú</th>
@@ -2413,16 +2699,27 @@ window.toggleReportRow = function(row, userId) {
                             </thead>
                             <tbody>
                                 ${detailedRecords.map(r => {
-                                    const hasLunch = r.hasLunchOT ? '1.0 tiếng' : '-';
-                                    const eveningH = r.eveningOTHours ? `${r.eveningOTHours.toFixed(1)} tiếng (${r.otStart} - ${r.otEnd})` : '-';
+                                    const coef = getOTCoefficient(r.date, holidays);
+                                    let coefText = '';
+                                    if (coef === 3.0) {
+                                        coefText = '<span style="font-weight:700;color:var(--accent-red);">3.0 (Lễ)</span>';
+                                    } else if (coef === 2.0) {
+                                        coefText = '<span style="font-weight:700;color:var(--accent-orange);">2.0 (CN)</span>';
+                                    } else {
+                                        coefText = '<span style="color:var(--text-secondary);">1.5 (Thường)</span>';
+                                    }
+                                    const actualHours = r.totalHours || 0;
+                                    const eqHours = actualHours * coef;
+                                    
                                     const province = r.deliveryProvince || '-';
                                     const statusText = r.status === 'approved' ? '<span class="tag tag-success">Đã duyệt</span>' : (r.status === 'pending' ? '<span class="tag tag-warning">Đang chờ</span>' : '<span class="tag tag-danger">Từ chối</span>');
                                     const isBackfillText = r.isBackfill ? '<span style="font-size: 9px; padding: 2px 5px; background: rgba(245,158,11,0.15); color: var(--accent-orange); border-radius: 4px; font-weight: 800; margin-left: 6px;">BÙ</span>' : '';
                                     return `
                                         <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
-                                            <td><strong>${r.date}</strong>${isBackfillText}</td>
-                                            <td>${hasLunch}</td>
-                                            <td>${eveningH}</td>
+                                            <td><strong>${formatDate(r.date)}</strong>${isBackfillText}</td>
+                                            <td>${coefText}</td>
+                                            <td><strong>${actualHours.toFixed(1)}</strong> giờ</td>
+                                            <td><strong style="color:var(--accent-green);">${eqHours.toFixed(1)}</strong> giờ</td>
                                             <td><span style="color: var(--text-primary);">${province}</span></td>
                                             <td>${statusText}</td>
                                             <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${r.note || ''}">${r.note || '-'}</td>
@@ -2511,8 +2808,8 @@ async function refreshReport(cachedUsers, cachedRecords) {
         users.forEach(u => {
             const ur = records.filter(r => r.userId === u.id);
             const lunchH = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
-            const eveningH = ur.reduce((s, r) => s + r.eveningOTHours, 0);
-            const totalH = lunchH + eveningH;
+            const eveningH = ur.reduce((s, r) => s + (r.eveningOTHours || 0), 0);
+            const totalH = ur.reduce((s, r) => s + (r.totalHours || 0), 0);
             
             if (totalH > 0) {
                 totalOTHours += totalH;
@@ -2528,9 +2825,7 @@ async function refreshReport(cachedUsers, cachedRecords) {
         records.forEach(r => {
             const belongsToMatchingUser = users.some(u => u.id === r.userId);
             if (belongsToMatchingUser && dailyOTs[r.date] !== undefined) {
-                const lunchH = r.hasLunchOT ? OT_LUNCH_HOURS : 0;
-                const eveningH = r.eveningOTHours || 0;
-                dailyOTs[r.date] += (lunchH + eveningH);
+                dailyOTs[r.date] += (r.totalHours || 0);
             }
         });
         
@@ -2568,8 +2863,8 @@ async function refreshReport(cachedUsers, cachedRecords) {
             const ur = records.filter(r => r.userId === u.id);
             const days = ur.length;
             const lunchH = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
-            const eveningH = ur.reduce((s, r) => s + r.eveningOTHours, 0);
-            const totalH = lunchH + eveningH;
+            const eveningH = ur.reduce((s, r) => s + (r.eveningOTHours || 0), 0);
+            const totalH = ur.reduce((s, r) => s + (r.totalHours || 0), 0);
             return { user: u, days, lunchH, eveningH, totalH };
         });
         
@@ -2959,17 +3254,22 @@ users = users.filter(u => {
             views: [{ showGridLines: true }]
         });
 
+        const holidays = (currentSystemSettings.holidays || "")
+            .split(',')
+            .map(d => d.trim())
+            .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+
         // 1. Tiêu đề chính
-        wsSummary.mergeCells('A1:G1');
+        wsSummary.mergeCells('A1:H1');
         const title1 = wsSummary.getCell('A1');
-        title1.value = `BÁO CÁO TĂNG CA - THÁNG ${displayMonth}`;
+        title1.value = `${currentSystemSettings.companyName || 'Hệ thống OT Manager'} - BÁO CÁO TĂNG CA THÁNG ${displayMonth}`;
         title1.font = { name: 'Times New Roman', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
         title1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } }; // Navy Blue đậm
         title1.alignment = { vertical: 'middle', horizontal: 'center' };
         wsSummary.getRow(1).height = 40;
 
         // 2. Ngày xuất báo cáo
-        wsSummary.mergeCells('A2:G2');
+        wsSummary.mergeCells('A2:H2');
         const subtitle1 = wsSummary.getCell('A2');
         subtitle1.value = `Ngày xuất báo cáo: ${exportTime}`;
         subtitle1.font = { name: 'Times New Roman', size: 10, italic: true, color: { argb: 'FF4B5563' } };
@@ -2985,12 +3285,12 @@ users = users.filter(u => {
         wsSummary.getRow(4).height = 22;
 
         // 5. Headers
-        const headers1 = ["STT", "Họ và tên", "Team", "Mã nhân viên", "Số ngày OT", "Tổng OT (giờ)", "Tổng chuyến xe"];
+        const headers1 = ["STT", "Họ và tên", "Team", "Mã nhân viên", "Số ngày OT", "Tổng OT thực tế (giờ)", "Tổng OT quy đổi (giờ)", "Tổng chuyến xe"];
         wsSummary.getRow(5).values = headers1;
         wsSummary.getRow(5).height = 28;
         wsSummary.getRow(5).font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
         
-        for (let col = 1; col <= 7; col++) {
+        for (let col = 1; col <= 8; col++) {
             const cell = wsSummary.getCell(5, col);
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B6CB0' } }; // Medium Navy/Blue
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -3004,12 +3304,17 @@ users = users.filter(u => {
 
         // 6. Dữ liệu nhân viên
         let summaryStartRow = 6;
-        users.forEach((u, i) => {
+        const activeUsers = users.filter(u => records.some(r => r.userId === u.id));
+        
+        activeUsers.forEach((u, i) => {
             const ur = records.filter(r => r.userId === u.id);
             const days = ur.length;
-            const lh = ur.filter(r => r.hasLunchOT).length * OT_LUNCH_HOURS;
-            const eh = ur.reduce((s, r) => s + r.eveningOTHours, 0);
             const trips = ur.filter(r => r.calcMode === 'trip' || (!r.calcMode && r.deliveryProvince && r.deliveryProvince.trim() !== '')).length;
+            const totalH = ur.reduce((s, r) => s + (r.totalHours || 0), 0);
+            const totalEqH = ur.reduce((s, r) => {
+                const coef = getOTCoefficient(r.date, holidays);
+                return s + ((r.totalHours || 0) * coef);
+            }, 0);
 
             const rowNum = summaryStartRow + i;
             const row = wsSummary.getRow(rowNum);
@@ -3019,13 +3324,14 @@ users = users.filter(u => {
                 u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team'),
                 u.username,
                 days,
-                lh + eh,
+                totalH,
+                totalEqH,
                 trips
             ];
             row.height = 22;
             row.font = { name: 'Times New Roman', size: 10 };
 
-            for (let col = 1; col <= 7; col++) {
+            for (let col = 1; col <= 8; col++) {
                 const cell = row.getCell(col);
                 cell.border = {
                     top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
@@ -3036,18 +3342,36 @@ users = users.filter(u => {
 
                 cell.alignment = { vertical: 'middle', horizontal: 'center' };
 
-                if (col === 1 || col === 5 || col === 7) {
+                if (col === 1 || col === 5 || col === 8) {
                     cell.numFmt = '0';
-                } else if (col === 6) {
+                } else if (col === 6 || col === 7) {
                     cell.numFmt = '#,##0.0';
                 }
             }
         });
 
         // Thiết lập bộ lọc tự động cho Summary Sheet
-        wsSummary.autoFilter = 'A5:G' + (summaryStartRow + users.length - 1);
+        wsSummary.autoFilter = 'A5:H' + (summaryStartRow + activeUsers.length - 1);
 
+        // Kiểm tra xem có dữ liệu OT hoặc Chuyến đi nào không để ẩn cột tương ứng
+        const totalOTAllUsers = activeUsers.reduce((sum, u) => {
+            const ur = records.filter(r => r.userId === u.id);
+            return sum + ur.reduce((s, r) => s + (r.totalHours || 0), 0);
+        }, 0);
 
+        const totalTripsAllUsers = activeUsers.reduce((sum, u) => {
+            const ur = records.filter(r => r.userId === u.id);
+            return sum + ur.filter(r => r.calcMode === 'trip' || (!r.calcMode && r.deliveryProvince && r.deliveryProvince.trim() !== '')).length;
+        }, 0);
+
+        // Ẩn cột ở sheet Tổng Hợp nếu không có dữ liệu
+        if (totalOTAllUsers === 0) {
+            wsSummary.getColumn(6).hidden = true; // Cột F: Tổng OT thực tế
+            wsSummary.getColumn(7).hidden = true; // Cột G: Tổng OT quy đổi
+        }
+        if (totalTripsAllUsers === 0) {
+            wsSummary.getColumn(8).hidden = true; // Cột H: Tổng chuyến xe
+        }
 
         // Độ rộng cột
         wsSummary.columns = [
@@ -3056,7 +3380,8 @@ users = users.filter(u => {
             { width: 18 },  // Nhóm
             { width: 16 },  // Mã nhân viên
             { width: 14 },  // Số ngày OT
-            { width: 18 },  // Tổng OT
+            { width: 20 },  // Tổng OT thực tế
+            { width: 20 },  // Tổng OT quy đổi
             { width: 18 }   // Tổng chuyến xe
         ];
 
@@ -3066,16 +3391,16 @@ users = users.filter(u => {
         });
 
         // 1. Tiêu đề chính
-        wsDetail.mergeCells('A1:I1');
+        wsDetail.mergeCells('A1:K1');
         const title2 = wsDetail.getCell('A1');
-        title2.value = `CHI TIẾT TĂNG CA - THÁNG ${displayMonth}`;
+        title2.value = `${currentSystemSettings.companyName || 'Hệ thống OT Manager'} - CHI TIẾT TĂNG CA THÁNG ${displayMonth}`;
         title2.font = { name: 'Times New Roman', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
         title2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } }; // Navy Blue đậm
         title2.alignment = { vertical: 'middle', horizontal: 'center' };
         wsDetail.getRow(1).height = 40;
 
         // 2. Ngày xuất báo cáo
-        wsDetail.mergeCells('A2:I2');
+        wsDetail.mergeCells('A2:K2');
         const subtitle2 = wsDetail.getCell('A2');
         subtitle2.value = `Ngày xuất báo cáo: ${exportTime}`;
         subtitle2.font = { name: 'Times New Roman', size: 10, italic: true, color: { argb: 'FF4B5563' } };
@@ -3091,12 +3416,12 @@ users = users.filter(u => {
         wsDetail.getRow(4).height = 22;
 
         // 5. Headers
-        const headers2 = ["STT", "Ngày", "Họ và tên", "Team", "Mã nhân viên", "Thời gian OT", "Tổng OT (giờ)", "Hoạt động / Chuyến đi", "Ghi chú"];
+        const headers2 = ["STT", "Ngày", "Họ và tên", "Team", "Mã nhân viên", "Thời gian OT", "Hệ số", "Giờ thực tế (giờ)", "Giờ quy đổi (giờ)", "Hoạt động / Chuyến đi", "Ghi chú"];
         wsDetail.getRow(5).values = headers2;
         wsDetail.getRow(5).height = 28;
         wsDetail.getRow(5).font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
         
-        for (let col = 1; col <= 9; col++) {
+        for (let col = 1; col <= 11; col++) {
             const cell = wsDetail.getCell(5, col);
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B6CB0' } }; // Medium Navy/Blue
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -3113,7 +3438,7 @@ users = users.filter(u => {
         let detailedIdx = 1;
         let isFirstUser = true;
 
-        users.forEach(u => {
+        activeUsers.forEach(u => {
             const userRecords = records.filter(r => r.userId === u.id);
             if (userRecords.length === 0) return;
             userRecords.sort((a, b) => a.date.localeCompare(b.date));
@@ -3122,7 +3447,7 @@ users = users.filter(u => {
             if (!isFirstUser) {
                 wsDetail.addRow([]);
                 wsDetail.getRow(currentDetailRow).height = 14;
-                for (let col = 1; col <= 9; col++) {
+                for (let col = 1; col <= 11; col++) {
                     const cell = wsDetail.getCell(currentDetailRow, col);
                     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } }; // Slate 100
                     cell.border = {
@@ -3157,22 +3482,28 @@ users = users.filter(u => {
                     activityVal = r.deliveryProvince;
                 }
 
+                const coef = getOTCoefficient(r.date, holidays);
+                const actualHours = r.totalHours || 0;
+                const eqHours = actualHours * coef;
+
                 const row = wsDetail.getRow(currentDetailRow);
                 row.values = [
                     detailedIdx++,
-                    formatDate(r.date),
+                    new Date(r.date + 'T00:00:00'),
                     u.fullname,
                     u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team'),
                     u.username,
                     timeRange,
-                    r.totalHours,
+                    coef,
+                    actualHours,
+                    eqHours,
                     activityVal,
                     r.note || '—'
                 ];
                 row.height = 22;
                 row.font = { name: 'Times New Roman', size: 10 };
 
-                for (let col = 1; col <= 9; col++) {
+                for (let col = 1; col <= 11; col++) {
                     const cell = row.getCell(col);
                     cell.border = {
                         top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
@@ -3185,7 +3516,11 @@ users = users.filter(u => {
 
                     if (col === 1) {
                         cell.numFmt = '0';
+                    } else if (col === 2) {
+                        cell.numFmt = 'dd/mm/yyyy';
                     } else if (col === 7) {
+                        cell.numFmt = '0.0';
+                    } else if (col === 8 || col === 9) {
                         cell.numFmt = '#,##0.0';
                     }
                 }
@@ -3196,9 +3531,9 @@ users = users.filter(u => {
         // 7. Tổng cộng chi tiết
         if (detailedIdx > 1) {
             // Áp dụng bộ lọc cho toàn bộ vùng dữ liệu chi tiết (từ dòng 5 đến dòng cuối cùng trước dòng tổng cộng)
-            wsDetail.autoFilter = 'A5:I' + (currentDetailRow - 1);
+            wsDetail.autoFilter = 'A5:K' + (currentDetailRow - 1);
         } else {
-            wsDetail.mergeCells(`A${currentDetailRow}:I${currentDetailRow}`);
+            wsDetail.mergeCells(`A${currentDetailRow}:K${currentDetailRow}`);
             const emptyCell = wsDetail.getCell(`A${currentDetailRow}`);
             emptyCell.value = "Chưa có dữ liệu chi tiết tăng ca cho tháng này.";
             emptyCell.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -3213,10 +3548,24 @@ users = users.filter(u => {
             { width: 18 },  // Nhóm
             { width: 16 },  // Mã nhân viên
             { width: 24 },  // Thời gian OT
-            { width: 16 },  // Tổng OT (giờ)
+            { width: 12 },  // Hệ số
+            { width: 18 },  // Giờ thực tế
+            { width: 18 },  // Giờ quy đổi
             { width: 20 },  // Đi xe (Tỉnh)
             { width: 35 }   // Ghi chú
         ];
+
+        // Ẩn cột ở sheet Chi Tiết nếu không có dữ liệu
+        if (totalOTAllUsers === 0) {
+            wsDetail.getColumn(6).hidden = true; // Cột F: Thời gian OT
+            wsDetail.getColumn(7).hidden = true; // Cột G: Tổng OT (giờ)
+        }
+        if (totalTripsAllUsers === 0) {
+            const hasCustomActivities = records.some(r => r.customActivity && r.calcMode !== 'trip');
+            if (!hasCustomActivities) {
+                wsDetail.getColumn(8).hidden = true; // Cột H: Hoạt động / Chuyến đi
+            }
+        }
 
         // 8. Lưu file Excel
         const buffer = await workbook.xlsx.writeBuffer();
@@ -3301,6 +3650,103 @@ async function handleCloseMonth() {
             }
         ]
     );
+}
+
+let currentSystemSettings = { companyName: "Hệ thống OT Manager" };
+
+async function loadSystemSettings() {
+    try {
+        const settings = await api('/api/settings');
+        if (settings) {
+            currentSystemSettings = settings;
+            OT_LUNCH_HOURS = Number(settings.lunchOTHours) || 1;
+            WORK_END = settings.eveningOTStart || "16:30";
+            
+            const inputCompany = document.getElementById('setting-company-name-input');
+            if (inputCompany) {
+                inputCompany.value = settings.companyName || "Hệ thống OT Manager";
+            }
+            
+            const inputLunch = document.getElementById('setting-lunch-ot-input');
+            if (inputLunch) {
+                inputLunch.value = settings.lunchOTHours !== undefined ? settings.lunchOTHours : 1.0;
+            }
+            
+            const inputEvening = document.getElementById('setting-evening-ot-start-input');
+            if (inputEvening) {
+                inputEvening.value = settings.eveningOTStart || "16:30";
+            }
+            
+            const inputUnlink = document.getElementById('setting-auto-unlink-input');
+            if (inputUnlink) {
+                inputUnlink.checked = !!settings.autoApproveUnlink;
+            }
+
+            const inputHolidays = document.getElementById('setting-holidays-input');
+            if (inputHolidays) {
+                inputHolidays.value = settings.holidays || "2026-01-01, 2026-04-30, 2026-05-01, 2026-09-02";
+            }
+        }
+    } catch (e) {
+        console.error('Error loading system settings:', e);
+    }
+}
+
+async function saveCompanySettings() {
+    const inputCompany = document.getElementById('setting-company-name-input');
+    const inputLunch = document.getElementById('setting-lunch-ot-input');
+    const inputEvening = document.getElementById('setting-evening-ot-start-input');
+    const inputUnlink = document.getElementById('setting-auto-unlink-input');
+    const inputHolidays = document.getElementById('setting-holidays-input');
+    
+    if (!inputCompany || !inputLunch || !inputEvening || !inputUnlink || !inputHolidays) return;
+    
+    const companyValue = inputCompany.value.trim();
+    if (!companyValue) {
+        return showToast('Tên công ty không được để trống!', 'error');
+    }
+    
+    const lunchValue = parseFloat(inputLunch.value) || 1.0;
+    const eveningValue = inputEvening.value || "16:30";
+    const unlinkValue = inputUnlink.checked;
+    const holidaysValue = inputHolidays.value.trim();
+    
+    const saveBtn = document.getElementById('btn-save-company-settings');
+    let originalText = '';
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = 'Đang lưu...';
+    }
+    
+    try {
+        const res = await api('/api/settings', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                companyName: companyValue,
+                lunchOTHours: lunchValue,
+                eveningOTStart: eveningValue,
+                autoApproveUnlink: unlinkValue,
+                holidays: holidaysValue
+            })
+        });
+        if (res && res.success) {
+            currentSystemSettings = res.settings;
+            OT_LUNCH_HOURS = Number(res.settings.lunchOTHours) || 1;
+            WORK_END = res.settings.eveningOTStart || "16:30";
+            showToast('Lưu cấu hình hệ thống thành công!', 'success');
+        } else {
+            showToast(res.message || 'Lỗi khi lưu cấu hình!', 'error');
+        }
+    } catch (e) {
+        console.error('Error saving system settings:', e);
+        showToast('Lỗi kết nối khi lưu cấu hình!', 'error');
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalText;
+        }
+    }
 }
 
 async function handleDatabaseCleanup() {
@@ -3737,8 +4183,8 @@ async function handleOTSubmit(e) {
         if (backfillHoursEl) backfillHoursEl.value = '';
 
         document.getElementById('ot-lunch').checked = false;
-        document.getElementById('ot-start').value = '16:30';
-        document.getElementById('ot-end').value = '16:30';
+        document.getElementById('ot-start').value = WORK_END;
+        document.getElementById('ot-end').value = WORK_END;
         document.getElementById('ot-note').value = '';
         
         document.querySelectorAll('.ot-custom-activity-checkbox').forEach(chk => {
@@ -3876,8 +4322,8 @@ async function handleAdminOTSubmit(e) {
         if (backfillHoursEl) backfillHoursEl.value = '';
 
         document.getElementById('admin-ot-lunch').checked = false;
-        document.getElementById('admin-ot-start').value = '16:30';
-        document.getElementById('admin-ot-end').value = '16:30';
+        document.getElementById('admin-ot-start').value = WORK_END;
+        document.getElementById('admin-ot-end').value = WORK_END;
         document.getElementById('admin-ot-note').value = '';
         
         document.querySelectorAll('.admin-ot-custom-activity-checkbox').forEach(chk => {
@@ -3935,7 +4381,30 @@ async function handleAdminOTSubmit(e) {
     try {
         const data = await api(`/api/records?userId=${user.id}&month=${month}`);
         const records = data.records;
+        employeeOTRecords = records;
+        
         const tbody = document.getElementById('emp-records-body');
+        const holidays = (currentSystemSettings.holidays || "")
+            .split(',')
+            .map(d => d.trim())
+            .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+
+        // Load private salary inputs
+        const savedSalary = localStorage.getItem('emp_basic_salary') || '';
+        const savedDays = localStorage.getItem('emp_standard_days') || '26';
+        
+        const salaryInput = document.getElementById('emp-basic-salary');
+        const daysInput = document.getElementById('emp-standard-days');
+        if (salaryInput && salaryInput.value === '') {
+            salaryInput.value = savedSalary;
+        }
+        if (daysInput && daysInput.value === '26' && savedDays !== '26') {
+            daysInput.value = savedDays;
+        }
+        
+        setTimeout(() => {
+            updateEmployeeOTIncome();
+        }, 50);
 
         // Stats calculation (based on all records of this month)
         let totalLunchOT = 0, totalEveningOT = 0, totalHours = 0;
@@ -4076,13 +4545,21 @@ async function handleAdminOTSubmit(e) {
             }
 
             if (currentEmpRecType === 'ot') {
+                const coef = getOTCoefficient(r.date, holidays);
+                const actualHours = r.totalHours || 0;
+                const eqHours = actualHours * coef;
                 return `<tr>
                     <td>${formatDate(r.date)}</td>
                     <td>${r.hasLunchOT ? '<span class="tag tag-yes">✓ Có</span>' : '<span class="tag tag-no">Không</span>'}</td>
                     <td>${r.eveningOTHours > 0 ? `<span class="text-green text-bold">${r.eveningOTHours.toFixed(1)}h</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
                     <td>${r.otStart || '—'}</td>
                     <td>${r.otEnd || '—'}</td>
-                    <td><span class="text-purple text-bold">${r.totalHours.toFixed(1)}</span></td>
+                    <td>
+                        <div style="display:flex; flex-direction:column; align-items:center; gap:2px; margin: 4px 0;">
+                            <span class="badge-total-ot" style="font-weight:700;">Gốc: ${actualHours.toFixed(1)}h</span>
+                            <span class="tag tag-success" style="font-size:10px; font-weight:700; background:rgba(16,185,129,0.15); color:var(--accent-green); padding: 1px 4px; border-radius:4px; white-space:nowrap;">QĐ: ${eqHours.toFixed(1)}h</span>
+                        </div>
+                    </td>
                     <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
                     <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
                     <td><div class="action-buttons">
@@ -4131,6 +4608,48 @@ async function handleAdminOTSubmit(e) {
             statsCardsEl.innerHTML = statsHtml;
         }
     } catch (e) {}
+}
+
+function updateEmployeeOTIncome() {
+    const salaryInput = document.getElementById('emp-basic-salary');
+    const daysInput = document.getElementById('emp-standard-days');
+    if (!salaryInput || !daysInput) return;
+    
+    const salary = parseFloat(salaryInput.value) || 0;
+    const days = parseFloat(daysInput.value) || 26;
+    const hourlyRate = salary / (days * 8);
+    
+    localStorage.setItem('emp_basic_salary', salaryInput.value);
+    localStorage.setItem('emp_standard_days', daysInput.value);
+    
+    const settings = currentSystemSettings || { holidays: "" };
+    const holidays = (settings.holidays || "")
+        .split(',')
+        .map(d => d.trim())
+        .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+        
+    let totalEqHours = 0;
+    employeeOTRecords.forEach(r => {
+        const isApproved = r.status !== 'pending' && r.status !== 'rejected';
+        if (isApproved) {
+            if (!r.customActivity || r.calcMode === 'hour') {
+                const coef = getOTCoefficient(r.date, holidays);
+                totalEqHours += (r.totalHours || 0) * coef;
+            }
+        }
+    });
+    
+    const otIncome = totalEqHours * hourlyRate;
+    
+    const incomeTotalEl = document.getElementById('emp-ot-income-total');
+    if (incomeTotalEl) {
+        incomeTotalEl.textContent = Math.round(otIncome).toLocaleString('vi-VN') + ' VND';
+    }
+    
+    const hourlyRateEl = document.getElementById('emp-hourly-rate');
+    if (hourlyRateEl) {
+        hourlyRateEl.textContent = Math.round(hourlyRate).toLocaleString('vi-VN') + ' VND/h';
+    }
 }
 
 // ==================== CLOUD WAKING & SYNC CONFIG ====================
@@ -5118,9 +5637,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const lunchEl = document.getElementById('admin-ot-lunch');
                     if (lunchEl) lunchEl.checked = false;
                     const startEl = document.getElementById('admin-ot-start');
-                    if (startEl) startEl.value = '16:30';
+                    if (startEl) startEl.value = WORK_END;
                     const endEl = document.getElementById('admin-ot-end');
-                    if (endEl) endEl.value = '16:30';
+                    if (endEl) endEl.value = WORK_END;
                 } else {
                     if (normalInputs) normalInputs.style.display = 'block';
                     if (backfillGroup) backfillGroup.style.display = 'none';
@@ -5232,9 +5751,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lunchEl = document.getElementById('ot-lunch');
                 if (lunchEl) lunchEl.checked = false;
                 const startEl = document.getElementById('ot-start');
-                if (startEl) startEl.value = '16:30';
+                if (startEl) startEl.value = WORK_END;
                 const endEl = document.getElementById('ot-end');
-                if (endEl) endEl.value = '16:30';
+                if (endEl) endEl.value = WORK_END;
             } else {
                 if (normalInputs) normalInputs.style.display = 'block';
                 if (backfillGroup) backfillGroup.style.display = 'none';
@@ -5335,6 +5854,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnCleanupDatabase) {
         btnCleanupDatabase.addEventListener('click', handleDatabaseCleanup);
     }
+    const btnSaveCompanySettings = document.getElementById('btn-save-company-settings');
+    if (btnSaveCompanySettings) {
+        btnSaveCompanySettings.addEventListener('click', saveCompanySettings);
+    }
 
     // Modal
     document.getElementById('modal-close').addEventListener('click', closeModal);
@@ -5404,11 +5927,11 @@ async function editRecordDialog(recordId, source) {
                 <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
                     <div>
                         <label style="display:block;margin-bottom:6px;font-weight:600;">Bắt đầu OT chiều</label>
-                        <input type="time" id="modal-rec-start" value="${record.otStart || '16:30'}" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+                        <input type="time" id="modal-rec-start" value="${record.otStart || WORK_END}" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
                     </div>
                     <div>
                         <label style="display:block;margin-bottom:6px;font-weight:600;">Kết thúc OT chiều</label>
-                        <input type="time" id="modal-rec-end" value="${record.otEnd || '16:30'}" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+                        <input type="time" id="modal-rec-end" value="${record.otEnd || WORK_END}" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
                     </div>
                 </div>
             </div>
@@ -5419,7 +5942,10 @@ async function editRecordDialog(recordId, source) {
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
-                <label style="display:block;margin-bottom:6px;font-weight:600;">Ghi chú</label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label style="font-weight: 600; margin: 0;">Ghi chú</label>
+                    <select id="modal-rec-predefined-reasons" class="input-sm" style="max-width: 220px; height: 26px; padding: 0 4px; font-size: 11px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; display: none;"></select>
+                </div>
                 <textarea id="modal-rec-note" class="input-sm" style="width:100%; height:60px; resize:none; box-sizing:border-box; padding:10px;" required>${cleanedNote}</textarea>
             </div>
         </form>`;
@@ -5579,9 +6105,9 @@ async function editRecordDialog(recordId, source) {
                     const lunchEl = document.getElementById('modal-rec-lunch');
                     if (lunchEl) lunchEl.checked = false;
                     const startEl = document.getElementById('modal-rec-start');
-                    if (startEl) startEl.value = '16:30';
+                    if (startEl) startEl.value = WORK_END;
                     const endEl = document.getElementById('modal-rec-end');
-                    if (endEl) endEl.value = '16:30';
+                    if (endEl) endEl.value = WORK_END;
                 } else {
                     if (normalInputs) normalInputs.style.display = 'block';
                     if (customActGroup && activities.length > 0) customActGroup.style.display = 'block';
@@ -5603,6 +6129,8 @@ async function editRecordDialog(recordId, source) {
             modalStart.addEventListener('change', syncModalEnd);
             modalStart.addEventListener('input', syncModalEnd);
         }
+        
+        setupPredefinedReasonsSelect(userTeam, document.getElementById('modal-rec-predefined-reasons'), document.getElementById('modal-rec-note'));
     } catch (e) {
         showToast('Lỗi tải dữ liệu bản ghi', 'error');
     }
@@ -6018,6 +6546,35 @@ async function rejectUnlinkDevice(userId, fullname) {
 }
 
 
+// ==================== PREDEFINED OT REASONS UTILITIES ====================
+function setupPredefinedReasonsSelect(teamName, selectEl, textareaEl) {
+    if (!selectEl) return;
+    
+    // Find the team settings in TEAMS
+    const team = typeof TEAMS !== 'undefined' && TEAMS.find(t => typeof t === 'object' && t.name === teamName);
+    const reasons = team ? team.predefinedReasons || [] : [];
+    
+    if (reasons.length === 0) {
+        selectEl.innerHTML = '';
+        selectEl.style.display = 'none';
+        return;
+    }
+    
+    selectEl.innerHTML = `
+        <option value="">-- Chọn lý do mẫu --</option>
+        ${reasons.map(r => `<option value="${r.replace(/"/g, '&quot;')}">${r}</option>`).join('')}
+    `;
+    selectEl.style.display = 'inline-block';
+    
+    selectEl.onchange = function() {
+        if (this.value && textareaEl) {
+            textareaEl.value = this.value;
+            textareaEl.dispatchEvent(new Event('input'));
+            textareaEl.dispatchEvent(new Event('change'));
+        }
+    };
+}
+
 // ==================== CUSTOM ACTIVITIES UI FOR DESKTOP ====================
 function setupAdminCustomActivitiesUI(userId) {
     const listContainer = document.getElementById('admin-ot-custom-activities-list');
@@ -6037,6 +6594,9 @@ function setupAdminCustomActivitiesUI(userId) {
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
         userTeam = currentUser ? (currentUser.team || '') : '';
     }
+
+    // Setup Predefined reasons select
+    setupPredefinedReasonsSelect(userTeam, document.getElementById('admin-ot-predefined-reasons'), document.getElementById('admin-ot-note'));
 
     if (!userTeam || userTeam === 'admin') {
         if (activityGroup) activityGroup.style.display = 'none';
@@ -6159,6 +6719,9 @@ function setupEmployeeCustomActivitiesUI() {
     
     const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
     const userTeam = currentUser ? (currentUser.team || '') : '';
+
+    // Setup Predefined reasons select
+    setupPredefinedReasonsSelect(userTeam, document.getElementById('ot-predefined-reasons'), document.getElementById('ot-note'));
 
     if (!userTeam || userTeam === 'admin') {
         if (activityGroup) activityGroup.style.display = 'none';

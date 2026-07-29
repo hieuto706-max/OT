@@ -41,6 +41,12 @@ const SystemController = {
         if (urlPath === '/api/apply-hotfix' && method === 'POST') {
             return this.applyHotfix(req, res);
         }
+        if (urlPath === '/api/settings' && method === 'GET') {
+            return this.getSettings(req, res);
+        }
+        if (urlPath === '/api/settings' && method === 'POST') {
+            return this.saveSettings(req, res);
+        }
 
         return sendError(res, 404, 'Endpoint không tồn tại');
     },
@@ -81,6 +87,9 @@ const SystemController = {
             const allowedUserIds = users.map(u => u.id);
             records = records.filter(r => allowedUserIds.includes(r.userId));
         }
+
+        // Sắp xếp các bản ghi mới nhất lên đầu
+        records.sort((a, b) => b.date.localeCompare(a.date));
         
         // 4. Stats calculation
         const approvedRecords = records.filter(r => r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
@@ -93,7 +102,7 @@ const SystemController = {
             totalUsers: employees.length,
             pendingOT: pendingRecords.length,
             pendingUnlinks: pendingUnlinksCount,
-            totalOTMonth: approvedRecords.reduce((s, r) => s + r.totalHours, 0),
+            totalOTMonth: approvedRecords.reduce((s, r) => s + (r.totalHours || 0), 0),
             totalTripsMonth: approvedRecords.filter(r => r.customActivity && (r.calcMode === 'trip' || !r.calcMode)).length
         };
         
@@ -107,8 +116,10 @@ const SystemController = {
 
     async getStats(req, res) {
         const { userId: reqUserId } = req;
+        const url = new URL(req.url, `http://${req.headers.host}`);
         const now = new Date();
         const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const month = url.searchParams.get('month') || currentMonth;
         
         const db = await loadDB();
         const currentUser = db.users.find(u => u.id === reqUserId);
@@ -123,11 +134,11 @@ const SystemController = {
 
         const approvedRecords = db.records.filter(r => {
             const rMonth = r.createdMonth || r.date.substring(0, 7);
-            return rMonth === currentMonth && allowedUserIds.includes(r.userId) && (r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
+            return rMonth === month && allowedUserIds.includes(r.userId) && (r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
         });
         const pendingRecords = db.records.filter(r => {
             const rMonth = r.createdMonth || r.date.substring(0, 7);
-            return rMonth === currentMonth && allowedUserIds.includes(r.userId) && r.status === 'pending';
+            return rMonth === month && allowedUserIds.includes(r.userId) && r.status === 'pending';
         });
         
         let employees = users.filter(u => u.role === 'employee');
@@ -137,7 +148,7 @@ const SystemController = {
             totalUsers: employees.length,
             pendingOT: pendingRecords.length,
             pendingUnlinks: pendingUnlinksCount,
-            totalOTMonth: approvedRecords.reduce((s, r) => s + r.totalHours, 0),
+            totalOTMonth: approvedRecords.reduce((s, r) => s + (r.totalHours || 0), 0),
             totalTripsMonth: approvedRecords.filter(r => r.customActivity && (r.calcMode === 'trip' || !r.calcMode)).length
         });
     },
@@ -342,6 +353,59 @@ const SystemController = {
             } catch (err) {
                 console.error('[Hotfix] Lỗi khi áp dụng bản vá:', err.message);
                 return sendJSON(res, 500, { success: false, message: err.message });
+            }
+        });
+    },
+
+    async getSettings(req, res) {
+        const db = await loadDB();
+        const settings = db.settings || { companyName: "Hệ thống OT Manager" };
+        return sendJSON(res, 200, settings);
+    },
+
+    async saveSettings(req, res) {
+        const { userId: reqUserId } = req;
+        const db = await loadDB();
+        const currentUser = db.users.find(u => u.id === reqUserId);
+        const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin || currentUser.role === 'admin');
+        
+        if (!isAdmin) {
+            return sendError(res, 403, 'Bạn không có quyền thay đổi thiết lập hệ thống!');
+        }
+
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+            try {
+                const data = JSON.parse(body || '{}');
+                
+                // Cập nhật cấu hình
+                if (!db.settings) db.settings = {};
+                if (data.companyName !== undefined) {
+                    db.settings.companyName = String(data.companyName).trim() || "Hệ thống OT Manager";
+                }
+                if (data.lunchOTHours !== undefined) {
+                    db.settings.lunchOTHours = Number(data.lunchOTHours) || 1;
+                }
+                if (data.eveningOTStart !== undefined) {
+                    db.settings.eveningOTStart = String(data.eveningOTStart).trim() || "16:30";
+                }
+                if (data.autoApproveUnlink !== undefined) {
+                    db.settings.autoApproveUnlink = Boolean(data.autoApproveUnlink);
+                }
+                if (data.holidays !== undefined) {
+                    db.settings.holidays = String(data.holidays).trim();
+                }
+
+                // Lưu lại cơ sở dữ liệu
+                const { saveDB } = require('../../db');
+                await saveDB(db);
+
+                logInfo(`[Settings] Đã cập nhật cấu hình hệ thống:`, db.settings);
+                return sendJSON(res, 200, { success: true, settings: db.settings });
+            } catch (e) {
+                console.error('[Settings API] Lỗi lưu cấu hình:', e.message);
+                return sendError(res, 500, `Lỗi khi lưu cấu hình: ${e.message}`);
             }
         });
     }

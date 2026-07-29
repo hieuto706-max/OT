@@ -342,6 +342,20 @@ async function isPrivateMode() {
 const OT_LUNCH_HOURS = 1;
 const WORK_END_MIN = 16 * 60 + 30; // 16:30
 
+let mobileOTRecords = [];
+let mobileSystemSettings = { holidays: "" };
+
+function getOTCoefficient(dateStr, holidaysList = []) {
+    if (holidaysList && holidaysList.includes(dateStr)) {
+        return 3.0;
+    }
+    const date = new Date(dateStr + 'T00:00:00');
+    if (date.getDay() === 0) {
+        return 2.0;
+    }
+    return 1.5;
+}
+
 // Tạo vân tay trình duyệt để giữ cố định Device ID trên Web ngay cả khi xóa lịch sử
 function getBrowserFingerprint(username) {
     if (!username) {
@@ -919,6 +933,9 @@ async function refreshCurrentUserInfo() {
         const data = await api('/api/users/' + currentUser.id, 'GET', null, true);
         if (data && data.user) {
             currentUser = Object.assign({}, currentUser, data.user);
+            if (currentUser.settings) {
+                mobileSystemSettings = currentUser.settings;
+            }
             safeStorage.setItem('ot_mobile_user', JSON.stringify(currentUser));
             setupCustomActivitiesUI();
             
@@ -941,12 +958,40 @@ async function refreshCurrentUserInfo() {
     }
 }
 
+function setupMobilePredefinedReasonsSelect(reasons, selectEl, textareaEl) {
+    if (!selectEl) return;
+    if (!reasons || reasons.length === 0) {
+        selectEl.innerHTML = '';
+        selectEl.style.display = 'none';
+        return;
+    }
+    
+    selectEl.innerHTML = `
+        <option value="">-- Chọn lý do mẫu --</option>
+        ${reasons.map(r => `<option value="${r.replace(/"/g, '&quot;')}">${r}</option>`).join('')}
+    `;
+    selectEl.style.display = 'inline-block';
+    
+    selectEl.onchange = function() {
+        if (this.value && textareaEl) {
+            textareaEl.value = this.value;
+            textareaEl.dispatchEvent(new Event('input'));
+            textareaEl.dispatchEvent(new Event('change'));
+        }
+    };
+}
+
 function setupCustomActivitiesUI() {
     const activityGroup = document.getElementById('ot-custom-activity-group');
     const editActivityGroup = document.getElementById('edit-ot-custom-activity-group');
 
     const teamSettings = currentUser ? currentUser.teamSettings : null;
     const activities = (teamSettings && teamSettings.customActivities) ? teamSettings.customActivities : [];
+
+    // Setup Predefined Reasons for Add and Edit Forms
+    const reasons = teamSettings ? teamSettings.predefinedReasons || [] : [];
+    setupMobilePredefinedReasonsSelect(reasons, document.getElementById('ot-predefined-reasons'), document.getElementById('ot-note'));
+    setupMobilePredefinedReasonsSelect(reasons, document.getElementById('edit-ot-predefined-reasons'), document.getElementById('edit-ot-note'));
 
     const isBackfillChecked = document.getElementById('ot-backfill')?.checked || false;
     const isEditBackfillChecked = document.getElementById('edit-ot-backfill')?.checked || false;
@@ -1571,8 +1616,21 @@ async function loadHistory() {
                 `;
             }
 
+            const holidays = (mobileSystemSettings.holidays || "")
+                .split(',')
+                .map(d => d.trim())
+                .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+            const coef = getOTCoefficient(r.date, holidays);
+            const actualHours = r.totalHours || 0;
+            const eqHours = actualHours * coef;
+
             const rightDisplay = currentMobileHistoryType === 'ot'
-                ? `<span class="history-total">${r.totalHours.toFixed(1)}h</span>`
+                ? `
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px; margin: 2px 0;">
+                        <span class="history-total" style="font-size: 0.85rem;">Gốc: ${actualHours.toFixed(1)}h</span>
+                        <span style="font-size:10px; font-weight:700; color:#0dd98b; background:rgba(13,217,139,0.15); padding:1px 4px; border-radius:4px; white-space:nowrap;">QĐ: ${eqHours.toFixed(1)}h</span>
+                    </div>
+                  `
                 : (r.calcMode === 'trip' 
                     ? `<span class="history-total" style="color: var(--green);">🚚 Xe</span>` 
                     : `<span class="history-total" style="color: var(--accent-purple); font-size: 0.8rem; font-weight: bold;">⏱️ ${r.totalHours.toFixed(1)}h</span>`);
@@ -1705,6 +1763,24 @@ async function loadProfileStats() {
             }
         });
 
+        mobileOTRecords = mergedRecords;
+        
+        const savedSalary = localStorage.getItem('emp_basic_salary') || '';
+        const savedDays = localStorage.getItem('emp_standard_days') || '26';
+        
+        const salaryInput = document.getElementById('mobile-basic-salary');
+        const daysInput = document.getElementById('mobile-standard-days');
+        if (salaryInput && salaryInput.value === '') {
+            salaryInput.value = savedSalary;
+        }
+        if (daysInput && daysInput.value === '26' && savedDays !== '26') {
+            daysInput.value = savedDays;
+        }
+        
+        setTimeout(() => {
+            updateMobileOTIncome();
+        }, 50);
+
         const approvedRecords = mergedRecords.filter(r => r.status !== 'pending' && r.status !== 'rejected');
 
         const days = mergedRecords.filter(r => !r.customActivity || r.calcMode === 'hour').length;
@@ -1747,6 +1823,48 @@ async function loadProfileStats() {
         }
     } catch (err) {
         // Silent fail
+    }
+}
+
+function updateMobileOTIncome() {
+    const salaryInput = document.getElementById('mobile-basic-salary');
+    const daysInput = document.getElementById('mobile-standard-days');
+    if (!salaryInput || !daysInput) return;
+    
+    const salary = parseFloat(salaryInput.value) || 0;
+    const days = parseFloat(daysInput.value) || 26;
+    const hourlyRate = salary / (days * 8);
+    
+    localStorage.setItem('emp_basic_salary', salaryInput.value);
+    localStorage.setItem('emp_standard_days', daysInput.value);
+    
+    const settings = mobileSystemSettings || { holidays: "" };
+    const holidays = (settings.holidays || "")
+        .split(',')
+        .map(d => d.trim())
+        .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+        
+    let totalEqHours = 0;
+    mobileOTRecords.forEach(r => {
+        const isApproved = r.status !== 'pending' && r.status !== 'rejected';
+        if (isApproved) {
+            if (!r.customActivity || r.calcMode === 'hour') {
+                const coef = getOTCoefficient(r.date, holidays);
+                totalEqHours += (r.totalHours || 0) * coef;
+            }
+        }
+    });
+    
+    const otIncome = totalEqHours * hourlyRate;
+    
+    const incomeTotalEl = document.getElementById('mobile-ot-income-total');
+    if (incomeTotalEl) {
+        incomeTotalEl.textContent = Math.round(otIncome).toLocaleString('vi-VN') + ' VND';
+    }
+    
+    const hourlyRateEl = document.getElementById('mobile-hourly-rate');
+    if (hourlyRateEl) {
+        hourlyRateEl.textContent = Math.round(hourlyRate).toLocaleString('vi-VN') + ' VND/h';
     }
 }
 
@@ -2230,6 +2348,9 @@ function initApp() {
         if (saved && loginTime && !isSessionExpired(loginTime)) {
             try {
                 currentUser = JSON.parse(saved);
+                if (currentUser && currentUser.settings) {
+                    mobileSystemSettings = currentUser.settings;
+                }
                 enterApp();
                 return;
             } catch (e) {}

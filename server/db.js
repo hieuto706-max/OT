@@ -173,12 +173,21 @@ async function initPGTable() {
             )
         `);
 
+        // Bảng cấu hình hệ thống
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS pg_settings (
+                key VARCHAR(100) PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         await client.query(`CREATE INDEX IF NOT EXISTS idx_records_user_id ON pg_records(user_id)`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_records_date ON pg_records(date)`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_records_user_date ON pg_records(user_id, date)`);
 
         await client.query('COMMIT');
-        logInfo('[Database PG] Khởi tạo thành công 4 bảng và các chỉ mục (bao gồm composite index).');
+        logInfo('[Database PG] Khởi tạo thành công 5 bảng và các chỉ mục (bao gồm composite index).');
     } catch (err) {
         try {
             await client.query('ROLLBACK');
@@ -245,14 +254,21 @@ async function loadDBFromPG() {
             const recordsRes = await client.query('SELECT * FROM pg_records ORDER BY date DESC, created_at');
             const teamsRes = await client.query('SELECT data FROM pg_teams');
             const closedRes = await client.query('SELECT month FROM pg_closed_months');
+            const settingsRes = await client.query('SELECT * FROM pg_settings');
 
             await client.query('COMMIT');
+
+            const settings = {};
+            settingsRes.rows.forEach(r => {
+                settings[r.key] = r.value;
+            });
 
             const result = {
                 users: usersRes.rows.map(pgUserToJS),
                 records: recordsRes.rows.map(pgRecordToJS),
                 teams: teamsRes.rows.map(r => r.data),
-                closedMonths: closedRes.rows.map(r => r.month)
+                closedMonths: closedRes.rows.map(r => r.month),
+                settings: settings
             };
             logInfo(`[Database PG] Tải từ bảng tách riêng: ${result.users.length} nhân viên, ${result.records.length} bản ghi, ${result.teams.length} đội.`);
             return result;
@@ -365,6 +381,16 @@ async function saveDBToPG(data) {
             await client.query(`
                 INSERT INTO pg_closed_months (month) VALUES ($1)
             `, [m]);
+        }
+
+        // === Đồng bộ bảng pg_settings ===
+        await client.query('DELETE FROM pg_settings');
+        if (data.settings) {
+            for (const [key, value] of Object.entries(data.settings)) {
+                await client.query(`
+                    INSERT INTO pg_settings (key, value) VALUES ($1, $2)
+                `, [key, value]);
+            }
         }
 
         await client.query('COMMIT');
@@ -691,8 +717,47 @@ function migrateTeams(db) {
             };
             migrated = true;
         }
+        if (team.maxOTHours === undefined) {
+            team.maxOTHours = 0;
+            migrated = true;
+        }
+        if (!team.predefinedReasons) {
+            team.predefinedReasons = [];
+            migrated = true;
+        }
         return team;
     });
+    return migrated;
+}
+
+function migrateSettings(data) {
+    let migrated = false;
+    if (!data.settings) {
+        data.settings = {
+            companyName: "Hệ thống OT Manager",
+            lunchOTHours: 1,
+            eveningOTStart: "16:30",
+            autoApproveUnlink: false,
+            holidays: "2026-01-01, 2026-04-30, 2026-05-01, 2026-09-02"
+        };
+        return true;
+    }
+    if (data.settings.lunchOTHours === undefined) {
+        data.settings.lunchOTHours = 1;
+        migrated = true;
+    }
+    if (data.settings.eveningOTStart === undefined) {
+        data.settings.eveningOTStart = "16:30";
+        migrated = true;
+    }
+    if (data.settings.autoApproveUnlink === undefined) {
+        data.settings.autoApproveUnlink = false;
+        migrated = true;
+    }
+    if (data.settings.holidays === undefined) {
+        data.settings.holidays = "2026-01-01, 2026-04-30, 2026-05-01, 2026-09-02";
+        migrated = true;
+    }
     return migrated;
 }
 
@@ -710,9 +775,10 @@ async function loadDB(clone = true) {
                     if (!pgData.records) pgData.records = [];
                     if (!pgData.closedMonths) pgData.closedMonths = [];
                     
+                    const migratedSettings = migrateSettings(pgData);
                     const migratedTeams = migrateTeams(pgData);
                     const migratedPass = await migratePasswords(pgData);
-                    if (migratedTeams || migratedPass) {
+                    if (migratedTeams || migratedPass || migratedSettings) {
                         await saveDBToPG(pgData);
                     }
                     logInfo('[Database PG] Tải dữ liệu từ PostgreSQL thành công!');
@@ -737,9 +803,10 @@ async function loadDB(clone = true) {
                     if (!gistData.records) gistData.records = [];
                     if (!gistData.closedMonths) gistData.closedMonths = [];
                     
+                    const migratedSettings = migrateSettings(gistData);
                     const migratedTeams = migrateTeams(gistData);
                     const migratedPass = await migratePasswords(gistData);
-                    if (migratedTeams || migratedPass) {
+                    if (migratedTeams || migratedPass || migratedSettings) {
                         saveDB(gistData);
                     } else {
                         fs.writeFileSync(dbFile, JSON.stringify(gistData, null, 2), 'utf-8');
@@ -776,9 +843,10 @@ async function loadDB(clone = true) {
         if (fileLoaded && localDB) {
             const migratedPass = await migratePasswords(localDB);
             const migratedTeams = migrateTeams(localDB);
-            if (migratedPass || migratedTeams) {
+            const migratedSettings = migrateSettings(localDB);
+            if (migratedPass || migratedTeams || migratedSettings) {
                 saveDB(localDB);
-                logInfo('[Migration] Đã tự động di trú cơ sở dữ liệu (Passwords/Teams).');
+                logInfo('[Migration] Đã tự động di trú cơ sở dữ liệu (Passwords/Teams/Settings).');
             } else if (config.DATABASE_URL) {
                 saveDBToPG(localDB).catch(e => logError('[Database PG] Lỗi đồng bộ từ local lên PG:', e.message));
             }
@@ -798,7 +866,14 @@ async function loadDB(clone = true) {
             }],
             records: [],
             teams: [],
-            closedMonths: []
+            closedMonths: [],
+            settings: {
+                companyName: "Hệ thống OT Manager",
+                lunchOTHours: 1,
+                eveningOTStart: "16:30",
+                autoApproveUnlink: false,
+                holidays: "2026-01-01, 2026-04-30, 2026-05-01, 2026-09-02"
+            }
         };
         saveDB(defaultDB);
         logInfo('[Database] Đã khởi tạo cơ sở dữ liệu mặc định.');

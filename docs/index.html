@@ -28,7 +28,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="landing.css?v=1.4.4">
+    <link rel="stylesheet" href="landing.css?v=1.4.5">
     <!-- Prevent login portal flashing if already logged in -->
     <style id="anti-flash-style">
       html.user-logged-in #login-welcome-box {
@@ -116,7 +116,7 @@
                     </defs>
                 </svg>
                 <span class="logo-text">OT Manager</span>
-                <span class="web-version-badge">v1.4.4</span>
+                <span class="web-version-badge">v1.4.5</span>
             </div>
             <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Toggle navigation">
                 <div class="hamburger-bar"></div>
@@ -610,6 +610,26 @@
                     <h2 class="section-title text-center">Nhật ký cập nhật hệ thống</h2>
                     <div class="changelog-timeline">
                         
+                        <!-- Item: v1.4.5 -->
+                        <div class="changelog-item">
+                            <div class="changelog-header-btn">
+                                <span class="changelog-badge">v1.4.5</span>
+                                <span class="changelog-date">30/07/2026</span>
+                                <span class="changelog-chevron">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </span>
+                            </div>
+                            <div class="changelog-body-expand">
+                                <ul class="changelog-list">
+                                    <li>**Tính toán thu nhập cá nhân bảo mật:** Tích hợp máy tính tiền lương tăng ca dự kiến hoạt động 100% offline (lưu trực tiếp tại bộ nhớ LocalStorage trình duyệt của nhân viên) giúp bảo mật thu nhập cá nhân tuyệt đối.</li>
+                                    <li>**Quy đổi giờ tăng ca:** Hỗ trợ quy đổi giờ làm thêm giờ theo hệ số nhân ngày thường (1.5x), chủ nhật (2.0x), và ngày lễ (3.0x), hiển thị đồng thời cả giờ gốc và quy đổi trên app nhân viên.</li>
+                                    <li>**Cấu hình hệ thống linh hoạt:** Bổ sung cấu hình số giờ ăn trưa mặc định, thời gian bắt đầu ca tối và chế độ tự động gỡ liên kết thiết bị không qua phê duyệt thủ công.</li>
+                                </ul>
+                            </div>
+                        </div>
+
                         <!-- Item: v1.4.4 -->
                         <div class="changelog-item">
                             <div class="changelog-header-btn">
@@ -997,6 +1017,6 @@
         </div>
     </div>
 
-    <script src="landing.js?v=1.4.4"></script>
+    <script src="landing.js?v=1.4.5"></script>
 </body>
 </html>

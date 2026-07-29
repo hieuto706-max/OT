@@ -146,7 +146,7 @@
 
                     <div class="login-footer" style="margin-top: 20px; text-align: center; color: var(--text-muted); font-size: 11px; line-height: 1.6;">
                         <div class="login-register-hint" style="color: var(--text-secondary); font-weight: 500; margin-bottom: 4px;">Chưa có tài khoản? Liên hệ quản lý</div>
-                        <div class="login-version-badge" style="margin-bottom: 6px;">Phiên bản <span class="login-ver-val">v1.4.4</span></div>
+                        <div class="login-version-badge" style="margin-bottom: 6px;">Phiên bản <span class="login-ver-val">v1.4.5</span></div>
                         <div>Phát triển bởi: Đội ngũ phát triển OT Manager</div>
                         <div>Hỗ trợ kỹ thuật: support@otmanager.id.vn</div>
                         <div style="margin-top: 8px; font-size: 10px; opacity: 0.8; max-width: 280px; margin-left: auto; margin-right: auto; line-height: 1.4;">
@@ -276,7 +276,10 @@
 
 
                         <div class="form-group">
-                            <label>Ghi chú</label>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <label style="margin: 0;">Ghi chú</label>
+                                <select id="ot-predefined-reasons" style="max-width: 180px; height: 26px; padding: 0 4px; font-size: 11px; background:var(--bg-input); color:var(--text-main); border:1px solid var(--border); border-radius:6px; display: none;"></select>
+                            </div>
                             <textarea id="ot-note" placeholder="Lý do tăng ca, chi tiết công việc..." required></textarea>
                         </div>
 
@@ -336,7 +339,7 @@
                     <div class="profile-avatar" id="profile-avatar">NV</div>
                     <h2 id="profile-name">Nhân viên</h2>
                     <p id="profile-username">@username</p>
-                    <div class="profile-ver-badge">Phiên bản <span id="app-version-display">v1.4.4</span></div>
+                    <div class="profile-ver-badge">Phiên bản <span id="app-version-display">v1.4.5</span></div>
                 </div>
 
                 <div class="card">
@@ -366,6 +369,38 @@
                 </div>
 
 
+
+                <div class="card" style="margin-top: 15px; padding: 16px;">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="color: var(--accent-orange);">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        Tính thu nhập OT (Bảo mật máy)
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+                        <div style="display: flex; gap: 10px;">
+                            <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 11px; color: var(--text-muted);">Lương cơ bản (VND):</label>
+                                <input type="number" id="mobile-basic-salary" style="width: 100%; height: 34px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0 8px; color: var(--text); font-family: inherit; font-size: 12px;" min="0" placeholder="Ví dụ: 9000000" oninput="updateMobileOTIncome()">
+                            </div>
+                            <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                                <label style="font-size: 11px; color: var(--text-muted);">Số ngày công chuẩn:</label>
+                                <input type="number" id="mobile-standard-days" style="width: 100%; height: 34px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0 8px; color: var(--text); font-family: inherit; font-size: 12px;" min="1" max="31" value="26" oninput="updateMobileOTIncome()">
+                            </div>
+                        </div>
+                        <div style="background: rgba(13, 217, 139, 0.08); border: 1px solid rgba(13, 217, 139, 0.2); border-radius: var(--radius-md); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="font-size: 10px; color: var(--text-muted); display: block;">Thu nhập tăng ca dự kiến:</span>
+                                <strong id="mobile-ot-income-total" style="font-size: 15px; color: #0dd98b;">0 VND</strong>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="font-size: 10px; color: var(--text-muted); display: block;">1 giờ:</span>
+                                <span id="mobile-hourly-rate" style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">0 VND/h</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="card" style="margin-top: 15px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 15px; border-radius: var(--radius-lg); margin-bottom: 20px;">
                     <div style="font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
@@ -491,7 +526,10 @@
 
 
                 <div class="form-group" style="margin-bottom:16px;">
-                    <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Ghi chú</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label style="margin: 0; font-size:0.8rem; color:var(--text-sub); font-weight:600;">Ghi chú</label>
+                        <select id="edit-ot-predefined-reasons" style="max-width: 180px; height: 26px; padding: 0 4px; font-size: 11px; background:var(--bg-input); color:var(--text-main); border:1px solid var(--border); border-radius:6px; display: none;"></select>
+                    </div>
                     <textarea id="edit-ot-note" rows="2" placeholder="Lý do..." required></textarea>
                 </div>
                 <div class="confirm-actions" style="display:flex;gap:10px;justify-content:flex-end;">
@@ -514,7 +552,7 @@
         };
     </script>
     <script>
-        window.PACKAGED_VERSION = '1.4.4';
+        window.PACKAGED_VERSION = '1.4.5';
     </script>
     <script src="app.js" defer></script>
     <datalist id="provinces-datalist"></datalist>

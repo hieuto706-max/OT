@@ -2781,6 +2781,155 @@ html.user-admin-logged-in #screen-admin::before {
     transform: scale(0.9);
 }
 
+/* ==================== TEAM SETTINGS MODAL REDESIGN ==================== */
+.team-settings-container {
+    display: flex;
+    gap: 24px;
+    height: 520px;
+    text-align: left;
+}
+
+.team-settings-left {
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-color);
+    padding-right: 20px;
+}
+
+.team-settings-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.team-modal-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.02);
+    transition: all 0.2s ease;
+}
+
+.team-modal-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.team-modal-card.active {
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.settings-section-card {
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 14px;
+}
+
+.settings-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.switch-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    user-select: none;
+}
+
+.switch-control {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 20px;
+}
+
+.switch-control input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: .2s;
+    border-radius: 20px;
+}
+
+.switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #94a3b8;
+    transition: .2s;
+    border-radius: 50%;
+}
+
+input:checked + .switch-slider {
+    background-color: var(--accent-blue);
+}
+
+input:checked + .switch-slider:before {
+    transform: translateX(14px);
+    background-color: #ffffff;
+}
+
+.quota-bar-container {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    height: 8px;
+    overflow: hidden;
+    width: 100%;
+    margin-top: 6px;
+}
+
+.quota-bar-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+/* Custom scrollbars inside modal settings */
+.modal-teams-list::-webkit-scrollbar,
+.settings-section-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+
+.modal-teams-list::-webkit-scrollbar-thumb,
+.settings-section-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+
 
 
 

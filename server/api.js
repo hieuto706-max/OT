@@ -143,7 +143,8 @@ async function handleAPI(req, res, urlPath, method) {
         '/api/server-info',
         '/api/cloud-url',
         '/api/trigger-update',
-        '/api/apply-hotfix'
+        '/api/apply-hotfix',
+        '/api/settings'
     ];
     if (systemEndpoints.includes(urlPath)) {
         return SystemController.handle(req, res, urlPath, method);

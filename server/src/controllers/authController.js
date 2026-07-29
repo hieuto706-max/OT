@@ -107,8 +107,29 @@ const AuthController = {
         const user = await UserRepository.findByUsername(username);
         if (!user) return sendError(res, 404, 'Không tìm thấy tên đăng nhập trong hệ thống!', req);
         
-        await UserRepository.update(user.id, { pendingUnlink: true });
-        return sendJSON(res, 200, { success: true, message: 'Đã gửi yêu cầu huỷ liên kết đến Quản trị viên!' }, req);
+        const { loadDB } = require('../../db');
+        const db = await loadDB();
+        const settings = db.settings || { companyName: "Hệ thống OT Manager", autoApproveUnlink: false };
+        
+        if (settings.autoApproveUnlink) {
+            await UserRepository.update(user.id, { 
+                deviceId: null, 
+                browserDeviceId: null,
+                pendingUnlink: false 
+            });
+            return sendJSON(res, 200, { 
+                success: true, 
+                autoApproved: true,
+                message: 'Thiết bị cũ của bạn đã được hủy liên kết tự động thành công! Bạn có thể đăng nhập ngay trên thiết bị mới.' 
+            }, req);
+        } else {
+            await UserRepository.update(user.id, { pendingUnlink: true });
+            return sendJSON(res, 200, { 
+                success: true, 
+                autoApproved: false,
+                message: 'Đã gửi yêu cầu huỷ liên kết thiết bị đến Quản trị viên!' 
+            }, req);
+        }
     },
 
     async sendEmailOtp(req, res) {
