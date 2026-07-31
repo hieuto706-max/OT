@@ -33,22 +33,8 @@ async function handleAPI(req, res, urlPath, method) {
     }
 
     // --- 2. Xác thực JWT Token & Phân Quyền ---
-    if (urlPath === '/api/debug-db' && method === 'GET') {
-        const { loadDB } = require('./db');
-        const db = await loadDB(false);
-        const targetUsers = db.users.filter(u => u.username === '70012' || u.username === '54784');
-        const userIds = targetUsers.map(u => u.id);
-        const userRecords = db.records.filter(r => userIds.includes(r.userId));
-        const { sendJSON } = require('./src/utils/http');
-        return sendJSON(res, 200, {
-            users: targetUsers,
-            records: userRecords
-        });
-    }
-
     const jwtPayload = authenticateToken(req);
     const publicEndpoints = [
-        '/api/debug-db',
         '/api/auth/login', 
         '/api/auth/forgot-password', 
         '/api/auth/request-unlink', 

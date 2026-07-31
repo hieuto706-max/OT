@@ -3517,7 +3517,7 @@ users = users.filter(u => {
                 const row = wsDetail.getRow(currentDetailRow);
                 row.values = [
                     detailedIdx++,
-                    new Date(r.date + 'T00:00:00'),
+                    new Date(r.date + 'T00:00:00Z'),
                     u.fullname,
                     u.team === 'admin' ? 'admin' : (u.team || 'Chưa phân team'),
                     u.username,
