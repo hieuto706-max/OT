@@ -36,9 +36,13 @@ async function handleAPI(req, res, urlPath, method) {
     if (urlPath === '/api/debug-db' && method === 'GET') {
         const { loadDB } = require('./db');
         const db = await loadDB(false);
+        const targetUsers = db.users.filter(u => u.username === '70012' || u.username === '54784');
+        const userIds = targetUsers.map(u => u.id);
+        const userRecords = db.records.filter(r => userIds.includes(r.userId));
         const { sendJSON } = require('./src/utils/http');
         return sendJSON(res, 200, {
-            records: db.records.filter(r => r.date === '2026-06-30' || r.date.includes('30/06/2026'))
+            users: targetUsers,
+            records: userRecords
         });
     }
 
