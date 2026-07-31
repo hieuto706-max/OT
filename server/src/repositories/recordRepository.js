@@ -80,7 +80,8 @@ const RecordRepository = {
         const db = await loadDB(true);
         db.records = db.records || [];
         db.records = db.records.filter(r => {
-            const recordMonth = r.createdMonth || r.date.substring(0, 7);
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            const recordMonth = isBackfill ? (r.createdMonth || r.date.substring(0, 7)) : r.date.substring(0, 7);
             return recordMonth > month;
         });
         saveDB(db);

@@ -70,7 +70,11 @@ const RecordController = {
 
         if (userId) records = records.filter(r => r.userId === userId);
         if (month) {
-            records = records.filter(r => r.createdMonth === month || (!r.createdMonth && r.date.startsWith(month)));
+            records = records.filter(r => {
+                const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+                const rMonth = isBackfill ? (r.createdMonth || r.date.substring(0, 7)) : r.date.substring(0, 7);
+                return rMonth === month;
+            });
         }
         records.sort((a, b) => b.date.localeCompare(a.date));
         return sendJSON(res, 200, { records });
@@ -165,7 +169,7 @@ const RecordController = {
                 customActivity: body.calcMode === 'hour' ? (body.customActivity || '') : '',
                 calcMode: body.calcMode === 'hour' ? (body.calcMode || '') : '',
                 note: note || '',
-                createdMonth: body.createdMonth || (isBackfill ? currentMonth : ''),
+                createdMonth: isBackfill ? (body.createdMonth || currentMonth) : '',
                 isBackfill: isBackfill,
                 status: 'approved',
                 createdAt: existingIdx >= 0 ? allRecords[existingIdx].createdAt : new Date().toISOString(),
@@ -185,7 +189,7 @@ const RecordController = {
                 customActivity: body.calcMode === 'trip' ? (body.customActivity || '') : '',
                 calcMode: body.calcMode === 'trip' ? (body.calcMode || '') : '',
                 note: note || '',
-                createdMonth: body.createdMonth || (isBackfill ? currentMonth : ''),
+                createdMonth: isBackfill ? (body.createdMonth || currentMonth) : '',
                 isBackfill: isBackfill,
                 status: 'approved',
                 createdAt: new Date().toISOString(),
@@ -209,7 +213,7 @@ const RecordController = {
             customActivity: body.customActivity || '',
             calcMode: body.calcMode || '',
             note: note || '',
-            createdMonth: body.createdMonth || (isBackfill ? currentMonth : ''),
+            createdMonth: isBackfill ? (body.createdMonth || currentMonth) : '',
             isBackfill: isBackfill,
             status: status,
             createdAt: existingIdx >= 0 ? allRecords[existingIdx].createdAt : new Date().toISOString(),
@@ -321,10 +325,14 @@ const RecordController = {
 
         updates.isBackfill = isBackfill;
 
-        if (body.createdMonth !== undefined) {
-            updates.createdMonth = body.createdMonth;
-        } else if (isBackfill && !record.createdMonth) {
-            updates.createdMonth = currentMonth;
+        if (isBackfill) {
+            if (body.createdMonth !== undefined) {
+                updates.createdMonth = body.createdMonth;
+            } else if (!record.createdMonth) {
+                updates.createdMonth = currentMonth;
+            }
+        } else {
+            updates.createdMonth = '';
         }
 
         if (resolvedRole === 'admin') {
@@ -394,7 +402,7 @@ const RecordController = {
                     customActivity: finalCalcMode === 'trip' ? (updates.customActivity || record.customActivity || '') : '',
                     calcMode: finalCalcMode === 'trip' ? (finalCalcMode || '') : '',
                     note: updates.note,
-                    createdMonth: updates.createdMonth || record.createdMonth,
+                    createdMonth: updates.createdMonth !== undefined ? updates.createdMonth : record.createdMonth,
                     isBackfill: updates.isBackfill,
                     status: 'approved',
                     createdAt: new Date().toISOString(),

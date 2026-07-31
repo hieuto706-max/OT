@@ -79,7 +79,8 @@ const SystemController = {
         
         // 3. Records filter based on month and team/permissions
         let records = db.records.filter(r => {
-            const rMonth = r.createdMonth || r.date.substring(0, 7);
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            const rMonth = isBackfill ? (r.createdMonth || r.date.substring(0, 7)) : r.date.substring(0, 7);
             return rMonth === month;
         });
         
@@ -133,11 +134,13 @@ const SystemController = {
         const allowedUserIds = users.map(u => u.id);
 
         const approvedRecords = db.records.filter(r => {
-            const rMonth = r.createdMonth || r.date.substring(0, 7);
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            const rMonth = isBackfill ? (r.createdMonth || r.date.substring(0, 7)) : r.date.substring(0, 7);
             return rMonth === month && allowedUserIds.includes(r.userId) && (r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
         });
         const pendingRecords = db.records.filter(r => {
-            const rMonth = r.createdMonth || r.date.substring(0, 7);
+            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            const rMonth = isBackfill ? (r.createdMonth || r.date.substring(0, 7)) : r.date.substring(0, 7);
             return rMonth === month && allowedUserIds.includes(r.userId) && r.status === 'pending';
         });
         
