@@ -2689,7 +2689,10 @@ window.toggleReportRow = function(row, userId) {
         const month = document.getElementById('report-filter-month').value;
         
         api(`/api/records?userId=${userId}&month=${month}`).then(data => {
-            const detailedRecords = data.records || [];
+            const detailedRecords = (data.records || []).filter(r => {
+                const isBf = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+                return isBf ? true : r.date.startsWith(month);
+            });
             const holidays = (currentSystemSettings.holidays || "")
                 .split(',')
                 .map(d => d.trim())
@@ -2803,7 +2806,10 @@ async function refreshReport(cachedUsers, cachedRecords) {
             rawRecords = cachedRecords;
         } else {
             const recData = await api(`/api/records?month=${month}`);
-            rawRecords = recData.records;
+            rawRecords = (recData.records || []).filter(r => {
+                const isBf = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+                return isBf ? true : r.date.startsWith(month);
+            });
         }
         const records = rawRecords.filter(r => {
             const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
@@ -3259,6 +3265,8 @@ users = users.filter(u => {
         const recData = await api(`/api/records?month=${month}`);
         const records = recData.records.filter(r => {
             const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            // Lọc phía client: loại bỏ bản ghi không phải backfill mà ngày không thuộc tháng đang xem
+            if (!isBackfill && !r.date.startsWith(month)) return false;
             return r.status === 'approved' || (!isBackfill && r.status !== 'pending' && r.status !== 'rejected');
         });
 
@@ -4400,7 +4408,10 @@ async function handleAdminOTSubmit(e) {
     const month = document.getElementById('emp-filter-month').value;
     try {
         const data = await api(`/api/records?userId=${user.id}&month=${month}`);
-        const records = data.records;
+        const records = (data.records || []).filter(r => {
+            const isBf = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+            return isBf ? true : r.date.startsWith(month);
+        });
         employeeOTRecords = records;
         
         const tbody = document.getElementById('emp-records-body');

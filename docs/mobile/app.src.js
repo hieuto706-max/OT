@@ -1509,7 +1509,10 @@ async function loadHistory() {
         if (API) {
             try {
                 const data = await api(`/api/records?userId=${currentUser.id}&month=${month}`);
-                records = data.records;
+                records = (data.records || []).filter(r => {
+                    const isBf = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+                    return isBf ? true : r.date.startsWith(month);
+                });
                 safeStorage.setItem(`ot_cached_records_${currentUser.id}_${month}`, JSON.stringify(records));
             } catch (fetchErr) {
                 console.log('Failed to fetch, loading from cache:', fetchErr);
@@ -1764,7 +1767,10 @@ async function loadProfileStats() {
         if (API) {
             try {
                 const data = await api(`/api/records?userId=${currentUser.id}&month=${month}`);
-                records = data.records;
+                records = (data.records || []).filter(r => {
+                    const isBf = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+                    return isBf ? true : r.date.startsWith(month);
+                });
             } catch (e) {
                 records = JSON.parse(safeStorage.getItem(`ot_cached_records_${currentUser.id}_${month}`) || '[]');
             }
