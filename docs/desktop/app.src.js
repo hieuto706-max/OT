@@ -3586,12 +3586,14 @@ users = users.filter(u => {
         // Ẩn cột ở sheet Chi Tiết nếu không có dữ liệu
         if (totalOTAllUsers === 0) {
             wsDetail.getColumn(6).hidden = true; // Cột F: Thời gian OT
-            wsDetail.getColumn(7).hidden = true; // Cột G: Tổng OT (giờ)
+            wsDetail.getColumn(7).hidden = true; // Cột G: Hệ số
+            wsDetail.getColumn(8).hidden = true; // Cột H: Giờ thực tế (giờ)
+            wsDetail.getColumn(9).hidden = true; // Cột I: Giờ quy đổi (giờ)
         }
         if (totalTripsAllUsers === 0) {
             const hasCustomActivities = records.some(r => r.customActivity && r.calcMode !== 'trip');
             if (!hasCustomActivities) {
-                wsDetail.getColumn(8).hidden = true; // Cột H: Hoạt động / Chuyến đi
+                wsDetail.getColumn(10).hidden = true; // Cột J: Hoạt động / Chuyến đi
             }
         }
 
