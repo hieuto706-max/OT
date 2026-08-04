@@ -728,7 +728,7 @@ let modalAllUsers = [];
 
 async function openTeamSettingsModal() {
     const modalEl = document.querySelector('.modal');
-    if (modalEl) modalEl.style.maxWidth = '980px';
+    if (modalEl) modalEl.style.maxWidth = '1200px';
 
     try {
         const uData = await api('/api/users');
@@ -1044,7 +1044,7 @@ function renderSelectedTeamDetails() {
             <!-- Phân khu 3: Quản lý Hoạt động & Lý do mẫu -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <!-- Hoạt động tùy chọn -->
-                <div class="settings-section-card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 230px;">
+                <div class="settings-section-card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 280px;">
                     <span class="settings-section-title">⚙️ Hoạt động ngoài giờ của Team</span>
                     <div style="display: flex; gap: 4px; margin-bottom: 6px;">
                         <input type="text" id="modal-new-act-name" placeholder="Tên hoạt động..." style="flex: 1.5; min-width: 0; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 6px; font-size:11px;">
@@ -1063,7 +1063,7 @@ function renderSelectedTeamDetails() {
                 </div>
 
                 <!-- Lý do mẫu -->
-                <div class="settings-section-card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 230px;">
+                <div class="settings-section-card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 280px;">
                     <span class="settings-section-title">✏️ Lý do tăng ca mặc định (Mẫu)</span>
                     <div style="display: flex; gap: 4px; margin-bottom: 8px;">
                         <input type="text" id="modal-new-reason" placeholder="Ví dụ: Hỗ trợ kiểm kho..." style="flex: 2; min-width: 0; height: 28px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; padding:0 8px; font-size:11px;">
@@ -1076,7 +1076,7 @@ function renderSelectedTeamDetails() {
             </div>
 
             <!-- Phân khu 4: Quản lý thành viên -->
-            <div class="settings-section-card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 230px;">
+            <div class="settings-section-card" style="margin-bottom: 0; display: flex; flex-direction: column; height: 280px;">
                 <span class="settings-section-title">👥 Quản lý thành viên (${members.length})</span>
                 <div style="display: flex; gap: 8px; margin-bottom: 8px;">
                     <select id="modal-add-member-select" style="flex: 1; height: 30px; background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0 8px; font-size: 11px;">

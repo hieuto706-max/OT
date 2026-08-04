@@ -2785,7 +2785,7 @@ html.user-admin-logged-in #screen-admin::before {
 .team-settings-container {
     display: flex;
     gap: 24px;
-    height: 520px;
+    height: 650px;
     text-align: left;
 }
 
