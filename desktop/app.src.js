@@ -728,7 +728,10 @@ let modalAllUsers = [];
 
 async function openTeamSettingsModal() {
     const modalEl = document.querySelector('.modal');
-    if (modalEl) modalEl.style.maxWidth = '1200px';
+    if (modalEl) {
+        modalEl.style.maxWidth = '1400px';
+        modalEl.style.width = '95%';
+    }
 
     try {
         const uData = await api('/api/users');
@@ -770,7 +773,10 @@ async function openTeamSettingsModal() {
             text: 'Đóng',
             class: 'btn-ghost',
             action: () => {
-                if (modalEl) modalEl.style.maxWidth = '';
+                if (modalEl) {
+                    modalEl.style.maxWidth = '';
+                    modalEl.style.width = '';
+                }
             }
         }
     ]);
@@ -780,7 +786,10 @@ async function openTeamSettingsModal() {
     if (closeBtn) {
         const originalClose = closeBtn.onclick;
         closeBtn.onclick = () => {
-            if (modalEl) modalEl.style.maxWidth = '';
+            if (modalEl) {
+                modalEl.style.maxWidth = '';
+                modalEl.style.width = '';
+            }
             if (originalClose) originalClose();
             else closeModal();
         };
@@ -789,7 +798,10 @@ async function openTeamSettingsModal() {
     if (overlay) {
         overlay.onclick = (e) => {
             if (e.target === e.currentTarget) {
-                if (modalEl) modalEl.style.maxWidth = '';
+                if (modalEl) {
+                    modalEl.style.maxWidth = '';
+                    modalEl.style.width = '';
+                }
                 closeModal();
             }
         };
