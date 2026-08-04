@@ -70,7 +70,7 @@ const UserController = {
         
         const { loadDB } = require('../../db');
         const db = await loadDB();
-        const settings = db.settings || { companyName: "Hệ thống OT Manager" };
+        const settings = db.settings || {};
         
         return sendJSON(res, 200, { user: { ...safeUser, teamSettings, settings } });
     },

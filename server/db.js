@@ -734,13 +734,16 @@ function migrateSettings(data) {
     let migrated = false;
     if (!data.settings) {
         data.settings = {
-            companyName: "Hệ thống OT Manager",
             lunchOTHours: 1,
             eveningOTStart: "16:30",
             autoApproveUnlink: false,
             holidays: "2026-01-01, 2026-04-30, 2026-05-01, 2026-09-02"
         };
         return true;
+    }
+    if (data.settings.companyName !== undefined) {
+        delete data.settings.companyName;
+        migrated = true;
     }
     if (data.settings.lunchOTHours === undefined) {
         data.settings.lunchOTHours = 1;
@@ -868,7 +871,6 @@ async function loadDB(clone = true) {
             teams: [],
             closedMonths: [],
             settings: {
-                companyName: "Hệ thống OT Manager",
                 lunchOTHours: 1,
                 eveningOTStart: "16:30",
                 autoApproveUnlink: false,

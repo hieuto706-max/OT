@@ -3290,7 +3290,7 @@ users = users.filter(u => {
         // 1. Tiêu đề chính
         wsSummary.mergeCells('A1:H1');
         const title1 = wsSummary.getCell('A1');
-        title1.value = `${currentSystemSettings.companyName || 'Hệ thống OT Manager'} - BÁO CÁO TĂNG CA THÁNG ${displayMonth}`;
+        title1.value = `BÁO CÁO TĂNG CA THÁNG ${displayMonth}`;
         title1.font = { name: 'Times New Roman', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
         title1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } }; // Navy Blue đậm
         title1.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -3421,7 +3421,7 @@ users = users.filter(u => {
         // 1. Tiêu đề chính
         wsDetail.mergeCells('A1:K1');
         const title2 = wsDetail.getCell('A1');
-        title2.value = `${currentSystemSettings.companyName || 'Hệ thống OT Manager'} - CHI TIẾT TĂNG CA THÁNG ${displayMonth}`;
+        title2.value = `CHI TIẾT TĂNG CA THÁNG ${displayMonth}`;
         title2.font = { name: 'Times New Roman', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
         title2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1B365D' } }; // Navy Blue đậm
         title2.alignment = { vertical: 'middle', horizontal: 'center' };
@@ -3682,7 +3682,7 @@ async function handleCloseMonth() {
     );
 }
 
-let currentSystemSettings = { companyName: "Hệ thống OT Manager" };
+let currentSystemSettings = {};
 
 async function loadSystemSettings() {
     try {
@@ -3719,7 +3719,6 @@ async function saveCompanySettings() {
     
     if (!inputLunch || !inputUnlink || !inputHolidays) return;
     
-    const companyValue = currentSystemSettings.companyName || "Hệ thống OT Manager";
     const lunchValue = parseFloat(inputLunch.value) || 1.0;
     const eveningValue = currentSystemSettings.eveningOTStart || "16:30";
     const unlinkValue = inputUnlink.checked;
@@ -3737,7 +3736,6 @@ async function saveCompanySettings() {
         const res = await api('/api/settings', {
             method: 'POST',
             body: JSON.stringify({ 
-                companyName: companyValue,
                 lunchOTHours: lunchValue,
                 eveningOTStart: eveningValue,
                 autoApproveUnlink: unlinkValue,

@@ -362,7 +362,7 @@ const SystemController = {
 
     async getSettings(req, res) {
         const db = await loadDB();
-        const settings = db.settings || { companyName: "Hệ thống OT Manager" };
+        const settings = db.settings || {};
         return sendJSON(res, 200, settings);
     },
 
@@ -384,9 +384,7 @@ const SystemController = {
                 
                 // Cập nhật cấu hình
                 if (!db.settings) db.settings = {};
-                if (data.companyName !== undefined) {
-                    db.settings.companyName = String(data.companyName).trim() || "Hệ thống OT Manager";
-                }
+
                 if (data.lunchOTHours !== undefined) {
                     db.settings.lunchOTHours = Number(data.lunchOTHours) || 1;
                 }

@@ -109,7 +109,7 @@ const AuthController = {
         
         const { loadDB } = require('../../db');
         const db = await loadDB();
-        const settings = db.settings || { companyName: "Hệ thống OT Manager", autoApproveUnlink: false };
+        const settings = db.settings || { autoApproveUnlink: false };
         
         if (settings.autoApproveUnlink) {
             await UserRepository.update(user.id, { 
