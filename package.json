@@ -1,6 +1,6 @@
 {
   "name": "ot-manager",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "description": "Ứng dụng quản lý tăng ca - OT Manager",
   "main": "main.js",
   "scripts": {

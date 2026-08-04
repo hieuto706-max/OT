@@ -3702,82 +3702,16 @@ async function loadSystemSettings() {
             OT_LUNCH_HOURS = Number(settings.lunchOTHours) || 1;
             WORK_END = settings.eveningOTStart || "16:30";
             
-            const inputLunch = document.getElementById('setting-lunch-ot-input');
-            if (inputLunch) {
-                inputLunch.value = settings.lunchOTHours !== undefined ? settings.lunchOTHours : 1.0;
-            }
 
-            const inputHolidays = document.getElementById('setting-holidays-input');
-            if (inputHolidays) {
-                inputHolidays.value = settings.holidays || "2026-01-01, 2026-04-30, 2026-05-01, 2026-09-02";
-            }
         }
     } catch (e) {
         console.error('Error loading system settings:', e);
     }
 }
 
-async function saveCompanySettings() {
-    const inputLunch = document.getElementById('setting-lunch-ot-input');
-    const inputHolidays = document.getElementById('setting-holidays-input');
-    
-    if (!inputLunch || !inputHolidays) return;
-    
-    const lunchValue = parseFloat(inputLunch.value) || 1.0;
-    const eveningValue = currentSystemSettings.eveningOTStart || "16:30";
-    const holidaysValue = inputHolidays.value.trim();
-    
-    const saveBtn = document.getElementById('btn-save-company-settings');
-    let originalText = '';
-    if (saveBtn) {
-        saveBtn.disabled = true;
-        originalText = saveBtn.innerHTML;
-        saveBtn.innerHTML = 'Đang lưu...';
-    }
-    
-    try {
-        const res = await api('/api/settings', {
-            method: 'POST',
-            body: JSON.stringify({ 
-                lunchOTHours: lunchValue,
-                eveningOTStart: eveningValue,
-                holidays: holidaysValue
-            })
-        });
-        if (res && res.success) {
-            currentSystemSettings = res.settings;
-            OT_LUNCH_HOURS = Number(res.settings.lunchOTHours) || 1;
-            WORK_END = res.settings.eveningOTStart || "16:30";
-            showToast('Lưu cấu hình hệ thống thành công!', 'success');
-        } else {
-            showToast(res.message || 'Lỗi khi lưu cấu hình!', 'error');
-        }
-    } catch (e) {
-        console.error('Error saving system settings:', e);
-        showToast('Lỗi kết nối khi lưu cấu hình!', 'error');
-    } finally {
-        if (saveBtn) {
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = originalText;
-        }
-    }
-}
 
-function toggleSettingsCollapse() {
-    const body = document.getElementById('settings-collapsible-body');
-    const icon = document.getElementById('settings-collapse-icon');
-    if (body) {
-        const isCollapsed = body.style.display === 'none' || body.style.display === '';
-        if (isCollapsed) {
-            body.style.display = 'flex';
-            if (icon) icon.style.transform = 'rotate(180deg)';
-        } else {
-            body.style.display = 'none';
-            if (icon) icon.style.transform = 'rotate(0deg)';
-        }
-    }
-}
-window.toggleSettingsCollapse = toggleSettingsCollapse;
+
+
 
 async function handleDatabaseCleanup() {
     const monthInput = document.getElementById('cleanup-month-input');
