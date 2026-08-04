@@ -2479,6 +2479,8 @@ function initApp() {
             if (this.checked) {
                 if (normalInputs) normalInputs.style.display = 'none';
                 if (backfillGroup) backfillGroup.style.display = 'block';
+                const backfillMonthGroup = document.getElementById('ot-backfill-month-group');
+                if (backfillMonthGroup) backfillMonthGroup.style.display = 'block';
                 if (customActGroup) customActGroup.style.display = 'none';
 
                 // Reset other OT choices
@@ -2505,6 +2507,8 @@ function initApp() {
             } else {
                 if (normalInputs) normalInputs.style.display = 'block';
                 if (backfillGroup) backfillGroup.style.display = 'none';
+                const backfillMonthGroup = document.getElementById('ot-backfill-month-group');
+                if (backfillMonthGroup) backfillMonthGroup.style.display = 'none';
                 
                 // Restore custom visibility based on team activities settings
                 if (activities.length > 0) {
@@ -2530,6 +2534,8 @@ function initApp() {
             if (this.checked) {
                 if (normalInputs) normalInputs.style.display = 'none';
                 if (backfillGroup) backfillGroup.style.display = 'block';
+                const backfillMonthGroup = document.getElementById('edit-ot-backfill-month-group');
+                if (backfillMonthGroup) backfillMonthGroup.style.display = 'block';
                 if (customActGroup) customActGroup.style.display = 'none';
 
                 // Reset edit form other OT choices
@@ -2556,6 +2562,8 @@ function initApp() {
             } else {
                 if (normalInputs) normalInputs.style.display = 'block';
                 if (backfillGroup) backfillGroup.style.display = 'none';
+                const backfillMonthGroup = document.getElementById('edit-ot-backfill-month-group');
+                if (backfillMonthGroup) backfillMonthGroup.style.display = 'none';
                 
                 // Restore custom visibility based on team settings
                 if (activities.length > 0) {
@@ -3031,10 +3039,14 @@ async function editRecordDialog(id) {
             if (isBackfill) {
                 if (elNormalInputs) elNormalInputs.style.display = 'none';
                 if (elBackfillGroup) elBackfillGroup.style.display = 'block';
+                const elBackfillMonthGroup = document.getElementById('edit-ot-backfill-month-group');
+                if (elBackfillMonthGroup) elBackfillMonthGroup.style.display = 'block';
                 if (elBackfillHours) elBackfillHours.value = record.totalHours;
             } else {
                 if (elNormalInputs) elNormalInputs.style.display = 'block';
                 if (elBackfillGroup) elBackfillGroup.style.display = 'none';
+                const elBackfillMonthGroup = document.getElementById('edit-ot-backfill-month-group');
+                if (elBackfillMonthGroup) elBackfillMonthGroup.style.display = 'none';
                 if (elBackfillHours) elBackfillHours.value = '';
             }
         }
@@ -3078,11 +3090,20 @@ async function editRecordDialog(id) {
 
         // Setup predefined reasons for Edit form based on current lunch OT state
         const reasonsList = (teamSettings && teamSettings.predefinedReasons) ? teamSettings.predefinedReasons : [];
-        setupMobilePredefinedReasonsSelect(reasonsList, elNote, elLunch.checked, isBackfill);
+        let backfillMonth = '';
+        if (isBackfill && record.note) {
+            const match = record.note.match(/tháng\s+([^\s]+)/i);
+            if (match) {
+                backfillMonth = match[1];
+            }
+        }
+        const elBackfillMonth = document.getElementById('edit-ot-backfill-month');
+        if (elBackfillMonth) elBackfillMonth.value = backfillMonth;
 
-        elNote.value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
-        if (isBackfill) {
-            elNote.value = "Bù giờ tăng ca tháng bị thiếu";
+        setupMobilePredefinedReasonsSelect(reasonsList, elNote, elLunch.checked, isBackfill, backfillMonth);
+
+        if (!isBackfill) {
+            elNote.value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
         }
         console.log('[editRecordDialog] Step 14: Note set');
 

@@ -5621,6 +5621,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (this.checked) {
                     if (normalInputs) normalInputs.style.display = 'none';
                     if (backfillGroup) backfillGroup.style.display = 'block';
+                    const backfillMonthGroup = document.getElementById('admin-ot-backfill-month-group');
+                    if (backfillMonthGroup) backfillMonthGroup.style.display = 'block';
                     if (customActGroup) customActGroup.style.display = 'none';
                     const lunchEl = document.getElementById('admin-ot-lunch');
                     if (lunchEl) lunchEl.checked = false;
@@ -5631,6 +5633,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     if (normalInputs) normalInputs.style.display = 'block';
                     if (backfillGroup) backfillGroup.style.display = 'none';
+                    const backfillMonthGroup = document.getElementById('admin-ot-backfill-month-group');
+                    if (backfillMonthGroup) backfillMonthGroup.style.display = 'none';
                     const targetSelf = document.getElementById('admin-ot-target-self');
                     let userId = '';
                     if (targetSelf && !targetSelf.checked) {
@@ -5735,6 +5739,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (this.checked) {
                 if (normalInputs) normalInputs.style.display = 'none';
                 if (backfillGroup) backfillGroup.style.display = 'block';
+                const backfillMonthGroup = document.getElementById('ot-backfill-month-group');
+                if (backfillMonthGroup) backfillMonthGroup.style.display = 'block';
                 if (customActGroup) customActGroup.style.display = 'none';
                 const lunchEl = document.getElementById('ot-lunch');
                 if (lunchEl) lunchEl.checked = false;
@@ -5745,6 +5751,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 if (normalInputs) normalInputs.style.display = 'block';
                 if (backfillGroup) backfillGroup.style.display = 'none';
+                const backfillMonthGroup = document.getElementById('ot-backfill-month-group');
+                if (backfillMonthGroup) backfillMonthGroup.style.display = 'none';
                 setupEmployeeCustomActivitiesUI();
             }
             updateOTPreview();
@@ -5879,6 +5887,13 @@ async function editRecordDialog(recordId, source) {
         if (!record) return showToast('Không tìm thấy bản ghi', 'error');
 
         const isBackfill = record.isBackfill || (record.note && (record.note.includes('[BÙ THÁNG TRƯỚC]') || record.note.includes('[TĂNG THÁNG NÀY]')));
+        let backfillMonth = '';
+        if (isBackfill && record.note) {
+            const match = record.note.match(/tháng\s+([^\s]+)/i);
+            if (match) {
+                backfillMonth = match[1];
+            }
+        }
         const cleanedNote = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
 
         const body = `
@@ -5901,6 +5916,12 @@ async function editRecordDialog(recordId, source) {
             <div class="form-group" id="modal-rec-backfill-hours-group" style="display: ${isBackfill ? 'block' : 'none'}; margin-bottom: 15px;">
                 <label style="display:block;margin-bottom:6px;font-weight:600;">Số giờ tăng ca cần bù</label>
                 <input type="number" id="modal-rec-backfill-hours" step="0.1" min="0.1" max="24" value="${isBackfill ? record.totalHours : ''}" placeholder="Nhập số giờ bù (ví dụ: 8.0)" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;">
+            </div>
+
+            <!-- Backfill month input -->
+            <div class="form-group" id="modal-rec-backfill-month-group" style="display: ${isBackfill ? 'block' : 'none'}; margin-bottom: 15px;">
+                <label style="display:block;margin-bottom:6px;font-weight:600;">Tháng bị thiếu</label>
+                <input type="text" id="modal-rec-backfill-month" placeholder="Ví dụ: 07/2026 hoặc 07" class="input-sm" style="width:100%; box-sizing:border-box; height:38px; border-radius:8px;" value="${backfillMonth}">
             </div>
 
             <!-- Normal OT inputs -->
@@ -6076,10 +6097,12 @@ async function editRecordDialog(recordId, source) {
             modalBackfill.addEventListener('change', function() {
                 const normalInputs = document.getElementById('modal-rec-normal-inputs');
                 const backfillGroup = document.getElementById('modal-rec-backfill-hours-group');
+                const backfillMonthGroup = document.getElementById('modal-rec-backfill-month-group');
                 const customActGroup = document.getElementById('modal-rec-custom-activity-group');
                 if (this.checked) {
                     if (normalInputs) normalInputs.style.display = 'none';
                     if (backfillGroup) backfillGroup.style.display = 'block';
+                    if (backfillMonthGroup) backfillMonthGroup.style.display = 'block';
                     if (customActGroup) customActGroup.style.display = 'none';
                     // Uncheck custom activities
                     document.querySelectorAll('.modal-rec-custom-activity-checkbox').forEach(c => {
@@ -6097,6 +6120,7 @@ async function editRecordDialog(recordId, source) {
                     if (normalInputs) normalInputs.style.display = 'block';
                     if (customActGroup && activities.length > 0) customActGroup.style.display = 'block';
                     if (backfillGroup) backfillGroup.style.display = 'none';
+                    if (backfillMonthGroup) backfillMonthGroup.style.display = 'none';
                 }
             });
         }
@@ -6117,17 +6141,23 @@ async function editRecordDialog(recordId, source) {
         
         const modalRecLunch = document.getElementById('modal-rec-lunch');
         const modalRecBackfill = document.getElementById('modal-rec-backfill');
+        const modalRecBackfillMonth = document.getElementById('modal-rec-backfill-month');
         const modalRecNote = document.getElementById('modal-rec-note');
         const updateModalPredefinedReasons = () => {
             const isLunchChecked = modalRecLunch ? modalRecLunch.checked : false;
             const isBackfillChecked = modalRecBackfill ? modalRecBackfill.checked : false;
-            setupPredefinedReasonsSelect(userTeam, modalRecNote, isLunchChecked, isBackfillChecked);
+            const backfillMonthVal = modalRecBackfillMonth ? modalRecBackfillMonth.value.trim() : '';
+            setupPredefinedReasonsSelect(userTeam, modalRecNote, isLunchChecked, isBackfillChecked, backfillMonthVal);
         };
         if (modalRecLunch) {
             modalRecLunch.addEventListener('change', updateModalPredefinedReasons);
         }
         if (modalRecBackfill) {
             modalRecBackfill.addEventListener('change', updateModalPredefinedReasons);
+        }
+        if (modalRecBackfillMonth) {
+            modalRecBackfillMonth.addEventListener('input', updateModalPredefinedReasons);
+            modalRecBackfillMonth.addEventListener('change', updateModalPredefinedReasons);
         }
         updateModalPredefinedReasons();
         if (modalRecNote && !isBackfill) {
@@ -6549,14 +6579,16 @@ async function rejectUnlinkDevice(userId, fullname) {
 
 
 // ==================== PREDEFINED OT REASONS UTILITIES ====================
-function setupPredefinedReasonsSelect(teamName, selectEl, isLunchChecked = false, isBackfillChecked = false) {
+function setupPredefinedReasonsSelect(teamName, selectEl, isLunchChecked = false, isBackfillChecked = false, backfillMonth = '') {
     if (!selectEl) return;
     
     if (isBackfillChecked) {
+        const displayText = backfillMonth ? `Bù giờ tăng ca tháng ${backfillMonth} bị thiếu` : 'Bù giờ tăng ca tháng ... bị thiếu';
+        const displayVal = backfillMonth ? `Bù giờ tăng ca tháng ${backfillMonth} bị thiếu` : '';
         selectEl.innerHTML = `
-            <option value="Bù giờ tăng ca tháng bị thiếu">Bù giờ tăng ca tháng bị thiếu</option>
+            <option value="${displayVal}">${displayText}</option>
         `;
-        selectEl.value = "Bù giờ tăng ca tháng bị thiếu";
+        selectEl.value = displayVal;
         selectEl.style.display = 'inline-block';
         return;
     }
@@ -6604,11 +6636,13 @@ function setupAdminCustomActivitiesUI(userId) {
     // Setup Predefined reasons select
     const adminOtLunchEl = document.getElementById('admin-ot-lunch');
     const adminOtBackfillEl = document.getElementById('admin-ot-backfill');
+    const adminOtBackfillMonthEl = document.getElementById('admin-ot-backfill-month');
     const adminOtNoteEl = document.getElementById('admin-ot-note');
     const updateAdminPredefinedReasons = () => {
         const isLunchChecked = adminOtLunchEl ? adminOtLunchEl.checked : false;
         const isBackfillChecked = adminOtBackfillEl ? adminOtBackfillEl.checked : false;
-        setupPredefinedReasonsSelect(userTeam, adminOtNoteEl, isLunchChecked, isBackfillChecked);
+        const backfillMonth = adminOtBackfillMonthEl ? adminOtBackfillMonthEl.value.trim() : '';
+        setupPredefinedReasonsSelect(userTeam, adminOtNoteEl, isLunchChecked, isBackfillChecked, backfillMonth);
     };
     
     if (adminOtLunchEl && !adminOtLunchEl.dataset.reasonsListenerBound) {
@@ -6618,6 +6652,11 @@ function setupAdminCustomActivitiesUI(userId) {
     if (adminOtBackfillEl && !adminOtBackfillEl.dataset.reasonsBackfillListenerBound) {
         adminOtBackfillEl.addEventListener('change', updateAdminPredefinedReasons);
         adminOtBackfillEl.dataset.reasonsBackfillListenerBound = 'true';
+    }
+    if (adminOtBackfillMonthEl && !adminOtBackfillMonthEl.dataset.reasonsMonthListenerBound) {
+        adminOtBackfillMonthEl.addEventListener('input', updateAdminPredefinedReasons);
+        adminOtBackfillMonthEl.addEventListener('change', updateAdminPredefinedReasons);
+        adminOtBackfillMonthEl.dataset.reasonsMonthListenerBound = 'true';
     }
     updateAdminPredefinedReasons();
 
@@ -6746,11 +6785,13 @@ function setupEmployeeCustomActivitiesUI() {
     // Setup Predefined reasons select
     const otLunchEl = document.getElementById('ot-lunch');
     const otBackfillEl = document.getElementById('ot-backfill');
+    const otBackfillMonthEl = document.getElementById('ot-backfill-month');
     const otNoteEl = document.getElementById('ot-note');
     const updateEmployeePredefinedReasons = () => {
         const isLunchChecked = otLunchEl ? otLunchEl.checked : false;
         const isBackfillChecked = otBackfillEl ? otBackfillEl.checked : false;
-        setupPredefinedReasonsSelect(userTeam, otNoteEl, isLunchChecked, isBackfillChecked);
+        const backfillMonth = otBackfillMonthEl ? otBackfillMonthEl.value.trim() : '';
+        setupPredefinedReasonsSelect(userTeam, otNoteEl, isLunchChecked, isBackfillChecked, backfillMonth);
     };
     
     if (otLunchEl && !otLunchEl.dataset.reasonsListenerBound) {
@@ -6760,6 +6801,11 @@ function setupEmployeeCustomActivitiesUI() {
     if (otBackfillEl && !otBackfillEl.dataset.reasonsBackfillListenerBound) {
         otBackfillEl.addEventListener('change', updateEmployeePredefinedReasons);
         otBackfillEl.dataset.reasonsBackfillListenerBound = 'true';
+    }
+    if (otBackfillMonthEl && !otBackfillMonthEl.dataset.reasonsMonthListenerBound) {
+        otBackfillMonthEl.addEventListener('input', updateEmployeePredefinedReasons);
+        otBackfillMonthEl.addEventListener('change', updateEmployeePredefinedReasons);
+        otBackfillMonthEl.dataset.reasonsMonthListenerBound = 'true';
     }
     updateEmployeePredefinedReasons();
 

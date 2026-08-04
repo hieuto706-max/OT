@@ -27,7 +27,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.5.9">
+    <link rel="stylesheet" href="style.css?v=1.6.0">
     <style>
       /* Styles for the analytics charts */
       .chart-team-row {
@@ -895,6 +895,14 @@
                                     <input type="number" id="admin-ot-backfill-hours" step="0.1" min="0.1" max="24" placeholder="Nhập số giờ bù (ví dụ: 8.0)" class="input-sm" style="height: 42px; border-radius: 8px;">
                                 </div>
                             </div>
+                            
+                            <!-- Backfill month input -->
+                            <div class="form-group" id="admin-ot-backfill-month-group" style="display: none; margin-bottom: 15px;">
+                                <label for="admin-ot-backfill-month" class="field-label">Tháng bị thiếu</label>
+                                <div class="input-wrapper">
+                                    <input type="text" id="admin-ot-backfill-month" placeholder="Ví dụ: 07/2026 hoặc 07" class="input-sm" style="height: 42px; border-radius: 8px;">
+                                </div>
+                            </div>
 
                             <!-- Normal OT inputs -->
                             <div id="admin-ot-normal-inputs">
@@ -1197,6 +1205,12 @@
                                 <label for="ot-backfill-hours" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">Số giờ tăng ca cần bù:</label>
                                 <input type="number" id="ot-backfill-hours" step="0.1" min="0.1" max="24" placeholder="Nhập số giờ bù (ví dụ: 8.0)">
                             </div>
+                            
+                            <!-- Backfill month input -->
+                            <div class="form-group" id="ot-backfill-month-group" style="display: none; margin-bottom: 16px;">
+                                <label for="ot-backfill-month" style="display:block; margin-bottom:6px; font-size:13px; font-weight:600; color:var(--text-secondary);">Tháng bị thiếu:</label>
+                                <input type="text" id="ot-backfill-month" placeholder="Ví dụ: 07/2026 hoặc 07">
+                            </div>
 
                             <!-- Normal OT inputs -->
                             <div id="ot-normal-inputs" style="margin-bottom: 15px;">
@@ -1367,6 +1381,6 @@
         window.OT_LOCAL_VERSION = window.OT_LOCAL_VERSION || '1.5.0';
     </script>
     <script src="server-config.js" defer></script>
-    <script src="app.js?v=1.5.9" defer></script>
+    <script src="app.js?v=1.6.0" defer></script>
 </body>
 </html>
