@@ -2,7 +2,29 @@ const fs = require('fs');
 const path = require('path');
 const JavaScriptObfuscator = require('javascript-obfuscator');
 
-console.log('Starting sync & obfuscation process...');
+const pkgPath = path.join(__dirname, '..', 'package.json');
+const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+const version = pkg.version;
+
+console.log(`Starting sync & obfuscation process for version ${version}...`);
+
+// Helper to update version query params in HTML files
+function updateHtmlVersion(filePath, version) {
+    try {
+        if (!fs.existsSync(filePath)) return;
+        let content = fs.readFileSync(filePath, 'utf8');
+        content = content.replace(/(href|src)=["']([^"']*?\.(?:css|js))\?v=[^"']*?["']/g, `$1="$2?v=${version}"`);
+        fs.writeFileSync(filePath, content, 'utf8');
+        console.log(`Updated version query parameters in ${filePath} to ?v=${version}`);
+    } catch (e) {
+        console.error(`Error updating html version in ${filePath}:`, e.message);
+    }
+}
+
+// Update version tags in HTML templates
+updateHtmlVersion(path.join(__dirname, '..', 'desktop', 'index.html'), version);
+updateHtmlVersion(path.join(__dirname, '..', 'mobile', 'index.html'), version);
+updateHtmlVersion(path.join(__dirname, '..', 'docs', 'index.html'), version);
 
 // Generate build timestamp
 const buildTime = Date.now();
@@ -131,11 +153,9 @@ if (fs.existsSync(resourcesSrc)) {
 
 // Ghi tệp build.json chứa timestamp bản dựng mới và version để hỗ trợ cập nhật vá lỗi (hotfix) và định danh phiên bản
 try {
-    const pkgPath = path.join(__dirname, '..', 'package.json');
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
     const buildPath = path.join(__dirname, '..', 'server', 'build.json');
     const buildData = {
-        version: pkg.version,
+        version: version,
         buildTime: Date.now()
     };
     fs.writeFileSync(buildPath, JSON.stringify(buildData, null, 2), 'utf8');
