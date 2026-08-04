@@ -977,8 +977,17 @@ async function refreshCurrentUserInfo() {
     }
 }
 
-function setupMobilePredefinedReasonsSelect(reasons, selectEl, isLunchChecked = false) {
+function setupMobilePredefinedReasonsSelect(reasons, selectEl, isLunchChecked = false, isBackfillChecked = false) {
     if (!selectEl) return;
+    
+    if (isBackfillChecked) {
+        selectEl.innerHTML = `
+            <option value="Bù giờ tăng ca tháng bị thiếu">Bù giờ tăng ca tháng bị thiếu</option>
+        `;
+        selectEl.value = "Bù giờ tăng ca tháng bị thiếu";
+        selectEl.style.display = 'inline-block';
+        return;
+    }
     
     // Filter reasons based on lunch checkbox status
     const filteredReasons = (reasons || []).filter(r => {
@@ -1006,26 +1015,38 @@ function setupCustomActivitiesUI() {
     const reasons = teamSettings ? teamSettings.predefinedReasons || [] : [];
     
     const otLunchEl = document.getElementById('ot-lunch');
+    const otBackfillEl = document.getElementById('ot-backfill');
     const otNoteEl = document.getElementById('ot-note');
     const updateMobilePredefinedReasons = () => {
         const isLunchChecked = otLunchEl ? otLunchEl.checked : false;
-        setupMobilePredefinedReasonsSelect(reasons, otNoteEl, isLunchChecked);
+        const isBackfillChecked = otBackfillEl ? otBackfillEl.checked : false;
+        setupMobilePredefinedReasonsSelect(reasons, otNoteEl, isLunchChecked, isBackfillChecked);
     };
     if (otLunchEl && !otLunchEl.dataset.reasonsListenerBound) {
         otLunchEl.addEventListener('change', updateMobilePredefinedReasons);
         otLunchEl.dataset.reasonsListenerBound = 'true';
     }
+    if (otBackfillEl && !otBackfillEl.dataset.reasonsBackfillListenerBound) {
+        otBackfillEl.addEventListener('change', updateMobilePredefinedReasons);
+        otBackfillEl.dataset.reasonsBackfillListenerBound = 'true';
+    }
     updateMobilePredefinedReasons();
 
     const editOtLunchEl = document.getElementById('edit-ot-lunch');
+    const editOtBackfillEl = document.getElementById('edit-ot-backfill');
     const editOtNoteEl = document.getElementById('edit-ot-note');
     const updateMobileEditPredefinedReasons = () => {
         const isLunchChecked = editOtLunchEl ? editOtLunchEl.checked : false;
-        setupMobilePredefinedReasonsSelect(reasons, editOtNoteEl, isLunchChecked);
+        const isBackfillChecked = editOtBackfillEl ? editOtBackfillEl.checked : false;
+        setupMobilePredefinedReasonsSelect(reasons, editOtNoteEl, isLunchChecked, isBackfillChecked);
     };
     if (editOtLunchEl && !editOtLunchEl.dataset.reasonsListenerBound) {
         editOtLunchEl.addEventListener('change', updateMobileEditPredefinedReasons);
         editOtLunchEl.dataset.reasonsListenerBound = 'true';
+    }
+    if (editOtBackfillEl && !editOtBackfillEl.dataset.reasonsBackfillListenerBound) {
+        editOtBackfillEl.addEventListener('change', updateMobileEditPredefinedReasons);
+        editOtBackfillEl.dataset.reasonsBackfillListenerBound = 'true';
     }
     updateMobileEditPredefinedReasons();
 
@@ -3054,9 +3075,12 @@ async function editRecordDialog(id) {
 
         // Setup predefined reasons for Edit form based on current lunch OT state
         const reasonsList = (teamSettings && teamSettings.predefinedReasons) ? teamSettings.predefinedReasons : [];
-        setupMobilePredefinedReasonsSelect(reasonsList, elNote, elLunch.checked);
+        setupMobilePredefinedReasonsSelect(reasonsList, elNote, elLunch.checked, isBackfill);
 
         elNote.value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
+        if (isBackfill) {
+            elNote.value = "Bù giờ tăng ca tháng bị thiếu";
+        }
         console.log('[editRecordDialog] Step 14: Note set');
 
         // Auto sync edit ot end when edit ot start changes

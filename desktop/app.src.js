@@ -6116,16 +6116,21 @@ async function editRecordDialog(recordId, source) {
         }
         
         const modalRecLunch = document.getElementById('modal-rec-lunch');
+        const modalRecBackfill = document.getElementById('modal-rec-backfill');
         const modalRecNote = document.getElementById('modal-rec-note');
         const updateModalPredefinedReasons = () => {
             const isLunchChecked = modalRecLunch ? modalRecLunch.checked : false;
-            setupPredefinedReasonsSelect(userTeam, modalRecNote, isLunchChecked);
+            const isBackfillChecked = modalRecBackfill ? modalRecBackfill.checked : false;
+            setupPredefinedReasonsSelect(userTeam, modalRecNote, isLunchChecked, isBackfillChecked);
         };
         if (modalRecLunch) {
             modalRecLunch.addEventListener('change', updateModalPredefinedReasons);
         }
+        if (modalRecBackfill) {
+            modalRecBackfill.addEventListener('change', updateModalPredefinedReasons);
+        }
         updateModalPredefinedReasons();
-        if (modalRecNote) {
+        if (modalRecNote && !isBackfill) {
             modalRecNote.value = cleanedNote;
         }
     } catch (e) {
@@ -6544,8 +6549,17 @@ async function rejectUnlinkDevice(userId, fullname) {
 
 
 // ==================== PREDEFINED OT REASONS UTILITIES ====================
-function setupPredefinedReasonsSelect(teamName, selectEl, isLunchChecked = false) {
+function setupPredefinedReasonsSelect(teamName, selectEl, isLunchChecked = false, isBackfillChecked = false) {
     if (!selectEl) return;
+    
+    if (isBackfillChecked) {
+        selectEl.innerHTML = `
+            <option value="Bù giờ tăng ca tháng bị thiếu">Bù giờ tăng ca tháng bị thiếu</option>
+        `;
+        selectEl.value = "Bù giờ tăng ca tháng bị thiếu";
+        selectEl.style.display = 'inline-block';
+        return;
+    }
     
     // Find the team settings in TEAMS
     const team = typeof TEAMS !== 'undefined' && TEAMS.find(t => typeof t === 'object' && t.name === teamName);
@@ -6589,15 +6603,21 @@ function setupAdminCustomActivitiesUI(userId) {
 
     // Setup Predefined reasons select
     const adminOtLunchEl = document.getElementById('admin-ot-lunch');
+    const adminOtBackfillEl = document.getElementById('admin-ot-backfill');
     const adminOtNoteEl = document.getElementById('admin-ot-note');
     const updateAdminPredefinedReasons = () => {
         const isLunchChecked = adminOtLunchEl ? adminOtLunchEl.checked : false;
-        setupPredefinedReasonsSelect(userTeam, adminOtNoteEl, isLunchChecked);
+        const isBackfillChecked = adminOtBackfillEl ? adminOtBackfillEl.checked : false;
+        setupPredefinedReasonsSelect(userTeam, adminOtNoteEl, isLunchChecked, isBackfillChecked);
     };
     
     if (adminOtLunchEl && !adminOtLunchEl.dataset.reasonsListenerBound) {
         adminOtLunchEl.addEventListener('change', updateAdminPredefinedReasons);
         adminOtLunchEl.dataset.reasonsListenerBound = 'true';
+    }
+    if (adminOtBackfillEl && !adminOtBackfillEl.dataset.reasonsBackfillListenerBound) {
+        adminOtBackfillEl.addEventListener('change', updateAdminPredefinedReasons);
+        adminOtBackfillEl.dataset.reasonsBackfillListenerBound = 'true';
     }
     updateAdminPredefinedReasons();
 
@@ -6725,15 +6745,21 @@ function setupEmployeeCustomActivitiesUI() {
 
     // Setup Predefined reasons select
     const otLunchEl = document.getElementById('ot-lunch');
+    const otBackfillEl = document.getElementById('ot-backfill');
     const otNoteEl = document.getElementById('ot-note');
     const updateEmployeePredefinedReasons = () => {
         const isLunchChecked = otLunchEl ? otLunchEl.checked : false;
-        setupPredefinedReasonsSelect(userTeam, otNoteEl, isLunchChecked);
+        const isBackfillChecked = otBackfillEl ? otBackfillEl.checked : false;
+        setupPredefinedReasonsSelect(userTeam, otNoteEl, isLunchChecked, isBackfillChecked);
     };
     
     if (otLunchEl && !otLunchEl.dataset.reasonsListenerBound) {
         otLunchEl.addEventListener('change', updateEmployeePredefinedReasons);
         otLunchEl.dataset.reasonsListenerBound = 'true';
+    }
+    if (otBackfillEl && !otBackfillEl.dataset.reasonsBackfillListenerBound) {
+        otBackfillEl.addEventListener('change', updateEmployeePredefinedReasons);
+        otBackfillEl.dataset.reasonsBackfillListenerBound = 'true';
     }
     updateEmployeePredefinedReasons();
 
