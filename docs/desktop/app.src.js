@@ -7149,6 +7149,19 @@ window.renameTeamFromModal = renameTeamFromModal;
 window.deleteTeamFromModal = deleteTeamFromModal;
 window.handleDatabaseCleanup = handleDatabaseCleanup;
 window.forgotPasswordDialog = forgotPasswordDialog;
+
+// Expose team modal methods to prevent mangling in production builds
+window.selectTeamInModal = selectTeamInModal;
+window.setPrimaryLeader = setPrimaryLeader;
+window.deleteActivityFromTeam = deleteActivityFromTeam;
+window.deletePredefinedReason = deletePredefinedReason;
+window.removeMemberFromTeam = removeMemberFromTeam;
+window.cloneTeamSettingsModal = cloneTeamSettingsModal;
+window.saveTeamQuota = saveTeamQuota;
+window.addActivityToTeam = addActivityToTeam;
+window.addPredefinedReason = addPredefinedReason;
+window.addMemberToTeamFromModal = addMemberToTeamFromModal;
+window.saveTeamSettingsFromModal = saveTeamSettingsFromModal;
 })();
 
 
