@@ -2877,6 +2877,8 @@ html.user-admin-logged-in #screen-admin::before {
     left: 0;
     right: 0;
     bottom: 0;
+    width: 34px;
+    height: 20px;
     background-color: rgba(255, 255, 255, 0.1);
     transition: .2s;
     border-radius: 20px;
