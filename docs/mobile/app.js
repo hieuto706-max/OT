@@ -980,27 +980,22 @@ async function refreshCurrentUserInfo() {
     }
 }
 
-function setupMobilePredefinedReasonsSelect(reasons, selectEl, textareaEl) {
+function setupMobilePredefinedReasonsSelect(reasons, selectEl, isLunchChecked = false) {
     if (!selectEl) return;
-    if (!reasons || reasons.length === 0) {
-        selectEl.innerHTML = '';
-        selectEl.style.display = 'none';
-        return;
-    }
+    
+    // Filter reasons based on lunch checkbox status
+    const filteredReasons = (reasons || []).filter(r => {
+        const containsLunch = r.toLowerCase().includes('trưa');
+        return isLunchChecked ? containsLunch : !containsLunch;
+    });
+
+    const placeholder = isLunchChecked ? '-- Chọn lý do tăng ca trưa --' : '-- Chọn lý do tăng ca --';
     
     selectEl.innerHTML = `
-        <option value="">-- Chọn lý do mẫu --</option>
-        ${reasons.map(r => `<option value="${r.replace(/"/g, '&quot;')}">${r}</option>`).join('')}
+        <option value="">${placeholder}</option>
+        ${filteredReasons.map(r => `<option value="${r.replace(/"/g, '&quot;')}">${r}</option>`).join('')}
     `;
     selectEl.style.display = 'inline-block';
-    
-    selectEl.onchange = function() {
-        if (this.value && textareaEl) {
-            textareaEl.value = this.value;
-            textareaEl.dispatchEvent(new Event('input'));
-            textareaEl.dispatchEvent(new Event('change'));
-        }
-    };
 }
 
 function setupCustomActivitiesUI() {
@@ -1012,8 +1007,30 @@ function setupCustomActivitiesUI() {
 
     // Setup Predefined Reasons for Add and Edit Forms
     const reasons = teamSettings ? teamSettings.predefinedReasons || [] : [];
-    setupMobilePredefinedReasonsSelect(reasons, document.getElementById('ot-predefined-reasons'), document.getElementById('ot-note'));
-    setupMobilePredefinedReasonsSelect(reasons, document.getElementById('edit-ot-predefined-reasons'), document.getElementById('edit-ot-note'));
+    
+    const otLunchEl = document.getElementById('ot-lunch');
+    const otNoteEl = document.getElementById('ot-note');
+    const updateMobilePredefinedReasons = () => {
+        const isLunchChecked = otLunchEl ? otLunchEl.checked : false;
+        setupMobilePredefinedReasonsSelect(reasons, otNoteEl, isLunchChecked);
+    };
+    if (otLunchEl && !otLunchEl.dataset.reasonsListenerBound) {
+        otLunchEl.addEventListener('change', updateMobilePredefinedReasons);
+        otLunchEl.dataset.reasonsListenerBound = 'true';
+    }
+    updateMobilePredefinedReasons();
+
+    const editOtLunchEl = document.getElementById('edit-ot-lunch');
+    const editOtNoteEl = document.getElementById('edit-ot-note');
+    const updateMobileEditPredefinedReasons = () => {
+        const isLunchChecked = editOtLunchEl ? editOtLunchEl.checked : false;
+        setupMobilePredefinedReasonsSelect(reasons, editOtNoteEl, isLunchChecked);
+    };
+    if (editOtLunchEl && !editOtLunchEl.dataset.reasonsListenerBound) {
+        editOtLunchEl.addEventListener('change', updateMobileEditPredefinedReasons);
+        editOtLunchEl.dataset.reasonsListenerBound = 'true';
+    }
+    updateMobileEditPredefinedReasons();
 
     const isBackfillChecked = document.getElementById('ot-backfill')?.checked || false;
     const isEditBackfillChecked = document.getElementById('edit-ot-backfill')?.checked || false;
@@ -3037,6 +3054,10 @@ async function editRecordDialog(id) {
         } else {
             if (elEditCustomActGroup) elEditCustomActGroup.style.display = 'none';
         }
+
+        // Setup predefined reasons for Edit form based on current lunch OT state
+        const reasonsList = (teamSettings && teamSettings.predefinedReasons) ? teamSettings.predefinedReasons : [];
+        setupMobilePredefinedReasonsSelect(reasonsList, elNote, elLunch.checked);
 
         elNote.value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
         console.log('[editRecordDialog] Step 14: Note set');

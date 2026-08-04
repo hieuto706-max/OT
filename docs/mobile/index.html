@@ -276,11 +276,8 @@
 
 
                         <div class="form-group">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <label style="margin: 0;">Ghi chú</label>
-                                <select id="ot-predefined-reasons" style="max-width: 180px; height: 26px; padding: 0 4px; font-size: 11px; background:var(--bg-input); color:var(--text-main); border:1px solid var(--border); border-radius:6px; display: none;"></select>
-                            </div>
-                            <textarea id="ot-note" placeholder="Lý do tăng ca, chi tiết công việc..." required></textarea>
+                            <label for="ot-note">Lý do tăng ca</label>
+                            <select id="ot-note" style="width: 100%; height: 38px; padding: 0 8px; font-size: 14px; background:var(--bg-input); color:var(--text-main); border:1px solid var(--border); border-radius:8px;" required></select>
                         </div>
 
                         <!-- Preview -->
@@ -526,11 +523,8 @@
 
 
                 <div class="form-group" style="margin-bottom:16px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <label style="margin: 0; font-size:0.8rem; color:var(--text-sub); font-weight:600;">Ghi chú</label>
-                        <select id="edit-ot-predefined-reasons" style="max-width: 180px; height: 26px; padding: 0 4px; font-size: 11px; background:var(--bg-input); color:var(--text-main); border:1px solid var(--border); border-radius:6px; display: none;"></select>
-                    </div>
-                    <textarea id="edit-ot-note" rows="2" placeholder="Lý do..." required></textarea>
+                    <label for="edit-ot-note" style="font-size:0.8rem; color:var(--text-sub); font-weight:600;">Lý do tăng ca</label>
+                    <select id="edit-ot-note" style="width: 100%; height: 38px; padding: 0 8px; font-size: 14px; background:var(--bg-input); color:var(--text-main); border:1px solid var(--border); border-radius:8px;" required></select>
                 </div>
                 <div class="confirm-actions" style="display:flex;gap:10px;justify-content:flex-end;">
                     <button type="button" class="btn btn-ghost" id="edit-ot-cancel" style="padding:10px 16px;font-size:0.85rem;border-radius:8px;">Hủy</button>

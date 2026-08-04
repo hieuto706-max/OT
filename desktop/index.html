@@ -27,7 +27,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.5.7">
+    <link rel="stylesheet" href="style.css?v=1.5.8">
     <style>
       /* Styles for the analytics charts */
       .chart-team-row {
@@ -928,11 +928,8 @@
 
                             <!-- Note -->
                             <div class="form-group">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                    <label for="admin-ot-note" class="field-label" style="margin: 0;">Ghi chú công việc</label>
-                                    <select id="admin-ot-predefined-reasons" class="input-sm" style="max-width: 220px; height: 26px; padding: 0 4px; font-size: 11px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; display: none;"></select>
-                                </div>
-                                <textarea id="admin-ot-note" placeholder="Lý do tăng ca, phân công công việc..." style="width:100%; min-height:80px; padding:10px 12px; box-sizing:border-box; font-size:14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px; resize:vertical;" required></textarea>
+                                <label for="admin-ot-note">Lý do tăng ca</label>
+                                <select id="admin-ot-note" class="input-sm" style="width: 100%; height: 38px; padding: 0 8px; font-size: 14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px;" required></select>
                             </div>
 
                             <button type="submit" class="btn btn-primary btn-full btn-shimmer" style="height: 48px; font-size: 15px; font-weight: 700; border-radius: 8px;">
@@ -1233,11 +1230,8 @@
 
 
                             <div class="form-group">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                    <label for="ot-note" style="margin: 0;">Ghi chú</label>
-                                    <select id="ot-predefined-reasons" class="input-sm" style="max-width: 220px; height: 26px; padding: 0 4px; font-size: 11px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; display: none;"></select>
-                                </div>
-                                <textarea id="ot-note" placeholder="Lý do tăng ca, phân công công việc..." required></textarea>
+                                <label for="ot-note">Lý do tăng ca</label>
+                                <select id="ot-note" class="input-sm" style="width: 100%; height: 38px; padding: 0 8px; font-size: 14px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px;" required></select>
                             </div>
 
                             <div class="ot-preview" id="ot-preview">
@@ -1373,6 +1367,6 @@
         window.OT_LOCAL_VERSION = window.OT_LOCAL_VERSION || '1.5.0';
     </script>
     <script src="server-config.js" defer></script>
-    <script src="app.js?v=1.5.7" defer></script>
+    <script src="app.js?v=1.5.8" defer></script>
 </body>
 </html>

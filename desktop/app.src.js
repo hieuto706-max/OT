@@ -5930,11 +5930,8 @@ async function editRecordDialog(recordId, source) {
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <label style="font-weight: 600; margin: 0;">Ghi chú</label>
-                    <select id="modal-rec-predefined-reasons" class="input-sm" style="max-width: 220px; height: 26px; padding: 0 4px; font-size: 11px; background:var(--bg-input); color:var(--text-primary); border:1px solid var(--border-color); border-radius:6px; display: none;"></select>
-                </div>
-                <textarea id="modal-rec-note" class="input-sm" style="width:100%; height:60px; resize:none; box-sizing:border-box; padding:10px;" required>${cleanedNote}</textarea>
+                <label style="font-weight: 600; display: block; margin-bottom: 6px;">Lý do tăng ca</label>
+                <select id="modal-rec-note" class="input-sm" style="width:100%; height:38px; border-radius:8px; box-sizing:border-box;" required></select>
             </div>
         </form>`;
 
@@ -6118,7 +6115,19 @@ async function editRecordDialog(recordId, source) {
             modalStart.addEventListener('input', syncModalEnd);
         }
         
-        setupPredefinedReasonsSelect(userTeam, document.getElementById('modal-rec-predefined-reasons'), document.getElementById('modal-rec-note'));
+        const modalRecLunch = document.getElementById('modal-rec-lunch');
+        const modalRecNote = document.getElementById('modal-rec-note');
+        const updateModalPredefinedReasons = () => {
+            const isLunchChecked = modalRecLunch ? modalRecLunch.checked : false;
+            setupPredefinedReasonsSelect(userTeam, modalRecNote, isLunchChecked);
+        };
+        if (modalRecLunch) {
+            modalRecLunch.addEventListener('change', updateModalPredefinedReasons);
+        }
+        updateModalPredefinedReasons();
+        if (modalRecNote) {
+            modalRecNote.value = cleanedNote;
+        }
     } catch (e) {
         showToast('Lỗi tải dữ liệu bản ghi', 'error');
     }
@@ -6535,32 +6544,27 @@ async function rejectUnlinkDevice(userId, fullname) {
 
 
 // ==================== PREDEFINED OT REASONS UTILITIES ====================
-function setupPredefinedReasonsSelect(teamName, selectEl, textareaEl) {
+function setupPredefinedReasonsSelect(teamName, selectEl, isLunchChecked = false) {
     if (!selectEl) return;
     
     // Find the team settings in TEAMS
     const team = typeof TEAMS !== 'undefined' && TEAMS.find(t => typeof t === 'object' && t.name === teamName);
     const reasons = team ? team.predefinedReasons || [] : [];
     
-    if (reasons.length === 0) {
-        selectEl.innerHTML = '';
-        selectEl.style.display = 'none';
-        return;
-    }
+    // Filter reasons based on lunch checkbox status
+    // "nếu nhân viên có chọn ô tích tăng ca trưa thì mới hiện các nội dung có liên quan tới tăng ca trưa. còn không chọn thì ẩn đi"
+    const filteredReasons = reasons.filter(r => {
+        const containsLunch = r.toLowerCase().includes('trưa');
+        return isLunchChecked ? containsLunch : !containsLunch;
+    });
+
+    const placeholder = isLunchChecked ? '-- Chọn lý do tăng ca trưa --' : '-- Chọn lý do tăng ca --';
     
     selectEl.innerHTML = `
-        <option value="">-- Chọn lý do mẫu --</option>
-        ${reasons.map(r => `<option value="${r.replace(/"/g, '&quot;')}">${r}</option>`).join('')}
+        <option value="">${placeholder}</option>
+        ${filteredReasons.map(r => `<option value="${r.replace(/"/g, '&quot;')}">${r}</option>`).join('')}
     `;
     selectEl.style.display = 'inline-block';
-    
-    selectEl.onchange = function() {
-        if (this.value && textareaEl) {
-            textareaEl.value = this.value;
-            textareaEl.dispatchEvent(new Event('input'));
-            textareaEl.dispatchEvent(new Event('change'));
-        }
-    };
 }
 
 // ==================== CUSTOM ACTIVITIES UI FOR DESKTOP ====================
@@ -6584,7 +6588,18 @@ function setupAdminCustomActivitiesUI(userId) {
     }
 
     // Setup Predefined reasons select
-    setupPredefinedReasonsSelect(userTeam, document.getElementById('admin-ot-predefined-reasons'), document.getElementById('admin-ot-note'));
+    const adminOtLunchEl = document.getElementById('admin-ot-lunch');
+    const adminOtNoteEl = document.getElementById('admin-ot-note');
+    const updateAdminPredefinedReasons = () => {
+        const isLunchChecked = adminOtLunchEl ? adminOtLunchEl.checked : false;
+        setupPredefinedReasonsSelect(userTeam, adminOtNoteEl, isLunchChecked);
+    };
+    
+    if (adminOtLunchEl && !adminOtLunchEl.dataset.reasonsListenerBound) {
+        adminOtLunchEl.addEventListener('change', updateAdminPredefinedReasons);
+        adminOtLunchEl.dataset.reasonsListenerBound = 'true';
+    }
+    updateAdminPredefinedReasons();
 
     if (!userTeam || userTeam === 'admin') {
         if (activityGroup) activityGroup.style.display = 'none';
@@ -6709,7 +6724,18 @@ function setupEmployeeCustomActivitiesUI() {
     const userTeam = currentUser ? (currentUser.team || '') : '';
 
     // Setup Predefined reasons select
-    setupPredefinedReasonsSelect(userTeam, document.getElementById('ot-predefined-reasons'), document.getElementById('ot-note'));
+    const otLunchEl = document.getElementById('ot-lunch');
+    const otNoteEl = document.getElementById('ot-note');
+    const updateEmployeePredefinedReasons = () => {
+        const isLunchChecked = otLunchEl ? otLunchEl.checked : false;
+        setupPredefinedReasonsSelect(userTeam, otNoteEl, isLunchChecked);
+    };
+    
+    if (otLunchEl && !otLunchEl.dataset.reasonsListenerBound) {
+        otLunchEl.addEventListener('change', updateEmployeePredefinedReasons);
+        otLunchEl.dataset.reasonsListenerBound = 'true';
+    }
+    updateEmployeePredefinedReasons();
 
     if (!userTeam || userTeam === 'admin') {
         if (activityGroup) activityGroup.style.display = 'none';
