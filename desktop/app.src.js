@@ -6142,12 +6142,15 @@ async function editRecordDialog(recordId, source) {
         const modalRecLunch = document.getElementById('modal-rec-lunch');
         const modalRecBackfill = document.getElementById('modal-rec-backfill');
         const modalRecBackfillMonth = document.getElementById('modal-rec-backfill-month');
+        const modalRecDate = document.getElementById('modal-rec-date');
         const modalRecNote = document.getElementById('modal-rec-note');
         const updateModalPredefinedReasons = () => {
             const isLunchChecked = modalRecLunch ? modalRecLunch.checked : false;
             const isBackfillChecked = modalRecBackfill ? modalRecBackfill.checked : false;
             const backfillMonthVal = modalRecBackfillMonth ? modalRecBackfillMonth.value.trim() : '';
-            setupPredefinedReasonsSelect(userTeam, modalRecNote, isLunchChecked, isBackfillChecked, backfillMonthVal);
+            const dateVal = modalRecDate ? modalRecDate.value : '';
+            const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
+            setupPredefinedReasonsSelect(userTeam, modalRecNote, isLunchChecked, isBackfillChecked, backfillMonthVal, isSunday);
         };
         if (modalRecLunch) {
             modalRecLunch.addEventListener('change', updateModalPredefinedReasons);
@@ -6159,8 +6162,15 @@ async function editRecordDialog(recordId, source) {
             modalRecBackfillMonth.addEventListener('input', updateModalPredefinedReasons);
             modalRecBackfillMonth.addEventListener('change', updateModalPredefinedReasons);
         }
+        if (modalRecDate) {
+            modalRecDate.addEventListener('change', updateModalPredefinedReasons);
+            modalRecDate.addEventListener('input', updateModalPredefinedReasons);
+        }
         updateModalPredefinedReasons();
-        if (modalRecNote && !isBackfill) {
+        
+        const initialDateVal = modalRecDate ? modalRecDate.value : '';
+        const initialIsSunday = initialDateVal ? new Date(initialDateVal + 'T00:00:00').getDay() === 0 : false;
+        if (modalRecNote && !isBackfill && !initialIsSunday) {
             modalRecNote.value = cleanedNote;
         }
     } catch (e) {
@@ -6579,8 +6589,17 @@ async function rejectUnlinkDevice(userId, fullname) {
 
 
 // ==================== PREDEFINED OT REASONS UTILITIES ====================
-function setupPredefinedReasonsSelect(teamName, selectEl, isLunchChecked = false, isBackfillChecked = false, backfillMonth = '') {
+function setupPredefinedReasonsSelect(teamName, selectEl, isLunchChecked = false, isBackfillChecked = false, backfillMonth = '', isSunday = false) {
     if (!selectEl) return;
+    
+    if (isSunday) {
+        selectEl.innerHTML = `
+            <option value="Tăng ca Chủ Nhật">Tăng ca Chủ Nhật</option>
+        `;
+        selectEl.value = "Tăng ca Chủ Nhật";
+        selectEl.style.display = 'inline-block';
+        return;
+    }
     
     if (isBackfillChecked) {
         const displayText = backfillMonth ? `Bù giờ tăng ca tháng ${backfillMonth} bị thiếu` : 'Bù giờ tăng ca tháng ... bị thiếu';
@@ -6637,12 +6656,15 @@ function setupAdminCustomActivitiesUI(userId) {
     const adminOtLunchEl = document.getElementById('admin-ot-lunch');
     const adminOtBackfillEl = document.getElementById('admin-ot-backfill');
     const adminOtBackfillMonthEl = document.getElementById('admin-ot-backfill-month');
+    const adminOtDateEl = document.getElementById('admin-ot-date');
     const adminOtNoteEl = document.getElementById('admin-ot-note');
     const updateAdminPredefinedReasons = () => {
         const isLunchChecked = adminOtLunchEl ? adminOtLunchEl.checked : false;
         const isBackfillChecked = adminOtBackfillEl ? adminOtBackfillEl.checked : false;
         const backfillMonth = adminOtBackfillMonthEl ? adminOtBackfillMonthEl.value.trim() : '';
-        setupPredefinedReasonsSelect(userTeam, adminOtNoteEl, isLunchChecked, isBackfillChecked, backfillMonth);
+        const dateVal = adminOtDateEl ? adminOtDateEl.value : '';
+        const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
+        setupPredefinedReasonsSelect(userTeam, adminOtNoteEl, isLunchChecked, isBackfillChecked, backfillMonth, isSunday);
     };
     
     if (adminOtLunchEl && !adminOtLunchEl.dataset.reasonsListenerBound) {
@@ -6657,6 +6679,11 @@ function setupAdminCustomActivitiesUI(userId) {
         adminOtBackfillMonthEl.addEventListener('input', updateAdminPredefinedReasons);
         adminOtBackfillMonthEl.addEventListener('change', updateAdminPredefinedReasons);
         adminOtBackfillMonthEl.dataset.reasonsMonthListenerBound = 'true';
+    }
+    if (adminOtDateEl && !adminOtDateEl.dataset.reasonsDateListenerBound) {
+        adminOtDateEl.addEventListener('change', updateAdminPredefinedReasons);
+        adminOtDateEl.addEventListener('input', updateAdminPredefinedReasons);
+        adminOtDateEl.dataset.reasonsDateListenerBound = 'true';
     }
     updateAdminPredefinedReasons();
 
@@ -6786,12 +6813,15 @@ function setupEmployeeCustomActivitiesUI() {
     const otLunchEl = document.getElementById('ot-lunch');
     const otBackfillEl = document.getElementById('ot-backfill');
     const otBackfillMonthEl = document.getElementById('ot-backfill-month');
+    const otDateEl = document.getElementById('ot-date');
     const otNoteEl = document.getElementById('ot-note');
     const updateEmployeePredefinedReasons = () => {
         const isLunchChecked = otLunchEl ? otLunchEl.checked : false;
         const isBackfillChecked = otBackfillEl ? otBackfillEl.checked : false;
         const backfillMonth = otBackfillMonthEl ? otBackfillMonthEl.value.trim() : '';
-        setupPredefinedReasonsSelect(userTeam, otNoteEl, isLunchChecked, isBackfillChecked, backfillMonth);
+        const dateVal = otDateEl ? otDateEl.value : '';
+        const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
+        setupPredefinedReasonsSelect(userTeam, otNoteEl, isLunchChecked, isBackfillChecked, backfillMonth, isSunday);
     };
     
     if (otLunchEl && !otLunchEl.dataset.reasonsListenerBound) {
@@ -6806,6 +6836,11 @@ function setupEmployeeCustomActivitiesUI() {
         otBackfillMonthEl.addEventListener('input', updateEmployeePredefinedReasons);
         otBackfillMonthEl.addEventListener('change', updateEmployeePredefinedReasons);
         otBackfillMonthEl.dataset.reasonsMonthListenerBound = 'true';
+    }
+    if (otDateEl && !otDateEl.dataset.reasonsDateListenerBound) {
+        otDateEl.addEventListener('change', updateEmployeePredefinedReasons);
+        otDateEl.addEventListener('input', updateEmployeePredefinedReasons);
+        otDateEl.dataset.reasonsDateListenerBound = 'true';
     }
     updateEmployeePredefinedReasons();
 

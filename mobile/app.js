@@ -980,14 +980,25 @@ async function refreshCurrentUserInfo() {
     }
 }
 
-function setupMobilePredefinedReasonsSelect(reasons, selectEl, isLunchChecked = false, isBackfillChecked = false) {
+function setupMobilePredefinedReasonsSelect(reasons, selectEl, isLunchChecked = false, isBackfillChecked = false, backfillMonth = '', isSunday = false) {
     if (!selectEl) return;
     
-    if (isBackfillChecked) {
+    if (isSunday) {
         selectEl.innerHTML = `
-            <option value="Bù giờ tăng ca tháng bị thiếu">Bù giờ tăng ca tháng bị thiếu</option>
+            <option value="Tăng ca Chủ Nhật">Tăng ca Chủ Nhật</option>
         `;
-        selectEl.value = "Bù giờ tăng ca tháng bị thiếu";
+        selectEl.value = "Tăng ca Chủ Nhật";
+        selectEl.style.display = 'inline-block';
+        return;
+    }
+    
+    if (isBackfillChecked) {
+        const displayText = backfillMonth ? `Bù giờ tăng ca tháng ${backfillMonth} bị thiếu` : 'Bù giờ tăng ca tháng ... bị thiếu';
+        const displayVal = backfillMonth ? `Bù giờ tăng ca tháng ${backfillMonth} bị thiếu` : '';
+        selectEl.innerHTML = `
+            <option value="${displayVal}">${displayText}</option>
+        `;
+        selectEl.value = displayVal;
         selectEl.style.display = 'inline-block';
         return;
     }
@@ -1019,11 +1030,16 @@ function setupCustomActivitiesUI() {
     
     const otLunchEl = document.getElementById('ot-lunch');
     const otBackfillEl = document.getElementById('ot-backfill');
+    const otBackfillMonthEl = document.getElementById('ot-backfill-month');
+    const otDateEl = document.getElementById('ot-date');
     const otNoteEl = document.getElementById('ot-note');
     const updateMobilePredefinedReasons = () => {
         const isLunchChecked = otLunchEl ? otLunchEl.checked : false;
         const isBackfillChecked = otBackfillEl ? otBackfillEl.checked : false;
-        setupMobilePredefinedReasonsSelect(reasons, otNoteEl, isLunchChecked, isBackfillChecked);
+        const backfillMonth = otBackfillMonthEl ? otBackfillMonthEl.value.trim() : '';
+        const dateVal = otDateEl ? otDateEl.value : '';
+        const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
+        setupMobilePredefinedReasonsSelect(reasons, otNoteEl, isLunchChecked, isBackfillChecked, backfillMonth, isSunday);
     };
     if (otLunchEl && !otLunchEl.dataset.reasonsListenerBound) {
         otLunchEl.addEventListener('change', updateMobilePredefinedReasons);
@@ -1033,15 +1049,30 @@ function setupCustomActivitiesUI() {
         otBackfillEl.addEventListener('change', updateMobilePredefinedReasons);
         otBackfillEl.dataset.reasonsBackfillListenerBound = 'true';
     }
+    if (otBackfillMonthEl && !otBackfillMonthEl.dataset.reasonsMonthListenerBound) {
+        otBackfillMonthEl.addEventListener('input', updateMobilePredefinedReasons);
+        otBackfillMonthEl.addEventListener('change', updateMobilePredefinedReasons);
+        otBackfillMonthEl.dataset.reasonsMonthListenerBound = 'true';
+    }
+    if (otDateEl && !otDateEl.dataset.reasonsDateListenerBound) {
+        otDateEl.addEventListener('change', updateMobilePredefinedReasons);
+        otDateEl.addEventListener('input', updateMobilePredefinedReasons);
+        otDateEl.dataset.reasonsDateListenerBound = 'true';
+    }
     updateMobilePredefinedReasons();
 
     const editOtLunchEl = document.getElementById('edit-ot-lunch');
     const editOtBackfillEl = document.getElementById('edit-ot-backfill');
+    const editOtBackfillMonthEl = document.getElementById('edit-ot-backfill-month');
+    const editOtDateEl = document.getElementById('edit-ot-date');
     const editOtNoteEl = document.getElementById('edit-ot-note');
     const updateMobileEditPredefinedReasons = () => {
         const isLunchChecked = editOtLunchEl ? editOtLunchEl.checked : false;
         const isBackfillChecked = editOtBackfillEl ? editOtBackfillEl.checked : false;
-        setupMobilePredefinedReasonsSelect(reasons, editOtNoteEl, isLunchChecked, isBackfillChecked);
+        const backfillMonth = editOtBackfillMonthEl ? editOtBackfillMonthEl.value.trim() : '';
+        const dateVal = editOtDateEl ? editOtDateEl.value : '';
+        const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
+        setupMobilePredefinedReasonsSelect(reasons, editOtNoteEl, isLunchChecked, isBackfillChecked, backfillMonth, isSunday);
     };
     if (editOtLunchEl && !editOtLunchEl.dataset.reasonsListenerBound) {
         editOtLunchEl.addEventListener('change', updateMobileEditPredefinedReasons);
@@ -1050,6 +1081,16 @@ function setupCustomActivitiesUI() {
     if (editOtBackfillEl && !editOtBackfillEl.dataset.reasonsBackfillListenerBound) {
         editOtBackfillEl.addEventListener('change', updateMobileEditPredefinedReasons);
         editOtBackfillEl.dataset.reasonsBackfillListenerBound = 'true';
+    }
+    if (editOtBackfillMonthEl && !editOtBackfillMonthEl.dataset.reasonsMonthListenerBound) {
+        editOtBackfillMonthEl.addEventListener('input', updateMobileEditPredefinedReasons);
+        editOtBackfillMonthEl.addEventListener('change', updateMobileEditPredefinedReasons);
+        editOtBackfillMonthEl.dataset.reasonsMonthListenerBound = 'true';
+    }
+    if (editOtDateEl && !editOtDateEl.dataset.reasonsDateListenerBound) {
+        editOtDateEl.addEventListener('change', updateMobileEditPredefinedReasons);
+        editOtDateEl.addEventListener('input', updateMobileEditPredefinedReasons);
+        editOtDateEl.dataset.reasonsDateListenerBound = 'true';
     }
     updateMobileEditPredefinedReasons();
 
@@ -3100,9 +3141,12 @@ async function editRecordDialog(id) {
         const elBackfillMonth = document.getElementById('edit-ot-backfill-month');
         if (elBackfillMonth) elBackfillMonth.value = backfillMonth;
 
-        setupMobilePredefinedReasonsSelect(reasonsList, elNote, elLunch.checked, isBackfill, backfillMonth);
+        const dateVal = elDate ? elDate.value : '';
+        const isSundayOT = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
 
-        if (!isBackfill) {
+        setupMobilePredefinedReasonsSelect(reasonsList, elNote, elLunch.checked, isBackfill, backfillMonth, isSundayOT);
+
+        if (!isBackfill && !isSundayOT) {
             elNote.value = record.note ? record.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
         }
         console.log('[editRecordDialog] Step 14: Note set');
