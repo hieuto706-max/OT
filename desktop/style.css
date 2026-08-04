@@ -2870,7 +2870,7 @@ html.user-admin-logged-in #screen-admin::before {
     height: 0;
 }
 
-.switch-slider {
+.switch-control .switch-slider {
     position: absolute;
     cursor: pointer;
     top: 0;
@@ -2882,7 +2882,7 @@ html.user-admin-logged-in #screen-admin::before {
     border-radius: 20px;
 }
 
-.switch-slider:before {
+.switch-control .switch-slider:before {
     position: absolute;
     content: "";
     height: 14px;
@@ -2894,11 +2894,11 @@ html.user-admin-logged-in #screen-admin::before {
     border-radius: 50%;
 }
 
-input:checked + .switch-slider {
+.switch-control input:checked + .switch-slider {
     background-color: var(--accent-blue);
 }
 
-input:checked + .switch-slider:before {
+.switch-control input:checked + .switch-slider:before {
     transform: translateX(14px);
     background-color: #ffffff;
 }
