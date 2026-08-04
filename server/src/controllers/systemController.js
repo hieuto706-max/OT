@@ -391,9 +391,7 @@ const SystemController = {
                 if (data.eveningOTStart !== undefined) {
                     db.settings.eveningOTStart = String(data.eveningOTStart).trim() || "16:30";
                 }
-                if (data.autoApproveUnlink !== undefined) {
-                    db.settings.autoApproveUnlink = Boolean(data.autoApproveUnlink);
-                }
+
                 if (data.holidays !== undefined) {
                     db.settings.holidays = String(data.holidays).trim();
                 }

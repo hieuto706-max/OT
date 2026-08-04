@@ -109,9 +109,13 @@ const AuthController = {
         
         const { loadDB } = require('../../db');
         const db = await loadDB();
-        const settings = db.settings || { autoApproveUnlink: false };
         
-        if (settings.autoApproveUnlink) {
+        const userTeam = db.teams.find(t => t.name === user.team);
+        const autoApproveUnlink = userTeam && userTeam.autoApproveRules
+            ? !!userTeam.autoApproveRules.autoApproveUnlink
+            : false;
+        
+        if (autoApproveUnlink) {
             await UserRepository.update(user.id, { 
                 deviceId: null, 
                 browserDeviceId: null,

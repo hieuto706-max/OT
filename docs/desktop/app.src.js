@@ -1030,6 +1030,13 @@ function renderSelectedTeamDetails() {
                                 <span class="switch-slider"></span>
                             </label>
                         </div>
+                        <div class="switch-container">
+                            <span>Tự duyệt đổi thiết bị</span>
+                            <label class="switch-control">
+                                <input type="checkbox" id="rule-unlink" ${rules.autoApproveUnlink ? 'checked' : ''} onchange="saveTeamSettingsFromModal('${team.id}')">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1100,6 +1107,7 @@ async function saveTeamSettingsFromModal(teamId) {
     const ruleBackfill = document.getElementById('rule-backfill')?.checked;
     const ruleSunday = document.getElementById('rule-sunday')?.checked;
     const ruleCustom = document.getElementById('rule-custom')?.checked;
+    const ruleUnlink = document.getElementById('rule-unlink')?.checked;
  
     team.leaderIds = leaderIds;
     // ensure current leaderId is still valid or pick first leader
@@ -1113,7 +1121,8 @@ async function saveTeamSettingsFromModal(teamId) {
         normalOT: !!ruleNormal,
         backfill: !!ruleBackfill,
         sunday: !!ruleSunday,
-        customActivity: !!ruleCustom
+        customActivity: !!ruleCustom,
+        autoApproveUnlink: !!ruleUnlink
     };
 
     try {
@@ -1404,7 +1413,8 @@ async function addTeamFromModal() {
             normalOT: false,
             backfill: false,
             sunday: false,
-            customActivity: false
+            customActivity: false,
+            autoApproveUnlink: false
         }
     };
     const updatedTeams = [...TEAMS, newTeam];
@@ -3696,11 +3706,6 @@ async function loadSystemSettings() {
             if (inputLunch) {
                 inputLunch.value = settings.lunchOTHours !== undefined ? settings.lunchOTHours : 1.0;
             }
-            
-            const inputUnlink = document.getElementById('setting-auto-unlink-input');
-            if (inputUnlink) {
-                inputUnlink.checked = !!settings.autoApproveUnlink;
-            }
 
             const inputHolidays = document.getElementById('setting-holidays-input');
             if (inputHolidays) {
@@ -3714,14 +3719,12 @@ async function loadSystemSettings() {
 
 async function saveCompanySettings() {
     const inputLunch = document.getElementById('setting-lunch-ot-input');
-    const inputUnlink = document.getElementById('setting-auto-unlink-input');
     const inputHolidays = document.getElementById('setting-holidays-input');
     
-    if (!inputLunch || !inputUnlink || !inputHolidays) return;
+    if (!inputLunch || !inputHolidays) return;
     
     const lunchValue = parseFloat(inputLunch.value) || 1.0;
     const eveningValue = currentSystemSettings.eveningOTStart || "16:30";
-    const unlinkValue = inputUnlink.checked;
     const holidaysValue = inputHolidays.value.trim();
     
     const saveBtn = document.getElementById('btn-save-company-settings');
@@ -3738,7 +3741,6 @@ async function saveCompanySettings() {
             body: JSON.stringify({ 
                 lunchOTHours: lunchValue,
                 eveningOTStart: eveningValue,
-                autoApproveUnlink: unlinkValue,
                 holidays: holidaysValue
             })
         });

@@ -695,9 +695,11 @@ function migrateTeams(db) {
                 leaderIds: [],
                 customActivities: [],
                 autoApproveRules: {
-                    lunch: false,
-                    evening: false,
-                    customActivity: false
+                    normalOT: false,
+                    backfill: false,
+                    sunday: false,
+                    customActivity: false,
+                    autoApproveUnlink: false
                 }
             };
         }
@@ -711,10 +713,15 @@ function migrateTeams(db) {
         }
         if (!team.autoApproveRules) {
             team.autoApproveRules = {
-                lunch: false,
-                evening: false,
-                customActivity: false
+                normalOT: false,
+                backfill: false,
+                sunday: false,
+                customActivity: false,
+                autoApproveUnlink: false
             };
+            migrated = true;
+        } else if (team.autoApproveRules.autoApproveUnlink === undefined) {
+            team.autoApproveRules.autoApproveUnlink = false;
             migrated = true;
         }
         if (team.maxOTHours === undefined) {
@@ -736,10 +743,13 @@ function migrateSettings(data) {
         data.settings = {
             lunchOTHours: 1,
             eveningOTStart: "16:30",
-            autoApproveUnlink: false,
             holidays: "2026-01-01, 2026-04-30, 2026-05-01, 2026-09-02"
         };
         return true;
+    }
+    if (data.settings.autoApproveUnlink !== undefined) {
+        delete data.settings.autoApproveUnlink;
+        migrated = true;
     }
     if (data.settings.companyName !== undefined) {
         delete data.settings.companyName;
@@ -753,10 +763,7 @@ function migrateSettings(data) {
         data.settings.eveningOTStart = "16:30";
         migrated = true;
     }
-    if (data.settings.autoApproveUnlink === undefined) {
-        data.settings.autoApproveUnlink = false;
-        migrated = true;
-    }
+
     if (data.settings.holidays === undefined) {
         data.settings.holidays = "2026-01-01, 2026-04-30, 2026-05-01, 2026-09-02";
         migrated = true;
