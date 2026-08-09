@@ -21,10 +21,64 @@ function updateHtmlVersion(filePath, version) {
     }
 }
 
-// Update version tags in HTML templates
+// Helper to update version constants in source code files automatically
+function updateSourceVersions(version) {
+    try {
+        // 1. mobile/app.src.js
+        const mobileSrcPath = path.join(__dirname, '..', 'mobile', 'app.src.js');
+        if (fs.existsSync(mobileSrcPath)) {
+            let content = fs.readFileSync(mobileSrcPath, 'utf8');
+            content = content.replace(/const MOBILE_VERSION = window\.PACKAGED_VERSION \|\| ['"].*?['"];/g, `const MOBILE_VERSION = window.PACKAGED_VERSION || '${version}';`);
+            fs.writeFileSync(mobileSrcPath, content, 'utf8');
+            console.log(`Updated MOBILE_VERSION in mobile/app.src.js to ${version}`);
+        }
+
+        // 2. desktop/app.src.js
+        const desktopSrcPath = path.join(__dirname, '..', 'desktop', 'app.src.js');
+        if (fs.existsSync(desktopSrcPath)) {
+            let content = fs.readFileSync(desktopSrcPath, 'utf8');
+            content = content.replace(/(window\.OT_LOCAL_VERSION \|\| localStorage\.getItem\('ot_app_version'\) \|\| )['"].*?['"]/g, `$1'${version}'`);
+            content = content.replace(/(window\.OT_LOCAL_VERSION \|\| )['"].*?['"]/g, `$1'${version}'`);
+            fs.writeFileSync(desktopSrcPath, content, 'utf8');
+            console.log(`Updated localVer fallback in desktop/app.src.js to ${version}`);
+        }
+
+        // 3. preload.js
+        const preloadPath = path.join(__dirname, '..', 'preload.js');
+        if (fs.existsSync(preloadPath)) {
+            let content = fs.readFileSync(preloadPath, 'utf8');
+            content = content.replace(/let localVersion = ['"].*?['"];/g, `let localVersion = '${version}';`);
+            fs.writeFileSync(preloadPath, content, 'utf8');
+            console.log(`Updated localVersion in preload.js to ${version}`);
+        }
+
+        // 4. mobile/download.html
+        const downloadHtmlPath = path.join(__dirname, '..', 'mobile', 'download.html');
+        if (fs.existsSync(downloadHtmlPath)) {
+            let content = fs.readFileSync(downloadHtmlPath, 'utf8');
+            content = content.replace(/const MOBILE_VERSION = ['"].*?['"];/g, `const MOBILE_VERSION = '${version}';`);
+            fs.writeFileSync(downloadHtmlPath, content, 'utf8');
+            console.log(`Updated MOBILE_VERSION in mobile/download.html to ${version}`);
+        }
+
+        // 5. mobile-android/app/build.gradle.kts
+        const gradlePath = path.join(__dirname, '..', 'mobile-android', 'app', 'build.gradle.kts');
+        if (fs.existsSync(gradlePath)) {
+            let content = fs.readFileSync(gradlePath, 'utf8');
+            content = content.replace(/versionName = ["'].*?["']/g, `versionName = "${version}"`);
+            fs.writeFileSync(gradlePath, content, 'utf8');
+            console.log(`Updated versionName in build.gradle.kts to ${version}`);
+        }
+    } catch (e) {
+        console.error('Error updating source version constants:', e.message);
+    }
+}
+
+// Update version tags in HTML templates & source files
 updateHtmlVersion(path.join(__dirname, '..', 'desktop', 'index.html'), version);
 updateHtmlVersion(path.join(__dirname, '..', 'mobile', 'index.html'), version);
 updateHtmlVersion(path.join(__dirname, '..', 'docs', 'index.html'), version);
+updateSourceVersions(version);
 
 // Generate build timestamp
 const buildTime = Date.now();
