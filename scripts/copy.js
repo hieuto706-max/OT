@@ -69,6 +69,17 @@ function updateSourceVersions(version) {
             fs.writeFileSync(gradlePath, content, 'utf8');
             console.log(`Updated versionName in build.gradle.kts to ${version}`);
         }
+
+        // 6. mobile/index.html
+        const mobileIndexHtmlPath = path.join(__dirname, '..', 'mobile', 'index.html');
+        if (fs.existsSync(mobileIndexHtmlPath)) {
+            let content = fs.readFileSync(mobileIndexHtmlPath, 'utf8');
+            content = content.replace(/window\.PACKAGED_VERSION\s*=\s*['"].*?['"];/g, `window.PACKAGED_VERSION = '${version}';`);
+            content = content.replace(/class="login-ver-val">v[^<]*<\/span>/g, `class="login-ver-val">v${version}</span>`);
+            content = content.replace(/id="app-version-display">v[^<]*<\/span>/g, `id="app-version-display">v${version}</span>`);
+            fs.writeFileSync(mobileIndexHtmlPath, content, 'utf8');
+            console.log(`Updated version variables and spans in mobile/index.html to ${version}`);
+        }
     } catch (e) {
         console.error('Error updating source version constants:', e.message);
     }
