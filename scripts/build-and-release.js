@@ -2,6 +2,11 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+// Clean dummy GITHUB_TOKEN to let gh CLI use local credentials
+if (process.env.GITHUB_TOKEN === 'github_pat_antigravitydummytoken') {
+    delete process.env.GITHUB_TOKEN;
+}
+
 // Helper function to recursively delete directory with retry to bypass temporary file locks (like OneDrive)
 function deleteFolderRecursiveWithRetry(folderPath, retries = 5, delay = 1000) {
     for (let i = 0; i < retries; i++) {
