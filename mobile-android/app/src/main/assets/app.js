@@ -901,6 +901,7 @@ function enterApp() {
 
     showScreen('screen-app');
     setupCustomActivitiesUI();
+    handleDateChange();
     updatePreview();
     loadHistory();
     loadProfileStats();
@@ -953,13 +954,16 @@ async function refreshCurrentUserInfo() {
     if (!API) return;
     try {
         const data = await api('/api/users/' + currentUser.id, 'GET', null, true);
-        if (data && data.user) {
+            const oldTeamSettingsStr = JSON.stringify(currentUser.teamSettings || {});
+            const newTeamSettingsStr = JSON.stringify(data.user.teamSettings || {});
             currentUser = Object.assign({}, currentUser, data.user);
             if (currentUser.settings) {
                 mobileSystemSettings = currentUser.settings;
             }
             safeStorage.setItem('ot_mobile_user', JSON.stringify(currentUser));
-            setupCustomActivitiesUI();
+            if (oldTeamSettingsStr !== newTeamSettingsStr) {
+                setupCustomActivitiesUI();
+            }
             
             // Cập nhật giao diện nút hủy liên kết
             const btn = document.getElementById('btn-unlink-device');
@@ -983,6 +987,8 @@ async function refreshCurrentUserInfo() {
 function setupMobilePredefinedReasonsSelect(reasons, selectEl, isLunchChecked = false, isBackfillChecked = false, backfillMonth = '', isSunday = false) {
     if (!selectEl) return;
     
+    const prevVal = selectEl.value;
+
     if (isSunday) {
         selectEl.innerHTML = `
             <option value="Tăng ca Chủ Nhật">Tăng ca Chủ Nhật</option>
@@ -1015,6 +1021,9 @@ function setupMobilePredefinedReasonsSelect(reasons, selectEl, isLunchChecked = 
         <option value="">${placeholder}</option>
         ${filteredReasons.map(r => `<option value="${r.replace(/"/g, '&quot;')}">${r}</option>`).join('')}
     `;
+    if (prevVal && filteredReasons.includes(prevVal)) {
+        selectEl.value = prevVal;
+    }
     selectEl.style.display = 'inline-block';
 }
 
@@ -1381,6 +1390,7 @@ function resetForm() {
         }
     });
 
+    handleDateChange();
     updatePreview();
 }
 
@@ -2340,6 +2350,7 @@ function initApp() {
         otDateEl.max = new Date().toISOString().split('T')[0];
         otDateEl.addEventListener('change', handleDateChange);
         otDateEl.addEventListener('input', handleDateChange);
+        handleDateChange();
     }
 
     // Populate provinces-datalist

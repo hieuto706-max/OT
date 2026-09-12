@@ -694,6 +694,7 @@ async function initAdminDashboard(user) {
     if (adminOtDate) {
         adminOtDate.value = todayStr;
         adminOtDate.max = todayStr;
+        handleAdminDateChange();
     }
 
     try {
@@ -3819,6 +3820,7 @@ async function initEmployeeDashboard(user) {
     document.getElementById('ot-date').max = todayStr;
     document.getElementById('emp-filter-month').value = getCurrentMonth();
     setupEmployeeCustomActivitiesUI();
+    handleDateChange();
     updateOTPreview();
     await refreshEmployeeRecords();
 }
@@ -4172,6 +4174,7 @@ async function handleOTSubmit(e) {
         const otCustomActGroup = document.getElementById('ot-custom-activity-group');
         if (otCustomActGroup) otCustomActGroup.style.display = 'none';
 
+        handleDateChange();
         updateOTPreview();
         await refreshEmployeeRecords();
         setTimeout(() => { successEl.textContent = ''; }, 3000);
@@ -4313,7 +4316,10 @@ async function handleAdminOTSubmit(e) {
 
         const todayStr2 = new Date().toISOString().split('T')[0];
         const adminOtDateEl = document.getElementById('admin-ot-date');
-        if (adminOtDateEl) adminOtDateEl.value = todayStr2;
+        if (adminOtDateEl) {
+            adminOtDateEl.value = todayStr2;
+            handleAdminDateChange();
+        }
 
         updateAdminOTPreview();
         setTimeout(() => { successEl.textContent = ''; }, 3000);
@@ -5240,6 +5246,7 @@ document.addEventListener('DOMContentLoaded', () => {
         otDateEl.max = new Date().toISOString().split('T')[0];
         otDateEl.addEventListener('change', handleDateChange);
         otDateEl.addEventListener('input', handleDateChange);
+        handleDateChange();
     }
 
     // Populate provinces-datalist
@@ -5692,6 +5699,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (adminOtDateEl) {
             adminOtDateEl.addEventListener('change', handleAdminDateChange);
             adminOtDateEl.addEventListener('input', handleAdminDateChange);
+            handleAdminDateChange();
         }
         
         // Initial preview render call
@@ -6625,10 +6633,14 @@ function setupPredefinedReasonsSelect(teamName, selectEl, isLunchChecked = false
 
     const placeholder = isLunchChecked ? '-- Chọn lý do tăng ca trưa --' : '-- Chọn lý do tăng ca --';
     
+    const prevVal = selectEl.value;
     selectEl.innerHTML = `
         <option value="">${placeholder}</option>
         ${filteredReasons.map(r => `<option value="${r.replace(/"/g, '&quot;')}">${r}</option>`).join('')}
     `;
+    if (prevVal && filteredReasons.includes(prevVal)) {
+        selectEl.value = prevVal;
+    }
     selectEl.style.display = 'inline-block';
 }
 
