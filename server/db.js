@@ -28,6 +28,13 @@ function getDbPath() {
 
     const defaultPath = path.join(__dirname, '..', 'db.json');
 
+    // Tự động xử lý cho Render gói Free: không có ổ đĩa /data thì tự động dùng file dự phòng trong project
+    if (process.env.DB_PATH && process.env.DB_PATH.startsWith('/data') && !fs.existsSync('/data')) {
+        logInfo(`[Server] Phát hiện môi trường không có ổ đĩa /data (Render Free). Tự động dùng: ${defaultPath}`);
+        DB_FILE = defaultPath;
+        return DB_FILE;
+    }
+
     if (process.env.DB_PATH) {
         try {
             const candidatePath = process.env.DB_PATH;
