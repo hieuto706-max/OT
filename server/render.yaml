@@ -2,16 +2,12 @@ services:
   - type: web
     name: ot-manager-server
     env: node
-    plan: starter
+    plan: free
     buildCommand: npm install --production
     startCommand: node server/server.js
-    disk:
-      name: ot-manager-db
-      mountPath: /data
-      sizeGB: 2
     envVars:
-      - key: DB_PATH
-        value: /data/db.json
+      - key: DATABASE_URL
+        sync: false
       - key: GIST_ID
         sync: false
       - key: GITHUB_TOKEN

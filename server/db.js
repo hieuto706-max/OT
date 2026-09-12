@@ -26,20 +26,24 @@ function enqueueWrite(fn) {
 function getDbPath() {
     if (DB_FILE) return DB_FILE;
 
+    const defaultPath = path.join(__dirname, '..', 'db.json');
+
     if (process.env.DB_PATH) {
-        DB_FILE = process.env.DB_PATH;
         try {
-            const dir = path.dirname(DB_FILE);
+            const candidatePath = process.env.DB_PATH;
+            const dir = path.dirname(candidatePath);
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir, { recursive: true });
             }
+            // Kiểm tra quyền ghi vào thư mục
+            fs.accessSync(dir, fs.constants.W_OK);
+            DB_FILE = candidatePath;
+            return DB_FILE;
         } catch (err) {
-            logError('[Server] Không thể tạo thư mục cho DB_PATH:', err.message);
+            logError(`[Server] Không thể sử dụng DB_PATH="${process.env.DB_PATH}" (${err.message}). Tự động chuyển về: ${defaultPath}`);
         }
-        return DB_FILE;
     }
 
-    const defaultPath = path.join(__dirname, '..', 'db.json');
     try {
         const { app } = require('electron');
         if (app) {
@@ -896,24 +900,35 @@ function saveDB(data) {
     const oldData = dbCache ? JSON.parse(JSON.stringify(dbCache)) : null;
     dbCache = data;
 
-    enqueueWrite(() => {
-        fs.writeFileSync(getDbPath(), JSON.stringify(data, null, 2), 'utf-8');
+    return enqueueWrite(async () => {
+        // Ghi file local dự phòng (nếu lỗi ổ đĩa cũng không làm gián đoạn việc lưu Cloud)
+        try {
+            fs.writeFileSync(getDbPath(), JSON.stringify(data, null, 2), 'utf-8');
+        } catch (fsErr) {
+            logError('[Database] Cảnh báo không thể ghi file local db.json:', fsErr.message);
+        }
 
         // Trigger hooks
         dbUpdateCallbacks.forEach(cb => {
             try { cb(oldData, data); } catch (e) {}
         });
 
+        // Đồng bộ lên PostgreSQL (LƯU TRỮ CHÍNH TRÊN CLOUD ĐỂ KHÔNG BỊ MẤT DATA)
         if (config.DATABASE_URL) {
-            syncDiffToPG(oldData, data).catch(e => {
+            try {
+                await syncDiffToPG(oldData, data);
+            } catch (e) {
                 logError('[Database PG] Lỗi cập nhật lên PostgreSQL:', e.message);
-            });
+            }
         }
 
+        // Đồng bộ lên GitHub Gist nếu có cấu hình
         if (config.GIST_ID && config.GITHUB_TOKEN) {
-            return updateGist(data).catch(e => {
+            try {
+                await updateGist(data);
+            } catch (e) {
                 logError('[Gist] Lỗi cập nhật lên Gist:', e.message);
-            });
+            }
         }
     });
 }
