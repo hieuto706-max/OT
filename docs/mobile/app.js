@@ -954,6 +954,7 @@ async function refreshCurrentUserInfo() {
     if (!API) return;
     try {
         const data = await api('/api/users/' + currentUser.id, 'GET', null, true);
+        if (data && data.user) {
             const oldTeamSettingsStr = JSON.stringify(currentUser.teamSettings || {});
             const newTeamSettingsStr = JSON.stringify(data.user.teamSettings || {});
             currentUser = Object.assign({}, currentUser, data.user);
