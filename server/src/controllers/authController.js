@@ -96,9 +96,27 @@ const AuthController = {
         }
 
         const { password: _, ...safeUser } = user;
+        let teamSettings = null;
+        if (user.team) {
+            try {
+                const TeamRepository = require('../repositories/teamRepository');
+                const teams = await TeamRepository.getAll();
+                const team = (teams || []).find(t => (typeof t === 'string' ? t : t.name) === user.team);
+                if (team && typeof team === 'object') {
+                    teamSettings = team;
+                }
+            } catch (e) {}
+        }
+        let settings = {};
+        try {
+            const { loadDB } = require('../../db');
+            const db = await loadDB();
+            settings = db.settings || {};
+        } catch (e) {}
+
         const token = signJWT({ userId: user.id, role: user.role, team: user.team || '' }, 24 * 3600);
         const requireEmailSetup = user.role === 'admin' && !user.email;
-        return sendJSON(res, 200, { user: safeUser, token, requireEmailSetup }, req);
+        return sendJSON(res, 200, { user: { ...safeUser, teamSettings, settings }, token, requireEmailSetup }, req);
     },
 
     async requestUnlink(req, res) {

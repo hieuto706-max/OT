@@ -3819,6 +3819,9 @@ async function initEmployeeDashboard(user) {
     document.getElementById('ot-date').value = todayStr;
     document.getElementById('ot-date').max = todayStr;
     document.getElementById('emp-filter-month').value = getCurrentMonth();
+    if (!TEAMS || TEAMS.length === 0) {
+        await loadTeams();
+    }
     setupEmployeeCustomActivitiesUI();
     handleDateChange();
     updateOTPreview();
