@@ -4811,7 +4811,7 @@ async function checkUpdateManual() {
         }
 
         // 2. Lấy version hiện tại của ứng dụng local
-        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.5.3';
+        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.5.4';
         const localBuildTime = window.OT_LOCAL_BUILD_TIME || parseInt(localStorage.getItem('ot_app_build_time')) || 0;
 
         // 3. Lấy version mới nhất trên Cloud Server
@@ -4957,7 +4957,7 @@ async function checkUpdateSilent() {
         const cloudUrl = window.OT_CLOUD_URL || API_BASE;
         if (!cloudUrl) return;
 
-        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.5.3';
+        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.5.4';
         const localBuildTime = window.OT_LOCAL_BUILD_TIME || parseInt(localStorage.getItem('ot_app_build_time')) || 0;
 
         const cloudRes = await fetch(`${cloudUrl}/api/version`);
@@ -5390,9 +5390,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (verEl) {
                 const valEl = verEl.querySelector('.login-ver-val');
                 if (valEl) {
-                    valEl.textContent = 'v' + (window.OT_LOCAL_VERSION || '1.5.3');
+                    valEl.textContent = 'v' + (window.OT_LOCAL_VERSION || '1.5.4');
                 } else {
-                    verEl.textContent = 'Phiên bản v' + (window.OT_LOCAL_VERSION || '1.5.3');
+                    verEl.textContent = 'Phiên bản v' + (window.OT_LOCAL_VERSION || '1.5.4');
                 }
             }
         }

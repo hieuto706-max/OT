@@ -115,13 +115,21 @@ try {
 }
 
 // Step 4: Copy Android APK to dist folder for unified release
-console.log('\n--- Copying Android APK to dist/ ---');
+console.log('\n--- Copying Android APK to dist/, mobile/, and docs/mobile/ ---');
 const apkSrc = path.join(__dirname, '..', 'mobile-android', 'app', 'build', 'outputs', 'apk', 'release', 'app-release.apk');
 const apkDest = path.join(__dirname, '..', 'dist', 'OT-Manager-mobile.apk');
+const apkMobile = path.join(__dirname, '..', 'mobile', 'OT-Manager-mobile.apk');
+const apkDocsMobile = path.join(__dirname, '..', 'docs', 'mobile', 'OT-Manager-mobile.apk');
 
 if (fs.existsSync(apkSrc)) {
     fs.copyFileSync(apkSrc, apkDest);
     console.log(`Successfully copied APK to ${apkDest}`);
+    fs.copyFileSync(apkSrc, apkMobile);
+    console.log(`Successfully copied APK to ${apkMobile}`);
+    if (fs.existsSync(path.dirname(apkDocsMobile))) {
+        fs.copyFileSync(apkSrc, apkDocsMobile);
+        console.log(`Successfully copied APK to ${apkDocsMobile}`);
+    }
 } else {
     console.error('Error: APK file not found at ' + apkSrc);
     process.exit(1);
@@ -131,7 +139,7 @@ if (fs.existsSync(apkSrc)) {
 console.log('\n--- Creating GitHub Release via gh CLI ---');
 const version = require('../package.json').version;
 try {
-    execSync(`gh release create v${version} dist/ot-manager-Setup-${version}.exe dist/OT-Manager-mobile.apk --title "Release v${version}" --notes "Bản phát hành v${version} - Tích hợp cơ chế tự động cập nhật & hotfix qua Electron IPC, thiết kế lại bố cục giao diện, tự động điền thông tin đăng nhập và sửa các lỗi tương thích."`, { stdio: 'inherit' });
+    execSync(`gh release create v${version} dist/ot-manager-Setup-${version}.exe dist/OT-Manager-mobile.apk --title "Release v${version}" --notes "Bản phát hành v${version}: Hỗ trợ Quản lý đăng nhập trên điện thoại để phê duyệt đơn OT và yêu cầu hủy thiết bị; Quản lý có thể ghi nhận OT cá nhân; Hiển thị tổng giờ OT tháng của Quản lý trên Desktop; Sửa lỗi tải lý do tăng ca lần đầu."`, { stdio: 'inherit' });
     console.log('\n🎉 Release published successfully!');
 } catch (e) {
     console.error('\n❌ Failed to publish release via gh CLI. You can still upload files in dist/ manually.');
