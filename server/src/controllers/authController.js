@@ -75,8 +75,26 @@ const AuthController = {
                 const targetDeviceField = isBrowser ? 'browserDeviceId' : 'deviceId';
                 safeUser[targetDeviceField] = deviceId;
             }
+            let teamSettings = null;
+            if (user.team) {
+                try {
+                    const TeamRepository = require('../repositories/teamRepository');
+                    const teams = await TeamRepository.getAll();
+                    const team = (teams || []).find(t => (typeof t === 'string' ? t : t.name) === user.team);
+                    if (team && typeof team === 'object') {
+                        teamSettings = team;
+                    }
+                } catch (e) {}
+            }
+            let settings = {};
+            try {
+                const { loadDB } = require('../../db');
+                const db = await loadDB();
+                settings = db.settings || {};
+            } catch (e) {}
+
             const token = signJWT({ userId: user.id, role: user.role, team: user.team || '', deviceId: deviceId || '' }, 7 * 24 * 3600);
-            return sendJSON(res, 200, { user: safeUser, token }, req);
+            return sendJSON(res, 200, { user: { ...safeUser, teamSettings, settings }, token }, req);
         }
 
         // Nếu là admin, yêu cầu mật khẩu

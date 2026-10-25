@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ot-manager-build-1789223736614';
+const CACHE_NAME = 'ot-manager-build-1792895747015';
 const ASSETS = [
     './',
     'index.html',

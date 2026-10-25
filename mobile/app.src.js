@@ -952,16 +952,12 @@ async function refreshCurrentUserInfo() {
     try {
         const data = await api('/api/users/' + currentUser.id, 'GET', null, true);
         if (data && data.user) {
-            const oldTeamSettingsStr = JSON.stringify(currentUser.teamSettings || {});
-            const newTeamSettingsStr = JSON.stringify(data.user.teamSettings || {});
             currentUser = Object.assign({}, currentUser, data.user);
             if (currentUser.settings) {
                 mobileSystemSettings = currentUser.settings;
             }
             safeStorage.setItem('ot_mobile_user', JSON.stringify(currentUser));
-            if (oldTeamSettingsStr !== newTeamSettingsStr) {
-                setupCustomActivitiesUI();
-            }
+            setupCustomActivitiesUI();
             
             // Cập nhật giao diện nút hủy liên kết
             const btn = document.getElementById('btn-unlink-device');
@@ -1041,12 +1037,14 @@ function setupCustomActivitiesUI() {
     const otDateEl = document.getElementById('ot-date');
     const otNoteEl = document.getElementById('ot-note');
     const updateMobilePredefinedReasons = () => {
+        const curTeamSettings = currentUser ? currentUser.teamSettings : null;
+        const curReasons = (curTeamSettings && curTeamSettings.predefinedReasons) ? curTeamSettings.predefinedReasons : reasons;
         const isLunchChecked = otLunchEl ? otLunchEl.checked : false;
         const isBackfillChecked = otBackfillEl ? otBackfillEl.checked : false;
         const backfillMonth = otBackfillMonthEl ? otBackfillMonthEl.value.trim() : '';
         const dateVal = otDateEl ? otDateEl.value : '';
         const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
-        setupMobilePredefinedReasonsSelect(reasons, otNoteEl, isLunchChecked, isBackfillChecked, backfillMonth, isSunday);
+        setupMobilePredefinedReasonsSelect(curReasons, otNoteEl, isLunchChecked, isBackfillChecked, backfillMonth, isSunday);
     };
     if (otLunchEl && !otLunchEl.dataset.reasonsListenerBound) {
         otLunchEl.addEventListener('change', updateMobilePredefinedReasons);
@@ -1074,12 +1072,14 @@ function setupCustomActivitiesUI() {
     const editOtDateEl = document.getElementById('edit-ot-date');
     const editOtNoteEl = document.getElementById('edit-ot-note');
     const updateMobileEditPredefinedReasons = () => {
+        const curTeamSettings = currentUser ? currentUser.teamSettings : null;
+        const curReasons = (curTeamSettings && curTeamSettings.predefinedReasons) ? curTeamSettings.predefinedReasons : reasons;
         const isLunchChecked = editOtLunchEl ? editOtLunchEl.checked : false;
         const isBackfillChecked = editOtBackfillEl ? editOtBackfillEl.checked : false;
         const backfillMonth = editOtBackfillMonthEl ? editOtBackfillMonthEl.value.trim() : '';
         const dateVal = editOtDateEl ? editOtDateEl.value : '';
         const isSunday = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;
-        setupMobilePredefinedReasonsSelect(reasons, editOtNoteEl, isLunchChecked, isBackfillChecked, backfillMonth, isSunday);
+        setupMobilePredefinedReasonsSelect(curReasons, editOtNoteEl, isLunchChecked, isBackfillChecked, backfillMonth, isSunday);
     };
     if (editOtLunchEl && !editOtLunchEl.dataset.reasonsListenerBound) {
         editOtLunchEl.addEventListener('change', updateMobileEditPredefinedReasons);
@@ -2120,6 +2120,7 @@ function autoResolveRentryUrl() {
                             loadHistory();
                             loadProfileStats();
                             syncOfflineData();
+                            refreshCurrentUserInfo();
                         }
                         checkMobileUpdates();
                         resolve(true);
