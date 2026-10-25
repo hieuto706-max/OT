@@ -126,6 +126,16 @@
                         <p>Vui lòng đăng nhập để tiếp tục</p>
                     </div>
 
+                    <!-- Tabs chọn loại đăng nhập -->
+                    <div class="login-tabs-nav" style="display: flex; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08);">
+                        <button type="button" id="tab-btn-login-emp" class="login-tab-btn active" style="flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; color: #020604; background: var(--green); cursor: pointer; transition: all 0.25s ease;">
+                            👤 Nhân viên
+                        </button>
+                        <button type="button" id="tab-btn-login-admin" class="login-tab-btn" style="flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; color: var(--text-sub); background: transparent; cursor: pointer; transition: all 0.25s ease;">
+                            👔 Quản lý
+                        </button>
+                    </div>
+
                     <!-- Form Đăng nhập Nhân viên -->
                     <form id="form-login-employee" class="mobile-form login-form active">
                         <div class="form-group">
@@ -142,6 +152,34 @@
                             Đăng nhập Nhân viên
                         </button>
                         <p id="login-error-emp" class="form-error"></p>
+                    </form>
+
+                    <!-- Form Đăng nhập Quản lý -->
+                    <form id="form-login-admin" class="mobile-form login-form" style="display: none;">
+                        <div class="form-group">
+                            <label for="login-admin-user">Tên đăng nhập Quản lý</label>
+                            <div class="input-wrapper">
+                                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                <input type="text" id="login-admin-user" placeholder="Nhập tên đăng nhập quản lý..." autocomplete="username">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top: 14px;">
+                            <label for="login-admin-password">Mật khẩu</label>
+                            <div class="input-wrapper">
+                                <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                </svg>
+                                <input type="password" id="login-admin-password" placeholder="Nhập mật khẩu..." autocomplete="current-password">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full" id="btn-login-admin" style="margin-top: 20px;">
+                            Đăng nhập Quản lý
+                        </button>
+                        <p id="login-error-admin" class="form-error"></p>
                     </form>
 
                     <div class="login-footer" style="margin-top: 20px; text-align: center; color: var(--text-muted); font-size: 11px; line-height: 1.6;">
@@ -335,6 +373,45 @@
                 </div>
             </div>
 
+            <!-- ===== TAB: APPROVALS (Duyệt đơn - Dành cho Quản lý) ===== -->
+            <div id="tab-approvals" class="tab-content">
+                <div class="card">
+                    <div class="card-title-row" style="margin-bottom: 14px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20" style="color: var(--green);">
+                                <path d="M9 11l3 3L22 4"/>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                            </svg>
+                            <span class="card-title" style="margin: 0;">Phê duyệt đơn OT</span>
+                        </div>
+                        <input type="month" id="filter-approvals-month" class="input-sm">
+                    </div>
+
+                    <!-- Pending stats / team summary badge -->
+                    <div id="approvals-stats-bar" style="display: flex; justify-content: space-between; align-items: center; background: rgba(13, 217, 139, 0.08); border: 1px solid rgba(13, 217, 139, 0.2); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px;">
+                        <span style="font-size: 13px; color: var(--text-sub);">Đơn chờ phê duyệt:</span>
+                        <strong id="approvals-pending-count" style="font-size: 15px; color: var(--green);">0 đơn</strong>
+                    </div>
+
+                    <!-- Danh sách yêu cầu huỷ liên kết thiết bị nếu có -->
+                    <div id="approvals-unlinks-section" style="display: none; margin-bottom: 16px;">
+                        <div style="font-size: 12px; font-weight: 700; color: #ef4444; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">⚠️ Yêu cầu huỷ liên kết thiết bị</div>
+                        <div id="approvals-unlinks-list"></div>
+                    </div>
+
+                    <!-- Danh sách đơn OT chờ duyệt -->
+                    <div id="approvals-records-list">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 14 14"/>
+                            </svg>
+                            <p>Không có đơn nào chờ duyệt</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- ===== TAB: PROFILE ===== -->
             <div id="tab-profile" class="tab-content">
                 <div class="profile-header">
@@ -445,6 +522,14 @@
                     <polyline points="12 6 12 12 16 14"/>
                 </svg>
                 <span>Lịch sử</span>
+            </button>
+            <button class="nav-item" id="nav-item-approvals" data-tab="approvals" style="display: none; position: relative;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+                    <path d="M9 11l3 3L22 4"/>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+                <span>Duyệt đơn</span>
+                <span id="nav-approvals-badge" style="position: absolute; top: 4px; right: calc(50% - 18px); background: #ef4444; color: #fff; font-size: 10px; font-weight: 800; padding: 1px 5px; border-radius: 10px; min-width: 16px; text-align: center; display: none; line-height: 14px;">0</span>
             </button>
             <button class="nav-item" data-tab="profile">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">

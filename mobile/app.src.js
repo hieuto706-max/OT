@@ -613,9 +613,14 @@ function showToast(msg, type = 'success') {
     }, 2500);
 }
 
-function showConfirm(msg) {
+function showConfirm(msg, okText = 'Xóa', okClass = 'btn btn-danger') {
     return new Promise(resolve => {
         document.getElementById('confirm-msg').textContent = msg;
+        const okBtn = document.getElementById('confirm-ok');
+        if (okBtn) {
+            okBtn.textContent = okText;
+            okBtn.className = okClass;
+        }
         const overlay = document.getElementById('confirm-overlay');
         overlay.classList.add('active');
 
@@ -623,11 +628,15 @@ function showConfirm(msg) {
         const onCancel = () => { cleanup(); resolve(false); };
         const cleanup = () => {
             overlay.classList.remove('active');
-            document.getElementById('confirm-ok').removeEventListener('click', onOk);
+            if (okBtn) {
+                okBtn.removeEventListener('click', onOk);
+                okBtn.textContent = 'Xóa';
+                okBtn.className = 'btn btn-danger';
+            }
             document.getElementById('confirm-cancel').removeEventListener('click', onCancel);
         };
 
-        document.getElementById('confirm-ok').addEventListener('click', onOk);
+        if (okBtn) okBtn.addEventListener('click', onOk);
         document.getElementById('confirm-cancel').addEventListener('click', onCancel);
     });
 }
@@ -861,18 +870,14 @@ async function handleAdminLogin(e) {
         safeStorage.setItem('ot_login_time', Date.now().toString());
         if (data.token) safeStorage.setItem('ot_auth_token', data.token);
         
-        // Đồng bộ session quản lý cho desktop/app.js tự động nhận diện
+        // Đồng bộ session quản lý cho desktop/app.js tự động nhận diện nếu mở desktop
         safeStorage.setItem('ot_current_user', JSON.stringify(data.user));
         const todayStr = new Date().toISOString().split('T')[0];
         safeStorage.setItem('ot_login_date', todayStr);
         
-        // Chuyển hướng tới trang quản lý desktop
-        const needsOtPrefix = window.location.hostname.includes('github.io');
-        const redirectUrl = needsOtPrefix ? '/OT/desktop/index.html' : '/desktop/index.html';
-        showToast('Đăng nhập Quản lý thành công, đang chuyển hướng...', 'success');
-        setTimeout(() => {
-            window.location.href = redirectUrl;
-        }, 1000);
+        currentUser = data.user;
+        showToast('Đăng nhập Quản lý thành công!', 'success');
+        enterApp();
     } catch (err) {
         errEl.textContent = err.message;
     }
@@ -894,6 +899,19 @@ function enterApp() {
     const btnCheckUpdate = document.getElementById('btn-check-update-mobile');
     if (btnCheckUpdate) {
         btnCheckUpdate.style.display = 'block';
+    }
+
+    // Role-based UI: Quản lý có tab Duyệt đơn
+    const navApprovals = document.getElementById('nav-item-approvals');
+    const filterApprovalsMonth = document.getElementById('filter-approvals-month');
+    if (filterApprovalsMonth && !filterApprovalsMonth.value) {
+        filterApprovalsMonth.value = getCurrentMonth();
+    }
+    if (currentUser && currentUser.role === 'admin') {
+        if (navApprovals) navApprovals.style.display = 'flex';
+        loadApprovals();
+    } else {
+        if (navApprovals) navApprovals.style.display = 'none';
     }
 
     showScreen('screen-app');
@@ -935,7 +953,16 @@ function logout() {
     
     const loginForm = document.getElementById('form-login-employee');
     if (loginForm) loginForm.reset();
-    
+    const adminForm = document.getElementById('form-login-admin');
+    if (adminForm) adminForm.reset();
+
+    const navApprovals = document.getElementById('nav-item-approvals');
+    if (navApprovals) navApprovals.style.display = 'none';
+    const badgeApprovals = document.getElementById('nav-approvals-badge');
+    if (badgeApprovals) badgeApprovals.style.display = 'none';
+
+    switchTab('home');
+
     const listContainer = document.getElementById('ot-custom-activities-list');
     if (listContainer) listContainer.innerHTML = '';
     const editListContainer = document.getElementById('edit-ot-custom-activities-list');
@@ -1525,7 +1552,8 @@ async function handleOTSubmit(e) {
         calcMode,
         note,
         createdMonth,
-        isBackfill
+        isBackfill,
+        status: (currentUser && currentUser.role === 'admin') ? 'approved' : 'pending'
     };
 
     if (API) {
@@ -2007,15 +2035,19 @@ function switchTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
-    document.getElementById(`tab-${tabName}`).classList.add('active');
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    const tabEl = document.getElementById(`tab-${tabName}`);
+    if (tabEl) tabEl.classList.add('active');
+    const navEl = document.querySelector(`[data-tab="${tabName}"]`);
+    if (navEl) navEl.classList.add('active');
 
     // Reload data when switching tabs
     if (tabName === 'history') loadHistory();
     if (tabName === 'profile') loadProfileStats();
+    if (tabName === 'approvals') loadApprovals();
 
     // Scroll to top
-    document.querySelector('.mobile-main').scrollTop = 0;
+    const mainEl = document.querySelector('.mobile-main');
+    if (mainEl) mainEl.scrollTop = 0;
 }
 
 // ==================== SETTINGS ====================
@@ -2781,7 +2813,11 @@ function initApp() {
                 
                 try {
                     if (currentUser) {
-                        await Promise.all([loadHistory(), loadProfileStats(), syncOfflineData()]);
+                        const refreshTasks = [loadHistory(), loadProfileStats(), syncOfflineData()];
+                        if (currentUser.role === 'admin') {
+                            refreshTasks.push(loadApprovals());
+                        }
+                        await Promise.all(refreshTasks);
                     }
                     showToast('Đã làm mới dữ liệu!', 'success');
                 } catch (err) {
@@ -2819,14 +2855,18 @@ function initApp() {
     // Bắt đầu kiểm tra cập nhật định kỳ mỗi 30 phút
     startUpdateCheckInterval();
 
-    // Cấu hình Tabs Đăng nhập (Nhân viên / Quản trị) trên màn hình Login
-    const tabEmployeeBtn = document.getElementById('btn-tab-employee');
-    const tabAdminBtn = document.getElementById('btn-tab-admin');
+    // Cấu hình Tabs Đăng nhập (Nhân viên / Quản lý) trên màn hình Login
+    const tabEmployeeBtn = document.getElementById('tab-btn-login-emp') || document.getElementById('btn-tab-employee');
+    const tabAdminBtn = document.getElementById('tab-btn-login-admin') || document.getElementById('btn-tab-admin');
 
     if (tabEmployeeBtn && tabAdminBtn && formLoginEmployee && formLoginAdmin) {
         tabEmployeeBtn.addEventListener('click', () => {
             tabEmployeeBtn.classList.add('active');
             tabAdminBtn.classList.remove('active');
+            tabEmployeeBtn.style.background = 'var(--green)';
+            tabEmployeeBtn.style.color = '#020604';
+            tabAdminBtn.style.background = 'transparent';
+            tabAdminBtn.style.color = 'var(--text-sub)';
             formLoginEmployee.classList.add('active');
             formLoginAdmin.classList.remove('active');
             formLoginEmployee.style.display = 'block';
@@ -2838,6 +2878,10 @@ function initApp() {
         tabAdminBtn.addEventListener('click', () => {
             tabAdminBtn.classList.add('active');
             tabEmployeeBtn.classList.remove('active');
+            tabAdminBtn.style.background = 'var(--green)';
+            tabAdminBtn.style.color = '#020604';
+            tabEmployeeBtn.style.background = 'transparent';
+            tabEmployeeBtn.style.color = 'var(--text-sub)';
             formLoginAdmin.classList.add('active');
             formLoginEmployee.classList.remove('active');
             formLoginAdmin.style.display = 'block';
@@ -2845,6 +2889,12 @@ function initApp() {
             const errEl = document.getElementById('login-error-admin');
             if (errEl) errEl.textContent = '';
         });
+    }
+
+    // Lắng nghe thay đổi tháng phê duyệt đơn
+    const filterApprovalsMonth = document.getElementById('filter-approvals-month');
+    if (filterApprovalsMonth) {
+        filterApprovalsMonth.addEventListener('change', loadApprovals);
     }
 
     // Thiết lập link tải động và mã QR cho mục Tải ứng dụng
@@ -3513,9 +3563,224 @@ if (window.location.search.includes('mock=true')) {
     }, 1500);
 }
 
+// ==================== PHÊ DUYỆT ĐƠN (DÀNH CHO QUẢN LÝ) ====================
+async function loadApprovals() {
+    if (!currentUser || currentUser.role !== 'admin') return;
+
+    const monthInput = document.getElementById('filter-approvals-month');
+    let month = (monthInput && monthInput.value) ? monthInput.value : getCurrentMonth();
+    if (monthInput && !monthInput.value) {
+        monthInput.value = month;
+    }
+
+    try {
+        const [recordsRes, usersRes] = await Promise.all([
+            api('/api/records?month=' + month),
+            api('/api/users')
+        ]);
+
+        const allRecords = (recordsRes && recordsRes.records) ? recordsRes.records : [];
+        const allUsers = (usersRes && usersRes.users) ? usersRes.users : [];
+        const userMap = new Map(allUsers.map(u => [u.id, u]));
+
+        // Lọc các bản ghi đang chờ duyệt
+        const pendingRecords = allRecords.filter(r => r.status === 'pending');
+        pendingRecords.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+        // Lọc danh sách nhân viên yêu cầu huỷ liên kết thiết bị
+        const pendingUnlinks = allUsers.filter(u => u.pendingUnlink === true);
+
+        // Cập nhật thống kê và badge
+        const pendingCount = pendingRecords.length;
+        const unlinkCount = pendingUnlinks.length;
+        const totalPending = pendingCount + unlinkCount;
+
+        const countEl = document.getElementById('approvals-pending-count');
+        if (countEl) {
+            countEl.textContent = `${totalPending} đơn${unlinkCount > 0 ? ` (${pendingCount} OT, ${unlinkCount} huỷ máy)` : ''}`;
+        }
+
+        const badgeEl = document.getElementById('nav-approvals-badge');
+        if (badgeEl) {
+            if (totalPending > 0) {
+                badgeEl.textContent = totalPending > 99 ? '99+' : totalPending;
+                badgeEl.style.display = 'inline-block';
+            } else {
+                badgeEl.style.display = 'none';
+            }
+        }
+
+        // Render danh sách yêu cầu huỷ thiết bị
+        const unlinksSection = document.getElementById('approvals-unlinks-section');
+        const unlinksList = document.getElementById('approvals-unlinks-list');
+        if (unlinksSection && unlinksList) {
+            if (unlinkCount > 0) {
+                unlinksSection.style.display = 'block';
+                unlinksList.innerHTML = pendingUnlinks.map(u => {
+                    const safeName = escapeHTML(u.fullname || u.username);
+                    const teamName = escapeHTML(u.team || 'Chưa phân nhóm');
+                    const escapedForAttr = (u.fullname || u.username).replace(/'/g, "\\'");
+                    return `
+                        <div class="approval-card" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 12px; padding: 12px; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                                <div>
+                                    <div style="font-weight: 700; font-size: 14px; color: #f87171;">${safeName}</div>
+                                    <div style="font-size: 11px; color: var(--text-sub); margin-top: 2px;">Nhóm: ${teamName} • @${escapeHTML(u.username)}</div>
+                                </div>
+                                <span style="background: rgba(239, 68, 68, 0.2); color: #ef4444; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">Đổi thiết bị</span>
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+                                Nhân viên yêu cầu huỷ liên kết máy cũ để đăng nhập thiết bị mới.
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-sm btn-primary" onclick="approveUnlinkMobile('${u.id}', '${escapedForAttr}')" style="flex: 1; padding: 8px 12px; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                    ✓ Duyệt huỷ máy
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="rejectUnlinkMobile('${u.id}', '${escapedForAttr}')" style="flex: 1; padding: 8px 12px; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                    ✕ Từ chối
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                unlinksSection.style.display = 'none';
+                unlinksList.innerHTML = '';
+            }
+        }
+
+        // Render danh sách đơn OT chờ duyệt
+        const recordsList = document.getElementById('approvals-records-list');
+        if (recordsList) {
+            if (pendingCount === 0) {
+                recordsList.innerHTML = `
+                    <div class="empty-state" style="padding: 30px 10px; text-align: center;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color: var(--text-muted); margin: 0 auto 12px; display: block;">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 14 14"/>
+                        </svg>
+                        <p style="color: var(--text-sub); font-size: 13px; margin: 0;">Không có đơn OT nào chờ duyệt trong tháng ${month}</p>
+                    </div>
+                `;
+            } else {
+                recordsList.innerHTML = pendingRecords.map(r => {
+                    const emp = userMap.get(r.userId) || { fullname: 'Chưa rõ', username: r.userId };
+                    const empName = escapeHTML(emp.fullname || emp.username);
+                    const empTeam = escapeHTML(emp.team || '');
+                    const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+
+                    let tags = '';
+                    if (r.hasLunchOT) tags += '<span class="htag htag-lunch" style="font-size: 10px; padding: 1px 5px;">OT Trưa 1h</span> ';
+                    if (r.eveningOTHours > 0 && !isBackfill) tags += `<span class="htag htag-evening" style="font-size: 10px; padding: 1px 5px;">OT Chiều ${r.eveningOTHours.toFixed(1)}h</span> `;
+                    if (r.customActivity) {
+                        tags += `<span class="htag" style="font-size: 10px; padding: 1px 5px; background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.3);">📋 ${escapeHTML(r.customActivity)}</span> `;
+                    }
+                    if (r.deliveryProvince) {
+                        tags += `<span class="htag" style="font-size: 10px; padding: 1px 5px; background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3);">🚚 ${escapeHTML(r.deliveryProvince)}</span> `;
+                    }
+                    if (isBackfill) {
+                        tags += `<span class="htag htag-backfill" style="font-size: 10px; padding: 1px 5px; background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3);">⚠️ Bù tháng trước</span> `;
+                    }
+
+                    const cleanNote = r.note ? r.note.replace('[BÙ THÁNG TRƯỚC] ', '').replace('[BÙ THÁNG TRƯỚC]', '').replace('[TĂNG THÁNG NÀY] ', '').replace('[TĂNG THÁNG NÀY]', '').trim() : '';
+
+                    return `
+                        <div class="approval-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <strong style="font-size: 14px; color: var(--text-main);">${empName}</strong>
+                                        ${empTeam ? `<span style="font-size: 10px; background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 4px; color: var(--text-sub);">${empTeam}</span>` : ''}
+                                    </div>
+                                    <div style="font-size: 12px; color: var(--accent-cyan); font-weight: 600; margin-top: 3px;">
+                                        📅 ${fmtDate(r.date)}
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="font-size: 16px; font-weight: 800; color: var(--green);">${(r.totalHours || 0).toFixed(1)}h</span>
+                                </div>
+                            </div>
+
+                            ${tags ? `<div style="margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 4px;">${tags}</div>` : ''}
+
+                            ${cleanNote ? `<div style="font-size: 12px; color: var(--text-sub); background: rgba(0,0,0,0.15); padding: 6px 10px; border-radius: 6px; margin-bottom: 10px; word-break: break-word;">📝 ${escapeHTML(cleanNote)}</div>` : ''}
+
+                            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                <button class="btn btn-sm btn-primary" onclick="approveRecordMobile('${r.id}')" style="flex: 1; padding: 8px 12px; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px; background: var(--green); border-color: var(--green); color: #000;">
+                                    ✓ Duyệt
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="rejectRecordMobile('${r.id}')" style="flex: 1; padding: 8px 12px; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                    ✕ Từ chối
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+    } catch (err) {
+        console.error('Lỗi tải danh sách phê duyệt:', err);
+    }
+}
+
+async function approveRecordMobile(recordId) {
+    try {
+        await api(`/api/records/${recordId}`, 'PUT', { status: 'approved' });
+        showToast('Đã phê duyệt đơn thành công!');
+        await loadApprovals();
+    } catch (err) {
+        console.error('Lỗi duyệt đơn:', err);
+        showToast(err.message || 'Lỗi khi duyệt đơn', 'error');
+    }
+}
+
+async function rejectRecordMobile(recordId) {
+    const confirmed = await showConfirm('Bạn có chắc chắn muốn từ chối đơn này không?', 'Từ chối', 'btn btn-danger');
+    if (!confirmed) return;
+    try {
+        await api(`/api/records/${recordId}`, 'PUT', { status: 'rejected' });
+        showToast('Đã từ chối đơn!');
+        await loadApprovals();
+    } catch (err) {
+        console.error('Lỗi từ chối đơn:', err);
+        showToast(err.message || 'Lỗi khi từ chối đơn', 'error');
+    }
+}
+
+async function approveUnlinkMobile(userId, fullname) {
+    const confirmed = await showConfirm(`Xác nhận duyệt huỷ liên kết thiết bị cho "${fullname}"? Nhân viên sẽ có thể đăng nhập trên máy mới.`, 'Duyệt huỷ máy', 'btn btn-primary');
+    if (!confirmed) return;
+    try {
+        await api(`/api/users/${userId}`, 'PUT', { deviceId: null, browserDeviceId: null, pendingUnlink: false });
+        showToast('Đã huỷ liên kết thiết bị thành công!');
+        await loadApprovals();
+    } catch (err) {
+        console.error('Lỗi duyệt huỷ thiết bị:', err);
+        showToast(err.message || 'Lỗi huỷ thiết bị', 'error');
+    }
+}
+
+async function rejectUnlinkMobile(userId, fullname) {
+    const confirmed = await showConfirm(`Từ chối yêu cầu huỷ liên kết thiết bị của "${fullname}"?`, 'Từ chối', 'btn btn-danger');
+    if (!confirmed) return;
+    try {
+        await api(`/api/users/${userId}`, 'PUT', { pendingUnlink: false });
+        showToast('Đã từ chối yêu cầu huỷ thiết bị!');
+        await loadApprovals();
+    } catch (err) {
+        console.error('Lỗi từ chối huỷ thiết bị:', err);
+        showToast(err.message || 'Lỗi từ chối', 'error');
+    }
+}
+
 // Expose functions globally to window for onclick handlers to function reliably in all environments
 window.editRecordDialog = editRecordDialog;
 window.deleteRecord = deleteRecord;
+window.loadApprovals = loadApprovals;
+window.approveRecordMobile = approveRecordMobile;
+window.rejectRecordMobile = rejectRecordMobile;
+window.approveUnlinkMobile = approveUnlinkMobile;
+window.rejectUnlinkMobile = rejectUnlinkMobile;
 
 // ==================== WEB PUSH & FIREBASE FCM SUBSCRIPTION ====================
 async function checkAndRegisterPushNotifications() {

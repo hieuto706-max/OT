@@ -2419,12 +2419,15 @@ async function refreshAdminUsers(cachedUsers, cachedRecords) {
         // Render managers (admins)
         const tbodyMgr = document.getElementById('admin-managers-body');
         tbodyMgr.innerHTML = managers.map((u, i) => {
+            const userRecords = records.filter(r => r.userId === u.id);
+            const totalOT = userRecords.reduce((sum, r) => sum + (r.totalHours || 0), 0);
             return `<tr>
                 <td>${i + 1}</td>
                 <td><strong>${u.fullname}</strong></td>
                 <td>${u.username}</td>
                 <td><span style="font-weight:600; color:var(--text-secondary);">${u.team === 'admin' ? 'admin' : (u.team || 'admin')}</span></td>
                 <td><span class="tag tag-admin">Quản lý</span></td>
+                <td><span class="text-purple text-bold">${totalOT.toFixed(1)}h</span></td>
                 <td><div class="action-buttons">
                     ${(isSuperAdmin && (currentUser && currentUser.id !== u.id)) ? `
                     <button class="btn-icon-only edit" onclick="editUserDialog('${u.id}')" title="Sửa" style="margin-right: 4px;">
@@ -2444,7 +2447,7 @@ async function refreshAdminUsers(cachedUsers, cachedRecords) {
                 </div></td>
             </tr>`;
         }).join('') || `<tr class="empty-row">
-            <td colspan="6" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
+            <td colspan="7" style="padding: 80px 16px; text-align: center; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.06); border-radius: 8px;">
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48" style="color: var(--text-muted); opacity: 0.6;">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
