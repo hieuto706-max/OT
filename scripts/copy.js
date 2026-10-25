@@ -80,6 +80,15 @@ function updateSourceVersions(version) {
             fs.writeFileSync(mobileIndexHtmlPath, content, 'utf8');
             console.log(`Updated version variables and spans in mobile/index.html to ${version}`);
         }
+
+        // 7. docs/index.html
+        const docsIndexHtmlPath = path.join(__dirname, '..', 'docs', 'index.html');
+        if (fs.existsSync(docsIndexHtmlPath)) {
+            let content = fs.readFileSync(docsIndexHtmlPath, 'utf8');
+            content = content.replace(/class="web-version-badge">v[^<]*<\/span>/g, `class="web-version-badge">v${version}</span>`);
+            fs.writeFileSync(docsIndexHtmlPath, content, 'utf8');
+            console.log(`Updated web-version-badge in docs/index.html to v${version}`);
+        }
     } catch (e) {
         console.error('Error updating source version constants:', e.message);
     }
