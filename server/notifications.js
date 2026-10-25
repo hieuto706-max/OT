@@ -35,6 +35,17 @@ try {
 // ==================== WEB PUSH SETUP ====================
 function initWebPush() {
     try {
+        const envPublicKey = process.env.VAPID_PUBLIC_KEY;
+        const envPrivateKey = process.env.VAPID_PRIVATE_KEY;
+        if (envPublicKey && envPrivateKey) {
+            webpush.setVapidDetails(
+                'mailto:support@otmanager.id.vn',
+                envPublicKey,
+                envPrivateKey
+            );
+            return envPublicKey;
+        }
+
         let configPath = path.join(__dirname, 'config.json');
         if (!fs.existsSync(configPath)) {
             configPath = path.join(__dirname, '..', 'config.json');
