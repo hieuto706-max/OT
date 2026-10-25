@@ -839,29 +839,52 @@ async function handleEmployeeLogin(e) {
     }
 }
 
+let isAdminLoggingIn = false;
 async function handleAdminLogin(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+    if (isAdminLoggingIn) return;
+
     deviceId = getDeviceId(); // Cập nhật deviceId mới nhất trước khi đăng nhập
-    const username = document.getElementById('login-admin-user').value.trim();
-    const password = document.getElementById('login-password').value;
+    const userInput = document.getElementById('login-admin-user') || document.getElementById('login-user');
+    const passInput = document.getElementById('login-admin-password') || document.getElementById('login-password');
     const errEl = document.getElementById('login-error-admin');
-    errEl.textContent = '';
+    if (errEl) errEl.textContent = '';
+
+    const username = userInput ? userInput.value.trim() : '';
+    const password = passInput ? passInput.value : '';
+
+    if (!username) {
+        if (errEl) errEl.textContent = 'Vui lòng nhập tên đăng nhập quản lý!';
+        return;
+    }
+    if (!password) {
+        if (errEl) errEl.textContent = 'Vui lòng nhập mật khẩu!';
+        return;
+    }
 
     if (window.location.protocol !== 'file:' && await isPrivateMode()) {
-        errEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
+        if (errEl) errEl.textContent = 'Hệ thống không cho phép đăng nhập từ trình duyệt ẩn danh (Incognito Mode) để đảm bảo an toàn thiết bị!';
         return;
     }
 
     if (!API) {
-        errEl.textContent = 'Không thể đăng nhập quản trị khi ngoại tuyến (Offline)!';
+        if (errEl) errEl.textContent = 'Không thể kết nối máy chủ (Offline)! Vui lòng kiểm tra mạng hoặc cấu hình IP Server.';
         return;
     }
+
+    const btnSubmit = document.getElementById('btn-login-admin');
+    const originalBtnText = btnSubmit ? btnSubmit.textContent : '';
+    if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = 'Đang đăng nhập...';
+    }
+    isAdminLoggingIn = true;
 
     try {
         const data = await api('/api/auth/login', 'POST', { username, password, deviceId });
         
-        if (data.user.role !== 'admin') {
-            errEl.textContent = 'Tài khoản nhân viên không được phép đăng nhập bên phần quản trị!';
+        if (!data || !data.user || data.user.role !== 'admin') {
+            if (errEl) errEl.textContent = 'Tài khoản này không có quyền Quản lý!';
             return;
         }
 
@@ -879,7 +902,14 @@ async function handleAdminLogin(e) {
         showToast('Đăng nhập Quản lý thành công!', 'success');
         enterApp();
     } catch (err) {
-        errEl.textContent = err.message;
+        console.error('Lỗi đăng nhập quản lý:', err);
+        if (errEl) errEl.textContent = err.message || 'Lỗi đăng nhập quản trị!';
+    } finally {
+        isAdminLoggingIn = false;
+        if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = originalBtnText;
+        }
     }
 }
 
@@ -2538,6 +2568,19 @@ function initApp() {
     const formLoginAdmin = document.getElementById('form-login-admin');
     if (formLoginAdmin) {
         formLoginAdmin.addEventListener('submit', handleAdminLogin);
+    }
+    const btnLoginAdmin = document.getElementById('btn-login-admin');
+    if (btnLoginAdmin) {
+        btnLoginAdmin.addEventListener('click', handleAdminLogin);
+    }
+    const btnToggleAdminPw = document.getElementById('btn-toggle-admin-pw');
+    if (btnToggleAdminPw) {
+        btnToggleAdminPw.addEventListener('click', () => {
+            const pwInput = document.getElementById('login-admin-password');
+            if (pwInput) {
+                pwInput.type = pwInput.type === 'password' ? 'text' : 'password';
+            }
+        });
     }
 
     // OT form

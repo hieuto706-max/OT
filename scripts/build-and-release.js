@@ -142,5 +142,11 @@ try {
     execSync(`gh release create v${version} dist/ot-manager-Setup-${version}.exe dist/OT-Manager-mobile.apk --title "Release v${version}" --notes "Bản phát hành v${version}: Hỗ trợ Quản lý đăng nhập trên điện thoại để phê duyệt đơn OT và yêu cầu hủy thiết bị; Quản lý có thể ghi nhận OT cá nhân; Hiển thị tổng giờ OT tháng của Quản lý trên Desktop; Sửa lỗi tải lý do tăng ca lần đầu."`, { stdio: 'inherit' });
     console.log('\n🎉 Release published successfully!');
 } catch (e) {
-    console.error('\n❌ Failed to publish release via gh CLI. You can still upload files in dist/ manually.');
+    console.log('\nRelease tag may already exist, updating assets via gh release upload --clobber...');
+    try {
+        execSync(`gh release upload v${version} dist/ot-manager-Setup-${version}.exe dist/OT-Manager-mobile.apk --clobber`, { stdio: 'inherit' });
+        console.log('\n🎉 Release assets updated successfully!');
+    } catch (e2) {
+        console.error('\n❌ Failed to upload assets via gh CLI:', e2.message);
+    }
 }
