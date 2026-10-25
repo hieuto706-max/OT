@@ -235,77 +235,178 @@ function getCertExpiry(certPath) {
     }
 }
 
+// ==================== CLOUDFLARE DNS-01 CHALLENGE HELPERS ====================
+async function cloudflareDnsChallenge(action, domain, keyAuthorization) {
+    // Requires CLOUDFLARE_API_TOKEN env var with DNS Edit permission on the zone
+    const cfToken = process.env.CLOUDFLARE_API_TOKEN;
+    if (!cfToken) {
+        throw new Error('[SSL Auto-Renew] Thiếu CLOUDFLARE_API_TOKEN để thực hiện DNS-01 challenge. Vui lòng cấu hình biến môi trường này trên Render.');
+    }
+
+    const https = require('https');
+    // Helper: make Cloudflare API request
+    function cfRequest(method, path, body) {
+        return new Promise((resolve, reject) => {
+            const data = body ? JSON.stringify(body) : null;
+            const options = {
+                hostname: 'api.cloudflare.com',
+                path: `/client/v4${path}`,
+                method,
+                headers: {
+                    'Authorization': `Bearer ${cfToken}`,
+                    'Content-Type': 'application/json',
+                    ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {})
+                }
+            };
+            const req = https.request(options, (res) => {
+                let raw = '';
+                res.on('data', d => raw += d);
+                res.on('end', () => {
+                    try { resolve(JSON.parse(raw)); }
+                    catch (e) { reject(new Error('CF API parse error: ' + raw)); }
+                });
+            });
+            req.on('error', reject);
+            if (data) req.write(data);
+            req.end();
+        });
+    }
+
+    // Get root zone (e.g. "otmanager.id.vn" from "api.otmanager.id.vn")
+    const parts = domain.split('.');
+    const zoneName = parts.slice(-2).join('.');
+    const challengeName = `_acme-challenge.${domain}`;
+    const txtValue = require('crypto').createHash('sha256').update(keyAuthorization).digest('base64url');
+
+    // Find zone ID
+    const zonesRes = await cfRequest('GET', `/zones?name=${zoneName}&status=active`);
+    if (!zonesRes.success || !zonesRes.result || zonesRes.result.length === 0) {
+        throw new Error(`[SSL Auto-Renew] Không tìm thấy Cloudflare zone cho tên miền: ${zoneName}`);
+    }
+    const zoneId = zonesRes.result[0].id;
+
+    if (action === 'create') {
+        console.log(`[SSL Auto-Renew] Đang thêm TXT record DNS-01 challenge: ${challengeName}`);
+        const createRes = await cfRequest('POST', `/zones/${zoneId}/dns_records`, {
+            type: 'TXT',
+            name: challengeName,
+            content: txtValue,
+            ttl: 60
+        });
+        if (!createRes.success) {
+            throw new Error(`[SSL Auto-Renew] Tạo TXT record thất bại: ${JSON.stringify(createRes.errors)}`);
+        }
+        // Store record ID for cleanup
+        global.acmeCfRecordIds = global.acmeCfRecordIds || {};
+        global.acmeCfRecordIds[challengeName] = createRes.result.id;
+        console.log(`[SSL Auto-Renew] ✅ Đã tạo TXT record DNS-01: ${challengeName} = ${txtValue}`);
+        // Wait for DNS propagation
+        await new Promise(r => setTimeout(r, 15000));
+    } else if (action === 'delete') {
+        const recordId = (global.acmeCfRecordIds || {})[challengeName];
+        if (recordId) {
+            console.log(`[SSL Auto-Renew] Đang xóa TXT record DNS-01 challenge: ${challengeName}`);
+            await cfRequest('DELETE', `/zones/${zoneId}/dns_records/${recordId}`);
+            delete global.acmeCfRecordIds[challengeName];
+            console.log(`[SSL Auto-Renew] ✅ Đã xóa TXT record DNS-01: ${challengeName}`);
+        } else {
+            // Fallback: list and delete by name
+            const listRes = await cfRequest('GET', `/zones/${zoneId}/dns_records?type=TXT&name=${challengeName}`);
+            if (listRes.success && listRes.result) {
+                for (const rec of listRes.result) {
+                    await cfRequest('DELETE', `/zones/${zoneId}/dns_records/${rec.id}`);
+                }
+            }
+        }
+    }
+}
+
 async function renewSSL(domain) {
     if (!domain) {
         console.log('[SSL Auto-Renew] Bỏ qua gia hạn: Không phát hiện tên miền hợp lệ.');
         return false;
     }
-    
+
     const acme = require('acme-client');
     const eabKid = process.env.ZEROSSL_EAB_KID || '2WmkpWu0d2mE8x5kq-Xk6A';
     const eabHmac = process.env.ZEROSSL_EAB_HMAC || 'dg7anWVfRmu_xw-6JlIGhPGSFerqQ-4DiUMVV51zumcp2U36muU2W1DNhVFlRG39uw19uac92cc9JSXRkrKfGQ';
-    
+    const hasCfToken = !!process.env.CLOUDFLARE_API_TOKEN;
+
+    // Warn if DNS-01 not possible and HTTP-01 is likely broken behind Cloudflare proxy
+    if (!hasCfToken) {
+        console.warn('[SSL Auto-Renew] ⚠️  CLOUDFLARE_API_TOKEN không được cấu hình. DNS-01 challenge sẽ không hoạt động.');
+        console.warn('[SSL Auto-Renew] ⚠️  HTTP-01 challenge cũng có thể thất bại vì Cloudflare proxy. Hãy thêm CLOUDFLARE_API_TOKEN vào biến môi trường Render.');
+    }
+
     async function requestCertFromProvider(isZeroSSL) {
         let directoryUrl;
         let externalAccountBinding = undefined;
-        
+
         if (isZeroSSL) {
             directoryUrl = 'https://acme.zerossl.com/v2/DV90';
-            externalAccountBinding = {
-                kid: eabKid,
-                hmacKey: eabHmac
-            };
+            externalAccountBinding = { kid: eabKid, hmacKey: eabHmac };
             console.log(`[SSL Auto-Renew] Đang thử xin chứng chỉ từ ZeroSSL cho tên miền: ${domain}`);
         } else {
-            directoryUrl = process.env.SSL_USE_STAGING === 'true' 
-                ? acme.directory.letsencrypt.staging 
+            directoryUrl = process.env.SSL_USE_STAGING === 'true'
+                ? acme.directory.letsencrypt.staging
                 : acme.directory.letsencrypt.production;
             console.log(`[SSL Auto-Renew] Đang thử xin chứng chỉ từ Let's Encrypt cho tên miền: ${domain}`);
         }
-        
+
         console.log(`[SSL Auto-Renew] Đang kết nối tới ACME Directory: ${directoryUrl}`);
-        
+
         const clientOptions = {
-            directoryUrl: directoryUrl,
+            directoryUrl,
             accountKey: await acme.crypto.createPrivateKey()
         };
-        
-        if (externalAccountBinding) {
-            clientOptions.externalAccountBinding = externalAccountBinding;
-        }
-        
+        if (externalAccountBinding) clientOptions.externalAccountBinding = externalAccountBinding;
+
         const client = new acme.Client(clientOptions);
-        
+
         console.log('[SSL Auto-Renew] Đang tạo khóa riêng tư và CSR...');
-        const [key, csr] = await acme.crypto.createCsr({
-            commonName: domain,
-        });
-        
-        global.activeAcmeChallenges = global.activeAcmeChallenges || {};
-        
-        const cert = await client.auto({
-            csr: csr,
-            email: process.env.SSL_EMAIL || `admin@${domain}`,
-            termsOfServiceAgreed: true,
-            challengePriority: ['http-01'],
-            challengeCreateFn: async (authz, challenge, keyAuthorization) => {
-                const token = challenge.token;
-                global.activeAcmeChallenges[token] = keyAuthorization;
-                console.log(`[SSL Auto-Renew] Đang lưu trữ token thử thách HTTP-01: ${token}`);
-            },
-            challengeRemoveFn: async (authz, challenge, keyAuthorization) => {
-                const token = challenge.token;
-                delete global.activeAcmeChallenges[token];
-                console.log(`[SSL Auto-Renew] Đã dọn dẹp token thử thách HTTP-01: ${token}`);
-            }
-        });
-        
-        return { cert, key };
+        const [key, csr] = await acme.crypto.createCsr({ commonName: domain });
+
+        if (hasCfToken) {
+            // Use DNS-01 challenge via Cloudflare API (works behind Cloudflare proxy)
+            console.log('[SSL Auto-Renew] Sử dụng DNS-01 challenge qua Cloudflare API...');
+            const cert = await client.auto({
+                csr,
+                email: process.env.SSL_EMAIL || `admin@${domain}`,
+                termsOfServiceAgreed: true,
+                challengePriority: ['dns-01'],
+                challengeCreateFn: async (authz, challenge, keyAuthorization) => {
+                    await cloudflareDnsChallenge('create', authz.identifier.value, keyAuthorization);
+                },
+                challengeRemoveFn: async (authz, challenge, keyAuthorization) => {
+                    await cloudflareDnsChallenge('delete', authz.identifier.value, keyAuthorization);
+                }
+            });
+            return { cert, key };
+        } else {
+            // Fallback: HTTP-01 (may fail behind Cloudflare proxy — set CLOUDFLARE_API_TOKEN to fix)
+            console.log('[SSL Auto-Renew] Sử dụng HTTP-01 challenge (dự phòng - có thể thất bại qua Cloudflare proxy)...');
+            global.activeAcmeChallenges = global.activeAcmeChallenges || {};
+            const cert = await client.auto({
+                csr,
+                email: process.env.SSL_EMAIL || `admin@${domain}`,
+                termsOfServiceAgreed: true,
+                challengePriority: ['http-01'],
+                challengeCreateFn: async (authz, challenge, keyAuthorization) => {
+                    global.activeAcmeChallenges[challenge.token] = keyAuthorization;
+                    console.log(`[SSL Auto-Renew] Đang lưu trữ token thử thách HTTP-01: ${challenge.token}`);
+                },
+                challengeRemoveFn: async (authz, challenge, keyAuthorization) => {
+                    delete global.activeAcmeChallenges[challenge.token];
+                    console.log(`[SSL Auto-Renew] Đã dọn dẹp token thử thách HTTP-01: ${challenge.token}`);
+                }
+            });
+            return { cert, key };
+        }
     }
-    
+
     let result = null;
     let successProvider = '';
-    
+
     if (eabKid && eabHmac) {
         try {
             result = await requestCertFromProvider(true);
@@ -315,7 +416,7 @@ async function renewSSL(domain) {
             console.log(`[SSL Auto-Renew] Đang tự động chuyển hướng sang Let's Encrypt làm phương án dự phòng...`);
         }
     }
-    
+
     if (!result) {
         try {
             result = await requestCertFromProvider(false);
@@ -325,21 +426,14 @@ async function renewSSL(domain) {
             return false;
         }
     }
-    
+
     try {
         const { cert, key } = result;
         const sslPaths = getSSLPaths();
-        const certPath = sslPaths.cert;
-        const keyPath = sslPaths.key;
-        const chainPath = sslPaths.chain;
-        
-        fs.writeFileSync(certPath, cert, 'utf8');
-        fs.writeFileSync(keyPath, key.toString(), 'utf8');
-        if (chainPath) {
-            fs.writeFileSync(chainPath, cert, 'utf8');
-        }
-        
-        console.log(`[SSL Auto-Renew] Tự động cấp mới chứng chỉ thành công bằng [${successProvider}] cho tên miền: ${domain}`);
+        fs.writeFileSync(sslPaths.cert, cert, 'utf8');
+        fs.writeFileSync(sslPaths.key, key.toString(), 'utf8');
+        if (sslPaths.chain) fs.writeFileSync(sslPaths.chain, cert, 'utf8');
+        console.log(`[SSL Auto-Renew] ✅ Tự động cấp mới chứng chỉ thành công bằng [${successProvider}] cho tên miền: ${domain}`);
         return true;
     } catch (err) {
         console.error(`[SSL Auto-Renew] Lỗi ghi chứng chỉ ra tệp tin:`, err.message || err);
