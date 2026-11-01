@@ -412,8 +412,14 @@ function closeModal() {
 }
 
 function calculateEveningOT(startTime, endTime) {
+    if (!startTime || !endTime) return 0;
     const startMin = timeToMinutes(startTime);
-    const endMin = timeToMinutes(endTime);
+    let endMin = timeToMinutes(endTime);
+    if (endMin === startMin) return 0;
+    // Hỗ trợ tăng ca qua nửa đêm (từ 00:00 đến 12:00 sáng hôm sau)
+    if (endMin < startMin && endMin <= 12 * 60) {
+        endMin += 24 * 60;
+    }
     if (endMin <= startMin) return 0;
     return Math.round(((endMin - startMin) / 60) * 100) / 100;
 }
@@ -3883,7 +3889,8 @@ function updateOTPreview() {
         if (otStart && otEnd) {
             const eveningHours = calculateEveningOT(otStart, otEnd);
             if (eveningHours > 0) {
-                items.push({ label: `OT Chiều (${otStart} - ${otEnd})`, value: `${parseFloat(eveningHours.toFixed(2))} giờ` });
+                const isOvernight = timeToMinutes(otEnd) < timeToMinutes(otStart);
+                items.push({ label: `OT Chiều (${otStart} - ${otEnd}${isOvernight ? ' hôm sau' : ''})`, value: `${parseFloat(eveningHours.toFixed(2))} giờ` });
                 total += eveningHours;
             }
         }
@@ -4022,7 +4029,8 @@ function updateAdminOTPreview() {
         if (otStart && otEnd && otStart.value && otEnd.value) {
             const eveningHours = calculateEveningOT(otStart.value, otEnd.value);
             if (eveningHours > 0) {
-                ticketEvening.innerHTML = `<span class="preview-active-badge">✓ ${otStart.value} - ${otEnd.value}</span> (${parseFloat(eveningHours.toFixed(2))} giờ)`;
+                const isOvernight = timeToMinutes(otEnd.value) < timeToMinutes(otStart.value);
+                ticketEvening.innerHTML = `<span class="preview-active-badge">✓ ${otStart.value} - ${otEnd.value}${isOvernight ? ' hôm sau' : ''}</span> (${parseFloat(eveningHours.toFixed(2))} giờ)`;
                 total += eveningHours;
             } else {
                 ticketEvening.textContent = 'Không đăng ký';
@@ -5617,7 +5625,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (startVal && endVal) {
                     const s = timeToMinutes(startVal);
                     const e = timeToMinutes(endVal);
-                    if (e <= s) {
+                    if (e <= s && e > 12 * 60) {
                         document.getElementById('admin-ot-end').value = startVal;
                     }
                 }
@@ -5735,7 +5743,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (startVal && endVal) {
             const s = timeToMinutes(startVal);
             const e = timeToMinutes(endVal);
-            if (e <= s) {
+            if (e <= s && e > 12 * 60) {
                 document.getElementById('ot-end').value = startVal;
                 updateOTPreview();
             }
@@ -6145,7 +6153,7 @@ async function editRecordDialog(recordId, source) {
             const syncModalEnd = () => {
                 const s = timeToMinutes(modalStart.value);
                 const e = timeToMinutes(modalEnd.value);
-                if (e <= s) {
+                if (e <= s && e > 12 * 60) {
                     modalEnd.value = modalStart.value;
                 }
             };

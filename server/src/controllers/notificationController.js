@@ -38,24 +38,25 @@ const NotificationController = {
             let updated = false;
             const updates = {};
 
-            // 1. Xử lý Web Push cũ
+            // 1. Xử lý Web Push (chỉ giữ lại subscription mới nhất của trình duyệt hiện tại để tránh tích tụ token chết)
             if (subscription && subscription.endpoint) {
                 const pushSubscriptions = user.pushSubscriptions || [];
-                const exists = pushSubscriptions.some(sub => sub.endpoint === subscription.endpoint);
-                if (!exists) {
-                    updates.pushSubscriptions = [...pushSubscriptions, subscription];
+                const isSameSingleSub = pushSubscriptions.length === 1 && pushSubscriptions[0]?.endpoint === subscription.endpoint;
+                if (!isSameSingleSub) {
+                    updates.pushSubscriptions = [subscription];
                     updated = true;
-                    logInfo(`[Web Push] Đăng ký thông báo mới thành công cho nhân viên ${user.username}`);
+                    logInfo(`[Web Push] Cập nhật đăng ký thông báo cho nhân viên ${user.username}`);
                 }
             }
 
             // 2. Xử lý Firebase FCM mới
             if (fcmToken) {
                 const fcmTokens = user.fcmTokens || [];
-                if (!fcmTokens.includes(fcmToken)) {
-                    updates.fcmTokens = [...fcmTokens, fcmToken];
+                const isSameSingleToken = fcmTokens.length === 1 && fcmTokens[0] === fcmToken;
+                if (!isSameSingleToken) {
+                    updates.fcmTokens = [fcmToken];
                     updated = true;
-                    logInfo(`[FCM] Đăng ký token mới thành công cho nhân viên ${user.username}`);
+                    logInfo(`[FCM] Cập nhật token cho nhân viên ${user.username}`);
                 }
             }
             
@@ -126,16 +127,22 @@ const NotificationController = {
             // 2. Gửi qua Web Push (Dự phòng / Fallback)
             const activeSubscriptions = [];
             if (hasWebPush) {
+                const seenEndpoints = new Set();
                 for (const sub of user.pushSubscriptions) {
+                    if (!sub || !sub.endpoint || seenEndpoints.has(sub.endpoint)) {
+                        continue;
+                    }
+                    seenEndpoints.add(sub.endpoint);
                     try {
                         await webpush.sendNotification(sub, payload);
                         successCount++;
                         activeSubscriptions.push(sub);
                     } catch (err) {
-                        if (err.statusCode === 410 || err.statusCode === 404) {
-                            logInfo(`[Web Push Test] Xóa subscription hết hạn của nhân viên ${user.username}`);
+                        const status = err.statusCode;
+                        if (!status || (status >= 400 && status < 500 && status !== 429)) {
+                            logInfo(`[Web Push Test] Xóa subscription hết hạn/không hợp lệ (HTTP ${status || 'unknown'}) của nhân viên ${user.username}`);
                         } else {
-                            logError(`[Web Push Test] Lỗi gửi thông báo cho ${user.username}:`, err.message);
+                            logError(`[Web Push Test] Lỗi tạm thời khi gửi thông báo cho ${user.username} (HTTP ${status}):`, err.message);
                             activeSubscriptions.push(sub);
                         }
                     }

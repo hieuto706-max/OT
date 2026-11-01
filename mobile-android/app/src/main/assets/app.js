@@ -579,8 +579,14 @@ function timeToMinutes(t) {
 }
 
 function calcEveningOT(start, end) {
+    if (!start || !end) return 0;
     const s = timeToMinutes(start);
-    const e = timeToMinutes(end);
+    let e = timeToMinutes(end);
+    if (e === s) return 0;
+    // Hỗ trợ tăng ca qua nửa đêm (từ 00:00 đến 12:00 sáng hôm sau)
+    if (e < s && e <= 12 * 60) {
+        e += 24 * 60;
+    }
     if (e <= s) return 0;
     return Math.round(((e - s) / 60) * 100) / 100;
 }
@@ -1363,7 +1369,8 @@ function updatePreview() {
         if (start && end) {
             const ev = calcEveningOT(start, end);
             if (ev > 0) {
-                items.push({ label: `OT Chiều (${start}-${end})`, val: `${ev.toFixed(1)} giờ` });
+                const isOvernight = timeToMinutes(end) < timeToMinutes(start);
+                items.push({ label: `OT Chiều (${start}-${end}${isOvernight ? ' hôm sau' : ''})`, val: `${ev.toFixed(1)} giờ` });
                 total += ev;
             }
         }
@@ -2708,7 +2715,7 @@ function initApp() {
         if (startVal && endVal) {
             const s = timeToMinutes(startVal);
             const e = timeToMinutes(endVal);
-            if (e <= s) {
+            if (e <= s && e > 12 * 60) {
                 document.getElementById('ot-end').value = startVal;
                 updatePreview();
             }
@@ -3266,7 +3273,7 @@ async function editRecordDialog(id) {
                 if (startVal && endVal) {
                     const s = timeToMinutes(startVal);
                     const e = timeToMinutes(endVal);
-                    if (e <= s) {
+                    if (e <= s && e > 12 * 60) {
                         elEnd.value = startVal;
                     }
                 }
@@ -3902,18 +3909,31 @@ async function checkAndRegisterPushNotifications() {
                     try {
                         const res = await api('/api/notifications/vapid-public-key');
                         if (res && res.publicKey) {
+                            const targetKey = urlB64ToUint8Array(res.publicKey);
                             const subscribeOptions = {
                                 userVisibleOnly: true,
-                                applicationServerKey: urlB64ToUint8Array(res.publicKey)
+                                applicationServerKey: targetKey
                             };
                             
                             subscription = await registration.pushManager.getSubscription();
                             if (subscription) {
-                                await subscription.unsubscribe();
+                                let keyMatches = false;
+                                if (subscription.options && subscription.options.applicationServerKey) {
+                                    const currentKey = new Uint8Array(subscription.options.applicationServerKey);
+                                    if (currentKey.length === targetKey.length) {
+                                        keyMatches = currentKey.every((val, idx) => val === targetKey[idx]);
+                                    }
+                                }
+                                if (!keyMatches) {
+                                    await subscription.unsubscribe();
+                                    subscription = null;
+                                }
                             }
                             
-                            subscription = await registration.pushManager.subscribe(subscribeOptions);
-                            console.log('[Web Push] Đăng ký Subscription thành công:', subscription);
+                            if (!subscription) {
+                                subscription = await registration.pushManager.subscribe(subscribeOptions);
+                                console.log('[Web Push] Đăng ký Subscription mới thành công:', subscription);
+                            }
                         }
                     } catch (wpErr) {
                         console.warn('[Web Push] Lỗi đăng ký:', wpErr.message);

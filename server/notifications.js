@@ -56,11 +56,13 @@ function initWebPush() {
         }
         
         if (!localConfig.vapidPublicKey || !localConfig.vapidPrivateKey) {
-            const keys = webpush.generateVAPIDKeys();
-            localConfig.vapidPublicKey = keys.publicKey;
-            localConfig.vapidPrivateKey = keys.privateKey;
-            fs.writeFileSync(configPath, JSON.stringify(localConfig, null, 2), 'utf-8');
-            logInfo('[Web Push] Đã tự sinh cặp khóa VAPID mới và lưu vào config.json');
+            // Sử dụng cặp khóa VAPID cố định mặc định để tránh bị đổi khóa mỗi khi Cloud Server (Render) khởi động lại
+            localConfig.vapidPublicKey = 'BLQtLGrfXbpoYkn76c5_Q1D5UOl7VGhrbkE4LfWu8J-9o2H-LJT6gebZrzm0n36pMzitzWxtRRcyKOrYsvlAUXs';
+            localConfig.vapidPrivateKey = 'm-9M8EGGAEa9gL5ytQVeJ9utHRdS0VJJvd87Zn5s0mw';
+            try {
+                fs.writeFileSync(configPath, JSON.stringify(localConfig, null, 2), 'utf-8');
+            } catch (e) {}
+            logInfo('[Web Push] Đã nạp cặp khóa VAPID mặc định.');
         }
         
         webpush.setVapidDetails(
@@ -129,17 +131,24 @@ async function sendPushNotification(user, title, bodyText, url = '/mobile/') {
     // 2. Gửi qua Web Push (Fallback)
     if (hasWebPush) {
         const activeSubscriptions = [];
+        const seenEndpoints = new Set();
         for (const sub of user.pushSubscriptions) {
+            if (!sub || !sub.endpoint || seenEndpoints.has(sub.endpoint)) {
+                dbUpdated = true;
+                continue;
+            }
+            seenEndpoints.add(sub.endpoint);
             try {
                 await webpush.sendNotification(sub, payload);
                 notifySuccess = true;
                 activeSubscriptions.push(sub);
             } catch (err) {
-                if (err.statusCode === 410 || err.statusCode === 404) {
-                    logInfo(`[Web Push] Xóa subscription hết hạn của nhân viên ${user.username}`);
+                const status = err.statusCode;
+                if (!status || (status >= 400 && status < 500 && status !== 429)) {
+                    logInfo(`[Web Push] Xóa subscription hết hạn/không hợp lệ (HTTP ${status || 'unknown'}) của nhân viên ${user.username}`);
                     dbUpdated = true;
                 } else {
-                    logError(`[Web Push] Lỗi gửi thông báo cho ${user.username}:`, err.message);
+                    logError(`[Web Push] Lỗi tạm thời khi gửi thông báo cho ${user.username} (HTTP ${status}):`, err.message);
                     activeSubscriptions.push(sub);
                 }
             }
@@ -190,6 +199,7 @@ async function sendDailyPushReminders(dateStr, loadDB, saveDB) {
     const employees = db.users.filter(u => u.role === 'employee');
     
     let notifyCount = 0;
+    let anyDbUpdated = false;
     for (const emp of employees) {
         const hasRecord = db.records.some(r => r.userId === emp.id && r.date === dateStr);
         if (hasRecord) {
@@ -204,8 +214,11 @@ async function sendDailyPushReminders(dateStr, loadDB, saveDB) {
             notifyCount++;
         }
         if (dbUpdated) {
-            saveDB(db);
+            anyDbUpdated = true;
         }
+    }
+    if (anyDbUpdated) {
+        await saveDB(db);
     }
     logInfo(`[Daily Reminder] Hoàn thành quét nhắc nhở. Đã gửi thành công ${notifyCount} thông báo.`);
 }

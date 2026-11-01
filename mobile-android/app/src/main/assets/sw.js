@@ -24,7 +24,7 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-const CACHE_NAME = 'ot-manager-build-1792899912589';
+const CACHE_NAME = 'ot-manager-build-1793534767140';
 const ASSETS = [
       './',
       'index.html',
