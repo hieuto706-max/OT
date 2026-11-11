@@ -55,26 +55,43 @@ const AuthController = {
         // Nếu là nhân viên, chỉ cho phép đăng nhập qua app APK hoặc app WebClip iOS (truyền clientSource = 'mobile_app')
         if (user.role === 'employee') {
             if (isBrowser && clientSource !== 'mobile_app') {
-                return sendError(res, 403, 'Tài khoản nhân viên không được phép đăng nhập trên trình duyệt web thường. Vui lòng sử dụng ứng dụng di động (APK hoặc iOS WebClip)!', req);
+                return sendError(
+                    res,
+                    403,
+                    'Tài khoản nhân viên không được phép đăng nhập trên trình duyệt web thường. Vui lòng sử dụng ứng dụng di động (APK hoặc iOS WebClip)!',
+                    req
+                );
             }
             if (deviceId) {
                 const targetDeviceField = isBrowser ? 'browserDeviceId' : 'deviceId';
                 const currentBoundId = user[targetDeviceField];
-                
-                const isLegacyBrowserId = isBrowser && currentBoundId && currentBoundId.startsWith('web_') && currentBoundId.length < 25;
+
+                const isLegacyBrowserId =
+                    isBrowser && currentBoundId && currentBoundId.startsWith('web_') && currentBoundId.length < 25;
                 const hasNoBinding = !currentBoundId || isLegacyBrowserId;
 
                 if (hasNoBinding) {
                     // Chưa liên kết thiết bị/trình duyệt
                     const users = await UserRepository.getAll();
-                    const otherOwner = users.find(u => u.role === 'employee' && u.id !== user.id && u[targetDeviceField] === deviceId);
+                    const otherOwner = users.find(
+                        u => u.role === 'employee' && u.id !== user.id && u[targetDeviceField] === deviceId
+                    );
                     if (otherOwner) {
-                        return sendError(res, 403, isBrowser ? 'Trình duyệt này đã được liên kết với một tài khoản khác!' : 'Thiết bị này đã được liên kết với một tài khoản khác!', req);
+                        return sendError(
+                            res,
+                            403,
+                            isBrowser
+                                ? 'Trình duyệt này đã được liên kết với một tài khoản khác!'
+                                : 'Thiết bị này đã được liên kết với một tài khoản khác!',
+                            req
+                        );
                     }
                     await UserRepository.update(user.id, { [targetDeviceField]: deviceId });
                 } else if (currentBoundId !== deviceId) {
                     // Thiết bị không trùng khớp ➡️ Khóa và yêu cầu liên hệ Quản lý để hủy liên kết
-                    const errMsg = isBrowser ? 'Tài khoản này đã được liên kết với trình duyệt khác. Vui lòng liên hệ Quản lý để hủy liên kết thiết bị cũ.' : 'Tài khoản này đã được liên kết với thiết bị khác. Vui lòng liên hệ Quản lý để hủy liên kết thiết bị cũ.';
+                    const errMsg = isBrowser
+                        ? 'Tài khoản này đã được liên kết với trình duyệt khác. Vui lòng liên hệ Quản lý để hủy liên kết thiết bị cũ.'
+                        : 'Tài khoản này đã được liên kết với thiết bị khác. Vui lòng liên hệ Quản lý để hủy liên kết thiết bị cũ.';
                     return sendJSON(res, 403, { error: errMsg, code: 'device_locked' }, req);
                 }
             }
@@ -102,7 +119,10 @@ const AuthController = {
                 settings = db.settings || {};
             } catch (e) {}
 
-            const token = signJWT({ userId: user.id, role: user.role, team: user.team || '', deviceId: deviceId || '' }, 7 * 24 * 3600);
+            const token = signJWT(
+                { userId: user.id, role: user.role, team: user.team || '', deviceId: deviceId || '' },
+                7 * 24 * 3600
+            );
             return sendJSON(res, 200, { user: { ...safeUser, teamSettings, settings }, token }, req);
         }
 
@@ -151,33 +171,43 @@ const AuthController = {
         if (!username) return sendError(res, 400, 'Thiếu tên đăng nhập!', req);
         const user = await UserRepository.findByUsername(username);
         if (!user) return sendError(res, 404, 'Không tìm thấy tên đăng nhập trong hệ thống!', req);
-        
+
         const { loadDB } = require('../../db');
         const db = await loadDB(false);
-        
+
         const userTeam = db.teams.find(t => t.name === user.team);
-        const autoApproveUnlink = userTeam && userTeam.autoApproveRules
-            ? !!userTeam.autoApproveRules.autoApproveUnlink
-            : false;
-        
+        const autoApproveUnlink =
+            userTeam && userTeam.autoApproveRules ? !!userTeam.autoApproveRules.autoApproveUnlink : false;
+
         if (autoApproveUnlink) {
-            await UserRepository.update(user.id, { 
-                deviceId: null, 
+            await UserRepository.update(user.id, {
+                deviceId: null,
                 browserDeviceId: null,
-                pendingUnlink: false 
+                pendingUnlink: false
             });
-            return sendJSON(res, 200, { 
-                success: true, 
-                autoApproved: true,
-                message: 'Thiết bị cũ của bạn đã được hủy liên kết tự động thành công! Bạn có thể đăng nhập ngay trên thiết bị mới.' 
-            }, req);
+            return sendJSON(
+                res,
+                200,
+                {
+                    success: true,
+                    autoApproved: true,
+                    message:
+                        'Thiết bị cũ của bạn đã được hủy liên kết tự động thành công! Bạn có thể đăng nhập ngay trên thiết bị mới.'
+                },
+                req
+            );
         } else {
             await UserRepository.update(user.id, { pendingUnlink: true });
-            return sendJSON(res, 200, { 
-                success: true, 
-                autoApproved: false,
-                message: 'Đã gửi yêu cầu huỷ liên kết thiết bị đến Quản trị viên!' 
-            }, req);
+            return sendJSON(
+                res,
+                200,
+                {
+                    success: true,
+                    autoApproved: false,
+                    message: 'Đã gửi yêu cầu huỷ liên kết thiết bị đến Quản trị viên!'
+                },
+                req
+            );
         }
     },
 
@@ -190,7 +220,12 @@ const AuthController = {
 
         const targetEmail = email ? email.trim() : user.email;
         if (!targetEmail) {
-            return sendError(res, 400, 'Tài khoản chưa được liên kết email. Vui lòng liên hệ Kỹ thuật hoặc Admin!', req);
+            return sendError(
+                res,
+                400,
+                'Tài khoản chưa được liên kết email. Vui lòng liên hệ Kỹ thuật hoặc Admin!',
+                req
+            );
         }
 
         // Kiểm tra xem email đã được tài khoản khác sử dụng chưa
@@ -202,7 +237,7 @@ const AuthController = {
         // Sinh mã OTP 6 chữ số
         const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // hết hạn trong 5 phút
-        
+
         await UserRepository.update(user.id, { otpCode, otpExpiresAt });
 
         // Gửi email chứa OTP
@@ -225,7 +260,12 @@ const AuthController = {
 
         const success = await sendMail(targetEmail, subject, text, html);
         if (!success) {
-            return sendError(res, 500, 'Không thể gửi email OTP. Vui lòng kiểm tra lại cấu hình SMTP hoặc liên hệ Admin!', req);
+            return sendError(
+                res,
+                500,
+                'Không thể gửi email OTP. Vui lòng kiểm tra lại cấu hình SMTP hoặc liên hệ Admin!',
+                req
+            );
         }
 
         return sendJSON(res, 200, { success: true, message: 'Mã OTP đã được gửi tới email của bạn!' }, req);
@@ -273,7 +313,7 @@ const AuthController = {
         }
         const user = await UserRepository.findByUsername(username);
         if (!user) return sendError(res, 404, 'Không tìm thấy tên đăng nhập trong hệ thống!', req);
-        
+
         if (!user.otpCode || !user.otpExpiresAt) {
             return sendError(res, 400, 'Không tìm thấy mã OTP nào được yêu cầu hoặc mã đã hết hạn!', req);
         }
@@ -281,21 +321,26 @@ const AuthController = {
         if (new Date() > new Date(user.otpExpiresAt)) {
             return sendError(res, 400, 'Mã OTP đã hết hạn! Vui lòng yêu cầu mã mới.', req);
         }
-        
+
         if (otpCode.trim() !== user.otpCode.trim()) {
             return sendError(res, 401, 'Mã OTP xác thực không chính xác!', req);
         }
-        
+
         if (newPassword.length < 4) {
             return sendError(res, 400, 'Mật khẩu mới phải có ít nhất 4 ký tự!', req);
         }
-        
+
         await UserRepository.update(user.id, {
             password: hashPassword(newPassword),
             otpCode: null,
             otpExpiresAt: null
         });
-        return sendJSON(res, 200, { success: true, message: 'Đổi mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.' }, req);
+        return sendJSON(
+            res,
+            200,
+            { success: true, message: 'Đổi mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.' },
+            req
+        );
     },
 
     async register(req, res) {
@@ -310,7 +355,7 @@ const AuthController = {
         const { fullname, username, password, role, email } = body;
         if (!fullname || !username) return sendError(res, 400, 'Vui lòng điền đầy đủ thông tin!', req);
         if (username.length < 3) return sendError(res, 400, 'Tên đăng nhập phải có ít nhất 3 ký tự!', req);
-        
+
         // Chỉ Super Admin mới được tạo tài khoản quản lý (admin role)
         if (role === 'admin') {
             const reqUser = reqUserId ? await UserRepository.findById(reqUserId) : null;
@@ -352,7 +397,7 @@ const AuthController = {
         const newUser = {
             id: generateId(),
             username,
-            password: isEmployee ? (password || '123') : hashPassword(password),
+            password: isEmployee ? password || '123' : hashPassword(password),
             fullname,
             role: role || 'employee',
             team: userTeam,

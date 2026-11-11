@@ -64,10 +64,12 @@ function updateSourceVersions(version) {
         // 5. mobile-android/app/build.gradle.kts
         const gradlePath = path.join(__dirname, '..', 'mobile-android', 'app', 'build.gradle.kts');
         if (fs.existsSync(gradlePath)) {
-            let content = fs.readFileSync(gradlePath, 'utf8');
-            content = content.replace(/versionName = ["'].*?["']/g, `versionName = "${version}"`);
-            fs.writeFileSync(gradlePath, content, 'utf8');
-            console.log(`Updated versionName in build.gradle.kts to ${version}`);
+            const content = fs.readFileSync(gradlePath, 'utf8');
+            const updatedContent = content.replace(/versionName = ["'].*?["']/g, `versionName = "${version}"`);
+            if (updatedContent !== content) {
+                fs.writeFileSync(gradlePath, updatedContent, 'utf8');
+                console.log(`Updated versionName in build.gradle.kts to ${version}`);
+            }
         }
 
         // 6. mobile/index.html
