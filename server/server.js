@@ -273,18 +273,46 @@ async function cloudflareDnsChallenge(action, domain, keyAuthorization) {
         });
     }
 
-    // Get root zone (e.g. "otmanager.id.vn" from "api.otmanager.id.vn")
-    const parts = domain.split('.');
-    const zoneName = parts.slice(-2).join('.');
-    const challengeName = `_acme-challenge.${domain}`;
+    const cleanDomain = domain.toLowerCase().replace(/\.$/, '');
+    const challengeName = `_acme-challenge.${cleanDomain}`;
     const txtValue = require('crypto').createHash('sha256').update(keyAuthorization).digest('base64url');
 
-    // Find zone ID
-    const zonesRes = await cfRequest('GET', `/zones?name=${zoneName}&status=active`);
-    if (!zonesRes.success || !zonesRes.result || zonesRes.result.length === 0) {
-        throw new Error(`[SSL Auto-Renew] Không tìm thấy Cloudflare zone cho tên miền: ${zoneName}`);
+    // Tìm Zone ID trên Cloudflare (hỗ trợ đầy đủ tên miền đuôi đa cấp như .id.vn, .com.vn, .co.uk)
+    let zoneId = process.env.CLOUDFLARE_ZONE_ID || '';
+    let matchedZoneName = '';
+
+    if (!zoneId) {
+        const allZonesRes = await cfRequest('GET', '/zones?status=active&per_page=50');
+        if (allZonesRes.success && Array.isArray(allZonesRes.result) && allZonesRes.result.length > 0) {
+            const matchingZones = allZonesRes.result
+                .filter(z => z.name && (cleanDomain === z.name.toLowerCase() || cleanDomain.endsWith('.' + z.name.toLowerCase())))
+                .sort((a, b) => b.name.length - a.name.length);
+            if (matchingZones.length > 0) {
+                zoneId = matchingZones[0].id;
+                matchedZoneName = matchingZones[0].name;
+            }
+        }
     }
-    const zoneId = zonesRes.result[0].id;
+
+    if (!zoneId) {
+        const parts = cleanDomain.split('.');
+        for (let i = 0; i <= parts.length - 2; i++) {
+            const candidate = parts.slice(i).join('.');
+            const zonesRes = await cfRequest('GET', `/zones?name=${encodeURIComponent(candidate)}&status=active`);
+            if (zonesRes.success && Array.isArray(zonesRes.result) && zonesRes.result.length > 0) {
+                zoneId = zonesRes.result[0].id;
+                matchedZoneName = zonesRes.result[0].name;
+                break;
+            }
+        }
+    }
+
+    if (!zoneId) {
+        throw new Error(`[SSL Auto-Renew] Không tìm thấy Cloudflare zone cho tên miền: ${cleanDomain}`);
+    }
+    if (matchedZoneName) {
+        console.log(`[SSL Auto-Renew] Đã khớp Cloudflare Zone: ${matchedZoneName} (${zoneId})`);
+    }
 
     if (action === 'create') {
         console.log(`[SSL Auto-Renew] Đang thêm TXT record DNS-01 challenge: ${challengeName}`);
