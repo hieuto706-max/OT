@@ -12,6 +12,9 @@
 const localStorage = {
     getItem(key) {
         try {
+            if (window.sessionStorage.getItem('ot_session_temp') === '1') {
+                return window.sessionStorage.getItem(key) || window.localStorage.getItem(key);
+            }
             return window.localStorage.getItem(key) || window.sessionStorage.getItem(key);
         } catch (e) {
             return this._data[key] || null;
@@ -19,10 +22,18 @@ const localStorage = {
     },
     setItem(key, val) {
         try {
-            window.localStorage.setItem(key, val);
-            window.sessionStorage.setItem(key, val);
+            if (window.sessionStorage.getItem('ot_session_temp') === '1') {
+                window.sessionStorage.setItem(key, val);
+                window.localStorage.setItem(key, val);
+            } else {
+                window.localStorage.setItem(key, val);
+            }
         } catch (e) {
-            this._data[key] = val;
+            try {
+                window.sessionStorage.setItem(key, val);
+            } catch (e2) {
+                this._data[key] = val;
+            }
         }
     },
     removeItem(key) {
@@ -35,6 +46,19 @@ const localStorage = {
     },
     _data: {}
 };
+
+let hasManualLoginInThisPageLoad = false;
+
+function getSessionCycleDateStr() {
+    const shifted = new Date(Date.now() - 5 * 3600000);
+    return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, '0')}-${String(shifted.getDate()).padStart(2, '0')}`;
+}
+
+function clearAuthSession() {
+    ['ot_current_user', 'ot_login_date', 'ot_mobile_user', 'ot_login_time', 'ot_auth_token', 'ot_session_temp', 'ot_require_email_setup'].forEach(k => {
+        localStorage.removeItem(k);
+    });
+}
 
 function escapeHTML(str) {
     if (!str) return '';
@@ -187,8 +211,7 @@ async function api(endpoint, method = 'GET', body = null) {
                 !endpoint.includes('/api/auth/login') && 
                 !endpoint.includes('/api/auth/verify-email-otp') && 
                 !endpoint.includes('/api/auth/forgot-password')) {
-                localStorage.removeItem('ot_auth_token');
-                localStorage.removeItem('ot_current_user');
+                clearAuthSession();
                 window.location.reload();
             }
             throw new Error(data.error || 'Lỗi kết nối server');
@@ -484,10 +507,17 @@ async function handleEmployeeLogin(e) {
         }
 
         const proceedLogin = (finalUser) => {
+            hasManualLoginInThisPageLoad = true;
+            try {
+                window.sessionStorage.setItem('ot_session_active', 'true');
+                window.sessionStorage.removeItem('ot_session_temp');
+                ['ot_current_user', 'ot_login_date', 'ot_mobile_user', 'ot_login_time', 'ot_auth_token'].forEach(k => window.sessionStorage.removeItem(k));
+            } catch (errStorage) {}
             localStorage.setItem('ot_current_user', JSON.stringify(finalUser));
+            localStorage.setItem('ot_mobile_user', JSON.stringify(finalUser));
             if (data.token) localStorage.setItem('ot_auth_token', data.token);
-            const todayStr = new Date().toISOString().split('T')[0];
-            localStorage.setItem('ot_login_date', todayStr);
+            localStorage.setItem('ot_login_time', Date.now().toString());
+            localStorage.setItem('ot_login_date', getSessionCycleDateStr());
             fetch(`${localServerUrl}/api/version`).then(r => r.json()).then(v => {
                 localStorage.setItem('ot_app_version', v.version || '1.0.0');
             }).catch(() => {});
@@ -548,10 +578,17 @@ async function handleAdminLogin(e) {
         }
 
         const proceedLogin = (finalUser) => {
+            hasManualLoginInThisPageLoad = true;
+            try {
+                window.sessionStorage.setItem('ot_session_active', 'true');
+                window.sessionStorage.removeItem('ot_session_temp');
+                ['ot_current_user', 'ot_login_date', 'ot_mobile_user', 'ot_login_time', 'ot_auth_token'].forEach(k => window.sessionStorage.removeItem(k));
+            } catch (errStorage) {}
             localStorage.setItem('ot_current_user', JSON.stringify(finalUser));
+            localStorage.setItem('ot_mobile_user', JSON.stringify(finalUser));
             if (data.token) localStorage.setItem('ot_auth_token', data.token);
-            const todayStr = new Date().toISOString().split('T')[0];
-            localStorage.setItem('ot_login_date', todayStr);
+            localStorage.setItem('ot_login_time', Date.now().toString());
+            localStorage.setItem('ot_login_date', getSessionCycleDateStr());
             fetch(`${localServerUrl}/api/version`).then(r => r.json()).then(v => {
                 localStorage.setItem('ot_app_version', v.version || '1.0.0');
             }).catch(() => {});
@@ -589,26 +626,15 @@ function checkMidnightLogout() {
     if (!currentUser) return;
 
     const loginDate = localStorage.getItem('ot_login_date');
-    const todayStr = new Date().toISOString().split('T')[0];
-    if (loginDate && loginDate !== todayStr) {
+    const cycleDateStr = getSessionCycleDateStr();
+    if (loginDate && loginDate !== cycleDateStr) {
         logout();
-        showToast('Đã qua ngày mới, vui lòng đăng nhập lại.', 'info');
+        showToast('Đã qua ngày mới (sau 5h sáng), vui lòng đăng nhập lại.', 'info');
     }
 }
 
 function logout() {
-    localStorage.removeItem('ot_current_user');
-    localStorage.removeItem('ot_login_date');
-    localStorage.removeItem('ot_mobile_user');
-    localStorage.removeItem('ot_login_time');
-    localStorage.removeItem('ot_auth_token');
-    
-    sessionStorage.removeItem('ot_current_user');
-    sessionStorage.removeItem('ot_login_date');
-    sessionStorage.removeItem('ot_mobile_user');
-    sessionStorage.removeItem('ot_login_time');
-    sessionStorage.removeItem('ot_auth_token');
-    sessionStorage.removeItem('ot_session_temp');
+    clearAuthSession();
     
     if (isElectron) {
         // Trong Electron, reset và hiển thị lại màn hình đăng nhập thay vì chuyển hướng ra Landing Page
@@ -5370,6 +5396,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Hàm khởi chạy bất đồng bộ để cấu hình Cloud, check version và tải dữ liệu dashboard
     async function runAsyncInit() {
+        // Ghi nhận trạng thái phiên ngay đồng bộ lúc mới mở trang để tránh race condition nếu người dùng đăng nhập trong lúc đang chờ mạng
+        let initialSessionActive = null;
+        try {
+            initialSessionActive = window.sessionStorage.getItem('ot_session_active');
+            if (isElectron) {
+                window.sessionStorage.setItem('ot_session_active', 'true');
+            }
+        } catch (e) {}
+
         // Chạy kiểm tra chế độ ẩn danh ngầm trước để cache kết quả sẵn sàng
         isPrivateMode().catch(() => {});
 
@@ -5393,26 +5428,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const storedVersion = localStorage.getItem('ot_app_version');
-            const isSessionActive = sessionStorage.getItem('ot_session_active');
 
-            // Nếu là phiên làm việc mới (app bị tắt hoàn toàn và bật lại)
-            if (isElectron && !isSessionActive) {
+            // Nếu là phiên làm việc mới (app bị tắt hoàn toàn và bật lại) VÀ người dùng chưa tự đăng nhập mới trong lúc chờ ở trên
+            if (isElectron && !initialSessionActive && !hasManualLoginInThisPageLoad) {
                 // Nếu không phải là cập nhật (phiên bản cũ và mới giống nhau)
                 if (storedVersion === currentVersion) {
                     // Tắt app hoàn toàn và bật lại bản cũ -> bắt đăng nhập lại, dọn sạch session cũ
-                    localStorage.removeItem('ot_current_user');
-                    localStorage.removeItem('ot_login_date');
-                    localStorage.removeItem('ot_mobile_user');
-                    localStorage.removeItem('ot_login_time');
-                    localStorage.removeItem('ot_auth_token');
+                    clearAuthSession();
                 } else {
                     // Đây là cập nhật phiên bản -> giữ nguyên login, chỉ cập nhật version lưu trữ
                     localStorage.setItem('ot_app_version', currentVersion);
                 }
-                // Đánh dấu session hiện tại là active
-                sessionStorage.setItem('ot_session_active', 'true');
-            } else if (!isElectron) {
-                // Trên web, chỉ cần cập nhật version lưu trữ, không log out
+            } else {
+                // Trên web hoặc đã đăng nhập thủ công, chỉ cập nhật version lưu trữ, không log out
                 localStorage.setItem('ot_app_version', currentVersion);
             }
         } catch (e) {
@@ -5426,6 +5454,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     verEl.textContent = 'Phiên bản v' + (window.OT_LOCAL_VERSION || '1.5.4');
                 }
             }
+        }
+
+        // Nếu người dùng đã chủ động đăng nhập xong trong lúc chờ initCloudConfig / version ở trên,
+        // proceedLogin đã khởi tạo Dashboard đầy đủ -> không ghi đè hay khởi tạo lại lần 2
+        if (hasManualLoginInThisPageLoad) {
+            initSseConnection();
+            return;
         }
 
         // Force logout after 5 AM check
@@ -5442,15 +5477,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             today5AM.setDate(today5AM.getDate() - 1);
                         }
                         if ((payload.iat * 1000) < today5AM.getTime()) {
-                            localStorage.removeItem('ot_auth_token');
-                            localStorage.removeItem('ot_current_user');
+                            clearAuthSession();
                             window.location.reload();
                             return;
                         }
                     }
                 } catch (e) {
-                    localStorage.removeItem('ot_auth_token');
-                    localStorage.removeItem('ot_current_user');
+                    clearAuthSession();
                     window.location.reload();
                     return;
                 }
@@ -5483,6 +5516,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isElectron) {
                     showScreen('screen-login');
                 } else {
+                    clearAuthSession();
                     const needsOtPrefix = window.location.hostname.includes('github.io');
                     const mainPageUrl = needsOtPrefix ? '/OT/index.html' : '/index.html';
                     window.location.href = mainPageUrl;
@@ -5491,6 +5525,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             // Nếu không có session trên bản Web, chuyển hướng thẳng về Landing Page
             if (!isElectron) {
+                clearAuthSession();
                 const needsOtPrefix = window.location.hostname.includes('github.io');
                 const mainPageUrl = needsOtPrefix ? '/OT/index.html' : '/index.html';
                 window.location.href = mainPageUrl;

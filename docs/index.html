@@ -43,13 +43,28 @@
     <script id="anti-flash-script">
       (function() {
         try {
-          const saved = localStorage.getItem('ot_mobile_user') || sessionStorage.getItem('ot_mobile_user');
-          const loginTime = localStorage.getItem('ot_login_time') || sessionStorage.getItem('ot_login_time');
-          const token = localStorage.getItem('ot_auth_token') || sessionStorage.getItem('ot_auth_token');
+          const isTemp = sessionStorage.getItem('ot_session_temp') === '1';
+          const getVal = (k) => isTemp
+            ? (sessionStorage.getItem(k) || localStorage.getItem(k))
+            : (localStorage.getItem(k) || sessionStorage.getItem(k));
+          const saved = getVal('ot_mobile_user');
+          const loginTime = getVal('ot_login_time');
+          const token = getVal('ot_auth_token');
           if (saved && loginTime && token) {
-            const loginDate = new Date(parseInt(loginTime, 10));
-            const cutoff = new Date(loginDate.getFullYear(), loginDate.getMonth(), loginDate.getDate() + 1, 5, 0, 0, 0);
-            if (Date.now() < cutoff.getTime()) {
+            const now = new Date();
+            const today5AM = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 5, 0, 0, 0);
+            if (now.getTime() < today5AM.getTime()) {
+              today5AM.setDate(today5AM.getDate() - 1);
+            }
+            let tokenValid = true;
+            const parts = token.split('.');
+            if (parts.length === 3) {
+              const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+              if ((payload.iat && payload.iat * 1000 < today5AM.getTime()) || (payload.exp && Date.now() / 1000 > payload.exp)) {
+                tokenValid = false;
+              }
+            }
+            if (parseInt(loginTime, 10) >= today5AM.getTime() && tokenValid) {
               document.documentElement.classList.add('user-logged-in');
             }
           }

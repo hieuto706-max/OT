@@ -19,6 +19,9 @@ document.addEventListener('keydown', e => {
 const safeStorage = {
     getItem(key) {
         try {
+            if (sessionStorage.getItem('ot_session_temp') === '1') {
+                return sessionStorage.getItem(key) || localStorage.getItem(key);
+            }
             return localStorage.getItem(key) || sessionStorage.getItem(key);
         } catch (e) {
             return this._data[key] || null;
@@ -28,11 +31,17 @@ const safeStorage = {
         try {
             if (persist) {
                 localStorage.setItem(key, val);
+                sessionStorage.removeItem(key);
             } else {
                 sessionStorage.setItem(key, val);
+                localStorage.removeItem(key);
             }
         } catch (e) {
-            this._data[key] = val;
+            try {
+                sessionStorage.setItem(key, val);
+            } catch (e2) {
+                this._data[key] = val;
+            }
         }
     },
     removeItem(key) {
@@ -45,6 +54,26 @@ const safeStorage = {
     },
     _data: {}
 };
+
+function getMostRecent5AM() {
+    const now = new Date();
+    const today5AM = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 5, 0, 0, 0);
+    if (now.getTime() < today5AM.getTime()) {
+        today5AM.setDate(today5AM.getDate() - 1);
+    }
+    return today5AM.getTime();
+}
+
+function getSessionCycleDateStr() {
+    const shifted = new Date(Date.now() - 5 * 3600000);
+    return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, '0')}-${String(shifted.getDate()).padStart(2, '0')}`;
+}
+
+function clearPortalAuthSession() {
+    ['ot_mobile_user', 'ot_current_user', 'ot_login_time', 'ot_login_date', 'ot_auth_token', 'ot_session_temp', 'ot_require_email_setup'].forEach(k => {
+        safeStorage.removeItem(k);
+    });
+}
 
 // Tạo vân tay trình duyệt để giữ cố định Device ID trên Web ngay cả khi xóa lịch sử
 function getBrowserFingerprint(username) {
@@ -1188,21 +1217,25 @@ class Interactive8DBackground {
     }
 }
 
-// Helper to check session expiration
-function isSessionExpired(loginTimeMs) {
-    if (!loginTimeMs) return true;
-    const loginDate = new Date(parseInt(loginTimeMs, 10));
-    const cutoff = new Date(loginDate.getFullYear(), loginDate.getMonth(), loginDate.getDate() + 1, 5, 0, 0, 0);
-    return Date.now() >= cutoff.getTime();
-}
-
 // ==================== LANDING LOGIC & AUTOPING ====================
 function isSessionExpired(loginTimeMs) {
     if (!loginTimeMs) return true;
-    const loginDate = new Date(parseInt(loginTimeMs, 10));
-    // Tạo mốc 5:00 AM ngày tiếp theo
-    const cutoff = new Date(loginDate.getFullYear(), loginDate.getMonth(), loginDate.getDate() + 1, 5, 0, 0, 0);
-    return Date.now() >= cutoff.getTime();
+    const loginTime = parseInt(loginTimeMs, 10);
+    return loginTime < getMostRecent5AM();
+}
+
+function isJwtValidForCycle(token) {
+    if (!token) return false;
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) return false;
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        if (payload.exp && Date.now() / 1000 > payload.exp) return false;
+        if (payload.iat && payload.iat * 1000 < getMostRecent5AM()) return false;
+        return true;
+    } catch (e) {
+        return false;
+    }
 }
 
 let bgInstance = null;
@@ -1254,7 +1287,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const formEmp = document.getElementById('form-login-employee');
     const formAdmin = document.getElementById('form-login-admin');
 
-    if (saved && loginTime && !isSessionExpired(loginTime) && safeStorage.getItem('ot_auth_token')) {
+    const existingToken = safeStorage.getItem('ot_auth_token');
+    if (saved && loginTime && !isSessionExpired(loginTime) && isJwtValidForCycle(existingToken)) {
         try {
             const user = JSON.parse(saved);
             if (welcomeBox) {
@@ -1275,10 +1309,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const btnLogout = document.getElementById('btn-logout-portal');
                 if (btnLogout) {
                     btnLogout.onclick = () => {
-                        safeStorage.removeItem('ot_mobile_user');
-                        safeStorage.removeItem('ot_current_user');
-                        safeStorage.removeItem('ot_login_time');
-                        safeStorage.removeItem('ot_auth_token');
+                        clearPortalAuthSession();
                         window.location.reload();
                     };
                 }
@@ -1292,10 +1323,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) {
             console.error('Lỗi phân tích user đã lưu:', e);
+            clearPortalAuthSession();
             document.documentElement.classList.remove('user-logged-in');
             if (welcomeBox) welcomeBox.style.display = 'none';
         }
     } else {
+        if (saved || loginTime || existingToken) {
+            clearPortalAuthSession();
+        }
         document.documentElement.classList.remove('user-logged-in');
         if (welcomeBox) welcomeBox.style.display = 'none';
     }
@@ -1686,14 +1721,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.user.role !== 'employee') {
                         throw new Error('Tài khoản này không phải là nhân viên!');
                     }
+                    if (remember) {
+                        sessionStorage.removeItem('ot_session_temp');
+                    } else {
+                        sessionStorage.setItem('ot_session_temp', '1');
+                    }
                     safeStorage.setItem('ot_mobile_user', JSON.stringify(data.user), remember);
                     safeStorage.setItem('ot_login_time', Date.now().toString(), remember);
                     if (data.token) {
                         safeStorage.setItem('ot_auth_token', data.token, remember);
                     }
                     safeStorage.setItem('ot_current_user', JSON.stringify(data.user), remember);
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    safeStorage.setItem('ot_login_date', todayStr, remember);
+                    safeStorage.setItem('ot_login_date', getSessionCycleDateStr(), remember);
                     
                     if (remember) {
                         localStorage.setItem('ot_saved_emp_user', username);
@@ -1789,6 +1828,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         throw new Error('Tài khoản này không có quyền quản trị!');
                     }
                     // Save desktop admin compatible keys
+                    if (remember) {
+                        sessionStorage.removeItem('ot_session_temp');
+                    } else {
+                        sessionStorage.setItem('ot_session_temp', '1');
+                    }
                     safeStorage.setItem('ot_mobile_user', JSON.stringify(data.user), remember);
                     safeStorage.setItem('ot_current_user', JSON.stringify(data.user), remember);
                     if (data.token) {
@@ -1800,7 +1844,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         safeStorage.removeItem('ot_require_email_setup');
                     }
                     safeStorage.setItem('ot_login_time', Date.now().toString(), remember);
-                    safeStorage.setItem('ot_login_date', new Date().toISOString().split('T')[0], remember);
+                    safeStorage.setItem('ot_login_date', getSessionCycleDateStr(), remember);
                     
                     if (remember) {
                         localStorage.setItem('ot_saved_admin_user', username);

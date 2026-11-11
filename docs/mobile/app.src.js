@@ -79,6 +79,9 @@ document.addEventListener('keydown', e => {
 const safeStorage = {
     getItem(key) {
         try {
+            if (sessionStorage.getItem('ot_session_temp') === '1') {
+                return sessionStorage.getItem(key) || localStorage.getItem(key);
+            }
             return localStorage.getItem(key) || sessionStorage.getItem(key);
         } catch (e) {
             return this._data[key] || null;
@@ -88,11 +91,17 @@ const safeStorage = {
         try {
             if (persist) {
                 localStorage.setItem(key, val);
+                sessionStorage.removeItem(key);
             } else {
                 sessionStorage.setItem(key, val);
+                localStorage.removeItem(key);
             }
         } catch (e) {
-            this._data[key] = val;
+            try {
+                sessionStorage.setItem(key, val);
+            } catch (e2) {
+                this._data[key] = val;
+            }
         }
     },
     removeItem(key) {
@@ -105,6 +114,17 @@ const safeStorage = {
     },
     _data: {}
 };
+
+function getSessionCycleDateStr() {
+    const shifted = new Date(Date.now() - 5 * 3600000);
+    return shifted.getFullYear() + '-' + String(shifted.getMonth() + 1).padStart(2, '0') + '-' + String(shifted.getDate()).padStart(2, '0');
+}
+
+function clearMobileAuthSession() {
+    ['ot_mobile_user', 'ot_login_time', 'ot_current_user', 'ot_login_date', 'ot_auth_token', 'ot_session_temp'].forEach(function(k) {
+        safeStorage.removeItem(k);
+    });
+}
 
 function getMostRecent5AM() {
     const now = new Date();
@@ -502,8 +522,7 @@ function api(endpoint, method, body, skipAuthRedirect) {
     const loginTime = safeStorage.getItem('ot_login_time');
     if (currentUser && loginTime && isSessionExpired(loginTime) && !skipAuthRedirect) {
         currentUser = null;
-        safeStorage.removeItem('ot_mobile_user');
-        safeStorage.removeItem('ot_login_time');
+        clearMobileAuthSession();
         handleUnauthenticated();
         showToast('Phiên đăng nhập đã hết hạn (sau 5h sáng), vui lòng đăng nhập lại!', 'error');
         return Promise.reject(new Error('Phiên đăng nhập đã hết hạn!'));
@@ -541,8 +560,7 @@ function api(endpoint, method, body, skipAuthRedirect) {
                         }
                         // Văng khỏi ứng dụng nếu tài khoản bị xóa hoặc bị hủy liên kết thiết bị
                         currentUser = null;
-                        safeStorage.removeItem('ot_mobile_user');
-                        safeStorage.removeItem('ot_login_time');
+                        clearMobileAuthSession();
                         handleUnauthenticated();
                         showToast(data.error || 'Tài khoản hoặc liên kết thiết bị của bạn đã bị hủy!', 'error');
                         reject(new Error(data.error || 'Lỗi xác thực!'));
@@ -895,14 +913,14 @@ async function handleAdminLogin(e) {
         }
 
         // Lưu thông tin đăng nhập quản lý
+        safeStorage.removeItem('ot_session_temp');
         safeStorage.setItem('ot_mobile_user', JSON.stringify(data.user));
         safeStorage.setItem('ot_login_time', Date.now().toString());
         if (data.token) safeStorage.setItem('ot_auth_token', data.token);
         
         // Đồng bộ session quản lý cho desktop/app.js tự động nhận diện nếu mở desktop
         safeStorage.setItem('ot_current_user', JSON.stringify(data.user));
-        const todayStr = new Date().toISOString().split('T')[0];
-        safeStorage.setItem('ot_login_date', todayStr);
+        safeStorage.setItem('ot_login_date', getSessionCycleDateStr());
         
         currentUser = data.user;
         showToast('Đăng nhập Quản lý thành công!', 'success');
@@ -2563,8 +2581,7 @@ function initApp() {
             } catch (e) {}
         } else {
             // Hết hạn hoặc chưa đăng nhập, dọn dẹp session
-            safeStorage.removeItem('ot_mobile_user');
-            safeStorage.removeItem('ot_login_time');
+            clearMobileAuthSession();
         }
         handleUnauthenticated();
     }, 1200);
@@ -3025,8 +3042,7 @@ function checkConnection() {
     const loginTime = safeStorage.getItem('ot_login_time');
     if (currentUser && loginTime && isSessionExpired(loginTime)) {
         currentUser = null;
-        safeStorage.removeItem('ot_mobile_user');
-        safeStorage.removeItem('ot_login_time');
+        clearMobileAuthSession();
         handleUnauthenticated();
         showToast('Phiên đăng nhập đã hết hạn (sau 5h sáng), vui lòng đăng nhập lại!', 'error');
         return;

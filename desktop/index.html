@@ -132,10 +132,10 @@
     <script id="anti-flash-script-2">
       (function() {
         try {
-          // If session is temporary (stored in sessionStorage), sync to localStorage for app access
-          const tempUser = sessionStorage.getItem('ot_current_user');
+          // Chỉ đồng bộ từ sessionStorage khi người dùng thực sự chọn phiên tạm (không tích "Ghi nhớ đăng nhập")
+          const isTempSession = sessionStorage.getItem('ot_session_temp') === '1';
+          const tempUser = isTempSession ? sessionStorage.getItem('ot_current_user') : null;
           if (tempUser) {
-            sessionStorage.setItem('ot_session_temp', '1');
             const keys = ['ot_mobile_user', 'ot_current_user', 'ot_login_time', 'ot_login_date', 'ot_auth_token'];
             keys.forEach(k => {
               const val = sessionStorage.getItem(k);
@@ -157,10 +157,13 @@
             return;
           }
           const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
-          if (currentUser) {
+          const authToken = localStorage.getItem('ot_auth_token');
+          if (currentUser && authToken) {
             const loginDate = localStorage.getItem('ot_login_date');
-            const todayStr = new Date().toISOString().split('T')[0];
-            if (loginDate && loginDate === todayStr) {
+            const shifted = new Date(Date.now() - 5 * 3600000);
+            const cycleDateStr = shifted.getFullYear() + '-' + String(shifted.getMonth() + 1).padStart(2, '0') + '-' + String(shifted.getDate()).padStart(2, '0');
+            const legacyUtcStr = new Date().toISOString().split('T')[0];
+            if (loginDate && (loginDate === cycleDateStr || loginDate === legacyUtcStr)) {
               if (currentUser.role === 'admin') {
                 document.documentElement.classList.add('user-admin-logged-in');
               } else {
