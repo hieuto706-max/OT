@@ -271,6 +271,7 @@ async function loadDBFromPG() {
 
             const settings = {};
             settingsRes.rows.forEach(r => {
+                if (r.key && r.key.startsWith('_internal_')) return;
                 if (r.key === 'lunchOTHours') {
                     settings[r.key] = Number(r.value) || 1;
                 } else {
@@ -398,13 +399,14 @@ async function saveDBToPG(data) {
             `, [m]);
         }
 
-        // === Đồng bộ bảng ot_settings ===
-        await client.query('DELETE FROM ot_settings');
+        // === Đồng bộ bảng ot_settings (giữ nguyên các khóa hệ thống _internal_*) ===
+        await client.query("DELETE FROM ot_settings WHERE key NOT LIKE '_internal_%'");
         if (data.settings) {
             for (const [key, value] of Object.entries(data.settings)) {
+                if (key.startsWith('_internal_')) continue;
                 await client.query(`
                     INSERT INTO ot_settings (key, value) VALUES ($1, $2)
-                `, [key, value]);
+                `, [key, String(value)]);
             }
         }
 
@@ -668,16 +670,18 @@ async function syncDiffToPG(oldData, newData) {
             }
         }
 
-        // === 5. Đồng bộ bảng ot_settings ===
+        // === 5. Đồng bộ bảng ot_settings (bỏ qua khóa nội bộ _internal_*) ===
         const oldSettings = oldData.settings || {};
         const newSettings = newData.settings || {};
         for (const key of Object.keys(oldSettings)) {
+            if (key.startsWith('_internal_')) continue;
             if (!(key in newSettings)) {
                 await client.query('DELETE FROM ot_settings WHERE key = $1', [key]);
                 changesCount++;
             }
         }
         for (const [key, value] of Object.entries(newSettings)) {
+            if (key.startsWith('_internal_')) continue;
             if (String(oldSettings[key]) !== String(value)) {
                 await client.query(`
                     INSERT INTO ot_settings (key, value, updated_at)
@@ -1003,6 +1007,34 @@ function updateUserInCache(user) {
     }
 }
 
+async function getInternalSetting(key) {
+    const pool = getPGPool();
+    if (!pool) return null;
+    try {
+        const res = await pool.query('SELECT value FROM ot_settings WHERE key = $1', [key]);
+        return res.rows.length > 0 ? res.rows[0].value : null;
+    } catch (e) {
+        logError(`[InternalSetting] Lỗi đọc khóa ${key}:`, e.message);
+        return null;
+    }
+}
+
+async function setInternalSetting(key, value) {
+    const pool = getPGPool();
+    if (!pool) return false;
+    try {
+        await pool.query(`
+            INSERT INTO ot_settings (key, value, updated_at)
+            VALUES ($1, $2, CURRENT_TIMESTAMP)
+            ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP
+        `, [key, String(value)]);
+        return true;
+    } catch (e) {
+        logError(`[InternalSetting] Lỗi lưu khóa ${key}:`, e.message);
+        return false;
+    }
+}
+
 module.exports = {
     getDbPath,
     getPGPool,
@@ -1015,5 +1047,7 @@ module.exports = {
     onUpdate,
     fetchGist,
     fetchUserFromPG,
-    updateUserInCache
+    updateUserInCache,
+    getInternalSetting,
+    setInternalSetting
 };

@@ -14,7 +14,7 @@ const { startTunnel, stopTunnel, updateRentry } = require('./tunnel');
 
 const config = require('./config');
 const { logInfo, logError, getCorsOrigin, getSecurityHeaders } = require('./utils');
-const { getDbPath, initPGTable, loadDB, saveDB, closePGPool, onUpdate } = require('./db');
+const { getDbPath, initPGTable, loadDB, saveDB, closePGPool, onUpdate, getInternalSetting, setInternalSetting } = require('./db');
 const { VAPID_PUBLIC_KEY, startDailyReminderJob } = require('./notifications');
 const { handleAPI } = require('./api');
 const { checkLimit } = require('./src/utils/rateLimiter');
@@ -458,14 +458,72 @@ async function renewSSL(domain) {
 
     try {
         const { cert, key } = result;
+        const keyStr = key.toString();
         const sslPaths = getSSLPaths();
         fs.writeFileSync(sslPaths.cert, cert, 'utf8');
-        fs.writeFileSync(sslPaths.key, key.toString(), 'utf8');
+        fs.writeFileSync(sslPaths.key, keyStr, 'utf8');
         if (sslPaths.chain) fs.writeFileSync(sslPaths.chain, cert, 'utf8');
+        await saveSSLCertToPG(cert, keyStr);
         console.log(`[SSL Auto-Renew] ✅ Tự động cấp mới chứng chỉ thành công bằng [${successProvider}] cho tên miền: ${domain}`);
         return true;
     } catch (err) {
         console.error(`[SSL Auto-Renew] Lỗi ghi chứng chỉ ra tệp tin:`, err.message || err);
+        return false;
+    }
+}
+
+function getSSLVaultKey() {
+    const seed = process.env.DB_ENCRYPTION_KEY || process.env.JWT_SECRET || process.env.DATABASE_URL || 'otmanager-ssl-vault-v1';
+    return crypto.createHash('sha256').update(seed).digest();
+}
+
+function encryptSSLSecret(plain) {
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', getSSLVaultKey(), iv);
+    let enc = cipher.update(plain, 'utf8', 'hex');
+    enc += cipher.final('hex');
+    const tag = cipher.getAuthTag().toString('hex');
+    return `v1:${iv.toString('hex')}:${tag}:${enc}`;
+}
+
+function decryptSSLSecret(payload) {
+    if (!payload || !payload.startsWith('v1:')) return payload;
+    const parts = payload.split(':');
+    if (parts.length !== 4) return null;
+    const decipher = crypto.createDecipheriv('aes-256-gcm', getSSLVaultKey(), Buffer.from(parts[1], 'hex'));
+    decipher.setAuthTag(Buffer.from(parts[2], 'hex'));
+    let dec = decipher.update(parts[3], 'hex', 'utf8');
+    dec += decipher.final('utf8');
+    return dec;
+}
+
+async function saveSSLCertToPG(certPem, keyPem) {
+    if (!config.DATABASE_URL || !certPem || !keyPem) return;
+    try {
+        await setInternalSetting('_internal_ssl_cert', certPem);
+        await setInternalSetting('_internal_ssl_key', encryptSSLSecret(keyPem));
+        console.log('[SSL Auto-Renew] 💾 Đã lưu bền vững chứng chỉ SSL lên PostgreSQL (hỗ trợ Render Free không cần ổ đĩa /data).');
+    } catch (e) {
+        console.error('[SSL Auto-Renew] Lỗi lưu chứng chỉ lên PostgreSQL:', e.message);
+    }
+}
+
+async function restoreSSLCertFromPG(sslPaths) {
+    if (!config.DATABASE_URL) return false;
+    try {
+        const certPem = await getInternalSetting('_internal_ssl_cert');
+        const encKey = await getInternalSetting('_internal_ssl_key');
+        if (!certPem || !encKey) return false;
+        const keyPem = decryptSSLSecret(encKey);
+        if (!keyPem) return false;
+
+        fs.writeFileSync(sslPaths.cert, certPem, 'utf8');
+        fs.writeFileSync(sslPaths.key, keyPem, 'utf8');
+        if (sslPaths.chain) fs.writeFileSync(sslPaths.chain, certPem, 'utf8');
+        console.log('[SSL Auto-Renew] ✅ Đã khôi phục chứng chỉ SSL từ PostgreSQL ra bộ nhớ tạm.');
+        return true;
+    } catch (e) {
+        console.error('[SSL Auto-Renew] Lỗi khôi phục chứng chỉ từ PostgreSQL:', e.message);
         return false;
     }
 }
@@ -497,7 +555,24 @@ async function checkAndRenewCertificates() {
     console.log(`[SSL Auto-Renew] Đang kiểm tra thời hạn chứng chỉ cho tên miền: ${domain}`);
     
     let needsRenew = false;
-    const expiry = getCertExpiry(certPath);
+    let expiry = getCertExpiry(certPath);
+
+    // Nếu không có chứng chỉ trên ổ đĩa (Render Free vừa khởi động lại), thử khôi phục từ PostgreSQL trước
+    if (expiry === 0 || !fs.existsSync(sslPaths.key)) {
+        const restored = await restoreSSLCertFromPG(sslPaths);
+        if (restored) {
+            expiry = getCertExpiry(certPath);
+        }
+    } else if (config.DATABASE_URL) {
+        // Nếu đang có sẵn chứng chỉ hợp lệ trên ổ đĩa mà PostgreSQL chưa lưu, tự động sao lưu sang PostgreSQL
+        const existingPgCert = await getInternalSetting('_internal_ssl_cert');
+        if (!existingPgCert && fs.existsSync(sslPaths.key)) {
+            const diskCert = fs.readFileSync(sslPaths.cert, 'utf8');
+            const diskKey = fs.readFileSync(sslPaths.key, 'utf8');
+            await saveSSLCertToPG(diskCert, diskKey);
+        }
+    }
+
     if (expiry === 0) {
         console.log('[SSL Auto-Renew] Không tìm thấy chứng chỉ hiện tại hoặc chứng chỉ không hợp lệ.');
         needsRenew = true;

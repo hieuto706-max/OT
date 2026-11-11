@@ -167,20 +167,35 @@ async function sendPushNotification(user, title, bodyText, url = '/mobile/') {
 
 // ==================== DAILY REMINDER JOB ====================
 let lastNotifiedDate = '';
+let isCheckingReminder = false;
 
 function startDailyReminderJob(loadDB, saveDB) {
-    setInterval(async () => {
+    const { getInternalSetting, setInternalSetting } = require('./db');
+
+    const runReminderTick = async () => {
+        if (isCheckingReminder) return;
+        isCheckingReminder = true;
         try {
             const now = new Date();
             const vnTime = new Date(now.getTime() + 7 * 3600000);
             const hours = vnTime.getUTCHours();
             const minutes = vnTime.getUTCMinutes();
             
-            if (hours === 22 && minutes === 0) {
+            // Mở rộng khung giờ 22:00 - 22:20 để tương thích với Render Free (trường hợp Server vừa ngủ dậy sau 22:00)
+            if (hours === 22 && minutes >= 0 && minutes <= 20) {
                 const dateStr = vnTime.toISOString().split('T')[0];
                 
                 if (lastNotifiedDate === dateStr) return;
+
+                // Đối chiếu với PostgreSQL để không bao giờ gửi trùng thông báo sau khi khởi động lại
+                const persistedDate = await getInternalSetting('_internal_last_reminder_date');
+                if (persistedDate === dateStr) {
+                    lastNotifiedDate = dateStr;
+                    return;
+                }
+
                 lastNotifiedDate = dateStr;
+                await setInternalSetting('_internal_last_reminder_date', dateStr);
                 
                 const dayOfWeek = vnTime.getUTCDay();
                 if (dayOfWeek === 0) {
@@ -188,13 +203,19 @@ function startDailyReminderJob(loadDB, saveDB) {
                     return;
                 }
                 
-                logInfo(`[Daily Reminder] Đang bắt đầu quét nhắc nhở OT lúc 22:00 cho ngày ${dateStr}...`);
+                logInfo(`[Daily Reminder] Đang bắt đầu quét nhắc nhở OT khung 22:00 cho ngày ${dateStr}...`);
                 await sendDailyPushReminders(dateStr, loadDB, saveDB);
             }
         } catch (e) {
             logError('[Daily Reminder] Lỗi chu kỳ nhắc nhở:', e.message);
+        } finally {
+            isCheckingReminder = false;
         }
-    }, 30000);
+    };
+
+    // Kiểm tra ngay sau khi khởi động 8 giây (phòng trường hợp được đánh thức ngay lúc 22:01) và lặp mỗi 30 giây
+    setTimeout(runReminderTick, 8000);
+    setInterval(runReminderTick, 30000);
 }
 
 async function sendDailyPushReminders(dateStr, loadDB, saveDB) {

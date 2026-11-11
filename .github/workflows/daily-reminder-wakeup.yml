@@ -1,0 +1,19 @@
+name: Daily OT Reminder Wakeup
+
+on:
+  schedule:
+    # Đánh thức Render Free lúc 21:55 và 22:02 giờ Việt Nam (14:55 và 15:02 UTC) từ Thứ 2 đến Thứ 7
+    - cron: '55 14 * * 1-6'
+    - cron: '2 15 * * 1-6'
+  workflow_dispatch:
+
+jobs:
+  wakeup:
+    name: Wake up Render Server for 22:00 Reminder
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping OT Manager API
+        run: |
+          curl -fsSL --retry 3 --retry-delay 5 --max-time 60 https://api.otmanager.id.vn/api/version
+          echo ""
+          echo "Server is awake!"
