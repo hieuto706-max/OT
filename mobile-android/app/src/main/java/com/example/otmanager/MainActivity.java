@@ -102,16 +102,16 @@ public class MainActivity extends AppCompatActivity {
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(true);
         
-        // Cho phép truy cập file cục bộ
+        // Ngăn chặn file cục bộ đọc chéo sang origin khác (tránh lỗ hổng Universal XSS)
         try {
-            settings.setAllowFileAccessFromFileURLs(true);
-            settings.setAllowUniversalAccessFromFileURLs(true);
+            settings.setAllowFileAccessFromFileURLs(false);
+            settings.setAllowUniversalAccessFromFileURLs(false);
         } catch (Exception e) {
             // Bỏ qua
         }
 
-        // Mixed content và database luôn hoạt động từ API 21/29
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        // Chế độ Mixed Content tương thích an toàn
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
 
         try {
             settings.setDatabaseEnabled(true);
@@ -288,6 +288,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendServerDiscovered(String serverUrl) {
+        if (serverUrl == null || !serverUrl.matches("^https?://[a-zA-Z0-9.:-]+/?$")) {
+            android.util.Log.w("Security", "Blocked invalid discovered serverUrl: " + serverUrl);
+            return;
+        }
         executeJS("if (typeof window.onServerDiscovered === 'function') { " +
                   "  window.onServerDiscovered('" + serverUrl + "'); " +
                   "} else { " +

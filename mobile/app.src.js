@@ -1738,10 +1738,12 @@ async function loadHistory() {
                 if (r.eveningOTHours > 0 && !isBackfill) tags += `<span class="htag htag-evening">OT Chiều ${r.eveningOTHours.toFixed(1)}h</span>`;
             } else {
                 if (r.customActivity) {
+                    const safeAct = escapeHTML(r.customActivity);
+                    const safeProv = r.deliveryProvince ? escapeHTML(r.deliveryProvince) : '';
                     if (r.calcMode === 'trip') {
-                        tags += `<span class="htag" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">📋 ${r.customActivity}${r.deliveryProvince ? ': ' + r.deliveryProvince : ''}</span>`;
+                        tags += `<span class="htag" style="background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3);">📋 ${safeAct}${safeProv ? ': ' + safeProv : ''}</span>`;
                     } else {
-                        tags += `<span class="htag" style="background:rgba(99,102,241,0.15); color:#6366f1; border:1px solid rgba(99,102,241,0.3);">📋 ${r.customActivity}: ${r.totalHours.toFixed(1)}h</span>`;
+                        tags += `<span class="htag" style="background:rgba(99,102,241,0.15); color:#6366f1; border:1px solid rgba(99,102,241,0.3);">📋 ${safeAct}: ${r.totalHours.toFixed(1)}h</span>`;
                     }
                 }
             }

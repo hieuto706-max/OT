@@ -47,21 +47,21 @@ function generateId() {
     return Date.now().toString(36) + crypto.randomBytes(4).toString('hex');
 }
 
-const DB_ENCRYPTION_KEY = process.env.DB_ENCRYPTION_KEY || '';
-
 function encryptData(plaintext) {
-    if (!DB_ENCRYPTION_KEY) return plaintext;
+    const keyHex = process.env.DB_ENCRYPTION_KEY || '';
+    if (!keyHex) return plaintext;
     try {
-        const key = Buffer.from(DB_ENCRYPTION_KEY, 'hex');
+        const key = Buffer.from(keyHex, 'hex');
         if (key.length !== 32) {
             console.warn('[Encryption] DB_ENCRYPTION_KEY phải đúng 64 ký tự hex (32 bytes). Bỏ qua mã hóa.');
             return plaintext;
         }
-        const iv = crypto.randomBytes(16);
-        const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+        const iv = crypto.randomBytes(12);
+        const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
         let encrypted = cipher.update(plaintext, 'utf8', 'hex');
         encrypted += cipher.final('hex');
-        return 'enc:' + iv.toString('hex') + ':' + encrypted;
+        const authTag = cipher.getAuthTag().toString('hex');
+        return `enc_gcm:${iv.toString('hex')}:${authTag}:${encrypted}`;
     } catch (e) {
         console.error('[Encryption] Lỗi mã hóa:', e.message);
         return plaintext;
@@ -69,9 +69,24 @@ function encryptData(plaintext) {
 }
 
 function decryptData(ciphertext) {
-    if (!DB_ENCRYPTION_KEY || !ciphertext.startsWith('enc:')) return ciphertext;
+    const keyHex = process.env.DB_ENCRYPTION_KEY || '';
+    if (!keyHex) return ciphertext;
+    if (!ciphertext.startsWith('enc_gcm:') && !ciphertext.startsWith('enc:')) return ciphertext;
     try {
-        const key = Buffer.from(DB_ENCRYPTION_KEY, 'hex');
+        const key = Buffer.from(keyHex, 'hex');
+        if (ciphertext.startsWith('enc_gcm:')) {
+            const parts = ciphertext.split(':');
+            if (parts.length !== 4) return ciphertext;
+            const iv = Buffer.from(parts[1], 'hex');
+            const authTag = Buffer.from(parts[2], 'hex');
+            const encrypted = parts[3];
+            const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+            decipher.setAuthTag(authTag);
+            let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+            decrypted += decipher.final('utf8');
+            return decrypted;
+        }
+        // Tương thích ngược với định dạng AES-256-CBC cũ (enc:<iv>:<hex>)
         const parts = ciphertext.split(':');
         if (parts.length !== 3) return ciphertext;
         const iv = Buffer.from(parts[1], 'hex');
@@ -115,7 +130,10 @@ function getSecurityHeaders(req) {
 }
 
 // ==================== JWT TOKEN ====================
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
+const JWT_SECRET = process.env.JWT_SECRET || crypto
+    .createHash('sha256')
+    .update(process.env.DATABASE_URL || process.env.GIST_ID || process.env.GITHUB_TOKEN || 'otmanager-jwt-fallback-secret-v1')
+    .digest('hex');
 
 function base64UrlEncode(data) {
     return Buffer.from(data).toString('base64')
@@ -164,7 +182,9 @@ function verifyJWT(token) {
         const expectedSig = crypto.createHmac('sha256', JWT_SECRET)
             .update(`${headerB64}.${payloadB64}`).digest('base64')
             .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-        if (signature !== expectedSig) return null;
+        const sigBuf = Buffer.from(signature);
+        const expBuf = Buffer.from(expectedSig);
+        if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return null;
         const payload = JSON.parse(base64UrlDecode(payloadB64));
         if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) return null;
 
@@ -235,6 +255,24 @@ async function sendMail(to, subject, text, html) {
     }
 }
 
+function calculateEveningOTHours(startTime, endTime) {
+    if (!startTime || !endTime || typeof startTime !== 'string' || typeof endTime !== 'string') return 0;
+    const startParts = startTime.split(':').map(Number);
+    const endParts = endTime.split(':').map(Number);
+    if (startParts.length < 2 || endParts.length < 2 || isNaN(startParts[0]) || isNaN(startParts[1]) || isNaN(endParts[0]) || isNaN(endParts[1])) {
+        return 0;
+    }
+    const s = startParts[0] * 60 + startParts[1];
+    let e = endParts[0] * 60 + endParts[1];
+    if (e === s) return 0;
+    // Hỗ trợ tăng ca qua nửa đêm (từ 00:00 đến 12:00 sáng hôm sau)
+    if (e < s && e <= 12 * 60) {
+        e += 24 * 60;
+    }
+    if (e <= s) return 0;
+    return Math.round(((e - s) / 60) * 100) / 100;
+}
+
 module.exports = {
     logInfo,
     logError,
@@ -249,5 +287,6 @@ module.exports = {
     verifyJWT,
     authenticateToken,
     getLocalIP,
-    sendMail
+    sendMail,
+    calculateEveningOTHours
 };

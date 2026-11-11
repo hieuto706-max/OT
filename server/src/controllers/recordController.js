@@ -2,13 +2,38 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const config = require('../../config');
-const webpush = require('web-push');
 const UserRepository = require('../repositories/userRepository');
 const RecordRepository = require('../repositories/recordRepository');
 const TeamRepository = require('../repositories/teamRepository');
-const { generateId, logError } = require('../../utils');
+const { generateId, logInfo, logError, calculateEveningOTHours } = require('../../utils');
+const { sendPushNotification } = require('../../notifications');
 const { loadDB, saveDB, getDbPath } = require('../../db');
 const { sendJSON, sendError, parseBody } = require('../utils/http');
+
+async function resolveNormalizedHours({ date, isBackfill, hasLunchOT, otStart, otEnd, eveningOTHours, totalHours }) {
+    const db = await loadDB(false);
+    const lunchUnit = Number(db?.settings?.lunchOTHours) || 1;
+    const isSunday = new Date(date + 'T00:00:00').getDay() === 0;
+
+    if (isBackfill || isSunday) {
+        const rawHours = Math.max(0, Math.min(24, Math.round((Number(totalHours || eveningOTHours) || 0) * 100) / 100));
+        return {
+            normalizedEvening: rawHours,
+            normalizedTotal: rawHours
+        };
+    }
+
+    const computedEvening = (otStart && otEnd)
+        ? calculateEveningOTHours(otStart, otEnd)
+        : Math.max(0, Math.min(24, Math.round((Number(eveningOTHours) || 0) * 100) / 100));
+    const computedLunch = hasLunchOT ? lunchUnit : 0;
+    const computedTotal = Math.round((computedLunch + computedEvening) * 100) / 100;
+
+    return {
+        normalizedEvening: computedEvening,
+        normalizedTotal: computedTotal
+    };
+}
 
 const RecordController = {
     async handle(req, res, urlPath, method) {
@@ -59,7 +84,10 @@ const RecordController = {
                 records = records.filter(r => !superAdminIds.includes(r.userId));
             }
 
-            if (reqUser && reqUser.role === 'admin' && !reqIsSuperAdmin && reqUser.team !== 'admin') {
+            if (reqUser && reqUser.role !== 'admin') {
+                // Nhân viên chỉ được phép truy vấn bản ghi của chính mình
+                records = records.filter(r => r.userId === reqUserId);
+            } else if (reqUser && reqUser.role === 'admin' && !reqIsSuperAdmin && reqUser.team !== 'admin') {
                 const reqUserTeam = reqUser.team || '';
                 const allowedUserIds = users
                     .filter(u => u.role === 'admin' || (reqUserTeam && u.team === reqUserTeam) || !u.team)
@@ -151,8 +179,18 @@ const RecordController = {
             status = autoApprove ? 'approved' : 'pending';
         }
 
+        const { normalizedEvening, normalizedTotal } = await resolveNormalizedHours({
+            date,
+            isBackfill,
+            hasLunchOT: !!hasLunchOT,
+            otStart,
+            otEnd,
+            eveningOTHours,
+            totalHours
+        });
+
         const hasTrip = (deliveryProvince && deliveryProvince.trim() !== '') || body.calcMode === 'trip';
-        const hasOT = (totalHours || 0) > 0 || !!hasLunchOT || (eveningOTHours || 0) > 0 || body.calcMode === 'hour';
+        const hasOT = normalizedTotal > 0 || !!hasLunchOT || normalizedEvening > 0 || body.calcMode === 'hour';
 
         if (resolvedRole === 'admin' && status === 'approved' && hasTrip && hasOT) {
             // Tự động tách làm 2 bản ghi khi Admin tạo/duyệt trực tiếp
@@ -163,8 +201,8 @@ const RecordController = {
                 hasLunchOT: !!hasLunchOT,
                 otStart: otStart || '',
                 otEnd: otEnd || '',
-                eveningOTHours: eveningOTHours || 0,
-                totalHours: totalHours || 0,
+                eveningOTHours: normalizedEvening,
+                totalHours: normalizedTotal,
                 deliveryProvince: '',
                 customActivity: body.calcMode === 'hour' ? (body.customActivity || '') : '',
                 calcMode: body.calcMode === 'hour' ? (body.calcMode || '') : '',
@@ -207,8 +245,8 @@ const RecordController = {
             hasLunchOT: !!hasLunchOT,
             otStart: otStart || '',
             otEnd: otEnd || '',
-            eveningOTHours: eveningOTHours || 0,
-            totalHours: totalHours || 0,
+            eveningOTHours: normalizedEvening,
+            totalHours: normalizedTotal,
             deliveryProvince: deliveryProvince || '',
             customActivity: body.customActivity || '',
             calcMode: body.calcMode || '',
@@ -324,6 +362,21 @@ const RecordController = {
         }
 
         updates.isBackfill = isBackfill;
+
+        // Xác thực & chuẩn hóa lại giờ OT trên Server khi có cập nhật thông tin giờ/ngày
+        if (date !== undefined || hasLunchOT !== undefined || otStart !== undefined || otEnd !== undefined || eveningOTHours !== undefined || totalHours !== undefined) {
+            const { normalizedEvening, normalizedTotal } = await resolveNormalizedHours({
+                date: updates.date,
+                isBackfill,
+                hasLunchOT: updates.hasLunchOT,
+                otStart: updates.otStart,
+                otEnd: updates.otEnd,
+                eveningOTHours: updates.eveningOTHours,
+                totalHours: updates.totalHours
+            });
+            updates.eveningOTHours = normalizedEvening;
+            updates.totalHours = normalizedTotal;
+        }
 
         if (isBackfill) {
             if (body.createdMonth !== undefined) {
@@ -447,57 +500,48 @@ const RecordController = {
 
     async notifyEmployeesMonthClosed(month) {
         try {
-            const users = await UserRepository.getAll();
-            const employees = users.filter(u => u.role === 'employee');
+            const db = await loadDB();
+            const employees = (db.users || []).filter(u => u.role === 'employee');
             
             const parts = month.split('-');
             const displayMonth = parts.length === 2 ? `${parts[1]}/${parts[0]}` : month;
+            const title = 'Thông báo chốt công 🔒';
+            const bodyText = `Tháng ${displayMonth} đã được chốt công và khóa ghi nhận tăng ca.`;
             
-            const payload = JSON.stringify({
-                title: 'Thông báo chốt công 🔒',
-                body: `Tháng ${displayMonth} đã được chốt công và khóa ghi nhận tăng ca.`,
-                data: { url: '/mobile/' }
-            });
-            
+            let anyDbUpdated = false;
+            let sentCount = 0;
             for (const emp of employees) {
-                if (emp.pushSubscriptions && emp.pushSubscriptions.length > 0) {
-                    const activeSubscriptions = [];
-                    for (const sub of emp.pushSubscriptions) {
-                        try {
-                            await webpush.sendNotification(sub, payload);
-                            activeSubscriptions.push(sub);
-                        } catch (err) {
-                            if (err.statusCode === 410 || err.statusCode === 404) {
-                                console.log(`[Web Push Close Month] Xóa subscription hết hạn của nhân viên ${emp.username}`);
-                            } else {
-                                console.error(`[Web Push Close Month] Lỗi gửi thông báo cho ${emp.username}:`, err.message);
-                                activeSubscriptions.push(sub);
-                            }
-                        }
-                    }
-                    
-                    if (activeSubscriptions.length !== emp.pushSubscriptions.length) {
-                        await UserRepository.update(emp.id, { pushSubscriptions: activeSubscriptions });
-                    }
-                }
+                const { dbUpdated, notifySuccess } = await sendPushNotification(emp, title, bodyText, '/mobile/');
+                if (notifySuccess) sentCount++;
+                if (dbUpdated) anyDbUpdated = true;
             }
-            console.log(`[Web Push Close Month] Đã gửi thông báo chốt công tháng ${month} cho nhân viên.`);
+            if (anyDbUpdated) {
+                await saveDB(db);
+            }
+            logInfo(`[Close Month Push] Đã gửi thông báo chốt công tháng ${month} thành công tới ${sentCount} nhân viên.`);
         } catch (e) {
-            console.error('[Web Push Close Month] Lỗi gửi thông báo:', e.message);
+            logError('[Close Month Push] Lỗi gửi thông báo:', e.message);
         }
     },
 
     async cleanup(req, res) {
+        const { userId: reqUserId } = req;
+        const reqUser = reqUserId ? await UserRepository.findById(reqUserId) : null;
+        const isSuperAdmin = reqUser && (reqUser.isSuperAdmin || reqUser.username === 'admin');
+        if (!isSuperAdmin) {
+            return sendError(res, 403, 'Chỉ Quản trị viên tối cao mới có quyền dọn dẹp dữ liệu hệ thống!', req);
+        }
+
         const body = await parseBody(req);
         const { month } = body;
         if (!month || !month.match(/^\d{4}-\d{2}$/)) {
-            return sendError(res, 400, 'Tháng không hợp lệ (định dạng đúng: YYYY-MM)!');
+            return sendError(res, 400, 'Tháng không hợp lệ (định dạng đúng: YYYY-MM)!', req);
         }
         try {
             await this.performCleanup(month);
-            return sendJSON(res, 200, { success: true, message: `Đã dọn dẹp dữ liệu tháng ${month} thành công!` });
+            return sendJSON(res, 200, { success: true, message: `Đã dọn dẹp dữ liệu tháng ${month} thành công!` }, req);
         } catch (err) {
-            return sendError(res, 500, `Lỗi dọn dẹp: ${err.message}`);
+            return sendError(res, 500, `Lỗi dọn dẹp: ${err.message}`, req);
         }
     },
 

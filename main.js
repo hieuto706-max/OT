@@ -39,6 +39,21 @@ function isLocalHostOrIP(hostname) {
            /^169\.254\./.test(hostname);
 }
 
+const TRUSTED_UPDATE_DOMAINS = ['otmanager.id.vn', 'onrender.com', 'github.com', 'githubusercontent.com'];
+function isTrustedUpdateUrl(urlStr) {
+    try {
+        const parsed = new URL(urlStr);
+        const host = parsed.hostname.toLowerCase();
+        if (isLocalHostOrIP(host) && (parsed.protocol === 'http:' || parsed.protocol === 'https:')) {
+            return true;
+        }
+        if (parsed.protocol !== 'https:') return false;
+        return TRUSTED_UPDATE_DOMAINS.some(d => host === d || host.endsWith('.' + d));
+    } catch (e) {
+        return false;
+    }
+}
+
 function cleanObsoleteHotfixes() {
     try {
         const updatesDir = path.join(app.getPath('userData'), 'hotfixes');
@@ -601,13 +616,24 @@ app.on('will-quit', () => {
 
 // --- IPC HANDLERS FOR HOTFIX & UPDATE (WITHOUT LOCAL EXPRESS SERVER) ---
 ipcMain.on('trigger-update', (event, { downloadUrl, version }) => {
+    if (!isTrustedUpdateUrl(downloadUrl)) {
+        console.warn(`[Security] Từ chối URL cập nhật không tin cậy: ${downloadUrl}`);
+        return;
+    }
     console.log(`[Main] Nhận yêu cầu tải bản cập nhật: v${version} từ URL: ${downloadUrl}`);
     global.startElectronUpdate(downloadUrl, version);
 });
 
 ipcMain.handle('apply-hotfix', async (event, { cloudUrl, buildTime }) => {
     try {
-        console.log(`[Main] Nhận yêu cầu áp dụng bản vá nhanh (hotfix) từ: ${cloudUrl}`);
+        const cleanCloudUrl = String(cloudUrl || '').replace(/\/+$/, '');
+        if (!isTrustedUpdateUrl(cleanCloudUrl)) {
+            throw new Error('Nguồn tải bản vá (cloudUrl) không nằm trong danh sách tin cậy!');
+        }
+        const parsedCloud = new URL(cleanCloudUrl);
+        const isLocalTarget = isLocalHostOrIP(parsedCloud.hostname.toLowerCase());
+
+        console.log(`[Main] Nhận yêu cầu áp dụng bản vá nhanh (hotfix) từ: ${cleanCloudUrl}`);
         const updatesDir = path.join(app.getPath('userData'), 'hotfixes');
         if (!fs.existsSync(updatesDir)) {
             fs.mkdirSync(updatesDir, { recursive: true });
@@ -619,16 +645,19 @@ ipcMain.handle('apply-hotfix', async (event, { cloudUrl, buildTime }) => {
         
         const downloadPromises = filesToDownload.map(file => {
             return new Promise((resolve, reject) => {
-                const fileUrl = `${cloudUrl}/desktop/${file}`;
+                const fileUrl = `${cleanCloudUrl}/desktop/${file}`;
                 const destPath = path.join(updatesDir, file);
                 const fileStream = fs.createWriteStream(destPath);
                 
-                const client = cloudUrl.startsWith('https') ? https : http;
-                const options = cloudUrl.startsWith('https') ? { rejectUnauthorized: false } : {};
+                const isHttps = parsedCloud.protocol === 'https:';
+                const client = isHttps ? https : http;
+                // Chỉ bỏ qua xác thực SSL tự ký khi kết nối mạng LAN cục bộ; luôn kiểm tra chứng chỉ thật cho Cloud HTTPS
+                const options = (isHttps && isLocalTarget) ? { rejectUnauthorized: false } : {};
                 
                 client.get(fileUrl, options, (response) => {
                     if (response.statusCode !== 200) {
                         fileStream.close();
+                        fs.unlink(destPath, () => {});
                         return reject(new Error(`Tải file ${file} thất bại: HTTP ${response.statusCode}`));
                     }
                     response.pipe(fileStream);

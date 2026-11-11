@@ -3,6 +3,12 @@ const TeamRepository = require('../repositories/teamRepository');
 const { hashPassword } = require('../../utils');
 const { sendJSON, sendError, parseBody } = require('../utils/http');
 
+function stripSensitiveUserFields(user) {
+    if (!user) return user;
+    const { password, otpCode, otpExpiresAt, pushSubscriptions, fcmTokens, ...safeUser } = user;
+    return safeUser;
+}
+
 const UserController = {
     async handle(req, res, urlPath, method) {
         if (urlPath === '/api/users' && method === 'GET') {
@@ -18,47 +24,64 @@ const UserController = {
             return this.update(req, res, urlPath);
         }
 
-        return sendError(res, 404, 'Endpoint không tồn tại');
+        return sendError(res, 404, 'Endpoint không tồn tại', req);
     },
 
     async getAll(req, res) {
         const { userId: reqUserId } = req;
         const users = await UserRepository.getAll();
-        let filteredUsers = users;
-
-        if (reqUserId) {
-            const reqUser = users.find(u => u.id === reqUserId);
-            const reqIsSuperAdmin = reqUser && (reqUser.isSuperAdmin || reqUser.username === 'admin');
-            
-            // Ẩn Super Admin đối với người dùng thông thường
-            if (!reqIsSuperAdmin) {
-                filteredUsers = filteredUsers.filter(u => !u.isSuperAdmin && u.username !== 'admin');
-            }
-            
-            if (reqUser && reqUser.role === 'admin' && !reqIsSuperAdmin && reqUser.team !== 'admin') {
-                const reqUserTeam = reqUser.team || '';
-                // Sub-admin: chỉ xem các quản trị viên, nhân viên thuộc team mình, và nhân viên chưa phân team
-                filteredUsers = filteredUsers.filter(u => u.role === 'admin' || (reqUserTeam && u.team === reqUserTeam) || !u.team);
-            }
+        const reqUser = reqUserId ? users.find(u => u.id === reqUserId) : null;
+        if (!reqUser) {
+            return sendError(res, 401, 'Yêu cầu xác thực!', req);
         }
-        const safeUsers = filteredUsers.map(({ password, ...u }) => u);
-        return sendJSON(res, 200, { users: safeUsers });
+
+        // Nhân viên chỉ được phép lấy thông tin của chính mình (phục vụ lưu cache ngoại tuyến)
+        if (reqUser.role !== 'admin') {
+            return sendJSON(res, 200, { users: [stripSensitiveUserFields(reqUser)] }, req);
+        }
+
+        let filteredUsers = users;
+        const reqIsSuperAdmin = reqUser.isSuperAdmin || reqUser.username === 'admin';
+        
+        // Ẩn Super Admin đối với Sub-admin
+        if (!reqIsSuperAdmin) {
+            filteredUsers = filteredUsers.filter(u => !u.isSuperAdmin && u.username !== 'admin');
+        }
+        
+        if (!reqIsSuperAdmin && reqUser.team !== 'admin') {
+            const reqUserTeam = reqUser.team || '';
+            // Sub-admin: chỉ xem các quản trị viên, nhân viên thuộc team mình, và nhân viên chưa phân team
+            filteredUsers = filteredUsers.filter(u => u.role === 'admin' || (reqUserTeam && u.team === reqUserTeam) || !u.team);
+        }
+
+        const safeUsers = filteredUsers.map(stripSensitiveUserFields);
+        return sendJSON(res, 200, { users: safeUsers }, req);
     },
 
     async getById(req, res, urlPath) {
         const { userId: reqUserId } = req;
         const userId = urlPath.split('/api/users/')[1];
+        const reqUser = reqUserId ? await UserRepository.findById(reqUserId) : null;
+        if (!reqUser) {
+            return sendError(res, 401, 'Yêu cầu xác thực!', req);
+        }
+
+        // Nhân viên chỉ được phép xem thông tin của chính mình
+        if (reqUser.role !== 'admin' && reqUserId !== userId) {
+            return sendError(res, 403, 'Bạn chỉ được phép xem thông tin tài khoản của chính mình!', req);
+        }
+
         const user = await UserRepository.findById(userId);
-        if (!user) return sendError(res, 404, 'Không tìm thấy người dùng!');
+        if (!user) return sendError(res, 404, 'Không tìm thấy người dùng!', req);
         
         // Chỉ cho phép Super Admin hoặc chính chủ xem thông tin tài khoản Super Admin
         if (user.isSuperAdmin || user.username === 'admin') {
-            if (reqUserId !== user.id) {
-                return sendError(res, 403, 'Bạn không có quyền truy cập thông tin tài khoản này!');
+            if (reqUserId !== user.id && !(reqUser.isSuperAdmin || reqUser.username === 'admin')) {
+                return sendError(res, 403, 'Bạn không có quyền truy cập thông tin tài khoản này!', req);
             }
         }
         
-        const { password: _, ...safeUser } = user;
+        const safeUser = stripSensitiveUserFields(user);
         let teamSettings = null;
         if (user.team) {
             const teams = await TeamRepository.getAll();
@@ -69,32 +92,43 @@ const UserController = {
         }
         
         const { loadDB } = require('../../db');
-        const db = await loadDB();
+        const db = await loadDB(false);
         const settings = db.settings || {};
         
-        return sendJSON(res, 200, { user: { ...safeUser, teamSettings, settings } });
+        return sendJSON(res, 200, { user: { ...safeUser, teamSettings, settings } }, req);
     },
 
     async delete(req, res, urlPath) {
         const { userId: reqUserId } = req;
         const userId = urlPath.split('/api/users/')[1];
-        const user = await UserRepository.findById(userId);
-        if (!user) return sendError(res, 404, 'Không tìm thấy người dùng!');
-        if (user.isSuperAdmin) return sendError(res, 403, 'Không thể xóa tài khoản Quản trị viên tối cao!');
+        const reqUser = reqUserId ? await UserRepository.findById(reqUserId) : null;
 
-        // Phân quyền theo Team
-        if (reqUserId) {
-            const reqUser = await UserRepository.findById(reqUserId);
-            if (reqUser && reqUser.role === 'admin' && !reqUser.isSuperAdmin && reqUser.team !== 'admin') {
-                const reqUserTeam = reqUser.team || '';
-                if (user.team && user.team !== reqUserTeam) {
-                    return sendError(res, 403, 'Bạn không có quyền xóa tài khoản của team khác!');
-                }
+        // Phân quyền nghiêm ngặt: Chỉ Admin/Sub-Admin mới được xóa tài khoản
+        if (!reqUser || reqUser.role !== 'admin') {
+            return sendError(res, 403, 'Chỉ quản trị viên mới có quyền xóa tài khoản!', req);
+        }
+
+        const user = await UserRepository.findById(userId);
+        if (!user) return sendError(res, 404, 'Không tìm thấy người dùng!', req);
+        if (user.isSuperAdmin || user.username === 'admin') {
+            return sendError(res, 403, 'Không thể xóa tài khoản Quản trị viên tối cao!', req);
+        }
+
+        const reqIsSuperAdmin = reqUser.isSuperAdmin || reqUser.username === 'admin';
+        if (user.role === 'admin' && !reqIsSuperAdmin) {
+            return sendError(res, 403, 'Chỉ Quản trị viên tối cao mới được xóa tài khoản quản lý!', req);
+        }
+
+        // Phân quyền theo Team cho Sub-admin
+        if (!reqIsSuperAdmin && reqUser.team !== 'admin') {
+            const reqUserTeam = reqUser.team || '';
+            if (user.team && user.team !== reqUserTeam) {
+                return sendError(res, 403, 'Bạn không có quyền xóa tài khoản của team khác!', req);
             }
         }
 
         await UserRepository.delete(userId);
-        return sendJSON(res, 200, { message: 'Đã xóa' });
+        return sendJSON(res, 200, { message: 'Đã xóa' }, req);
     },
 
     async update(req, res, urlPath) {
@@ -103,10 +137,27 @@ const UserController = {
         const body = await parseBody(req);
         const { fullname, username, password, role, deviceId, browserDeviceId, pendingUnlink, team, email, otpCode } = body;
 
-        const targetUser = await UserRepository.findById(userId);
-        if (!targetUser) return sendError(res, 404, 'Không tìm thấy người dùng!');
-
         const reqUser = reqUserId ? await UserRepository.findById(reqUserId) : null;
+        if (!reqUser) {
+            return sendError(res, 401, 'Yêu cầu xác thực!', req);
+        }
+
+        const targetUser = await UserRepository.findById(userId);
+        if (!targetUser) return sendError(res, 404, 'Không tìm thấy người dùng!', req);
+
+        // Nếu là nhân viên (employee): chỉ cho phép gửi yêu cầu xin hủy liên kết thiết bị (pendingUnlink: true) cho chính mình
+        if (reqUser.role !== 'admin') {
+            if (reqUserId !== userId) {
+                return sendError(res, 403, 'Bạn không có quyền chỉnh sửa tài khoản của người khác!', req);
+            }
+            const allowedKeys = Object.keys(body).filter(k => k !== 'pendingUnlink');
+            if (allowedKeys.length > 0 || pendingUnlink !== true) {
+                return sendError(res, 403, 'Nhân viên chỉ được phép gửi yêu cầu xin hủy liên kết thiết bị!', req);
+            }
+            const updatedSelf = await UserRepository.update(userId, { pendingUnlink: true });
+            return sendJSON(res, 200, { user: stripSensitiveUserFields(updatedSelf) }, req);
+        }
+
         const reqIsSuperAdmin = reqUser && (reqUser.isSuperAdmin || reqUser.username === 'admin');
 
         // Chỉ có bản thân Super Admin mới được sửa tài khoản Super Admin
@@ -223,8 +274,7 @@ const UserController = {
         }
 
         const updatedUser = await UserRepository.update(userId, updates);
-        const { password: _, ...safeUser } = updatedUser;
-        return sendJSON(res, 200, { user: safeUser });
+        return sendJSON(res, 200, { user: stripSensitiveUserFields(updatedUser) }, req);
     }
 };
 

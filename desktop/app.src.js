@@ -36,6 +36,16 @@ const localStorage = {
     _data: {}
 };
 
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // Prevent developer tools and right click
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('keydown', e => {
@@ -1986,20 +1996,24 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
                 const user = users.find(u => u.id === r.userId);
                 const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
                 const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+                const safeFullname = user ? escapeHTML(user.fullname) : 'N/A';
+                const safeUsername = user ? escapeHTML(user.username) : 'N/A';
+                const safeAvatar = user && user.fullname ? escapeHTML(user.fullname.charAt(0).toUpperCase()) : 'N';
                 const employeeCell = `
                     <div class="user-profile-cell">
-                        <div class="avatar-mini">${user ? user.fullname.charAt(0).toUpperCase() : 'N'}</div>
+                        <div class="avatar-mini">${safeAvatar}</div>
                         <div class="user-details">
-                            <span class="user-fullname">${user ? user.fullname : 'N/A'}</span>
-                            <span class="user-username">@${user ? user.username : 'N/A'}</span>
+                            <span class="user-fullname">${safeFullname}</span>
+                            <span class="user-username">@${safeUsername}</span>
                         </div>
                     </div>
                 `;
-                const teamBadge = `<span class="tag-team">${teamName}</span>`;
-                const noteDisplay = r.note ? `<span class="text-note" title="${r.note}">${r.note}</span>` : '<span class="text-muted">—</span>';
+                const teamBadge = `<span class="tag-team">${escapeHTML(teamName)}</span>`;
+                const safeNote = escapeHTML(r.note);
+                const noteDisplay = r.note ? `<span class="text-note" title="${safeNote}">${safeNote}</span>` : '<span class="text-muted">—</span>';
 
                 if (currentAdminRecType === 'ot') {
-                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${r.otEnd || '—'}</span>` : '<span class="text-muted">—</span>';
+                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${escapeHTML(r.otStart) || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${escapeHTML(r.otEnd) || '—'}</span>` : '<span class="text-muted">—</span>';
                     const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
                     return `<tr>
                         <td>${employeeCell}</td>
@@ -2027,7 +2041,7 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
                     </tr>`;
                 } else {
                     const detail = r.calcMode === 'trip' 
-                        ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince || 'Chưa rõ'}</span>` 
+                        ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${escapeHTML(r.deliveryProvince || 'Chưa rõ')}</span>` 
                         : `<span class="tag" style="background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.3); font-weight: 500;">⏱️ ${r.totalHours.toFixed(1)}h</span>`;
                     
                     let badgeClass = 'status-approved';
@@ -2044,7 +2058,7 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
                         <td>${employeeCell}</td>
                         <td>${teamBadge}</td>
                         <td><span class="text-date">${formatDate(r.date)}</span></td>
-                        <td><strong>${r.customActivity}</strong></td>
+                        <td><strong>${escapeHTML(r.customActivity)}</strong></td>
                         <td>${detail}</td>
                         <td>${noteDisplay}</td>
                         <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
@@ -2088,20 +2102,24 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
             pendingTbody.innerHTML = pending.map(r => {
                 const user = users.find(u => u.id === r.userId);
                 const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
+                const safeFullname = user ? escapeHTML(user.fullname) : 'N/A';
+                const safeUsername = user ? escapeHTML(user.username) : 'N/A';
+                const safeAvatar = user && user.fullname ? escapeHTML(user.fullname.charAt(0).toUpperCase()) : 'N';
                 const employeeCell = `
                     <div class="user-profile-cell">
-                        <div class="avatar-mini">${user ? user.fullname.charAt(0).toUpperCase() : 'N'}</div>
+                        <div class="avatar-mini">${safeAvatar}</div>
                         <div class="user-details">
-                            <span class="user-fullname">${user ? user.fullname : 'N/A'}</span>
-                            <span class="user-username">@${user ? user.username : 'N/A'}</span>
+                            <span class="user-fullname">${safeFullname}</span>
+                            <span class="user-username">@${safeUsername}</span>
                         </div>
                     </div>
                 `;
-                const teamBadge = `<span class="tag-team">${teamName}</span>`;
-                const noteDisplay = r.note ? `<span class="text-note" title="${r.note}">${r.note}</span>` : '<span class="text-muted">—</span>';
+                const teamBadge = `<span class="tag-team">${escapeHTML(teamName)}</span>`;
+                const safeNote = escapeHTML(r.note);
+                const noteDisplay = r.note ? `<span class="text-note" title="${safeNote}">${safeNote}</span>` : '<span class="text-muted">—</span>';
 
                 if (currentAdminRecType === 'ot') {
-                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${r.otEnd || '—'}</span>` : '<span class="text-muted">—</span>';
+                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${escapeHTML(r.otStart) || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${escapeHTML(r.otEnd) || '—'}</span>` : '<span class="text-muted">—</span>';
                     const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
                     return `<tr>
                         <td style="text-align: center;"><input type="checkbox" class="chk-pending-record" value="${r.id}" style="width: 14px; height: 14px; margin: 0; cursor: pointer;" onchange="updatePendingBulkActionsVisibility()"></td>
@@ -2124,14 +2142,14 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
                     </tr>`;
                 } else {
                     const detail = r.calcMode === 'trip' 
-                        ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince || 'Chưa rõ'}</span>` 
+                        ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${escapeHTML(r.deliveryProvince || 'Chưa rõ')}</span>` 
                         : `<span class="tag" style="background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.3); font-weight: 500;">⏱️ ${r.totalHours.toFixed(1)}h</span>`;
                     return `<tr>
                         <td style="text-align: center;"><input type="checkbox" class="chk-pending-record" value="${r.id}" style="width: 14px; height: 14px; margin: 0; cursor: pointer;" onchange="updatePendingBulkActionsVisibility()"></td>
                         <td>${employeeCell}</td>
                         <td>${teamBadge}</td>
                         <td><span class="text-date">${formatDate(r.date)}</span></td>
-                        <td><strong>${r.customActivity}</strong></td>
+                        <td><strong>${escapeHTML(r.customActivity)}</strong></td>
                         <td>${detail}</td>
                         <td>${noteDisplay}</td>
                         <td><div class="action-buttons">
@@ -2169,20 +2187,24 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
             rejectedTbody.innerHTML = rejected.map(r => {
                 const user = users.find(u => u.id === r.userId);
                 const teamName = user ? (user.team === 'admin' ? 'admin' : (user.team || 'Chưa phân team')) : 'N/A';
+                const safeFullname = user ? escapeHTML(user.fullname) : 'N/A';
+                const safeUsername = user ? escapeHTML(user.username) : 'N/A';
+                const safeAvatar = user && user.fullname ? escapeHTML(user.fullname.charAt(0).toUpperCase()) : 'N';
                 const employeeCell = `
                     <div class="user-profile-cell">
-                        <div class="avatar-mini">${user ? user.fullname.charAt(0).toUpperCase() : 'N'}</div>
+                        <div class="avatar-mini">${safeAvatar}</div>
                         <div class="user-details">
-                            <span class="user-fullname">${user ? user.fullname : 'N/A'}</span>
-                            <span class="user-username">@${user ? user.username : 'N/A'}</span>
+                            <span class="user-fullname">${safeFullname}</span>
+                            <span class="user-username">@${safeUsername}</span>
                         </div>
                     </div>
                 `;
-                const teamBadge = `<span class="tag-team">${teamName}</span>`;
-                const noteDisplay = r.note ? `<span class="text-note" title="${r.note}">${r.note}</span>` : '<span class="text-muted">—</span>';
+                const teamBadge = `<span class="tag-team">${escapeHTML(teamName)}</span>`;
+                const safeNote = escapeHTML(r.note);
+                const noteDisplay = r.note ? `<span class="text-note" title="${safeNote}">${safeNote}</span>` : '<span class="text-muted">—</span>';
  
                 if (currentAdminRecType === 'ot') {
-                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${r.otStart || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${r.otEnd || '—'}</span>` : '<span class="text-muted">—</span>';
+                    const timeRange = (r.otStart || r.otEnd) ? `<span class="text-time">${escapeHTML(r.otStart) || '—'}</span> <span class="text-arrow">→</span> <span class="text-time">${escapeHTML(r.otEnd) || '—'}</span>` : '<span class="text-muted">—</span>';
                     const totalOtBadge = `<span class="badge-total-ot">${r.totalHours.toFixed(1)}h</span>`;
                     return `<tr>
                         <td style="text-align: center;"><input type="checkbox" class="chk-rejected-record" value="${r.id}" style="width: 14px; height: 14px; margin: 0; cursor: pointer;" onchange="updateRejectedBulkActionsVisibility()"></td>
@@ -2207,14 +2229,14 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
                     </tr>`;
                 } else {
                     const detail = r.calcMode === 'trip' 
-                        ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince || 'Chưa rõ'}</span>` 
+                        ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${escapeHTML(r.deliveryProvince || 'Chưa rõ')}</span>` 
                         : `<span class="tag" style="background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.3); font-weight: 500;">⏱️ ${r.totalHours.toFixed(1)}h</span>`;
                     return `<tr>
                         <td style="text-align: center;"><input type="checkbox" class="chk-rejected-record" value="${r.id}" style="width: 14px; height: 14px; margin: 0; cursor: pointer;" onchange="updateRejectedBulkActionsVisibility()"></td>
                         <td>${employeeCell}</td>
                         <td>${teamBadge}</td>
                         <td><span class="text-date">${formatDate(r.date)}</span></td>
-                        <td><strong>${r.customActivity}</strong></td>
+                        <td><strong>${escapeHTML(r.customActivity)}</strong></td>
                         <td>${detail}</td>
                         <td>${noteDisplay}</td>
                         <td><div class="action-buttons" style="display: flex; align-items: center; gap: 8px;">
@@ -2766,7 +2788,8 @@ window.toggleReportRow = function(row, userId) {
                                     const actualHours = r.totalHours || 0;
                                     const eqHours = actualHours * coef;
                                     
-                                    const province = r.deliveryProvince || '-';
+                                    const province = escapeHTML(r.deliveryProvince || '-');
+                                    const safeRecNote = escapeHTML(r.note || '');
                                     const statusText = r.status === 'approved' ? '<span class="tag tag-success">Đã duyệt</span>' : (r.status === 'pending' ? '<span class="tag tag-warning">Đang chờ</span>' : '<span class="tag tag-danger">Từ chối</span>');
                                     const isBackfillText = r.isBackfill ? '<span style="font-size: 9px; padding: 2px 5px; background: rgba(245,158,11,0.15); color: var(--accent-orange); border-radius: 4px; font-weight: 800; margin-left: 6px;">BÙ</span>' : '';
                                     return `
@@ -2777,7 +2800,7 @@ window.toggleReportRow = function(row, userId) {
                                             <td><strong style="color:var(--accent-green);">${parseFloat(eqHours.toFixed(2))}</strong> giờ</td>
                                             <td><span style="color: var(--text-primary);">${province}</span></td>
                                             <td>${statusText}</td>
-                                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${r.note || ''}">${r.note || '-'}</td>
+                                            <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${safeRecNote}">${safeRecNote || '-'}</td>
                                         </tr>
                                     `;
                                 }).join('')}
@@ -4569,7 +4592,7 @@ async function handleAdminOTSubmit(e) {
                         </div>
                     </td>
                     <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
-                    <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                    <td>${r.note ? escapeHTML(r.note) : '<span style="color:var(--text-muted)">—</span>'}</td>
                     <td><div class="action-buttons">
                         <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'employee')" title="Sửa" style="margin-right: 4px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -4586,14 +4609,14 @@ async function handleAdminOTSubmit(e) {
                 </tr>`;
             } else {
                 const detail = r.calcMode === 'trip' 
-                    ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${r.deliveryProvince || 'Chưa rõ'}</span>` 
+                    ? `<span class="tag" style="background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); font-weight: 500;">🚚 ${escapeHTML(r.deliveryProvince || 'Chưa rõ')}</span>` 
                     : `<span class="tag" style="background: rgba(99,102,241,0.15); color: #6366f1; border: 1px solid rgba(99,102,241,0.3); font-weight: 500;">⏱️ ${r.totalHours.toFixed(1)}h</span>`;
                 return `<tr>
                     <td>${formatDate(r.date)}</td>
-                    <td><strong>${r.customActivity}</strong></td>
+                    <td><strong>${escapeHTML(r.customActivity)}</strong></td>
                     <td>${detail}</td>
                     <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
-                    <td>${r.note || '<span style="color:var(--text-muted)">—</span>'}</td>
+                    <td>${r.note ? escapeHTML(r.note) : '<span style="color:var(--text-muted)">—</span>'}</td>
                     <td><div class="action-buttons">
                         <button class="btn-icon-only edit" onclick="editRecordDialog('${r.id}', 'employee')" title="Sửa" style="margin-right: 4px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">

@@ -84,10 +84,11 @@ const VAPID_PUBLIC_KEY = initWebPush();
 async function sendPushNotification(user, title, bodyText, url = '/mobile/') {
     const hasWebPush = user.pushSubscriptions && user.pushSubscriptions.length > 0;
     const hasFCM = user.fcmTokens && user.fcmTokens.length > 0;
-    if (!hasWebPush && !hasFCM) return { dbUpdated: false, notifySuccess: false };
+    if (!hasWebPush && !hasFCM) return { dbUpdated: false, notifySuccess: false, successCount: 0 };
 
     let dbUpdated = false;
     let notifySuccess = false;
+    let successCount = 0;
 
     const payload = JSON.stringify({
         title: title,
@@ -111,6 +112,7 @@ async function sendPushNotification(user, title, bodyText, url = '/mobile/') {
                 };
                 await admin.messaging().send(message);
                 notifySuccess = true;
+                successCount++;
                 activeFcmTokens.push(token);
             } catch (err) {
                 if (err.code === 'messaging/registration-token-not-registered' || err.code === 'messaging/invalid-argument') {
@@ -141,6 +143,7 @@ async function sendPushNotification(user, title, bodyText, url = '/mobile/') {
             try {
                 await webpush.sendNotification(sub, payload);
                 notifySuccess = true;
+                successCount++;
                 activeSubscriptions.push(sub);
             } catch (err) {
                 const status = err.statusCode;
@@ -159,7 +162,7 @@ async function sendPushNotification(user, title, bodyText, url = '/mobile/') {
         }
     }
 
-    return { dbUpdated, notifySuccess };
+    return { dbUpdated, notifySuccess, successCount };
 }
 
 // ==================== DAILY REMINDER JOB ====================

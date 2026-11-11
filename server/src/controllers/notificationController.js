@@ -1,6 +1,5 @@
-const webpush = require('web-push');
 const UserRepository = require('../repositories/userRepository');
-const { VAPID_PUBLIC_KEY, fcmInitialized, admin } = require('../../notifications');
+const { VAPID_PUBLIC_KEY, sendPushNotification } = require('../../notifications');
 const { logInfo, logError } = require('../../utils');
 const { sendJSON, sendError, parseBody } = require('../utils/http');
 
@@ -88,82 +87,15 @@ const NotificationController = {
             
             const title = 'Kiểm tra thông báo 🔔';
             const bodyText = 'Thông báo đẩy từ hệ thống OT Manager đã hoạt động thành công!';
-            const payload = JSON.stringify({
-                title: title,
-                body: bodyText,
-                data: { url: '/mobile/' },
-                actions: [
-                    { action: 'log', title: 'Ghi nhận ngay' },
-                    { action: 'skip', title: 'Bỏ qua' }
-                ]
-            });
-            
-            let successCount = 0;
 
-            // 1. Gửi qua Firebase FCM
-            const activeFcmTokens = [];
-            if (fcmInitialized && hasFCM) {
-                for (const token of user.fcmTokens) {
-                    try {
-                        const message = {
-                            notification: { title, body: bodyText },
-                            data: { url: '/mobile/' },
-                            token: token
-                        };
-                        await admin.messaging().send(message);
-                        successCount++;
-                        activeFcmTokens.push(token);
-                    } catch (err) {
-                        if (err.code === 'messaging/registration-token-not-registered' || err.code === 'messaging/invalid-argument') {
-                            logInfo(`[FCM Test] Xóa token không hợp lệ của ${user.username}`);
-                        } else {
-                            logError(`[FCM Test] Lỗi gửi token cho ${user.username}:`, err.message);
-                            activeFcmTokens.push(token);
-                        }
-                    }
-                }
-            }
-
-            // 2. Gửi qua Web Push (Dự phòng / Fallback)
-            const activeSubscriptions = [];
-            if (hasWebPush) {
-                const seenEndpoints = new Set();
-                for (const sub of user.pushSubscriptions) {
-                    if (!sub || !sub.endpoint || seenEndpoints.has(sub.endpoint)) {
-                        continue;
-                    }
-                    seenEndpoints.add(sub.endpoint);
-                    try {
-                        await webpush.sendNotification(sub, payload);
-                        successCount++;
-                        activeSubscriptions.push(sub);
-                    } catch (err) {
-                        const status = err.statusCode;
-                        if (!status || (status >= 400 && status < 500 && status !== 429)) {
-                            logInfo(`[Web Push Test] Xóa subscription hết hạn/không hợp lệ (HTTP ${status || 'unknown'}) của nhân viên ${user.username}`);
-                        } else {
-                            logError(`[Web Push Test] Lỗi tạm thời khi gửi thông báo cho ${user.username} (HTTP ${status}):`, err.message);
-                            activeSubscriptions.push(sub);
-                        }
-                    }
-                }
-            }
-            
-            // Cập nhật lại các token sạch nếu có xóa
-            let dbUpdated = false;
-            const updates = {};
-            if (hasFCM && activeFcmTokens.length !== user.fcmTokens.length) {
-                updates.fcmTokens = activeFcmTokens;
-                dbUpdated = true;
-            }
-            if (hasWebPush && activeSubscriptions.length !== user.pushSubscriptions.length) {
-                updates.pushSubscriptions = activeSubscriptions;
-                dbUpdated = true;
-            }
+            const { dbUpdated, successCount } = await sendPushNotification(user, title, bodyText, '/mobile/');
             if (dbUpdated) {
-                await UserRepository.update(user.id, updates);
+                await UserRepository.update(user.id, {
+                    fcmTokens: user.fcmTokens || [],
+                    pushSubscriptions: user.pushSubscriptions || []
+                });
             }
-            
+
             return sendJSON(res, 200, { success: true, count: successCount }, req);
         } catch (e) {
             logError('[Notifications Test] Lỗi:', e.message);

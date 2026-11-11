@@ -3,6 +3,12 @@ const UserRepository = require('../repositories/userRepository');
 const { hashPassword, verifyPassword, generateId, signJWT, sendMail, logError, logInfo } = require('../../utils');
 const { sendJSON, sendError, parseBody } = require('../utils/http');
 
+function stripSensitiveUserFields(user) {
+    if (!user) return user;
+    const { password, otpCode, otpExpiresAt, pushSubscriptions, fcmTokens, ...safeUser } = user;
+    return safeUser;
+}
+
 const AuthController = {
     async handle(req, res, urlPath, method) {
         if (urlPath === '/api/auth/login' && method === 'POST') {
@@ -31,12 +37,15 @@ const AuthController = {
         const { username, password, deviceId, isBrowser, clientSource } = await parseBody(req);
         if (!username) return sendError(res, 400, 'Thiếu tên đăng nhập!', req);
 
-        // Sync single user from PostgreSQL in background (non-blocking để login nhanh hơn)
+        // Đồng bộ user từ PostgreSQL trước khi đọc và ghi liên kết thiết bị để tránh race condition ghi đè cache
         if (config.DATABASE_URL) {
-            const { fetchUserFromPG, updateUserInCache } = require('../../db');
-            fetchUserFromPG(username).then(latestUser => {
+            try {
+                const { fetchUserFromPG, updateUserInCache } = require('../../db');
+                const latestUser = await fetchUserFromPG(username);
                 if (latestUser) updateUserInCache(latestUser);
-            }).catch(e => logError('[Login Sync] Lỗi đồng bộ user từ PG:', e.message));
+            } catch (e) {
+                logError('[Login Sync] Lỗi đồng bộ user từ PG:', e.message);
+            }
         }
 
         // Tìm user không phân biệt chữ hoa chữ thường
@@ -69,7 +78,7 @@ const AuthController = {
                     return sendJSON(res, 403, { error: errMsg, code: 'device_locked' }, req);
                 }
             }
-            const { password: _, ...safeUser } = user;
+            const safeUser = stripSensitiveUserFields(user);
             // Cập nhật lại safeUser sau khi đã cập nhật device
             if (deviceId) {
                 const targetDeviceField = isBrowser ? 'browserDeviceId' : 'deviceId';
@@ -89,7 +98,7 @@ const AuthController = {
             let settings = {};
             try {
                 const { loadDB } = require('../../db');
-                const db = await loadDB();
+                const db = await loadDB(false);
                 settings = db.settings || {};
             } catch (e) {}
 
@@ -113,7 +122,7 @@ const AuthController = {
             }
         }
 
-        const { password: _, ...safeUser } = user;
+        const safeUser = stripSensitiveUserFields(user);
         let teamSettings = null;
         if (user.team) {
             try {
@@ -128,7 +137,7 @@ const AuthController = {
         let settings = {};
         try {
             const { loadDB } = require('../../db');
-            const db = await loadDB();
+            const db = await loadDB(false);
             settings = db.settings || {};
         } catch (e) {}
 
@@ -144,7 +153,7 @@ const AuthController = {
         if (!user) return sendError(res, 404, 'Không tìm thấy tên đăng nhập trong hệ thống!', req);
         
         const { loadDB } = require('../../db');
-        const db = await loadDB();
+        const db = await loadDB(false);
         
         const userTeam = db.teams.find(t => t.name === user.team);
         const autoApproveUnlink = userTeam && userTeam.autoApproveRules
@@ -351,7 +360,7 @@ const AuthController = {
             createdAt: new Date().toISOString()
         };
         await UserRepository.create(newUser);
-        const { password: _, ...safeUser } = newUser;
+        const safeUser = stripSensitiveUserFields(newUser);
         return sendJSON(res, 201, { user: safeUser }, req);
     }
 };

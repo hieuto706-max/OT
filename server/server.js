@@ -17,6 +17,7 @@ const { logInfo, logError, getCorsOrigin, getSecurityHeaders } = require('./util
 const { getDbPath, initPGTable, loadDB, saveDB, closePGPool, onUpdate } = require('./db');
 const { VAPID_PUBLIC_KEY, startDailyReminderJob } = require('./notifications');
 const { handleAPI } = require('./api');
+const { checkLimit } = require('./src/utils/rateLimiter');
 
 // ==================== GLOBAL ERROR HANDLERS ====================
 process.on('uncaughtException', (err) => {
@@ -328,8 +329,8 @@ async function renewSSL(domain) {
     }
 
     const acme = require('acme-client');
-    const eabKid = process.env.ZEROSSL_EAB_KID || '2WmkpWu0d2mE8x5kq-Xk6A';
-    const eabHmac = process.env.ZEROSSL_EAB_HMAC || 'dg7anWVfRmu_xw-6JlIGhPGSFerqQ-4DiUMVV51zumcp2U36muU2W1DNhVFlRG39uw19uac92cc9JSXRkrKfGQ';
+    const eabKid = process.env.ZEROSSL_EAB_KID || '';
+    const eabHmac = process.env.ZEROSSL_EAB_HMAC || '';
     const hasCfToken = !!process.env.CLOUDFLARE_API_TOKEN;
 
     // Warn if DNS-01 not possible and HTTP-01 is likely broken behind Cloudflare proxy
@@ -487,28 +488,19 @@ async function checkAndRenewCertificates() {
 }
 
 // ==================== RATE LIMITER ====================
-const ipRequestCounts = new Map();
-setInterval(() => {
-    ipRequestCounts.clear();
-}, 60000);
-
 function isRateLimited(ip) {
-    const limit = 200; // max 200 requests per minute
-    const current = ipRequestCounts.get(ip) || 0;
-    if (current >= limit) {
-        return true;
-    }
-    ipRequestCounts.set(ip, current + 1);
-    return false;
+    return !checkLimit(ip, 'http_server', 300, 60 * 1000);
 }
 
 // ==================== STATIC FILE SERVING ====================
 function serveStatic(req, res, basePath, urlPath) {
     let subFilePath = urlPath === '/' ? '/index.html' : urlPath;
+    if (!subFilePath.startsWith('/')) subFilePath = '/' + subFilePath;
     
     if (basePath.endsWith('desktop') && updatesDir) {
-        const hotfixPath = path.join(updatesDir, subFilePath);
-        if (fs.existsSync(hotfixPath)) {
+        const resolvedUpdates = path.resolve(updatesDir);
+        const hotfixPath = path.resolve(resolvedUpdates, '.' + subFilePath);
+        if ((hotfixPath === resolvedUpdates || hotfixPath.startsWith(resolvedUpdates + path.sep)) && fs.existsSync(hotfixPath)) {
             const ext = path.extname(hotfixPath).toLowerCase();
             const contentType = MIME_TYPES[ext] || 'application/octet-stream';
             fs.readFile(hotfixPath, (err, data) => {
@@ -525,7 +517,12 @@ function serveStatic(req, res, basePath, urlPath) {
         }
     }
 
-    const filePath = path.join(basePath, subFilePath);
+    const resolvedBase = path.resolve(basePath);
+    const filePath = path.resolve(resolvedBase, '.' + subFilePath);
+    if (filePath !== resolvedBase && !filePath.startsWith(resolvedBase + path.sep)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+        return res.end('Forbidden');
+    }
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
@@ -590,7 +587,7 @@ function signProfile(unsignedXml) {
 // ==================== HTTP SERVER ====================
 const server = http.createServer(async (req, res) => {
     try {
-        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+        const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
         if (isRateLimited(ip)) {
             res.writeHead(429, { 'Content-Type': 'text/plain; charset=utf-8' });
             return res.end('Too Many Requests (Quá tải yêu cầu)');

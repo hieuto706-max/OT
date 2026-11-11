@@ -271,7 +271,11 @@ async function loadDBFromPG() {
 
             const settings = {};
             settingsRes.rows.forEach(r => {
-                settings[r.key] = r.value;
+                if (r.key === 'lunchOTHours') {
+                    settings[r.key] = Number(r.value) || 1;
+                } else {
+                    settings[r.key] = r.value;
+                }
             });
 
             const result = {
@@ -660,6 +664,26 @@ async function syncDiffToPG(oldData, newData) {
                     INSERT INTO pg_closed_months (month) VALUES ($1)
                     ON CONFLICT (month) DO NOTHING
                 `, [m]);
+                changesCount++;
+            }
+        }
+
+        // === 5. Đồng bộ bảng ot_settings ===
+        const oldSettings = oldData.settings || {};
+        const newSettings = newData.settings || {};
+        for (const key of Object.keys(oldSettings)) {
+            if (!(key in newSettings)) {
+                await client.query('DELETE FROM ot_settings WHERE key = $1', [key]);
+                changesCount++;
+            }
+        }
+        for (const [key, value] of Object.entries(newSettings)) {
+            if (String(oldSettings[key]) !== String(value)) {
+                await client.query(`
+                    INSERT INTO ot_settings (key, value, updated_at)
+                    VALUES ($1, $2, CURRENT_TIMESTAMP)
+                    ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP
+                `, [key, String(value)]);
                 changesCount++;
             }
         }

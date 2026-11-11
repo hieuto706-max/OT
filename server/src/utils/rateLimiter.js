@@ -1,5 +1,18 @@
 const ipRequestCounts = new Map();
 
+// Dọn dẹp định kỳ các mục đã hết hạn để tránh rò rỉ bộ nhớ (memory leak)
+const cleanupTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [key, data] of ipRequestCounts.entries()) {
+        if (now > data.resetTime) {
+            ipRequestCounts.delete(key);
+        }
+    }
+}, 2 * 60 * 1000);
+if (typeof cleanupTimer.unref === 'function') {
+    cleanupTimer.unref();
+}
+
 /**
  * Kiểm tra giới hạn tần suất yêu cầu của một IP.
  * @param {string} ip Địa chỉ IP của client
@@ -28,4 +41,8 @@ function checkLimit(ip, keyPrefix, limit, windowMs) {
     return data.count <= limit;
 }
 
-module.exports = { checkLimit };
+function clearRateLimits() {
+    ipRequestCounts.clear();
+}
+
+module.exports = { checkLimit, clearRateLimits };
