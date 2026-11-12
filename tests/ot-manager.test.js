@@ -14,7 +14,10 @@ const {
 const { checkLimit, clearRateLimits } = require('../server/src/utils/rateLimiter');
 const { sanitizeObject } = require('../server/src/utils/http');
 const { handleAPI } = require('../server/api');
+const { getHotCutoffMonth, getEffectiveRecordMonth } = require('../server/db');
 const { EventEmitter } = require('node:events');
+const fs = require('node:fs');
+const path = require('node:path');
 
 test('calculateEveningOTHours - tính giờ OT chiều thường và tăng ca qua nửa đêm', () => {
     // Tăng ca cùng ngày
@@ -192,4 +195,59 @@ test('handleAPI RBAC & Security - chặn truy cập trái phép và kiểm tra L
 
     clearRateLimits();
 });
+
+test('Hot/Cold Storage Tiering - tính mốc Hot Cache 3 tháng và tháng hiệu lực của bản ghi bù', () => {
+    // Ngày 12/11/2026 giờ VN -> lùi 3 tháng là 2026-08
+    const nov2026 = new Date('2026-11-12T05:00:00Z');
+    assert.equal(getHotCutoffMonth(nov2026, 3), '2026-08');
+
+    // Kiểm tra lùi qua mốc đầu năm: Tháng 02/2027 lùi 3 tháng -> 2026-11
+    const feb2027 = new Date('2027-02-10T05:00:00Z');
+    assert.equal(getHotCutoffMonth(feb2027, 3), '2026-11');
+
+    // Bản ghi thường lấy theo date
+    assert.equal(getEffectiveRecordMonth({ date: '2026-07-15', totalHours: 3 }), '2026-07');
+
+    // Bản ghi bù tăng ca (isBackfill hoặc tag cũ) tính vào createdMonth
+    assert.equal(
+        getEffectiveRecordMonth({ date: '2026-07-20', isBackfill: true, createdMonth: '2026-10' }),
+        '2026-10'
+    );
+    assert.equal(
+        getEffectiveRecordMonth({ date: '2026-06-18', note: '[BÙ THÁNG TRƯỚC] Bù giờ tháng 06/2026', createdMonth: '2026-09' }),
+        '2026-09'
+    );
+    assert.equal(getEffectiveRecordMonth(null), '');
+});
+
+test('Security & Modular Architecture v1.6.0 - xóa hoàn toàn lưu mật khẩu plaintext và kiểm tra 18 module nguồn', () => {
+    const rootDir = path.join(__dirname, '..');
+
+    // 1. Đảm bảo không còn lưu ot_saved_admin_pass dạng plaintext ở Web Portal
+    const portalAuthSrc = fs.readFileSync(path.join(rootDir, 'docs', 'src', '03-portal-auth.js'), 'utf8');
+    const landingBundleSrc = fs.readFileSync(path.join(rootDir, 'docs', 'landing.src.js'), 'utf8');
+    assert.equal(portalAuthSrc.includes("setItem('ot_saved_admin_pass'"), false);
+    assert.equal(landingBundleSrc.includes("setItem('ot_saved_admin_pass'"), false);
+    assert.equal(portalAuthSrc.includes("removeItem('ot_saved_admin_pass')"), true);
+
+    // 2. Kiểm tra đầy đủ cấu trúc module hóa cho Desktop (8), Mobile (6), Docs (4)
+    const desktopModules = fs.readdirSync(path.join(rootDir, 'desktop', 'src')).filter(f => f.endsWith('.js'));
+    const mobileModules = fs.readdirSync(path.join(rootDir, 'mobile', 'src')).filter(f => f.endsWith('.js'));
+    const docsModules = fs.readdirSync(path.join(rootDir, 'docs', 'src')).filter(f => f.endsWith('.js'));
+    assert.equal(desktopModules.length, 8);
+    assert.equal(mobileModules.length, 6);
+    assert.equal(docsModules.length, 4);
+
+    // 3. Kiểm tra các nâng cấp Enterprise UI/UX trọng tâm có mặt trên HTML
+    const desktopHtml = fs.readFileSync(path.join(rootDir, 'desktop', 'index.html'), 'utf8');
+    const mobileHtml = fs.readFileSync(path.join(rootDir, 'mobile', 'index.html'), 'utf8');
+    const docsHtml = fs.readFileSync(path.join(rootDir, 'docs', 'index.html'), 'utf8');
+
+    assert.equal(desktopHtml.includes('id="btn-theme-toggle"'), true);
+    assert.equal(desktopHtml.includes('id="desktop-wakeup-banner"'), true);
+    assert.equal(mobileHtml.includes('id="ot-quick-time-chips"'), true);
+    assert.equal(mobileHtml.includes('id="mobile-wakeup-banner"'), true);
+    assert.equal(docsHtml.includes('id="cloud-wakeup-banner"'), true);
+});
+
 

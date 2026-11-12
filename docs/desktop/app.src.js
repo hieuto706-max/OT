@@ -176,6 +176,92 @@ document.head.appendChild(style);
 // ==================== API CLIENT ====================
 const apiCache = new Map();
 
+function createDesktopWakeupController() {
+    const loginScreen = document.getElementById('screen-login');
+    const banner = document.getElementById('desktop-wakeup-banner');
+    const textEl = document.getElementById('desktop-wakeup-text');
+    const etaEl = document.getElementById('desktop-wakeup-eta');
+    const barEl = document.getElementById('desktop-wakeup-bar');
+    if (!loginScreen || !loginScreen.classList.contains('active') || !banner) {
+        return function noop() {};
+    }
+    let elapsed = 0;
+    let stepInterval = null;
+    const delayTimer = setTimeout(() => {
+        banner.style.display = 'block';
+        if (textEl) textEl.textContent = 'Máy chủ đang thức dậy từ chế độ nghỉ ban đêm...';
+        if (etaEl) etaEl.textContent = '~25s';
+        if (barEl) barEl.style.width = '22%';
+        stepInterval = setInterval(() => {
+            elapsed += 3;
+            const pct = Math.min(92, 22 + elapsed * 2.5);
+            const remain = Math.max(3, 28 - elapsed);
+            if (barEl) barEl.style.width = pct + '%';
+            if (etaEl) etaEl.textContent = '~' + remain + 's';
+            if (elapsed >= 12 && textEl) {
+                textEl.textContent = 'Đang nạp phiên bảo mật từ Supabase Cloud...';
+            }
+        }, 3000);
+    }, 3200);
+
+    return function stopWakeup() {
+        clearTimeout(delayTimer);
+        if (stepInterval) clearInterval(stepInterval);
+        banner.style.display = 'none';
+    };
+}
+
+function syncAdminThemeUI() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const iconDark = document.getElementById('icon-theme-dark');
+    const iconLight = document.getElementById('icon-theme-light');
+    const label = document.getElementById('label-theme-toggle');
+    if (iconDark) iconDark.style.display = isLight ? 'none' : 'inline-block';
+    if (iconLight) iconLight.style.display = isLight ? 'inline-block' : 'none';
+    if (label) label.textContent = isLight ? 'Clean Light' : 'Emerald Dark';
+}
+
+function toggleAdminTheme() {
+    const isCurrentlyLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const nextMode = isCurrentlyLight ? 'dark' : 'light';
+    if (nextMode === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+    }
+    try { window.localStorage.setItem('ot_theme_mode', nextMode); } catch (e) {}
+    syncAdminThemeUI();
+}
+
+function syncDensityUI() {
+    const isCompact = document.documentElement.classList.contains('density-compact');
+    const btnCompact = document.getElementById('btn-density-compact');
+    const btnComfort = document.getElementById('btn-density-comfort');
+    if (btnCompact) btnCompact.classList.toggle('active', isCompact);
+    if (btnComfort) btnComfort.classList.toggle('active', !isCompact);
+}
+
+function setTableDensity(mode) {
+    const isCompact = mode === 'compact';
+    document.documentElement.classList.toggle('density-compact', isCompact);
+    try { window.localStorage.setItem('ot_table_density', isCompact ? 'compact' : 'comfortable'); } catch (e) {}
+    syncDensityUI();
+}
+
+function resetAdminRecordFilters() {
+    const dateEl = document.getElementById('admin-filter-date');
+    const userEl = document.getElementById('admin-filter-user');
+    const searchEl = document.getElementById('admin-search-user');
+    const noteEl = document.getElementById('admin-search-note');
+    const teamEl = document.getElementById('admin-filter-team');
+    if (dateEl) dateEl.value = '';
+    if (userEl) userEl.value = '';
+    if (searchEl) searchEl.value = '';
+    if (noteEl) noteEl.value = '';
+    if (teamEl) teamEl.value = '';
+    if (typeof refreshAdminRecords === 'function') refreshAdminRecords();
+}
+
 async function api(endpoint, method = 'GET', body = null) {
     const isGet = method.toUpperCase() === 'GET';
     const cacheKey = endpoint;
@@ -189,34 +275,40 @@ async function api(endpoint, method = 'GET', body = null) {
         return apiCache.get(cacheKey);
     }
 
+    const stopWakeup = endpoint.includes('/api/auth/') ? createDesktopWakeupController() : function() {};
+
     const promise = (async () => {
-        const opts = {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-        };
-        // Gửi JWT Token nếu có
-        const token = localStorage.getItem('ot_auth_token');
-        if (token) {
-            opts.headers['Authorization'] = `Bearer ${token}`;
-        }
-        const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
-        if (currentUser && currentUser.id) {
-            opts.headers['x-user-id'] = currentUser.id;
-        }
-        if (body) opts.body = JSON.stringify(body);
-        const res = await fetch(`${API_BASE}${endpoint}`, opts);
-        const data = await res.json();
-        if (!res.ok) {
-            if ((res.status === 401 || res.status === 403) && 
-                !endpoint.includes('/api/auth/login') && 
-                !endpoint.includes('/api/auth/verify-email-otp') && 
-                !endpoint.includes('/api/auth/forgot-password')) {
-                clearAuthSession();
-                window.location.reload();
+        try {
+            const opts = {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+            };
+            // Gửi JWT Token nếu có
+            const token = localStorage.getItem('ot_auth_token');
+            if (token) {
+                opts.headers['Authorization'] = `Bearer ${token}`;
             }
-            throw new Error(data.error || 'Lỗi kết nối server');
+            const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
+            if (currentUser && currentUser.id) {
+                opts.headers['x-user-id'] = currentUser.id;
+            }
+            if (body) opts.body = JSON.stringify(body);
+            const res = await fetch(`${API_BASE}${endpoint}`, opts);
+            const data = await res.json();
+            if (!res.ok) {
+                if ((res.status === 401 || res.status === 403) && 
+                    !endpoint.includes('/api/auth/login') && 
+                    !endpoint.includes('/api/auth/verify-email-otp') && 
+                    !endpoint.includes('/api/auth/forgot-password')) {
+                    clearAuthSession();
+                    window.location.reload();
+                }
+                throw new Error(data.error || 'Lỗi kết nối server');
+            }
+            return data;
+        } finally {
+            stopWakeup();
         }
-        return data;
     })();
 
     if (isGet) {
@@ -1593,6 +1685,7 @@ async function deleteTeamFromModal(teamName) {
 }
 
 // Khởi tạo kênh nhận sự kiện thời gian thực (SSE)
+
 function initSseConnection() {
     if (window.sseSource) {
         window.sseSource.close();
@@ -1793,12 +1886,36 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
         let users;
 
         const isDefaultFilter = !dateFilter && !userId && !searchUser && !searchNote && !filterTeam;
+        const resetFilterBtn = document.getElementById('btn-reset-records-filter');
+        if (resetFilterBtn) {
+            resetFilterBtn.style.display = isDefaultFilter ? 'none' : 'inline-flex';
+        }
+
         if (isDefaultFilter && cachedRecords && cachedUsers) {
             records = [...cachedRecords];
             users = cachedUsers;
             // Sắp xếp các bản ghi mới nhất lên đầu
             records.sort((a, b) => b.date.localeCompare(a.date));
         } else {
+            const approvedTbody = document.getElementById('admin-records-approved-body');
+            if (approvedTbody && (!loadedRecords || loadedRecords.length === 0 || month !== window._lastRenderedAdminMonth)) {
+                approvedTbody.innerHTML = [1, 2, 3, 4].map(() => `
+                    <tr>
+                        <td><span class="skeleton-cell" style="width:120px;"></span></td>
+                        <td><span class="skeleton-cell" style="width:70px;"></span></td>
+                        <td><span class="skeleton-cell" style="width:80px;"></span></td>
+                        <td><span class="skeleton-cell" style="width:45px;"></span></td>
+                        <td><span class="skeleton-cell" style="width:45px;"></span></td>
+                        <td><span class="skeleton-cell" style="width:90px;"></span></td>
+                        <td><span class="skeleton-cell" style="width:50px;"></span></td>
+                        <td><span class="skeleton-cell" style="width:65px;"></span></td>
+                        <td><span class="skeleton-cell" style="width:140px;"></span></td>
+                        <td><span class="skeleton-cell" style="width:70px;"></span></td>
+                        <td><span class="skeleton-cell" style="width:60px;"></span></td>
+                    </tr>
+                `).join('');
+            }
+
             let url = '/api/records?';
             if (month) url += `month=${month}&`;
             if (userId) url += `userId=${userId}&`;
@@ -1808,19 +1925,20 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
             const usersData = await api('/api/users');
             users = usersData.users;
         }
+        window._lastRenderedAdminMonth = month;
         loadedRecords = records;
         loadedUsers = users;
         const currentUser = JSON.parse(localStorage.getItem('ot_current_user') || 'null');
         const isAdmin = currentUser && (currentUser.username === 'admin' || currentUser.isSuperAdmin);
 
         let hasCustomActivities = false;
-        let adminBtnText = '2. Hoạt động khác';
+        let adminBtnText = 'Hoạt động khác';
         if (isAdmin) {
             if (filterTeam && filterTeam !== 'unassigned' && typeof TEAMS !== 'undefined') {
                 const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === filterTeam);
                 hasCustomActivities = !!(teamObj && teamObj.customActivities && teamObj.customActivities.length > 0);
                 if (hasCustomActivities) {
-                    adminBtnText = '2. ' + teamObj.customActivities.map(a => a.name).join(' / ');
+                    adminBtnText = teamObj.customActivities.map(a => a.name).join(' / ');
                 }
             } else if (typeof TEAMS !== 'undefined') {
                 hasCustomActivities = TEAMS.some(t => typeof t === 'object' && t.customActivities && t.customActivities.length > 0);
@@ -1834,9 +1952,9 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
                         }
                     });
                     if (allActs.length > 0 && allActs.length <= 3) {
-                        adminBtnText = '2. ' + allActs.join(' / ');
+                        adminBtnText = allActs.join(' / ');
                     } else {
-                        adminBtnText = '2. Hoạt động khác';
+                        adminBtnText = 'Hoạt động khác';
                     }
                 }
             }
@@ -1846,7 +1964,7 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
                 const teamObj = TEAMS.find(t => typeof t === 'object' && t.name === managerTeam);
                 hasCustomActivities = !!(teamObj && teamObj.customActivities && teamObj.customActivities.length > 0);
                 if (hasCustomActivities) {
-                    adminBtnText = '2. ' + teamObj.customActivities.map(a => a.name).join(' / ');
+                    adminBtnText = teamObj.customActivities.map(a => a.name).join(' / ');
                 }
             }
         }
@@ -1854,7 +1972,7 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
         const adminRecTypeSelector = document.getElementById('admin-rec-type-selector');
         const btnAdminRecTypeTrips = document.getElementById('btn-admin-rec-type-trips');
         if (hasCustomActivities) {
-            if (adminRecTypeSelector) adminRecTypeSelector.style.display = 'flex';
+            if (adminRecTypeSelector) adminRecTypeSelector.style.display = 'inline-flex';
             if (btnAdminRecTypeTrips) {
                 btnAdminRecTypeTrips.style.display = 'inline-block';
                 btnAdminRecTypeTrips.textContent = adminBtnText;
@@ -1871,11 +1989,17 @@ async function refreshAdminRecords(cachedRecords, cachedUsers) {
 
         const filteredRecords = records.filter(r => {
             const user = users.find(u => u.id === r.userId);
-            const matchesUser = !searchUser || (user && (
-                user.fullname.toLowerCase().includes(searchUser) ||
-                user.username.toLowerCase().includes(searchUser)
-            ));
+            const matchesUnifiedQuery = !searchUser || (
+                (user && (
+                    user.fullname.toLowerCase().includes(searchUser) ||
+                    user.username.toLowerCase().includes(searchUser)
+                )) ||
+                (r.note && r.note.toLowerCase().includes(searchUser)) ||
+                (r.deliveryProvince && r.deliveryProvince.toLowerCase().includes(searchUser)) ||
+                (r.customActivity && r.customActivity.toLowerCase().includes(searchUser))
+            );
             const matchesNote = !searchNote || (r.note && r.note.toLowerCase().includes(searchNote));
+            const matchesUser = matchesUnifiedQuery;
             
             // Filter by Team
             let matchesTeam = true;
@@ -4868,7 +4992,7 @@ async function checkUpdateManual() {
         }
 
         // 2. Lấy version hiện tại của ứng dụng local
-        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.5.4';
+        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.6.0';
         const localBuildTime = window.OT_LOCAL_BUILD_TIME || parseInt(localStorage.getItem('ot_app_build_time')) || 0;
 
         // 3. Lấy version mới nhất trên Cloud Server
@@ -5014,7 +5138,7 @@ async function checkUpdateSilent() {
         const cloudUrl = window.OT_CLOUD_URL || API_BASE;
         if (!cloudUrl) return;
 
-        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.5.4';
+        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.6.0';
         const localBuildTime = window.OT_LOCAL_BUILD_TIME || parseInt(localStorage.getItem('ot_app_build_time')) || 0;
 
         const cloudRes = await fetch(`${cloudUrl}/api/version`);
@@ -5260,6 +5384,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isElectron) {
         document.body.classList.add('is-web-browser');
     }
+    syncAdminThemeUI();
+    syncDensityUI();
 
     // Admin record type tab selector click handlers
     const btnAdminRecTypeOt = document.getElementById('btn-admin-rec-type-ot');
@@ -5449,9 +5575,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (verEl) {
                 const valEl = verEl.querySelector('.login-ver-val');
                 if (valEl) {
-                    valEl.textContent = 'v' + (window.OT_LOCAL_VERSION || '1.5.4');
+                    valEl.textContent = 'v' + (window.OT_LOCAL_VERSION || '1.6.0');
                 } else {
-                    verEl.textContent = 'Phiên bản v' + (window.OT_LOCAL_VERSION || '1.5.4');
+                    verEl.textContent = 'Phiên bản v' + (window.OT_LOCAL_VERSION || '1.6.0');
                 }
             }
         }
@@ -5960,9 +6086,9 @@ async function editRecordDialog(recordId, source) {
     try {
         let record = loadedRecords.find(r => r.id === recordId);
         if (!record) {
-            const data = await api(`/api/records`);
-            loadedRecords = data.records || [];
-            record = loadedRecords.find(r => r.id === recordId);
+            const data = await api(`/api/records?id=${encodeURIComponent(recordId)}`);
+            const foundList = data.records || [];
+            record = foundList.find(r => r.id === recordId);
         }
         if (!record) return showToast('Không tìm thấy bản ghi', 'error');
 
@@ -6667,7 +6793,6 @@ async function rejectUnlinkDevice(userId, fullname) {
     ]);
 }
 
-
 // ==================== PREDEFINED OT REASONS UTILITIES ====================
 function setupPredefinedReasonsSelect(teamName, selectEl, isLunchChecked = false, isBackfillChecked = false, backfillMonth = '', isSunday = false) {
     if (!selectEl) return;
@@ -7325,6 +7450,11 @@ window.addActivityToTeam = addActivityToTeam;
 window.addPredefinedReason = addPredefinedReason;
 window.addMemberToTeamFromModal = addMemberToTeamFromModal;
 window.saveTeamSettingsFromModal = saveTeamSettingsFromModal;
+window.toggleAdminTheme = toggleAdminTheme;
+window.setTableDensity = setTableDensity;
+window.resetAdminRecordFilters = resetAdminRecordFilters;
+window.bulkApproveRecords = bulkApproveRecords;
+window.bulkRejectRecords = bulkRejectRecords;
+window.bulkApproveRejectedRecords = bulkApproveRejectedRecords;
+window.bulkDeleteRejectedRecords = bulkDeleteRejectedRecords;
 })();
-
-

@@ -27,7 +27,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.5.4">
+    <link rel="stylesheet" href="style.css?v=1.6.0">
     <style>
       /* Styles for the analytics charts */
       .chart-team-row {
@@ -132,6 +132,15 @@
     <script id="anti-flash-script-2">
       (function() {
         try {
+          const savedTheme = localStorage.getItem('ot_theme_mode');
+          if (savedTheme === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+          const savedDensity = localStorage.getItem('ot_table_density');
+          if (savedDensity === 'compact') {
+            document.documentElement.classList.add('density-compact');
+          }
+
           // Chỉ đồng bộ từ sessionStorage khi người dùng thực sự chọn phiên tạm (không tích "Ghi nhớ đăng nhập")
           const isTempSession = sessionStorage.getItem('ot_session_temp') === '1';
           const tempUser = isTempSession ? sessionStorage.getItem('ot_current_user') : null;
@@ -213,7 +222,7 @@
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                                 <circle cx="12" cy="7" r="4"/>
                             </svg>
-                            <input type="text" id="login-admin-username" placeholder="Nhập tên đăng nhập quản trị..." required>
+                            <input type="text" id="login-admin-username" name="username" autocomplete="username" placeholder="Nhập tên đăng nhập quản trị..." required>
                         </div>
                     </div>
                     <div class="form-group">
@@ -223,7 +232,7 @@
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                             </svg>
-                            <input type="password" id="login-password" placeholder="Nhập mật khẩu..." required>
+                            <input type="password" id="login-password" name="password" autocomplete="current-password" placeholder="Nhập mật khẩu..." required>
                             <button type="button" class="btn-toggle-password" id="btn-toggle-password" title="Hiện/Ẩn mật khẩu" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; z-index: 10; transition: var(--transition-fast);">
                                 <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -242,6 +251,20 @@
                         </svg>
                     </button>
                     <p id="login-error-admin" class="form-error"></p>
+                    <div id="desktop-wakeup-banner" class="cloud-wakeup-banner" style="display: none;" aria-live="polite">
+                        <div class="wakeup-banner-head">
+                            <span class="wakeup-banner-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                                    <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+                                </svg>
+                                <span id="desktop-wakeup-text">Máy chủ đang thức dậy từ chế độ nghỉ ban đêm...</span>
+                            </span>
+                            <span id="desktop-wakeup-eta" class="wakeup-banner-eta">~20s</span>
+                        </div>
+                        <div class="wakeup-progress-track">
+                            <div id="desktop-wakeup-bar" class="wakeup-progress-fill"></div>
+                        </div>
+                    </div>
                 </form>
                 <div class="login-version" id="login-version" style="margin-top: 20px; text-align: center; color: var(--text-muted); font-size: 11px; line-height: 1.6;">
                     <div>Phiên bản <span class="login-ver-val">v1.5.0</span></div>
@@ -339,8 +362,23 @@
                         <h2 id="admin-header-title">Bảng chấm OT</h2>
                         <span id="admin-welcome" style="display: none;"></span>
                     </div>
-                    <div class="header-right" style="display: flex; align-items: center; gap: 16px;">
-                        <div class="header-date" id="admin-date" style="font-size: 12px; color: var(--text-secondary); background: rgba(255, 255, 255, 0.03); padding: 4px 10px; border-radius: var(--radius-md); border: 1px solid var(--border-color);"></div>
+                    <div class="header-right" style="display: flex; align-items: center; gap: 12px;">
+                        <div class="header-date" id="admin-date"></div>
+
+                        <!-- Light / Dark Theme Toggle -->
+                        <button type="button" class="btn-theme-switcher" id="btn-theme-toggle" onclick="toggleAdminTheme()" title="Chuyển đổi giao diện Sáng / Tối">
+                            <svg id="icon-theme-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            </svg>
+                            <svg id="icon-theme-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" style="display: none;">
+                                <circle cx="12" cy="12" r="5"/>
+                                <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                            </svg>
+                            <span id="label-theme-toggle">Emerald Dark</span>
+                        </button>
                         
                         <!-- Notification Bell -->
                         <button class="btn-notification-bell" id="btn-notification-bell" title="Thông báo" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; transition: var(--transition-fast);">
@@ -437,9 +475,33 @@
                 <!-- Tab: Records -->
             <div id="admin-tab-records" class="admin-tab-content active">
                 <div class="panel">
-                    <div class="panel-header">
-                        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="display:inline; margin-right:4px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Bảng chấm tăng ca</h3>
-                        <div class="panel-actions">
+                    <div class="panel-header panel-header-enterprise">
+                        <div class="panel-title-row">
+                            <div class="panel-title-group">
+                                <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Bảng chấm tăng ca</h3>
+                                <!-- Segmented Pill Control for Record Mode -->
+                                <div id="admin-rec-type-selector" class="segmented-pill-group">
+                                    <button type="button" class="btn btn-sm btn-primary seg-pill-btn" id="btn-admin-rec-type-ot">Tăng ca (OT)</button>
+                                    <button type="button" class="btn btn-sm btn-ghost seg-pill-btn" id="btn-admin-rec-type-trips">Hoạt động khác</button>
+                                </div>
+                            </div>
+                            <div class="panel-density-controls">
+                                <span class="density-label">Hiển thị:</span>
+                                <div class="density-pill-group">
+                                    <button type="button" class="density-btn" id="btn-density-compact" onclick="setTableDensity('compact')" title="Hiển thị gọn nhiều dòng">Gọn</button>
+                                    <button type="button" class="density-btn active" id="btn-density-comfort" onclick="setTableDensity('comfortable')" title="Hiển thị thoáng rộng">Thoáng</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="enterprise-filter-bar">
+                            <div class="filter-search-box">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                </svg>
+                                <input type="text" id="admin-search-user" class="input-sm filter-unified-search" placeholder="Tìm nhanh họ tên, mã NV hoặc ghi chú...">
+                                <input type="hidden" id="admin-search-note" value="">
+                            </div>
                             <div class="filter-group">
                                 <label>Tháng:</label>
                                 <input type="month" id="admin-filter-month" class="input-sm">
@@ -460,20 +522,10 @@
                                     <option value="">Tất cả</option>
                                 </select>
                             </div>
-                            <div class="filter-group">
-                                <label>Tìm họ tên:</label>
-                                <input type="text" id="admin-search-user" class="input-sm" placeholder="Họ tên / Username..." style="max-width: 150px;">
-                            </div>
-                            <div class="filter-group">
-                                <label>Lọc ghi chú:</label>
-                                <input type="text" id="admin-search-note" class="input-sm" placeholder="Từ khóa ghi chú..." style="max-width: 150px;">
-                            </div>
+                            <button type="button" id="btn-reset-records-filter" class="btn-reset-filter" onclick="resetAdminRecordFilters()" style="display: none;">
+                                ✕ Xóa lọc
+                            </button>
                         </div>
-                    </div>
-                    <!-- Record Type Selector for Admin -->
-                    <div id="admin-rec-type-selector" style="margin: 0 20px 15px 20px; display: flex; align-items: center; gap: 8px;">
-                        <button class="btn btn-sm btn-primary" id="btn-admin-rec-type-ot" style="border-radius: 6px; padding: 6px 16px; font-weight:600;">1. Bản ghi Tăng ca (OT)</button>
-                        <button class="btn btn-sm btn-ghost" id="btn-admin-rec-type-trips" style="border-radius: 6px; padding: 6px 16px; font-weight:600;">2. Hoạt động tùy chọn</button>
                     </div>
                     <!-- Sub-tabs within Records -->
                     <div class="sub-tabs">
@@ -509,7 +561,7 @@
                                 </thead>
                                 <tbody id="admin-records-approved-body">
                                     <tr class="empty-row">
-                                        <td colspan="10">Chưa có dữ liệu tăng ca</td>
+                                        <td colspan="11">Chưa có dữ liệu tăng ca</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -1385,6 +1437,6 @@
         window.OT_LOCAL_VERSION = window.OT_LOCAL_VERSION || '1.5.0';
     </script>
     <script src="server-config.js" defer></script>
-    <script src="app.js?v=1.5.4" defer></script>
+    <script src="app.js?v=1.6.0" defer></script>
 </body>
 </html>

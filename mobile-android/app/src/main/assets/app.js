@@ -166,7 +166,7 @@ function isLocalNetworkUrl(urlStr) {
 }
 
 // Khởi tạo API URL: lấy từ localStorage nếu có, mặc định là địa chỉ Cloud Render, nếu chạy web local thì tự động dùng origin
-const MOBILE_VERSION = window.PACKAGED_VERSION || '1.5.4';
+const MOBILE_VERSION = window.PACKAGED_VERSION || '1.6.0';
 let updateCheckInterval = null;
 const PROVINCES = [
     "An Giang", "Bà Rịa – Vũng Tàu", "Bạc Liêu", "Bắc Giang", "Bắc Kạn", "Bắc Ninh", "Bến Tre", "Bình Dương", "Bình Định", "Bình Phước", "Bình Thuận", "Cà Mau", "Cần Thơ", "Cao Bằng", "Đà Nẵng", "Đắk Lắk", "Đắk Nông", "Điện Biên", "Đồng Nai", "Đồng Tháp", "Gia Lai", "Hà Giang", "Hà Nam", "Hà Nội", "Hà Tĩnh", "Hải Dương", "Hải Phòng", "Hậu Giang", "Hòa Bình", "Hưng Yên", "Khánh Hòa", "Kiên Giang", "Kon Tum", "Lai Châu", "Lạng Sơn", "Lào Cai", "Lâm Đồng", "Long An", "Nam Định", "Nghệ An", "Ninh Bình", "Ninh Thuận", "Phú Thọ", "Phú Yên", "Quảng Bình", "Quảng Nam", "Quảng Ngãi", "Quảng Ninh", "Quảng Trị", "Sóc Trăng", "Sơn La", "Tây Ninh", "Thái Bình", "Thái Nguyên", "Thanh Hóa", "Thừa Thiên Huế", "Tiền Giang", "TP. Hồ Chí Minh", "Trà Vinh", "Tuyên Quang", "Vĩnh Long", "Vĩnh Phúc", "Yên Bái"
@@ -514,6 +514,70 @@ deviceId = getDeviceId();
 let currentUser = null;
 let historyRecordsList = [];
 
+// ==================== COLD-START WAKEUP & THEME HELPERS ====================
+function createMobileWakeupController() {
+    var banner = document.getElementById('mobile-wakeup-banner');
+    var textEl = document.getElementById('mobile-wakeup-text');
+    var barEl = document.getElementById('mobile-wakeup-bar');
+    var delayTimer = null;
+    var tickTimer = null;
+    var startedAt = Date.now();
+    var stopped = false;
+
+    delayTimer = setTimeout(function() {
+        if (stopped || !banner) return;
+        banner.style.display = 'block';
+        var update = function() {
+            var sec = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
+            if (textEl) {
+                textEl.textContent = 'Đang đánh thức máy chủ Cloud... (' + sec + 's)';
+            }
+            if (barEl) {
+                var pct = Math.min(94, Math.round(12 + (sec / 45) * 82));
+                barEl.style.width = pct + '%';
+            }
+        };
+        update();
+        tickTimer = setInterval(update, 1000);
+    }, 3200);
+
+    return {
+        stop: function() {
+            stopped = true;
+            if (delayTimer) clearTimeout(delayTimer);
+            if (tickTimer) clearInterval(tickTimer);
+            if (banner) banner.style.display = 'none';
+            if (barEl) barEl.style.width = '8%';
+        }
+    };
+}
+
+function syncMobileThemeUI() {
+    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    var sunSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+    var moonSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="17" height="17"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    var icons = document.querySelectorAll('.mobile-theme-icon');
+    for (var i = 0; i < icons.length; i++) {
+        icons[i].innerHTML = isLight ? moonSvg : sunSvg;
+    }
+    var metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+        metaTheme.setAttribute('content', isLight ? '#f1f5f9' : '#07070c');
+    }
+}
+
+window.toggleMobileTheme = function() {
+    var cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    var next = cur === 'light' ? 'dark' : 'light';
+    if (next === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+    }
+    safeStorage.setItem('ot_theme_mode', next);
+    syncMobileThemeUI();
+};
+
 // ==================== API CLIENT ====================
 // Dùng XMLHttpRequest thay cho fetch để tương thích Android 5.0 WebView
 function api(endpoint, method, body, skipAuthRedirect) {
@@ -534,6 +598,7 @@ function api(endpoint, method, body, skipAuthRedirect) {
     if (!API) {
         return Promise.reject(new Error('Chưa kết nối Server! Nhấn ⚙️ Cấu hình IP Server để thiết lập.'));
     }
+    var wakeupCtrl = (endpoint && endpoint.indexOf('/api/auth/') !== -1) ? createMobileWakeupController() : null;
     return new Promise(function(resolve, reject) {
         var xhr = new XMLHttpRequest();
         xhr.open(method, API + endpoint, true);
@@ -551,6 +616,7 @@ function api(endpoint, method, body, skipAuthRedirect) {
         }
         xhr.timeout = (API.indexOf('onrender.com') !== -1 || API.indexOf('otmanager.id.vn') !== -1) ? 60000 : 10000;
         xhr.onload = function() {
+            if (wakeupCtrl) wakeupCtrl.stop();
             try {
                 var data = JSON.parse(xhr.responseText);
                 if (xhr.status >= 200 && xhr.status < 300) {
@@ -577,9 +643,11 @@ function api(endpoint, method, body, skipAuthRedirect) {
             }
         };
         xhr.onerror = function() {
+            if (wakeupCtrl) wakeupCtrl.stop();
             reject(new Error('Không thể kết nối Server! Kiểm tra IP hoặc WiFi.'));
         };
         xhr.ontimeout = function() {
+            if (wakeupCtrl) wakeupCtrl.stop();
             reject(new Error('Server không phản hồi (timeout)! Kiểm tra kết nối.'));
         };
         if (body) {
@@ -1048,11 +1116,11 @@ async function refreshCurrentUserInfo() {
             if (btn) {
                 if (currentUser.pendingUnlink) {
                     btn.disabled = true;
-                    btn.textContent = '⏳ Đang chờ duyệt huỷ liên kết...';
+                    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Đang chờ duyệt huỷ liên kết...';
                     btn.style.opacity = '0.7';
                 } else {
                     btn.disabled = false;
-                    btn.textContent = '🔓 Xin huỷ liên kết thiết bị';
+                    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg> Xin huỷ liên kết thiết bị';
                     btn.style.opacity = '1';
                 }
             }
@@ -1060,6 +1128,16 @@ async function refreshCurrentUserInfo() {
     } catch (err) {
         console.error('Error refreshing user info:', err);
     }
+}
+
+function formatBackfillMonthDisplay(rawVal) {
+    const val = (rawVal || '').trim();
+    if (!val) return '';
+    const ymMatch = val.match(/^(\d{4})-(\d{2})$/);
+    if (ymMatch) {
+        return `${ymMatch[2]}/${ymMatch[1]}`;
+    }
+    return val;
 }
 
 function setupMobilePredefinedReasonsSelect(reasons, selectEl, isLunchChecked = false, isBackfillChecked = false, backfillMonth = '', isSunday = false) {
@@ -1077,8 +1155,9 @@ function setupMobilePredefinedReasonsSelect(reasons, selectEl, isLunchChecked = 
     }
     
     if (isBackfillChecked) {
-        const displayText = backfillMonth ? `Bù giờ tăng ca tháng ${backfillMonth} bị thiếu` : 'Bù giờ tăng ca tháng ... bị thiếu';
-        const displayVal = backfillMonth ? `Bù giờ tăng ca tháng ${backfillMonth} bị thiếu` : '';
+        const formattedMonth = formatBackfillMonthDisplay(backfillMonth);
+        const displayText = formattedMonth ? `Bù giờ tăng ca tháng ${formattedMonth} bị thiếu` : 'Bù giờ tăng ca tháng ... bị thiếu';
+        const displayVal = formattedMonth ? `Bù giờ tăng ca tháng ${formattedMonth} bị thiếu` : '';
         selectEl.innerHTML = `
             <option value="${displayVal}">${displayText}</option>
         `;
@@ -1311,6 +1390,47 @@ function handleCustomActivityChange() {}
 function handleEditCustomActivityChange() {}
 
 // ==================== OT FORM ====================
+function syncQuickTimeChips(inputId, containerId) {
+    var targetId = inputId || 'ot-end';
+    var wrapId = containerId || (targetId === 'edit-ot-end' ? 'edit-ot-quick-time-chips' : 'ot-quick-time-chips');
+    var endEl = document.getElementById(targetId);
+    var wrap = document.getElementById(wrapId);
+    if (!endEl || !wrap) return;
+    var curVal = endEl.value || '';
+    var btns = wrap.querySelectorAll('.quick-time-chip');
+    for (var i = 0; i < btns.length; i++) {
+        if (btns[i].getAttribute('data-time') === curVal) {
+            btns[i].classList.add('active');
+        } else {
+            btns[i].classList.remove('active');
+        }
+    }
+}
+
+window.pickQuickEndTime = function(timeStr, targetInputId) {
+    var inputId = targetInputId || 'ot-end';
+    var endEl = document.getElementById(inputId);
+    if (!endEl) return;
+    endEl.value = timeStr;
+    syncQuickTimeChips(inputId);
+    if (inputId === 'ot-end') {
+        updatePreview();
+    }
+    endEl.dispatchEvent(new Event('change', { bubbles: true }));
+};
+
+window.pickPrevBackfillMonth = function(targetInputId) {
+    var inputId = targetInputId || 'ot-backfill-month';
+    var monthEl = document.getElementById(inputId);
+    if (!monthEl) return;
+    var now = new Date();
+    var prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    var ym = prev.getFullYear() + '-' + String(prev.getMonth() + 1).padStart(2, '0');
+    monthEl.value = ym;
+    monthEl.dispatchEvent(new Event('input', { bubbles: true }));
+    monthEl.dispatchEvent(new Event('change', { bubbles: true }));
+};
+
 function updatePreview() {
     // Kiểm tra và hiển thị cảnh báo nếu chọn ngày thuộc tháng đã khóa
     const dateInput = document.getElementById('ot-date');
@@ -1407,6 +1527,7 @@ function updatePreview() {
         : items.map(i => `<div class="preview-row"><span>${i.label}</span><span class="preview-row-val">${i.val}</span></div>`).join('');
 
     totalEl.textContent = total.toFixed(1);
+    syncQuickTimeChips('ot-end', 'ot-quick-time-chips');
 
     // Cập nhật tính bắt buộc của ghi chú
     const noteEl = document.getElementById('ot-note');
@@ -1457,6 +1578,10 @@ function resetForm() {
     }
     const backfillHours = document.getElementById('ot-backfill-hours');
     if (backfillHours) backfillHours.value = '';
+    const backfillMonth = document.getElementById('ot-backfill-month');
+    if (backfillMonth) backfillMonth.value = '';
+    const backfillMonthGroup = document.getElementById('ot-backfill-month-group');
+    if (backfillMonthGroup) backfillMonthGroup.style.display = 'none';
 
     // Reset custom activities
     document.querySelectorAll('.ot-custom-activity-checkbox').forEach(chk => {
@@ -2432,6 +2557,8 @@ function handleEditDateChange() {
 
 // ==================== INIT ====================
 function initApp() {
+    syncMobileThemeUI();
+    syncQuickTimeChips('ot-end', 'ot-quick-time-chips');
     const isBrowser = window.location.protocol !== 'file:' && !window.AndroidBridge;
     if (isBrowser) {
         document.body.classList.add('is-web-browser');
@@ -2744,6 +2871,12 @@ function initApp() {
     // Edit OT form
     const formEditOT = document.getElementById('form-edit-ot');
     if (formEditOT) formEditOT.addEventListener('submit', handleEditOTSubmit);
+
+    const editOtEndInput = document.getElementById('edit-ot-end');
+    if (editOtEndInput) {
+        editOtEndInput.addEventListener('change', () => syncQuickTimeChips('edit-ot-end', 'edit-ot-quick-time-chips'));
+        editOtEndInput.addEventListener('input', () => syncQuickTimeChips('edit-ot-end', 'edit-ot-quick-time-chips'));
+    }
 
     const btnEditOTCancel = document.getElementById('edit-ot-cancel');
     if (btnEditOTCancel) {
@@ -3128,6 +3261,12 @@ async function editRecordDialog(id) {
                     try {
                         const data = await api(`/api/records?userId=${currentUser.id}&month=${month}`);
                         record = data.records.find(r => r.id === id);
+                        if (!record) {
+                            const byId = await api(`/api/records?id=${encodeURIComponent(id)}`);
+                            if (byId && Array.isArray(byId.records) && byId.records.length > 0) {
+                                record = byId.records[0];
+                            }
+                        }
                     } catch (apiErr) {
                         console.error('[editRecordDialog] API fallback fetch error:', apiErr);
                     }
@@ -3187,6 +3326,7 @@ async function editRecordDialog(id) {
         elStart.value = record.otStart || '16:30';
         console.log('[editRecordDialog] Step 10: Start set');
         elEnd.value = record.otEnd || '16:30';
+        syncQuickTimeChips('edit-ot-end', 'edit-ot-quick-time-chips');
         console.log('[editRecordDialog] Step 11: End set');
         
         const isBackfill = record.isBackfill || (record.note && (record.note.includes('[BÙ THÁNG TRƯỚC]') || record.note.includes('[TĂNG THÁNG NÀY]')));
@@ -3263,14 +3403,23 @@ async function editRecordDialog(id) {
         // Setup predefined reasons for Edit form based on current lunch OT state
         const reasonsList = (teamSettings && teamSettings.predefinedReasons) ? teamSettings.predefinedReasons : [];
         let backfillMonth = '';
+        let backfillMonthInputVal = '';
         if (isBackfill && record.note) {
             const match = record.note.match(/tháng\s+([^\s]+)/i);
             if (match) {
                 backfillMonth = match[1];
+                const myMatch = backfillMonth.match(/^(\d{1,2})\/(\d{4})$/);
+                if (myMatch) {
+                    backfillMonthInputVal = `${myMatch[2]}-${myMatch[1].padStart(2, '0')}`;
+                } else if (/^\d{4}-\d{2}$/.test(backfillMonth)) {
+                    backfillMonthInputVal = backfillMonth;
+                } else if (/^\d{1,2}$/.test(backfillMonth)) {
+                    backfillMonthInputVal = `${new Date().getFullYear()}-${backfillMonth.padStart(2, '0')}`;
+                }
             }
         }
         const elBackfillMonth = document.getElementById('edit-ot-backfill-month');
-        if (elBackfillMonth) elBackfillMonth.value = backfillMonth;
+        if (elBackfillMonth) elBackfillMonth.value = backfillMonthInputVal;
 
         const dateVal = elDate ? elDate.value : '';
         const isSundayOT = dateVal ? new Date(dateVal + 'T00:00:00').getDay() === 0 : false;

@@ -19,7 +19,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
     <link id="main-theme-style" rel="stylesheet" href="style.css">
     <!-- Prevent login screen flashing if already logged in -->
     <style id="anti-flash-style">
@@ -41,6 +41,10 @@
     <script id="anti-flash-script">
       (function() {
         try {
+          const savedTheme = localStorage.getItem('ot_theme_mode');
+          if (savedTheme === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
           const saved = localStorage.getItem('ot_mobile_user') || sessionStorage.getItem('ot_mobile_user');
           const loginTime = localStorage.getItem('ot_login_time') || sessionStorage.getItem('ot_login_time');
           const token = localStorage.getItem('ot_auth_token') || sessionStorage.getItem('ot_auth_token');
@@ -101,6 +105,7 @@
     <!-- ==================== LOGIN SCREEN & LANDING PAGE ==================== -->
     <div id="screen-login" class="screen">
         <header class="landing-header">
+            <div style="width: 38px;"></div>
             <div class="landing-logo">
                 <svg viewBox="0 0 48 48" fill="none" class="logo-svg">
                     <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#gm2)"/>
@@ -114,6 +119,9 @@
                 </svg>
                 <span class="logo-text">OT Manager</span>
             </div>
+            <button type="button" class="header-btn btn-mobile-theme" id="btn-mobile-theme-login" onclick="toggleMobileTheme()" title="Đổi giao diện Sáng / Tối" aria-label="Đổi giao diện Sáng / Tối">
+                <span class="mobile-theme-icon"></span>
+            </button>
         </header>
 
         <div class="landing-container">
@@ -127,12 +135,20 @@
                     </div>
 
                     <!-- Tabs chọn loại đăng nhập -->
-                    <div class="login-tabs-nav" style="display: flex; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.08);">
-                        <button type="button" id="tab-btn-login-emp" class="login-tab-btn active" style="flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; color: #020604; background: var(--green); cursor: pointer; transition: all 0.25s ease;">
-                            👤 Nhân viên
+                    <div class="login-tabs-nav">
+                        <button type="button" id="tab-btn-login-emp" class="login-tab-btn active" style="flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; color: #020604; background: var(--green); cursor: pointer; transition: all 0.25s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="15" height="15">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            <span>Nhân viên</span>
                         </button>
-                        <button type="button" id="tab-btn-login-admin" class="login-tab-btn" style="flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; color: var(--text-sub); background: transparent; cursor: pointer; transition: all 0.25s ease;">
-                            👔 Quản lý
+                        <button type="button" id="tab-btn-login-admin" class="login-tab-btn" style="flex: 1; padding: 10px; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; color: var(--text-sub); background: transparent; cursor: pointer; transition: all 0.25s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="15" height="15">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                <path d="m9 12 2 2 4-4"/>
+                            </svg>
+                            <span>Quản lý</span>
                         </button>
                     </div>
 
@@ -145,7 +161,7 @@
                                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                                     <circle cx="12" cy="7" r="4"/>
                                 </svg>
-                                <input type="text" id="login-user" placeholder="Nhập mã nhân viên..." autocomplete="username" required>
+                                <input type="text" id="login-user" name="username" placeholder="Nhập mã nhân viên..." autocomplete="username" required>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary btn-full" id="btn-login-emp">
@@ -163,7 +179,7 @@
                                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                                     <circle cx="12" cy="7" r="4"/>
                                 </svg>
-                                <input type="text" id="login-admin-user" placeholder="Nhập tên đăng nhập quản lý..." autocomplete="username" required>
+                                <input type="text" id="login-admin-user" name="username" placeholder="Nhập tên đăng nhập quản lý..." autocomplete="username" required>
                             </div>
                         </div>
                         <div class="form-group" style="margin-top: 14px;">
@@ -173,7 +189,7 @@
                                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                                     <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                                 </svg>
-                                <input type="password" id="login-admin-password" placeholder="Nhập mật khẩu..." autocomplete="current-password" required>
+                                <input type="password" id="login-admin-password" name="password" placeholder="Nhập mật khẩu..." autocomplete="current-password" required>
                                 <button type="button" class="btn-toggle-password" id="btn-toggle-admin-pw" title="Hiện/Ẩn mật khẩu" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; z-index: 10;">
                                     <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
                                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -188,9 +204,20 @@
                         <p id="login-error-admin" class="form-error"></p>
                     </form>
 
+                    <!-- Cold-Start Cloud Wakeup Banner -->
+                    <div id="mobile-wakeup-banner" class="cloud-wakeup-banner" style="display: none;" role="status" aria-live="polite">
+                        <div class="wakeup-banner-head">
+                            <span class="wakeup-spinner"></span>
+                            <span id="mobile-wakeup-text">Đang đánh thức máy chủ Cloud... (0s)</span>
+                        </div>
+                        <div class="wakeup-progress-track">
+                            <div id="mobile-wakeup-bar" class="wakeup-progress-fill"></div>
+                        </div>
+                    </div>
+
                     <div class="login-footer" style="margin-top: 20px; text-align: center; color: var(--text-muted); font-size: 11px; line-height: 1.6;">
                         <div class="login-register-hint" style="color: var(--text-secondary); font-weight: 500; margin-bottom: 4px;">Chưa có tài khoản? Liên hệ quản lý</div>
-                        <div class="login-version-badge" style="margin-bottom: 6px;">Phiên bản <span class="login-ver-val">v1.5.4</span></div>
+                        <div class="login-version-badge" style="margin-bottom: 6px;">Phiên bản <span class="login-ver-val">v1.6.0</span></div>
                         <div>Phát triển bởi: Đội ngũ phát triển OT Manager</div>
                         <div>Hỗ trợ kỹ thuật: support@otmanager.id.vn</div>
                         <div style="margin-top: 8px; font-size: 10px; opacity: 0.8; max-width: 280px; margin-left: auto; margin-right: auto; line-height: 1.4;">
@@ -215,13 +242,18 @@
                     <span id="app-connection-badge" style="font-size: 0.65rem; padding: 2px 6px; border-radius: 12px; background: rgba(239, 68, 68, 0.15); color: #ef4444; display: none; font-weight: 700;">Offline</span>
                 </div>
             </div>
-            <button class="header-btn" id="btn-logout" title="Đăng xuất">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                    <polyline points="16 17 21 12 16 7"/>
-                    <line x1="21" y1="12" x2="9" y2="12"/>
-                </svg>
-            </button>
+            <div class="header-actions" style="display: flex; align-items: center; gap: 8px;">
+                <button type="button" class="header-btn btn-mobile-theme" id="btn-mobile-theme" onclick="toggleMobileTheme()" title="Đổi giao diện Sáng / Tối" aria-label="Đổi giao diện Sáng / Tối">
+                    <span class="mobile-theme-icon"></span>
+                </button>
+                <button class="header-btn" id="btn-logout" title="Đăng xuất">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                </button>
+            </div>
         </header>
 
         <!-- Tab Content -->
@@ -240,7 +272,11 @@
                 <!-- Sync Banner -->
                 <div id="sync-banner" style="display: none;">
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 1.1rem; animation: pulse 2s infinite;">⚠️</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="18" height="18" style="flex-shrink: 0; animation: pulse 2s infinite;">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
                         <span>Có <strong id="unsynced-count">0</strong> dữ liệu chưa đồng bộ.</span>
                     </div>
                     <button type="button" id="btn-manual-sync" style="background: #f59e0b; color: #0f0f1a; padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; font-weight: 700; border: none; cursor: pointer;">Đồng bộ ngay</button>
@@ -264,7 +300,11 @@
                             <label>Ngày tăng ca</label>
                             <input type="date" id="ot-date" required>
                             <div id="closed-month-warning" style="display: none; color: #f59e0b; font-size: 11px; font-weight: 600; margin-top: 6px; line-height: 1.4;">
-                                ⚠️ Tháng này đã chốt công. Đăng ký mới của bạn sẽ được gửi dưới dạng Chờ duyệt để Quản lý phê duyệt.
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="13" height="13" style="vertical-align: -2px; margin-right: 4px;">
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                    <line x1="12" y1="9" x2="12" y2="13"/>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                </svg>Tháng này đã chốt công. Đăng ký mới của bạn sẽ được gửi dưới dạng Chờ duyệt để Quản lý phê duyệt.
                             </div>
                         </div>
 
@@ -288,8 +328,16 @@
                         </div>
                         <!-- Backfill month input -->
                         <div class="form-group" id="ot-backfill-month-group" style="display: none; margin-bottom: 14px;">
-                            <label>Tháng bị thiếu</label>
-                            <input type="text" id="ot-backfill-month" placeholder="Ví dụ: 07/2026 hoặc 07">
+                            <div class="field-label-row">
+                                <label for="ot-backfill-month">Tháng bị thiếu</label>
+                                <button type="button" class="btn-prev-month-chip" id="btn-pick-prev-month" onclick="pickPrevBackfillMonth('ot-backfill-month')">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="13" height="13">
+                                        <polyline points="15 18 9 12 15 6"/>
+                                    </svg>
+                                    Tháng trước
+                                </button>
+                            </div>
+                            <input type="month" id="ot-backfill-month">
                         </div>
 
                         <div id="ot-normal-inputs">
@@ -313,6 +361,14 @@
                             <div class="form-group">
                                 <label>Giờ KT OT chiều</label>
                                 <input type="time" id="ot-end" value="16:30">
+                                <div class="quick-time-chips" id="ot-quick-time-chips" role="group" aria-label="Chọn nhanh giờ kết thúc OT">
+                                    <button type="button" class="quick-time-chip" data-time="18:00" onclick="pickQuickEndTime('18:00')">18:00</button>
+                                    <button type="button" class="quick-time-chip" data-time="19:00" onclick="pickQuickEndTime('19:00')">19:00</button>
+                                    <button type="button" class="quick-time-chip" data-time="20:00" onclick="pickQuickEndTime('20:00')">20:00</button>
+                                    <button type="button" class="quick-time-chip" data-time="20:30" onclick="pickQuickEndTime('20:30')">20:30</button>
+                                    <button type="button" class="quick-time-chip" data-time="21:00" onclick="pickQuickEndTime('21:00')">21:00</button>
+                                    <button type="button" class="quick-time-chip" data-time="22:00" onclick="pickQuickEndTime('22:00')">22:00</button>
+                                </div>
                             </div>
                         </div>
 
@@ -326,7 +382,7 @@
 
                         <div class="form-group">
                             <label for="ot-note">Lý do tăng ca</label>
-                            <select id="ot-note" style="width: 100%; height: 38px; padding: 0 8px; font-size: 14px; background:var(--bg-input); color:var(--text-main); border:1px solid var(--border); border-radius:8px;" required></select>
+                            <select id="ot-note" class="ot-reason-select" required></select>
                         </div>
 
                         <!-- Preview -->
@@ -401,7 +457,14 @@
 
                     <!-- Danh sách yêu cầu huỷ liên kết thiết bị nếu có -->
                     <div id="approvals-unlinks-section" style="display: none; margin-bottom: 16px;">
-                        <div style="font-size: 12px; font-weight: 700; color: #ef4444; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">⚠️ Yêu cầu huỷ liên kết thiết bị</div>
+                        <div style="font-size: 12px; font-weight: 700; color: #ef4444; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 5px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="14" height="14">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                            Yêu cầu huỷ liên kết thiết bị
+                        </div>
                         <div id="approvals-unlinks-list"></div>
                     </div>
 
@@ -424,7 +487,7 @@
                     <div class="profile-avatar" id="profile-avatar">NV</div>
                     <h2 id="profile-name">Nhân viên</h2>
                     <p id="profile-username">@username</p>
-                    <div class="profile-ver-badge">Phiên bản <span id="app-version-display">v1.5.4</span></div>
+                    <div class="profile-ver-badge">Phiên bản <span id="app-version-display">v1.6.0</span></div>
                 </div>
 
                 <div class="card">
@@ -501,10 +564,19 @@
                 </div>
 
                 <button class="btn btn-ghost btn-full" id="btn-check-update-mobile" style="margin-bottom:12px; border: 1px dashed rgba(16, 185, 129, 0.4); color: #10b981; font-weight: 600;">
-                    🔄 Kiểm tra cập nhật
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16">
+                        <polyline points="23 4 23 10 17 10"/>
+                        <polyline points="1 20 1 14 7 14"/>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                    </svg>
+                    Kiểm tra cập nhật
                 </button>
                 <button class="btn btn-warning btn-full" id="btn-unlink-device" style="margin-bottom:12px;">
-                    🔓 Xin huỷ liên kết thiết bị
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+                    </svg>
+                    Xin huỷ liên kết thiết bị
                 </button>
                 <button class="btn btn-danger btn-full" id="btn-logout-2">
                     Đăng xuất
@@ -563,9 +635,13 @@
 
     <!-- Edit OT Dialog -->
     <div id="edit-overlay" class="confirm-overlay">
-        <div class="confirm-dialog" style="max-width: 90%; width: 340px; text-align: left;">
-            <h3 style="margin-top:0;margin-bottom:16px;color:var(--text);font-size:1.1rem;display:flex;align-items:center;gap:6px;">
-                📝 Sửa giờ tăng ca
+        <div class="confirm-dialog" style="max-width: 90%; width: 350px; text-align: left;">
+            <h3 style="margin-top:0;margin-bottom:16px;color:var(--text);font-size:1.1rem;display:flex;align-items:center;gap:8px;font-family:'Outfit','Inter',sans-serif;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" width="18" height="18" style="color:var(--green);">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Sửa giờ tăng ca
             </h3>
             <form id="form-edit-ot">
                 <div class="form-group" style="margin-bottom:14px;">
@@ -591,8 +667,16 @@
                 </div>
                 <!-- Backfill month input -->
                 <div class="form-group" id="edit-ot-backfill-month-group" style="display: none; margin-bottom: 14px;">
-                    <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Tháng bị thiếu</label>
-                    <input type="text" id="edit-ot-backfill-month" placeholder="Ví dụ: 07/2026 hoặc 07">
+                    <div class="field-label-row" style="margin-bottom:6px;">
+                        <label for="edit-ot-backfill-month" style="margin-bottom:0;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Tháng bị thiếu</label>
+                        <button type="button" class="btn-prev-month-chip" onclick="pickPrevBackfillMonth('edit-ot-backfill-month')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="12" height="12">
+                                <polyline points="15 18 9 12 15 6"/>
+                            </svg>
+                            Tháng trước
+                        </button>
+                    </div>
+                    <input type="month" id="edit-ot-backfill-month">
                 </div>
 
                 <div id="edit-ot-normal-inputs">
@@ -615,6 +699,14 @@
                     <div class="form-group" style="margin-bottom:14px;">
                         <label style="display:block;margin-bottom:6px;font-size:0.8rem;color:var(--text-sub);font-weight:600;">Giờ KT OT chiều</label>
                         <input type="time" id="edit-ot-end" value="16:30">
+                        <div class="quick-time-chips quick-time-chips-sm" id="edit-ot-quick-time-chips" role="group" aria-label="Chọn nhanh giờ kết thúc">
+                            <button type="button" class="quick-time-chip" data-time="18:00" onclick="pickQuickEndTime('18:00', 'edit-ot-end')">18:00</button>
+                            <button type="button" class="quick-time-chip" data-time="19:00" onclick="pickQuickEndTime('19:00', 'edit-ot-end')">19:00</button>
+                            <button type="button" class="quick-time-chip" data-time="20:00" onclick="pickQuickEndTime('20:00', 'edit-ot-end')">20:00</button>
+                            <button type="button" class="quick-time-chip" data-time="20:30" onclick="pickQuickEndTime('20:30', 'edit-ot-end')">20:30</button>
+                            <button type="button" class="quick-time-chip" data-time="21:00" onclick="pickQuickEndTime('21:00', 'edit-ot-end')">21:00</button>
+                            <button type="button" class="quick-time-chip" data-time="22:00" onclick="pickQuickEndTime('22:00', 'edit-ot-end')">22:00</button>
+                        </div>
                     </div>
                 </div>
                 <!-- Nhóm Hoạt động ngoài giờ tùy chỉnh (Sửa) -->
@@ -625,7 +717,7 @@
 
                 <div class="form-group" style="margin-bottom:16px;">
                     <label for="edit-ot-note" style="font-size:0.8rem; color:var(--text-sub); font-weight:600;">Lý do tăng ca</label>
-                    <select id="edit-ot-note" style="width: 100%; height: 38px; padding: 0 8px; font-size: 14px; background:var(--bg-input); color:var(--text-main); border:1px solid var(--border); border-radius:8px;" required></select>
+                    <select id="edit-ot-note" class="ot-reason-select" required></select>
                 </div>
                 <div class="confirm-actions" style="display:flex;gap:10px;justify-content:flex-end;">
                     <button type="button" class="btn btn-ghost" id="edit-ot-cancel" style="padding:10px 16px;font-size:0.85rem;border-radius:8px;">Hủy</button>
@@ -647,7 +739,7 @@
         };
     </script>
     <script>
-        window.PACKAGED_VERSION = '1.5.4';
+        window.PACKAGED_VERSION = '1.6.0';
     </script>
     <script src="app.js" defer></script>
     <datalist id="provinces-datalist"></datalist>

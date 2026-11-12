@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const config = require('../../config');
 const { fetchGist, loadDB } = require('../../db');
+const RecordRepository = require('../repositories/recordRepository');
 const { logInfo, logError, getLocalIP } = require('../../utils');
 const { sendJSON, sendError, parseBody } = require('../utils/http');
 
@@ -107,12 +108,8 @@ const SystemController = {
         // Exclude sensitive fields
         const safeUsers = users.map(stripSensitiveUserFields);
         
-        // 3. Records filter based on month and team/permissions
-        let records = db.records.filter(r => {
-            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
-            const rMonth = isBackfill ? (r.createdMonth || r.date.substring(0, 7)) : r.date.substring(0, 7);
-            return rMonth === month;
-        });
+        // 3. Records filter based on month and team/permissions (tự động lấy từ Hot Cache hoặc Cold SQL)
+        let records = [...(await RecordRepository.getByMonth(month))];
         
         if (!isSuperAdmin) {
             const allowedUserIds = users.map(u => u.id);
@@ -166,15 +163,12 @@ const SystemController = {
         }
         const allowedUserIds = users.map(u => u.id);
 
-        const approvedRecords = db.records.filter(r => {
-            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
-            const rMonth = isBackfill ? (r.createdMonth || r.date.substring(0, 7)) : r.date.substring(0, 7);
-            return rMonth === month && allowedUserIds.includes(r.userId) && (r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
+        const monthRecords = await RecordRepository.getByMonth(month);
+        const approvedRecords = monthRecords.filter(r => {
+            return allowedUserIds.includes(r.userId) && (r.status === 'approved' || (!r.isBackfill && r.status !== 'pending' && r.status !== 'rejected'));
         });
-        const pendingRecords = db.records.filter(r => {
-            const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
-            const rMonth = isBackfill ? (r.createdMonth || r.date.substring(0, 7)) : r.date.substring(0, 7);
-            return rMonth === month && allowedUserIds.includes(r.userId) && r.status === 'pending';
+        const pendingRecords = monthRecords.filter(r => {
+            return allowedUserIds.includes(r.userId) && r.status === 'pending';
         });
         
         let employees = users.filter(u => u.role === 'employee');

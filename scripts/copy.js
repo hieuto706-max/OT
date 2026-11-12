@@ -8,6 +8,41 @@ const version = pkg.version;
 
 console.log(`Starting sync & obfuscation process for version ${version}...`);
 
+// Bundle modular source directories (desktop/src, mobile/src, docs/src) into *.src.js
+function bundleModules(srcDir, outFile, wrapIife = false) {
+    const absDir = path.join(__dirname, '..', srcDir);
+    if (!fs.existsSync(absDir)) return;
+    const files = fs.readdirSync(absDir)
+        .filter(f => f.endsWith('.js'))
+        .sort();
+    if (files.length === 0) return;
+
+    const chunks = files.map(f => fs.readFileSync(path.join(absDir, f), 'utf8').replace(/\s+$/, ''));
+    const body = chunks.join('\n\n');
+    const finalCode = wrapIife ? `(function() {\n${body}\n})();\n` : `${body}\n`;
+    const absOut = path.join(__dirname, '..', outFile);
+    fs.writeFileSync(absOut, finalCode, 'utf8');
+    console.log(`Bundled ${files.length} modules from ${srcDir}/ -> ${outFile}`);
+}
+
+function updateVersionInJsFiles(dirOrFile, replacerFn) {
+    const absTarget = path.join(__dirname, '..', dirOrFile);
+    if (!fs.existsSync(absTarget)) return;
+    const stat = fs.statSync(absTarget);
+    if (stat.isDirectory()) {
+        fs.readdirSync(absTarget).filter(f => f.endsWith('.js')).forEach(f => {
+            const p = path.join(absTarget, f);
+            const orig = fs.readFileSync(p, 'utf8');
+            const next = replacerFn(orig);
+            if (next !== orig) fs.writeFileSync(p, next, 'utf8');
+        });
+    } else {
+        const orig = fs.readFileSync(absTarget, 'utf8');
+        const next = replacerFn(orig);
+        if (next !== orig) fs.writeFileSync(absTarget, next, 'utf8');
+    }
+}
+
 // Helper to update version query params in HTML files
 function updateHtmlVersion(filePath, version) {
     try {
@@ -24,24 +59,27 @@ function updateHtmlVersion(filePath, version) {
 // Helper to update version constants in source code files automatically
 function updateSourceVersions(version) {
     try {
-        // 1. mobile/app.src.js
-        const mobileSrcPath = path.join(__dirname, '..', 'mobile', 'app.src.js');
-        if (fs.existsSync(mobileSrcPath)) {
-            let content = fs.readFileSync(mobileSrcPath, 'utf8');
-            content = content.replace(/const MOBILE_VERSION = window\.PACKAGED_VERSION \|\| ['"].*?['"];/g, `const MOBILE_VERSION = window.PACKAGED_VERSION || '${version}';`);
-            fs.writeFileSync(mobileSrcPath, content, 'utf8');
-            console.log(`Updated MOBILE_VERSION in mobile/app.src.js to ${version}`);
-        }
+        // 1. mobile/src & mobile/app.src.js
+        const replaceMobileVer = (content) => content.replace(
+            /const MOBILE_VERSION = window\.PACKAGED_VERSION \|\| ['"].*?['"];/g,
+            `const MOBILE_VERSION = window.PACKAGED_VERSION || '${version}';`
+        );
+        updateVersionInJsFiles('mobile/src', replaceMobileVer);
+        bundleModules('mobile/src', 'mobile/app.src.js', false);
+        updateVersionInJsFiles('mobile/app.src.js', replaceMobileVer);
+        console.log(`Updated MOBILE_VERSION in mobile modules & mobile/app.src.js to ${version}`);
 
-        // 2. desktop/app.src.js
-        const desktopSrcPath = path.join(__dirname, '..', 'desktop', 'app.src.js');
-        if (fs.existsSync(desktopSrcPath)) {
-            let content = fs.readFileSync(desktopSrcPath, 'utf8');
-            content = content.replace(/(window\.OT_LOCAL_VERSION \|\| localStorage\.getItem\('ot_app_version'\) \|\| )['"].*?['"]/g, `$1'${version}'`);
-            content = content.replace(/(window\.OT_LOCAL_VERSION \|\| )['"].*?['"]/g, `$1'${version}'`);
-            fs.writeFileSync(desktopSrcPath, content, 'utf8');
-            console.log(`Updated localVer fallback in desktop/app.src.js to ${version}`);
-        }
+        // 2. desktop/src & desktop/app.src.js
+        const replaceDesktopVer = (content) => content
+            .replace(/(window\.OT_LOCAL_VERSION \|\| localStorage\.getItem\('ot_app_version'\) \|\| )['"].*?['"]/g, `$1'${version}'`)
+            .replace(/(window\.OT_LOCAL_VERSION \|\| )['"].*?['"]/g, `$1'${version}'`);
+        updateVersionInJsFiles('desktop/src', replaceDesktopVer);
+        bundleModules('desktop/src', 'desktop/app.src.js', true);
+        updateVersionInJsFiles('desktop/app.src.js', replaceDesktopVer);
+        console.log(`Updated localVer fallback in desktop modules & desktop/app.src.js to ${version}`);
+
+        // 2b. docs/src -> docs/landing.src.js
+        bundleModules('docs/src', 'docs/landing.src.js', false);
 
         // 3. preload.js
         const preloadPath = path.join(__dirname, '..', 'preload.js');
@@ -246,6 +284,7 @@ function copyFolderSync(from, to) {
         fs.mkdirSync(to, { recursive: true });
     }
     fs.readdirSync(from).forEach(element => {
+        if (element === 'src') return;
         const fromPath = path.join(from, element);
         const toPath = path.join(to, element);
         const stat = fs.lstatSync(fromPath);

@@ -251,6 +251,19 @@ function pgRecordToJS(row) {
     return obj;
 }
 
+function getHotCutoffMonth(now = new Date(), monthsBack = Number(process.env.HOT_CACHE_MONTHS) || 3) {
+    const safeMonthsBack = Number.isFinite(monthsBack) && monthsBack >= 1 ? Math.floor(monthsBack) : 3;
+    const vnNow = new Date(now.getTime() + 7 * 3600000);
+    const cutoff = new Date(Date.UTC(vnNow.getUTCFullYear(), vnNow.getUTCMonth() - safeMonthsBack, 1));
+    return `${cutoff.getUTCFullYear()}-${String(cutoff.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function getEffectiveRecordMonth(r) {
+    if (!r || !r.date) return '';
+    const isBackfill = r.isBackfill || (r.note && (r.note.includes('[BÙ THÁNG TRƯỚC]') || r.note.includes('[TĂNG THÁNG NÀY]')));
+    return isBackfill ? (r.createdMonth || String(r.date).substring(0, 7)) : String(r.date).substring(0, 7);
+}
+
 async function loadDBFromPG() {
     const pool = getPGPool();
     if (!pool) return null;
@@ -261,8 +274,17 @@ async function loadDBFromPG() {
         const hasNewTables = parseInt(usersCheck.rows[0].cnt) > 0;
 
         if (hasNewTables) {
+            const hotCutoffMonth = getHotCutoffMonth();
+            const hotCutoffDate = `${hotCutoffMonth}-01`;
+
             const usersRes = await client.query('SELECT * FROM pg_users ORDER BY created_at');
-            const recordsRes = await client.query('SELECT * FROM pg_records ORDER BY date DESC, created_at');
+            const recordsRes = await client.query(`
+                SELECT * FROM pg_records
+                WHERE date >= $1
+                   OR (created_month IS NOT NULL AND created_month >= $2)
+                   OR status = 'pending'
+                ORDER BY date DESC, created_at
+            `, [hotCutoffDate, hotCutoffMonth]);
             const teamsRes = await client.query('SELECT data FROM pg_teams');
             const closedRes = await client.query('SELECT month FROM pg_closed_months');
             const settingsRes = await client.query('SELECT * FROM ot_settings');
@@ -284,9 +306,10 @@ async function loadDBFromPG() {
                 records: recordsRes.rows.map(pgRecordToJS),
                 teams: teamsRes.rows.map(r => r.data),
                 closedMonths: closedRes.rows.map(r => r.month),
-                settings: settings
+                settings: settings,
+                _hotCutoffMonth: hotCutoffMonth
             };
-            logInfo(`[Database PG] Tải từ bảng tách riêng: ${result.users.length} nhân viên, ${result.records.length} bản ghi, ${result.teams.length} đội.`);
+            logInfo(`[Database PG] Tải Hot Cache (từ ${hotCutoffMonth}): ${result.users.length} nhân viên, ${result.records.length} bản ghi nóng, ${result.teams.length} đội.`);
             return result;
         } else {
             await client.query('COMMIT');
@@ -345,14 +368,27 @@ async function saveDBToPG(data) {
             ]);
         }
 
-        // === Đồng bộ bảng pg_records ===
-        const existingRecords = await client.query('SELECT id FROM pg_records');
-        const existingRecordIds = new Set(existingRecords.rows.map(r => r.id));
+        // === Đồng bộ bảng pg_records (bảo vệ tuyệt đối dữ liệu Cold SQL nếu đang chạy Hot Cache) ===
         const currentRecordIds = new Set((data.records || []).map(r => r.id));
-
-        for (const id of existingRecordIds) {
-            if (!currentRecordIds.has(id)) {
-                await client.query('DELETE FROM pg_records WHERE id = $1', [id]);
+        if (data._hotCutoffMonth) {
+            const hotCutoffDate = `${data._hotCutoffMonth}-01`;
+            const existingHotRecords = await client.query(`
+                SELECT id FROM pg_records
+                WHERE date >= $1
+                   OR (created_month IS NOT NULL AND created_month >= $2)
+                   OR status = 'pending'
+            `, [hotCutoffDate, data._hotCutoffMonth]);
+            for (const row of existingHotRecords.rows) {
+                if (!currentRecordIds.has(row.id)) {
+                    await client.query('DELETE FROM pg_records WHERE id = $1', [row.id]);
+                }
+            }
+        } else {
+            const existingRecords = await client.query('SELECT id FROM pg_records');
+            for (const row of existingRecords.rows) {
+                if (!currentRecordIds.has(row.id)) {
+                    await client.query('DELETE FROM pg_records WHERE id = $1', [row.id]);
+                }
             }
         }
 
@@ -509,6 +545,7 @@ function isUserEqual(u1, u2) {
            u1.password === u2.password &&
            u1.role === u2.role &&
            u1.team === u2.team &&
+           Boolean(u1.isSuperAdmin) === Boolean(u2.isSuperAdmin) &&
            u1.deviceId === u2.deviceId &&
            u1.browserDeviceId === u2.browserDeviceId &&
            JSON.stringify(u1.pushSubscriptions) === JSON.stringify(u2.pushSubscriptions) &&
@@ -824,11 +861,12 @@ async function loadDB(clone = true) {
                     if (!pgData.records) pgData.records = [];
                     if (!pgData.closedMonths) pgData.closedMonths = [];
                     
+                    const rawPgSnapshot = JSON.parse(JSON.stringify(pgData));
                     const migratedSettings = migrateSettings(pgData);
                     const migratedTeams = migrateTeams(pgData);
                     const migratedPass = await migratePasswords(pgData);
                     if (migratedTeams || migratedPass || migratedSettings) {
-                        await saveDBToPG(pgData);
+                        await syncDiffToPG(rawPgSnapshot, pgData);
                     }
                     logInfo('[Database PG] Tải dữ liệu từ PostgreSQL thành công!');
                     dbCache = pgData;
@@ -1035,6 +1073,124 @@ async function setInternalSetting(key, value) {
     }
 }
 
+async function queryPGRecordsByMonth(month) {
+    const pool = getPGPool();
+    if (!pool || !month || !/^\d{4}-\d{2}$/.test(month)) return [];
+    const [yearStr, monStr] = month.split('-');
+    const year = Number(yearStr);
+    const mon = Number(monStr);
+    const startDate = `${month}-01`;
+    const nextDateObj = new Date(Date.UTC(year, mon, 1));
+    const endDateExclusive = `${nextDateObj.getUTCFullYear()}-${String(nextDateObj.getUTCMonth() + 1).padStart(2, '0')}-01`;
+
+    try {
+        const res = await pool.query(`
+            SELECT * FROM pg_records
+            WHERE (date >= $1 AND date < $2)
+               OR created_month = $3
+            ORDER BY date DESC, created_at
+        `, [startDate, endDateExclusive, month]);
+        return res.rows.map(pgRecordToJS).filter(r => getEffectiveRecordMonth(r) === month);
+    } catch (e) {
+        logError(`[Cold SQL] Lỗi truy vấn bản ghi tháng ${month}:`, e.message);
+        return [];
+    }
+}
+
+async function queryPGRecordsUpToMonth(month) {
+    const pool = getPGPool();
+    if (!pool || !month || !/^\d{4}-\d{2}$/.test(month)) return [];
+    const [yearStr, monStr] = month.split('-');
+    const nextDateObj = new Date(Date.UTC(Number(yearStr), Number(monStr), 1));
+    const endDateExclusive = `${nextDateObj.getUTCFullYear()}-${String(nextDateObj.getUTCMonth() + 1).padStart(2, '0')}-01`;
+
+    try {
+        const res = await pool.query(`
+            SELECT * FROM pg_records
+            WHERE date < $1 OR (created_month IS NOT NULL AND created_month <= $2)
+            ORDER BY date DESC, created_at
+        `, [endDateExclusive, month]);
+        return res.rows.map(pgRecordToJS).filter(r => getEffectiveRecordMonth(r) <= month);
+    } catch (e) {
+        logError(`[Cold SQL] Lỗi truy vấn bản ghi cũ tới ${month}:`, e.message);
+        return [];
+    }
+}
+
+async function queryPGRecordById(id) {
+    const pool = getPGPool();
+    if (!pool || !id) return null;
+    try {
+        const res = await pool.query('SELECT * FROM pg_records WHERE id = $1', [id]);
+        return res.rows.length > 0 ? pgRecordToJS(res.rows[0]) : null;
+    } catch (e) {
+        logError(`[Cold SQL] Lỗi truy vấn bản ghi ${id}:`, e.message);
+        return null;
+    }
+}
+
+async function upsertPGRecord(nr) {
+    const pool = getPGPool();
+    if (!pool || !nr) return false;
+    try {
+        const knownFields = ['id','userId','date','hasLunchOT','otStart','otEnd','eveningOTHours','totalHours','note','status','isBackfill','createdMonth','deliveryProvince','createdAt','updatedAt'];
+        const extraData = {};
+        for (const key of Object.keys(nr)) {
+            if (!knownFields.includes(key)) extraData[key] = nr[key];
+        }
+        await pool.query(`
+            INSERT INTO pg_records (id, user_id, date, has_lunch_ot, ot_start, ot_end, evening_ot_hours, total_hours, note, status, is_backfill, created_month, delivery_province, extra_data, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+            ON CONFLICT (id) DO UPDATE SET
+                user_id = $2, date = $3, has_lunch_ot = $4, ot_start = $5, ot_end = $6,
+                evening_ot_hours = $7, total_hours = $8, note = $9, status = $10,
+                is_backfill = $11, created_month = $12, delivery_province = $13,
+                extra_data = $14, updated_at = $16
+        `, [
+            nr.id, nr.userId, nr.date,
+            nr.hasLunchOT || false, nr.otStart || null, nr.otEnd || null,
+            nr.eveningOTHours || 0, nr.totalHours || 0,
+            nr.note || '', nr.status || null,
+            nr.isBackfill || false, nr.createdMonth || null,
+            nr.deliveryProvince || null,
+            Object.keys(extraData).length > 0 ? JSON.stringify(extraData) : null,
+            nr.createdAt || new Date().toISOString(),
+            nr.updatedAt || new Date().toISOString()
+        ]);
+        return true;
+    } catch (e) {
+        logError(`[Cold SQL] Lỗi cập nhật bản ghi ${nr.id}:`, e.message);
+        return false;
+    }
+}
+
+async function deletePGRecordById(id) {
+    const pool = getPGPool();
+    if (!pool || !id) return false;
+    try {
+        await pool.query('DELETE FROM pg_records WHERE id = $1', [id]);
+        return true;
+    } catch (e) {
+        logError(`[Cold SQL] Lỗi xóa bản ghi ${id}:`, e.message);
+        return false;
+    }
+}
+
+async function cleanupPGRecordsUpToMonth(month) {
+    const pool = getPGPool();
+    if (!pool || !month || !/^\d{4}-\d{2}$/.test(month)) return 0;
+    try {
+        const candidates = await queryPGRecordsUpToMonth(month);
+        if (candidates.length === 0) return 0;
+        const idsToDelete = candidates.map(r => r.id);
+        await pool.query('DELETE FROM pg_records WHERE id = ANY($1::varchar[])', [idsToDelete]);
+        return idsToDelete.length;
+    } catch (e) {
+        logError(`[Cold SQL] Lỗi dọn dẹp bản ghi tới tháng ${month}:`, e.message);
+        return 0;
+    }
+}
+
 module.exports = {
     getDbPath,
     getPGPool,
@@ -1049,5 +1205,13 @@ module.exports = {
     fetchUserFromPG,
     updateUserInCache,
     getInternalSetting,
-    setInternalSetting
+    setInternalSetting,
+    getHotCutoffMonth,
+    getEffectiveRecordMonth,
+    queryPGRecordsByMonth,
+    queryPGRecordsUpToMonth,
+    queryPGRecordById,
+    upsertPGRecord,
+    deletePGRecordById,
+    cleanupPGRecordsUpToMonth
 };

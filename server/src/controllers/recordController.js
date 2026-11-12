@@ -67,10 +67,17 @@ const RecordController = {
         const url = new URL(req.url, `http://${req.headers.host}`);
         const userId = url.searchParams.get('userId');
         const month = url.searchParams.get('month');
+        const recordId = url.searchParams.get('id');
 
-        let records = await RecordRepository.getAll();
-        // Clone để tránh sửa trực tiếp vào cache nếu có xử lý mảng tiếp theo
-        records = [...records];
+        let records;
+        if (recordId) {
+            const single = await RecordRepository.findById(recordId);
+            records = single ? [single] : [];
+        } else if (month) {
+            records = [...(await RecordRepository.getByMonth(month))];
+        } else {
+            records = [...(await RecordRepository.getAll())];
+        }
 
         // Lọc records theo team nếu requester là Sub-admin
         if (reqUserId) {
@@ -547,6 +554,13 @@ const RecordController = {
 
     async performCleanup(month) {
         const db = await loadDB();
+        const coldArchived = await RecordRepository.getColdRecordsUpToMonth(month);
+        if (coldArchived.length > 0) {
+            const existingIds = new Set((db.records || []).map(r => r.id));
+            coldArchived.forEach(r => {
+                if (!existingIds.has(r.id)) db.records.push(r);
+            });
+        }
         const cleanMonthStr = month.replace('-', '_'); // e.g. "2026_05"
         const backupFileName = `db_backup_${cleanMonthStr}.json`;
         const backupFilePath = path.join(path.dirname(getDbPath()), backupFileName);

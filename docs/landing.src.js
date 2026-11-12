@@ -1253,8 +1253,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Tự động điền tài khoản/mật khẩu đã lưu nếu người dùng chọn Ghi nhớ ở lần trước
+    // Tự động điền tài khoản đã lưu nếu người dùng chọn Ghi nhớ ở lần trước (không lưu mật khẩu thô trong localStorage)
     try {
+        localStorage.removeItem('ot_saved_admin_pass');
+
         const savedEmpUser = localStorage.getItem('ot_saved_emp_user');
         const inputEmpUser = document.getElementById('login-user');
         const rememberCheckboxEmp = document.getElementById('login-remember-emp');
@@ -1264,19 +1266,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const savedAdminUser = localStorage.getItem('ot_saved_admin_user');
-        const savedAdminPass = localStorage.getItem('ot_saved_admin_pass');
         const inputAdminUser = document.getElementById('login-admin-user');
-        const inputAdminPass = document.getElementById('login-password');
         const rememberCheckboxAdmin = document.getElementById('login-remember-admin');
         if (savedAdminUser && inputAdminUser) {
             inputAdminUser.value = savedAdminUser;
             if (rememberCheckboxAdmin) rememberCheckboxAdmin.checked = true;
         }
-        if (savedAdminPass && inputAdminPass) {
-            inputAdminPass.value = savedAdminPass;
-        }
     } catch (e) {
-        console.error('Lỗi tự động điền tài khoản/mật khẩu đã lưu:', e);
+        console.error('Lỗi tự động điền tài khoản đã lưu:', e);
     }
 
     // Kiểm tra session hiện có để hiển thị Welcome Box
@@ -1670,9 +1667,45 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 5. Auth submits
+    // 5. Auth submits & Smart Cold-Start Wakeup Banner
+    function createWakeupController() {
+        const banner = document.getElementById('cloud-wakeup-banner');
+        const textEl = document.getElementById('cloud-wakeup-text');
+        const etaEl = document.getElementById('cloud-wakeup-eta');
+        const barEl = document.getElementById('cloud-wakeup-bar');
+        let delayTimer = null;
+        let stepInterval = null;
+        let elapsed = 0;
+
+        delayTimer = setTimeout(() => {
+            if (!banner) return;
+            banner.style.display = 'block';
+            if (textEl) textEl.textContent = 'Máy chủ đang thức dậy từ chế độ nghỉ ban đêm...';
+            if (etaEl) etaEl.textContent = '~25s';
+            if (barEl) barEl.style.width = '22%';
+
+            stepInterval = setInterval(() => {
+                elapsed += 3;
+                const pct = Math.min(92, 22 + elapsed * 2.5);
+                const remain = Math.max(3, 28 - elapsed);
+                if (barEl) barEl.style.width = pct + '%';
+                if (etaEl) etaEl.textContent = '~' + remain + 's';
+                if (elapsed >= 12 && textEl) {
+                    textEl.textContent = 'Đang nạp phiên bảo mật từ Supabase Cloud...';
+                }
+            }, 3000);
+        }, 3200);
+
+        return function stopWakeup() {
+            if (delayTimer) clearTimeout(delayTimer);
+            if (stepInterval) clearInterval(stepInterval);
+            if (banner) banner.style.display = 'none';
+        };
+    }
+
     // API client call
     function apiCall(endpoint, method, body) {
+        const stopWakeup = createWakeupController();
         return fetch(checkUrl + endpoint, {
             method: method || 'GET',
             headers: {
@@ -1681,6 +1714,7 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             body: body ? JSON.stringify(body) : null
         }).then(res => {
+            stopWakeup();
             if (!res.ok) {
                 return res.json().then(data => {
                     throw new Error(data.error || `Server HTTP Error ${res.status}`);
@@ -1688,6 +1722,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return res.json();
         }).catch(err => {
+            stopWakeup();
             throw new Error(getFriendlyErrorMessage(err));
         });
     }
@@ -1846,12 +1881,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     safeStorage.setItem('ot_login_time', Date.now().toString(), remember);
                     safeStorage.setItem('ot_login_date', getSessionCycleDateStr(), remember);
                     
+                    localStorage.removeItem('ot_saved_admin_pass');
                     if (remember) {
                         localStorage.setItem('ot_saved_admin_user', username);
-                        localStorage.setItem('ot_saved_admin_pass', password);
                     } else {
                         localStorage.removeItem('ot_saved_admin_user');
-                        localStorage.removeItem('ot_saved_admin_pass');
                     }
 
                     showToast('Đăng nhập Quản trị thành công!', 'success');
@@ -2204,4 +2238,3 @@ class Device3DModelViewer {
         requestAnimationFrame(() => this.animate());
     }
 }
-
