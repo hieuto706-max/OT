@@ -11,7 +11,7 @@ const {
     signJWT,
     verifyJWT
 } = require('../server/utils');
-const { checkLimit, clearRateLimits } = require('../server/src/utils/rateLimiter');
+const { checkLimit, isBlocked, recordFailure, resetLimit, clearRateLimits } = require('../server/src/utils/rateLimiter');
 const { sanitizeObject } = require('../server/src/utils/http');
 const { handleAPI } = require('../server/api');
 const { getHotCutoffMonth, getEffectiveRecordMonth } = require('../server/db');
@@ -252,5 +252,76 @@ test('Security & Modular Architecture v1.6.0 - xóa hoàn toàn lưu mật khẩ
     assert.equal(mobileHtml.includes('id="mobile-wakeup-banner"'), true);
     assert.equal(docsHtml.includes('id="cloud-wakeup-banner"'), true);
 });
+
+test('Warehouse 450+ Shared Wi-Fi Concurrency (v1.6.2) - 450 thiết bị chung 1 IP không bị chặn 429, cô lập máy spam riêng lẻ', async () => {
+    clearRateLimits();
+    const sharedWarehouseIp = '203.0.113.88';
+
+    // 1. Giả lập 450 nhân viên trong kho bắt chung 1 cục Wi-Fi gọi API đồng thời (2 request/máy = 900 request chung 1 IP)
+    for (let i = 1; i <= 450; i++) {
+        for (let callIdx = 0; callIdx < 2; callIdx++) {
+            const { req, res } = createMockReqRes({
+                method: 'GET',
+                url: '/api/version',
+                headers: {
+                    'x-forwarded-for': sharedWarehouseIp,
+                    'x-device-id': `warehouse_phone_${i}`
+                }
+            });
+            await handleAPI(req, res, '/api/version', 'GET');
+            assert.equal(res.statusCode, 200, `Nhân viên #${i} trên Wi-Fi chung không được bị chặn 429`);
+        }
+    }
+
+    // 2. Một thiết bị đơn lẻ cố tình spam vượt 180 req/phút phải bị chặn 429, nhưng nhân viên kế bên cùng Wi-Fi vẫn vào 200 bình thường
+    for (let s = 0; s < 180; s++) {
+        const { req, res } = createMockReqRes({
+            method: 'GET',
+            url: '/api/version',
+            headers: {
+                'x-forwarded-for': sharedWarehouseIp,
+                'x-device-id': 'rogue_spammer_device'
+            }
+        });
+        await handleAPI(req, res, '/api/version', 'GET');
+        assert.equal(res.statusCode, 200);
+    }
+    {
+        const { req, res } = createMockReqRes({
+            method: 'GET',
+            url: '/api/version',
+            headers: {
+                'x-forwarded-for': sharedWarehouseIp,
+                'x-device-id': 'rogue_spammer_device'
+            }
+        });
+        await handleAPI(req, res, '/api/version', 'GET');
+        assert.equal(res.statusCode, 429);
+    }
+    {
+        const { req, res } = createMockReqRes({
+            method: 'GET',
+            url: '/api/version',
+            headers: {
+                'x-forwarded-for': sharedWarehouseIp,
+                'x-device-id': 'warehouse_phone_451'
+            }
+        });
+        await handleAPI(req, res, '/api/version', 'GET');
+        assert.equal(res.statusCode, 200);
+    }
+
+    // 3. Kiểm tra cơ chế chỉ đếm lỗi đăng nhập sai (recordFailure / isBlocked / resetLimit)
+    const adminKey = `${sharedWarehouseIp}:admin`;
+    for (let attempt = 1; attempt <= 8; attempt++) {
+        recordFailure(adminKey, 'login_admin_fail', 8, 5 * 60 * 1000);
+    }
+    assert.equal(isBlocked(adminKey, 'login_admin_fail', 8), true);
+    resetLimit(adminKey, 'login_admin_fail');
+    assert.equal(isBlocked(adminKey, 'login_admin_fail', 8), false);
+
+    clearRateLimits();
+});
+
 
 

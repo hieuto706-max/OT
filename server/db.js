@@ -93,14 +93,14 @@ function getPGPool() {
         pgPool = new Pool({
             connectionString: config.DATABASE_URL,
             ssl: { rejectUnauthorized: false },
-            max: 5,
+            max: 10,
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 10000
         });
         pgPool.on('error', (err) => {
             logError('[Database PG] Lỗi kết nối Pool (sẽ tự kết nối lại):', err.message);
         });
-        logInfo('[Database PG] Đã khởi tạo Connection Pool (max=5, idle=30s, timeout=10s).');
+        logInfo('[Database PG] Đã khởi tạo Connection Pool (max=10, idle=30s, timeout=10s).');
     }
     return pgPool;
 }
@@ -196,6 +196,7 @@ async function initPGTable() {
         await client.query(`CREATE INDEX IF NOT EXISTS idx_records_user_id ON pg_records(user_id)`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_records_date ON pg_records(date)`);
         await client.query(`CREATE INDEX IF NOT EXISTS idx_records_user_date ON pg_records(user_id, date)`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_users_username_lower ON pg_users (LOWER(username))`);
 
         await client.query('COMMIT');
         logInfo('[Database PG] Khởi tạo thành công 5 bảng và các chỉ mục (bao gồm composite index).');
@@ -969,41 +970,172 @@ async function loadDB(clone = true) {
     return dbLoadingPromise.then(res => clone ? JSON.parse(JSON.stringify(res)) : res);
 }
 
+let secondaryBackupTimer = null;
+let pendingSecondaryLocalWrite = false;
+
+function emitDBUpdate(oldData = null, newData = dbCache) {
+    dbUpdateCallbacks.forEach(cb => {
+        try { cb(oldData, newData); } catch (e) {}
+    });
+}
+
+/**
+ * Gom nhóm (debounce) việc ghi file dự phòng db.json và đẩy bản sao lên GitHub Gist.
+ * Giúp 400+ nhân viên kho bấm gửi OT cùng lúc không bị nghẽn bởi 400 lần ghi đĩa / gọi GitHub API.
+ */
+function scheduleSecondaryBackup(delayMs = 10000, opts = {}) {
+    if (!opts.skipLocalFile) pendingSecondaryLocalWrite = true;
+    if (secondaryBackupTimer) clearTimeout(secondaryBackupTimer);
+    secondaryBackupTimer = setTimeout(() => {
+        secondaryBackupTimer = null;
+        const shouldWriteFile = pendingSecondaryLocalWrite;
+        pendingSecondaryLocalWrite = false;
+        if (!dbCache) return;
+        const snapshot = dbCache;
+        enqueueWrite(async () => {
+            if (shouldWriteFile) {
+                try {
+                    await fs.promises.writeFile(getDbPath(), JSON.stringify(snapshot, null, 2), 'utf-8');
+                } catch (fsErr) {
+                    logError('[Database] Cảnh báo không thể ghi file local db.json:', fsErr.message);
+                }
+            }
+            if (config.GIST_ID && config.GITHUB_TOKEN) {
+                try {
+                    await updateGist(snapshot);
+                } catch (e) {
+                    logError('[Gist] Lỗi cập nhật lên Gist:', e.message);
+                }
+            }
+        });
+    }, delayMs);
+    if (typeof secondaryBackupTimer.unref === 'function') {
+        secondaryBackupTimer.unref();
+    }
+}
+
 function saveDB(data) {
     const oldData = dbCache ? JSON.parse(JSON.stringify(dbCache)) : null;
     dbCache = data;
+    emitDBUpdate(oldData, data);
 
-    return enqueueWrite(async () => {
-        // Ghi file local dự phòng (nếu lỗi ổ đĩa cũng không làm gián đoạn việc lưu Cloud)
-        try {
-            fs.writeFileSync(getDbPath(), JSON.stringify(data, null, 2), 'utf-8');
-        } catch (fsErr) {
-            logError('[Database] Cảnh báo không thể ghi file local db.json:', fsErr.message);
-        }
-
-        // Trigger hooks
-        dbUpdateCallbacks.forEach(cb => {
-            try { cb(oldData, data); } catch (e) {}
-        });
-
-        // Đồng bộ lên PostgreSQL (LƯU TRỮ CHÍNH TRÊN CLOUD ĐỂ KHÔNG BỊ MẤT DATA)
-        if (config.DATABASE_URL) {
+    if (config.DATABASE_URL) {
+        // Trên Cloud có PostgreSQL làm nguồn lưu trữ chính: ghi PG tức thì, gom nhóm db.json & Gist sau 10s
+        scheduleSecondaryBackup(10000);
+        return enqueueWrite(async () => {
             try {
                 await syncDiffToPG(oldData, data);
             } catch (e) {
                 logError('[Database PG] Lỗi cập nhật lên PostgreSQL:', e.message);
             }
-        }
+        });
+    }
 
-        // Đồng bộ lên GitHub Gist nếu có cấu hình
-        if (config.GIST_ID && config.GITHUB_TOKEN) {
-            try {
-                await updateGist(data);
-            } catch (e) {
-                logError('[Gist] Lỗi cập nhật lên Gist:', e.message);
-            }
+    // Chế độ Offline / Electron không có PostgreSQL: ghi db.json bất đồng bộ ngay, gom nhóm Gist sau 10s
+    if (config.GIST_ID && config.GITHUB_TOKEN) {
+        scheduleSecondaryBackup(10000, { skipLocalFile: true });
+    }
+    return enqueueWrite(async () => {
+        try {
+            await fs.promises.writeFile(getDbPath(), JSON.stringify(data, null, 2), 'utf-8');
+        } catch (fsErr) {
+            logError('[Database] Cảnh báo không thể ghi file local db.json:', fsErr.message);
         }
     });
+}
+
+async function upsertPGUser(nu) {
+    const pool = getPGPool();
+    if (!pool || !nu) return false;
+    try {
+        await pool.query(`
+            INSERT INTO pg_users (id, username, fullname, password, role, team, device_id, browser_device_id, push_subscriptions, pending_unlink, fcm_tokens, is_super_admin, email, otp_code, otp_expires_at, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+            ON CONFLICT (id) DO UPDATE SET
+                username = $2, fullname = $3, password = $4, role = $5, team = $6,
+                device_id = $7, browser_device_id = $8, push_subscriptions = $9,
+                pending_unlink = $10, fcm_tokens = $11, is_super_admin = $12,
+                email = $13, otp_code = $14, otp_expires_at = $15, updated_at = $17
+        `, [
+            nu.id, nu.username, nu.fullname || '', nu.password || '',
+            nu.role || 'user', nu.team || null,
+            nu.deviceId || null, nu.browserDeviceId || null,
+            nu.pushSubscriptions ? JSON.stringify(nu.pushSubscriptions) : null,
+            nu.pendingUnlink || false,
+            nu.fcmTokens ? JSON.stringify(nu.fcmTokens) : '[]',
+            nu.isSuperAdmin || false,
+            nu.email || null,
+            nu.otpCode || null,
+            nu.otpExpiresAt || null,
+            nu.createdAt || new Date().toISOString(),
+            nu.updatedAt || new Date().toISOString()
+        ]);
+        return true;
+    } catch (e) {
+        logError(`[Fast SQL] Lỗi cập nhật user ${nu.id}:`, e.message);
+        return false;
+    }
+}
+
+async function saveUserFast(user) {
+    emitDBUpdate(null, dbCache);
+    if (config.DATABASE_URL) {
+        await upsertPGUser(user);
+        scheduleSecondaryBackup(10000);
+        return true;
+    }
+    if (config.GIST_ID && config.GITHUB_TOKEN) {
+        scheduleSecondaryBackup(10000, { skipLocalFile: true });
+    }
+    await enqueueWrite(async () => {
+        try {
+            await fs.promises.writeFile(getDbPath(), JSON.stringify(dbCache, null, 2), 'utf-8');
+        } catch (fsErr) {
+            logError('[Database] Cảnh báo không thể ghi file local db.json:', fsErr.message);
+        }
+    });
+    return true;
+}
+
+async function saveRecordsFast(recordsToUpsert) {
+    const list = Array.isArray(recordsToUpsert) ? recordsToUpsert : [recordsToUpsert];
+    emitDBUpdate(null, dbCache);
+    if (config.DATABASE_URL) {
+        await Promise.all(list.filter(Boolean).map(r => upsertPGRecord(r)));
+        scheduleSecondaryBackup(10000);
+        return true;
+    }
+    if (config.GIST_ID && config.GITHUB_TOKEN) {
+        scheduleSecondaryBackup(10000, { skipLocalFile: true });
+    }
+    await enqueueWrite(async () => {
+        try {
+            await fs.promises.writeFile(getDbPath(), JSON.stringify(dbCache, null, 2), 'utf-8');
+        } catch (fsErr) {
+            logError('[Database] Cảnh báo không thể ghi file local db.json:', fsErr.message);
+        }
+    });
+    return true;
+}
+
+async function deleteRecordFast(recordId) {
+    emitDBUpdate(null, dbCache);
+    if (config.DATABASE_URL) {
+        const ok = await deletePGRecordById(recordId);
+        scheduleSecondaryBackup(10000);
+        return ok;
+    }
+    if (config.GIST_ID && config.GITHUB_TOKEN) {
+        scheduleSecondaryBackup(10000, { skipLocalFile: true });
+    }
+    await enqueueWrite(async () => {
+        try {
+            await fs.promises.writeFile(getDbPath(), JSON.stringify(dbCache, null, 2), 'utf-8');
+        } catch (fsErr) {
+            logError('[Database] Cảnh báo không thể ghi file local db.json:', fsErr.message);
+        }
+    });
+    return true;
 }
 
 function getDBCache() {
@@ -1020,17 +1152,14 @@ function onUpdate(callback) {
 
 async function fetchUserFromPG(username) {
     const pool = getPGPool();
-    if (!pool) return null;
-    const client = await pool.connect();
+    if (!pool || !username) return null;
     try {
-        const res = await client.query('SELECT * FROM pg_users WHERE LOWER(username) = $1', [username.toLowerCase()]);
+        const res = await pool.query('SELECT * FROM pg_users WHERE LOWER(username) = $1 LIMIT 1', [String(username).toLowerCase()]);
         if (res.rows.length > 0) {
             return pgUserToJS(res.rows[0]);
         }
     } catch (e) {
         logError('[fetchUserFromPG] Lỗi tải user từ PG:', e.message);
-    } finally {
-        client.release();
     }
     return null;
 }
@@ -1213,5 +1342,10 @@ module.exports = {
     queryPGRecordById,
     upsertPGRecord,
     deletePGRecordById,
-    cleanupPGRecordsUpToMonth
+    cleanupPGRecordsUpToMonth,
+    upsertPGUser,
+    saveUserFast,
+    saveRecordsFast,
+    deleteRecordFast,
+    scheduleSecondaryBackup
 };

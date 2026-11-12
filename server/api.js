@@ -13,27 +13,35 @@ const SystemController = require('./src/controllers/systemController');
 
 async function handleAPI(req, res, urlPath, method) {
     const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+    const jwtPayload = authenticateToken(req);
+    const actorId = (jwtPayload && jwtPayload.userId)
+        || req.headers['x-user-id']
+        || req.headers['x-device-id']
+        || '';
 
-    // --- 1. Rate Limiting (Giới hạn tần suất) ---
-    // Giới hạn gửi OTP: Tối đa 3 lần / 10 phút
+    // --- 1. NAT-Friendly Rate Limiting (Tối ưu cho Kho 400+ nhân sự dùng chung 1 Wi-Fi) ---
+    // Giới hạn gửi OTP tổng theo IP (kết hợp giới hạn 3 lần/tài khoản trong authController)
     if (urlPath === '/api/auth/send-email-otp' && method === 'POST') {
-        if (!checkLimit(ip, 'otp', 3, 10 * 60 * 1000)) {
-            return sendError(res, 429, 'Bạn đã yêu cầu gửi mã OTP quá nhiều lần. Vui lòng thử lại sau 10 phút!', req);
+        if (!checkLimit(ip, 'otp_ip', 15, 10 * 60 * 1000)) {
+            return sendError(res, 429, 'Quá nhiều yêu cầu gửi mã OTP từ mạng này. Vui lòng thử lại sau 10 phút!', req);
         }
     }
-    // Giới hạn đăng nhập: Tối đa 10 lần / 5 phút
+    // Chống lũ botnet ở cổng đăng nhập theo IP (1.200 lượt / 5 phút), chặn dò mật khẩu sai xử lý riêng theo tài khoản trong authController
     if (urlPath === '/api/auth/login' && method === 'POST') {
-        if (!checkLimit(ip, 'login', 10, 5 * 60 * 1000)) {
-            return sendError(res, 429, 'Đăng nhập thất bại hoặc thử quá nhiều lần. Vui lòng thử lại sau 5 phút!', req);
+        if (!checkLimit(ip, 'login_ip_flood', 1200, 5 * 60 * 1000)) {
+            return sendError(res, 429, 'Mạng hiện tại gửi quá nhiều yêu cầu đăng nhập cùng lúc. Vui lòng thử lại sau ít phút!', req);
         }
     }
-    // Giới hạn chung toàn hệ thống: Tối đa 150 request / phút
-    if (!checkLimit(ip, 'global', 150, 60 * 1000)) {
-        return sendError(res, 429, 'Quá nhiều yêu cầu từ địa chỉ IP này. Vui lòng thử lại sau!', req);
+    // Trần chống DDoS tổng cho cả cục Wi-Fi dùng chung 1 IP Public (5.000 API / phút)
+    if (!checkLimit(ip, 'global_ip', 5000, 60 * 1000)) {
+        return sendError(res, 429, 'Quá nhiều yêu cầu từ địa chỉ mạng này. Vui lòng thử lại sau!', req);
+    }
+    // Giới hạn riêng cho từng thiết bị / từng nhân viên (180 API / phút / người)
+    if (actorId && !checkLimit(`${ip}:${String(actorId).slice(0, 80)}`, 'actor_api', 180, 60 * 1000)) {
+        return sendError(res, 429, 'Thiết bị của bạn thao tác quá nhanh. Vui lòng thử lại sau ít giây!', req);
     }
 
     // --- 2. Xác thực JWT Token & Phân Quyền ---
-    const jwtPayload = authenticateToken(req);
     const publicEndpoints = [
         '/api/auth/login', 
         '/api/auth/forgot-password', 

@@ -41,8 +41,28 @@ function checkLimit(ip, keyPrefix, limit, windowMs) {
     return data.count <= limit;
 }
 
+function isBlocked(ip, keyPrefix, limit) {
+    const now = Date.now();
+    const fullKey = `${keyPrefix}:${ip}`;
+    const data = ipRequestCounts.get(fullKey);
+    if (!data) return false;
+    if (now > data.resetTime) {
+        ipRequestCounts.delete(fullKey);
+        return false;
+    }
+    return data.count >= limit;
+}
+
+function recordFailure(ip, keyPrefix, limit, windowMs) {
+    return checkLimit(ip, keyPrefix, limit, windowMs);
+}
+
+function resetLimit(ip, keyPrefix) {
+    ipRequestCounts.delete(`${keyPrefix}:${ip}`);
+}
+
 function clearRateLimits() {
     ipRequestCounts.clear();
 }
 
-module.exports = { checkLimit, clearRateLimits };
+module.exports = { checkLimit, isBlocked, recordFailure, resetLimit, clearRateLimits };

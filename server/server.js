@@ -69,19 +69,42 @@ function cleanObsoleteHotfixes() {
 
 // ==================== SSE CLIENTS AND SYNCHRONIZATION ====================
 let sseClients = [];
+let sseBroadcastTimer = null;
 
-function notifySseClients(data) {
-    const payload = `data: ${JSON.stringify(data)}\n\n`;
-    sseClients.forEach(res => {
-        try {
-            res.write(payload);
-        } catch (e) {
-            // connection broken
+function notifySseClients(data, immediate = false) {
+    const flush = () => {
+        sseBroadcastTimer = null;
+        if (sseClients.length === 0) return;
+        const payload = `data: ${JSON.stringify(data)}\n\n`;
+        sseClients = sseClients.filter(res => {
+            try {
+                if (res.writableEnded || res.destroyed) return false;
+                res.write(payload);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        });
+    };
+
+    if (immediate) {
+        if (sseBroadcastTimer) {
+            clearTimeout(sseBroadcastTimer);
+            sseBroadcastTimer = null;
         }
-    });
+        flush();
+        return;
+    }
+
+    if (!sseBroadcastTimer) {
+        sseBroadcastTimer = setTimeout(flush, 1500);
+        if (typeof sseBroadcastTimer.unref === 'function') {
+            sseBroadcastTimer.unref();
+        }
+    }
 }
 
-// Lắng nghe sự kiện cập nhật DB để push SSE báo UI reload
+// Lắng nghe sự kiện cập nhật DB để push SSE báo UI reload (gộp nhịp 1.5s chống bão 400+ client)
 onUpdate(() => {
     notifySseClients({ type: 'update' });
 });
@@ -592,7 +615,7 @@ async function checkAndRenewCertificates() {
 
 // ==================== RATE LIMITER ====================
 function isRateLimited(ip) {
-    return !checkLimit(ip, 'http_server', 300, 60 * 1000);
+    return !checkLimit(ip, 'http_server', 6000, 60 * 1000);
 }
 
 // ==================== STATIC FILE SERVING ====================
@@ -773,6 +796,7 @@ const server = http.createServer(async (req, res) => {
                 'Content-Type': 'text/event-stream',
                 'Cache-Control': 'no-cache',
                 'Connection': 'keep-alive',
+                'X-Accel-Buffering': 'no',
                 'Access-Control-Allow-Origin': getCorsOrigin(req)
             });
             res.write('\n');

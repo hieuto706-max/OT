@@ -2,6 +2,11 @@ const config = require('../../config');
 const UserRepository = require('../repositories/userRepository');
 const { hashPassword, verifyPassword, generateId, signJWT, sendMail, logError, logInfo } = require('../../utils');
 const { sendJSON, sendError, parseBody } = require('../utils/http');
+const { checkLimit, isBlocked, recordFailure, resetLimit } = require('../utils/rateLimiter');
+
+function getClientIp(req) {
+    return req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+}
 
 function stripSensitiveUserFields(user) {
     if (!user) return user;
@@ -37,6 +42,15 @@ const AuthController = {
         const { username, password, deviceId, isBrowser, clientSource } = await parseBody(req);
         if (!username) return sendError(res, 400, 'Thiếu tên đăng nhập!', req);
 
+        const ip = getClientIp(req);
+        const normUsername = String(username).trim().toLowerCase();
+        const adminFailKey = `${ip}:${normUsername}`;
+        const LOGIN_FAIL_WINDOW_MS = 5 * 60 * 1000;
+
+        if (isBlocked(adminFailKey, 'login_admin_fail', 8) || isBlocked(ip, 'login_ip_fail', 60)) {
+            return sendError(res, 429, 'Đăng nhập thất bại quá nhiều lần. Vui lòng thử lại sau 5 phút!', req);
+        }
+
         // Đồng bộ user từ PostgreSQL trước khi đọc và ghi liên kết thiết bị để tránh race condition ghi đè cache
         if (config.DATABASE_URL) {
             try {
@@ -50,7 +64,10 @@ const AuthController = {
 
         // Tìm user không phân biệt chữ hoa chữ thường
         const user = await UserRepository.findByUsername(username);
-        if (!user) return sendError(res, 401, 'Sai tên đăng nhập!', req);
+        if (!user) {
+            recordFailure(ip, 'login_ip_fail', 60, LOGIN_FAIL_WINDOW_MS);
+            return sendError(res, 401, 'Sai tên đăng nhập!', req);
+        }
 
         // Nếu là nhân viên, chỉ cho phép đăng nhập qua app APK hoặc app WebClip iOS (truyền clientSource = 'mobile_app')
         if (user.role === 'employee') {
@@ -128,8 +145,11 @@ const AuthController = {
 
         // Nếu là admin, yêu cầu mật khẩu
         if (!(await verifyPassword(password || '', user.password))) {
+            recordFailure(adminFailKey, 'login_admin_fail', 8, LOGIN_FAIL_WINDOW_MS);
+            recordFailure(ip, 'login_ip_fail', 60, LOGIN_FAIL_WINDOW_MS);
             return sendError(res, 401, 'Sai mật khẩu!', req);
         }
+        resetLimit(adminFailKey, 'login_admin_fail');
 
         // Tự động nâng cấp mật khẩu cũ (100.000 vòng) sang chuẩn mới nhanh hơn (20.000 vòng)
         if (user.password.startsWith('pbkdf2$100000$')) {
@@ -214,6 +234,11 @@ const AuthController = {
     async sendEmailOtp(req, res) {
         const { username, email } = await parseBody(req);
         if (!username) return sendError(res, 400, 'Thiếu tên đăng nhập!', req);
+
+        const normOtpUser = String(username).trim().toLowerCase();
+        if (!checkLimit(normOtpUser, 'otp_user', 3, 10 * 60 * 1000)) {
+            return sendError(res, 429, 'Bạn đã yêu cầu gửi mã OTP quá nhiều lần. Vui lòng thử lại sau 10 phút!', req);
+        }
 
         const user = await UserRepository.findByUsername(username);
         if (!user) return sendError(res, 404, 'Không tìm thấy tên đăng nhập trong hệ thống!', req);

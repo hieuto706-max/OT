@@ -8,7 +8,9 @@ const {
     queryPGRecordById,
     upsertPGRecord,
     deletePGRecordById,
-    cleanupPGRecordsUpToMonth
+    cleanupPGRecordsUpToMonth,
+    saveRecordsFast,
+    deleteRecordFast
 } = require('../../db');
 
 const RecordRepository = {
@@ -42,43 +44,47 @@ const RecordRepository = {
     },
 
     async create(newRecord) {
-        const db = await loadDB(true);
+        const db = await loadDB(false);
         db.records = db.records || [];
-        const effMonth = getEffectiveRecordMonth(newRecord);
-        if (config.DATABASE_URL && db._hotCutoffMonth && effMonth && effMonth < db._hotCutoffMonth && newRecord.status !== 'pending') {
-            await upsertPGRecord(newRecord);
-            return newRecord;
+        const recCopy = { ...newRecord };
+        const effMonth = getEffectiveRecordMonth(recCopy);
+        if (config.DATABASE_URL && db._hotCutoffMonth && effMonth && effMonth < db._hotCutoffMonth && recCopy.status !== 'pending') {
+            await upsertPGRecord(recCopy);
+            return recCopy;
         }
-        db.records.push(newRecord);
-        saveDB(db);
-        return newRecord;
+        db.records.push(recCopy);
+        await saveRecordsFast(recCopy);
+        return recCopy;
     },
 
     async createSplit(otRecord, tripRecord, existingIdx = -1) {
-        const db = await loadDB(true);
+        const db = await loadDB(false);
         db.records = db.records || [];
-        if (existingIdx >= 0) {
-            db.records[existingIdx] = otRecord;
+        const otCopy = { ...otRecord };
+        const tripCopy = { ...tripRecord };
+        if (existingIdx >= 0 && existingIdx < db.records.length) {
+            db.records[existingIdx] = otCopy;
         } else {
-            db.records.push(otRecord);
+            db.records.push(otCopy);
         }
-        db.records.push(tripRecord);
-        saveDB(db);
-        return { otRecord, tripRecord };
+        db.records.push(tripCopy);
+        await saveRecordsFast([otCopy, tripCopy]);
+        return { otRecord: otCopy, tripRecord: tripCopy };
     },
 
     async update(id, updates) {
-        const db = await loadDB(true);
+        const db = await loadDB(false);
         db.records = db.records || [];
         const index = db.records.findIndex(r => r.id === id);
         if (index !== -1) {
-            db.records[index] = {
+            const updated = {
                 ...db.records[index],
                 ...updates,
                 updatedAt: new Date().toISOString()
             };
-            saveDB(db);
-            return db.records[index];
+            db.records[index] = updated;
+            await saveRecordsFast(updated);
+            return updated;
         }
 
         if (config.DATABASE_URL && db._hotCutoffMonth) {
@@ -93,7 +99,7 @@ const RecordRepository = {
             const effMonth = getEffectiveRecordMonth(merged);
             if ((effMonth && effMonth >= db._hotCutoffMonth) || merged.status === 'pending') {
                 db.records.push(merged);
-                saveDB(db);
+                await saveRecordsFast(merged);
             }
             return merged;
         }
@@ -101,18 +107,20 @@ const RecordRepository = {
     },
 
     async updateSplit(id, otUpdates, tripRecord) {
-        const db = await loadDB(true);
+        const db = await loadDB(false);
         db.records = db.records || [];
         const index = db.records.findIndex(r => r.id === id);
         if (index !== -1) {
-            db.records[index] = {
+            const updatedOt = {
                 ...db.records[index],
                 ...otUpdates,
                 updatedAt: new Date().toISOString()
             };
-            db.records.push(tripRecord);
-            saveDB(db);
-            return db.records[index];
+            const tripCopy = { ...tripRecord };
+            db.records[index] = updatedOt;
+            db.records.push(tripCopy);
+            await saveRecordsFast([updatedOt, tripCopy]);
+            return updatedOt;
         }
 
         if (config.DATABASE_URL && db._hotCutoffMonth) {
@@ -131,12 +139,12 @@ const RecordRepository = {
     },
 
     async delete(id) {
-        const db = await loadDB(true);
+        const db = await loadDB(false);
         db.records = db.records || [];
         const beforeLen = db.records.length;
         db.records = db.records.filter(r => r.id !== id);
         if (db.records.length !== beforeLen) {
-            saveDB(db);
+            await deleteRecordFast(id);
             return true;
         }
         if (config.DATABASE_URL && db._hotCutoffMonth) {

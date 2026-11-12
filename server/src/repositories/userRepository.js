@@ -1,4 +1,4 @@
-const { loadDB, saveDB } = require('../../db');
+const { loadDB, saveDB, saveUserFast } = require('../../db');
 
 const UserRepository = {
     async getAll() {
@@ -52,26 +52,28 @@ const UserRepository = {
     },
 
     async create(newUser) {
-        const db = await loadDB(true);
+        const db = await loadDB(false);
         db.users = db.users || [];
-        db.users.push(newUser);
-        saveDB(db);
-        return newUser;
+        const userCopy = { ...newUser };
+        db.users.push(userCopy);
+        await saveUserFast(userCopy);
+        return userCopy;
     },
 
     async update(userId, updates) {
-        const db = await loadDB(true);
+        const db = await loadDB(false);
         db.users = db.users || [];
         const index = db.users.findIndex(u => u.id === userId);
         if (index === -1) return null;
 
-        db.users[index] = {
+        const updatedUser = {
             ...db.users[index],
             ...updates,
             updatedAt: new Date().toISOString()
         };
-        saveDB(db);
-        return db.users[index];
+        db.users[index] = updatedUser;
+        await saveUserFast(updatedUser);
+        return updatedUser;
     },
 
     async delete(userId) {

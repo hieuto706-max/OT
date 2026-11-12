@@ -195,9 +195,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (verEl) {
                 const valEl = verEl.querySelector('.login-ver-val');
                 if (valEl) {
-                    valEl.textContent = 'v' + (window.OT_LOCAL_VERSION || '1.6.1');
+                    valEl.textContent = 'v' + (window.OT_LOCAL_VERSION || '1.6.2');
                 } else {
-                    verEl.textContent = 'Phiên bản v' + (window.OT_LOCAL_VERSION || '1.6.1');
+                    verEl.textContent = 'Phiên bản v' + (window.OT_LOCAL_VERSION || '1.6.2');
                 }
             }
         }
