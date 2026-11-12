@@ -247,6 +247,30 @@ function setTableDensity(mode) {
     syncDensityUI();
 }
 
+function syncKpiCollapseUI() {
+    const isCollapsed = document.documentElement.classList.contains('kpi-collapsed');
+    const lblKpi = document.getElementById('label-kpi-toggle');
+    const chevron = document.getElementById('icon-kpi-chevron');
+    const btnExpand = document.getElementById('btn-expand-records');
+    const lblExpand = document.getElementById('label-expand-records');
+    const iconMax = document.getElementById('icon-expand-max');
+    const iconMin = document.getElementById('icon-expand-min');
+
+    if (lblKpi) lblKpi.textContent = isCollapsed ? 'Hiện thống kê' : 'Ẩn thống kê';
+    if (chevron) chevron.setAttribute('points', isCollapsed ? '6 9 12 15 18 9' : '18 15 12 9 6 15');
+    if (btnExpand) btnExpand.classList.toggle('active', isCollapsed);
+    if (lblExpand) lblExpand.textContent = isCollapsed ? 'Thu nhỏ' : 'Mở rộng';
+    if (iconMax) iconMax.style.display = isCollapsed ? 'none' : 'inline-block';
+    if (iconMin) iconMin.style.display = isCollapsed ? 'inline-block' : 'none';
+}
+
+function toggleKpiCollapse() {
+    const nextCollapsed = !document.documentElement.classList.contains('kpi-collapsed');
+    document.documentElement.classList.toggle('kpi-collapsed', nextCollapsed);
+    try { window.localStorage.setItem('ot_kpi_collapsed', nextCollapsed ? '1' : '0'); } catch (e) {}
+    syncKpiCollapseUI();
+}
+
 function resetAdminRecordFilters() {
     const dateEl = document.getElementById('admin-filter-date');
     const userEl = document.getElementById('admin-filter-user');

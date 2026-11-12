@@ -244,6 +244,9 @@ test('Security & Modular Architecture v1.6.0 - xóa hoàn toàn lưu mật khẩ
     const docsHtml = fs.readFileSync(path.join(rootDir, 'docs', 'index.html'), 'utf8');
 
     assert.equal(desktopHtml.includes('id="btn-theme-toggle"'), true);
+    assert.equal(desktopHtml.includes('id="btn-kpi-toggle"'), true);
+    assert.equal(desktopHtml.includes('id="btn-expand-records"'), true);
+    assert.equal(desktopHtml.includes('sub-tabs-inline'), true);
     assert.equal(desktopHtml.includes('id="desktop-wakeup-banner"'), true);
     assert.equal(mobileHtml.includes('id="ot-quick-time-chips"'), true);
     assert.equal(mobileHtml.includes('id="mobile-wakeup-banner"'), true);

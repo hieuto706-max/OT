@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     syncAdminThemeUI();
     syncDensityUI();
+    syncKpiCollapseUI();
 
     // Admin record type tab selector click handlers
     const btnAdminRecTypeOt = document.getElementById('btn-admin-rec-type-ot');
@@ -194,9 +195,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (verEl) {
                 const valEl = verEl.querySelector('.login-ver-val');
                 if (valEl) {
-                    valEl.textContent = 'v' + (window.OT_LOCAL_VERSION || '1.6.0');
+                    valEl.textContent = 'v' + (window.OT_LOCAL_VERSION || '1.6.1');
                 } else {
-                    verEl.textContent = 'Phiên bản v' + (window.OT_LOCAL_VERSION || '1.6.0');
+                    verEl.textContent = 'Phiên bản v' + (window.OT_LOCAL_VERSION || '1.6.1');
                 }
             }
         }
@@ -290,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cardPendingOt.addEventListener('click', () => {
             const recordsTab = document.querySelector('.admin-tab[data-admin-tab="records"]');
             if (recordsTab) recordsTab.click();
-            const pendingSubTab = document.querySelector('.sub-tab[data-subtab="subtab-content-records-pending"]');
+            const pendingSubTab = document.querySelector('.sub-tab[data-subtab="records-pending"]') || document.querySelector('.sub-tab[data-subtab="subtab-content-records-pending"]');
             if (pendingSubTab) pendingSubTab.click();
         });
     }
@@ -300,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cardPendingUnlinks.addEventListener('click', () => {
             const usersTab = document.querySelector('.admin-tab[data-admin-tab="users"]');
             if (usersTab) usersTab.click();
-            const employeesSubTab = document.querySelector('.sub-tab[data-subtab="subtab-content-employees"]');
+            const employeesSubTab = document.querySelector('.sub-tab[data-subtab="employees"]') || document.querySelector('.sub-tab[data-subtab="subtab-content-employees"]');
             if (employeesSubTab) employeesSubTab.click();
         });
     }

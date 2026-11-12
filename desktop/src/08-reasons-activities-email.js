@@ -657,6 +657,7 @@ window.addMemberToTeamFromModal = addMemberToTeamFromModal;
 window.saveTeamSettingsFromModal = saveTeamSettingsFromModal;
 window.toggleAdminTheme = toggleAdminTheme;
 window.setTableDensity = setTableDensity;
+window.toggleKpiCollapse = toggleKpiCollapse;
 window.resetAdminRecordFilters = resetAdminRecordFilters;
 window.bulkApproveRecords = bulkApproveRecords;
 window.bulkRejectRecords = bulkRejectRecords;

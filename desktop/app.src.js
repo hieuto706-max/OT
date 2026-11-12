@@ -248,6 +248,30 @@ function setTableDensity(mode) {
     syncDensityUI();
 }
 
+function syncKpiCollapseUI() {
+    const isCollapsed = document.documentElement.classList.contains('kpi-collapsed');
+    const lblKpi = document.getElementById('label-kpi-toggle');
+    const chevron = document.getElementById('icon-kpi-chevron');
+    const btnExpand = document.getElementById('btn-expand-records');
+    const lblExpand = document.getElementById('label-expand-records');
+    const iconMax = document.getElementById('icon-expand-max');
+    const iconMin = document.getElementById('icon-expand-min');
+
+    if (lblKpi) lblKpi.textContent = isCollapsed ? 'Hiện thống kê' : 'Ẩn thống kê';
+    if (chevron) chevron.setAttribute('points', isCollapsed ? '6 9 12 15 18 9' : '18 15 12 9 6 15');
+    if (btnExpand) btnExpand.classList.toggle('active', isCollapsed);
+    if (lblExpand) lblExpand.textContent = isCollapsed ? 'Thu nhỏ' : 'Mở rộng';
+    if (iconMax) iconMax.style.display = isCollapsed ? 'none' : 'inline-block';
+    if (iconMin) iconMin.style.display = isCollapsed ? 'inline-block' : 'none';
+}
+
+function toggleKpiCollapse() {
+    const nextCollapsed = !document.documentElement.classList.contains('kpi-collapsed');
+    document.documentElement.classList.toggle('kpi-collapsed', nextCollapsed);
+    try { window.localStorage.setItem('ot_kpi_collapsed', nextCollapsed ? '1' : '0'); } catch (e) {}
+    syncKpiCollapseUI();
+}
+
 function resetAdminRecordFilters() {
     const dateEl = document.getElementById('admin-filter-date');
     const userEl = document.getElementById('admin-filter-user');
@@ -4992,7 +5016,7 @@ async function checkUpdateManual() {
         }
 
         // 2. Lấy version hiện tại của ứng dụng local
-        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.6.0';
+        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.6.1';
         const localBuildTime = window.OT_LOCAL_BUILD_TIME || parseInt(localStorage.getItem('ot_app_build_time')) || 0;
 
         // 3. Lấy version mới nhất trên Cloud Server
@@ -5138,7 +5162,7 @@ async function checkUpdateSilent() {
         const cloudUrl = window.OT_CLOUD_URL || API_BASE;
         if (!cloudUrl) return;
 
-        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.6.0';
+        const localVer = window.OT_LOCAL_VERSION || localStorage.getItem('ot_app_version') || '1.6.1';
         const localBuildTime = window.OT_LOCAL_BUILD_TIME || parseInt(localStorage.getItem('ot_app_build_time')) || 0;
 
         const cloudRes = await fetch(`${cloudUrl}/api/version`);
@@ -5386,6 +5410,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     syncAdminThemeUI();
     syncDensityUI();
+    syncKpiCollapseUI();
 
     // Admin record type tab selector click handlers
     const btnAdminRecTypeOt = document.getElementById('btn-admin-rec-type-ot');
@@ -5575,9 +5600,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (verEl) {
                 const valEl = verEl.querySelector('.login-ver-val');
                 if (valEl) {
-                    valEl.textContent = 'v' + (window.OT_LOCAL_VERSION || '1.6.0');
+                    valEl.textContent = 'v' + (window.OT_LOCAL_VERSION || '1.6.1');
                 } else {
-                    verEl.textContent = 'Phiên bản v' + (window.OT_LOCAL_VERSION || '1.6.0');
+                    verEl.textContent = 'Phiên bản v' + (window.OT_LOCAL_VERSION || '1.6.1');
                 }
             }
         }
@@ -5671,7 +5696,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cardPendingOt.addEventListener('click', () => {
             const recordsTab = document.querySelector('.admin-tab[data-admin-tab="records"]');
             if (recordsTab) recordsTab.click();
-            const pendingSubTab = document.querySelector('.sub-tab[data-subtab="subtab-content-records-pending"]');
+            const pendingSubTab = document.querySelector('.sub-tab[data-subtab="records-pending"]') || document.querySelector('.sub-tab[data-subtab="subtab-content-records-pending"]');
             if (pendingSubTab) pendingSubTab.click();
         });
     }
@@ -5681,7 +5706,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cardPendingUnlinks.addEventListener('click', () => {
             const usersTab = document.querySelector('.admin-tab[data-admin-tab="users"]');
             if (usersTab) usersTab.click();
-            const employeesSubTab = document.querySelector('.sub-tab[data-subtab="subtab-content-employees"]');
+            const employeesSubTab = document.querySelector('.sub-tab[data-subtab="employees"]') || document.querySelector('.sub-tab[data-subtab="subtab-content-employees"]');
             if (employeesSubTab) employeesSubTab.click();
         });
     }
@@ -7452,6 +7477,7 @@ window.addMemberToTeamFromModal = addMemberToTeamFromModal;
 window.saveTeamSettingsFromModal = saveTeamSettingsFromModal;
 window.toggleAdminTheme = toggleAdminTheme;
 window.setTableDensity = setTableDensity;
+window.toggleKpiCollapse = toggleKpiCollapse;
 window.resetAdminRecordFilters = resetAdminRecordFilters;
 window.bulkApproveRecords = bulkApproveRecords;
 window.bulkRejectRecords = bulkRejectRecords;
